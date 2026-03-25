@@ -445,7 +445,7 @@ def test_detect_session_stage_returns_idea_intake_when_gate_not_admitted(tmp_pat
         },
     )
 
-    assert detect_session_stage(lineage_root) == "idea_intake"
+    assert detect_session_stage(lineage_root) == "idea_intake_confirmation_pending"
 
 
 def test_detect_session_stage_returns_pending_confirmation_when_admitted_but_not_approved(
@@ -466,7 +466,7 @@ def test_detect_session_stage_returns_pending_confirmation_when_admitted_but_not
         },
     )
 
-    assert detect_session_stage(lineage_root) == "mandate_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "idea_intake_confirmation_pending"
 
 
 def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitly_approved(
@@ -484,6 +484,16 @@ def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitl
             "approved_scope": {"market": "binance perp"},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
         },
     )
     _write_yaml(
@@ -507,6 +517,16 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
     _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
         intake_dir / "idea_gate_decision.yaml",
         {
             "idea_id": "btc_leads_alts",
@@ -523,6 +543,18 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
 
     assert status.current_stage == "mandate_confirmation_pending"
     assert status.next_action == "Complete mandate freeze group: research_intent"
+
+
+def test_run_research_session_stops_at_intake_confirmation_pending_for_new_lineage(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+
+    status = run_research_session(outputs_root=outputs_root, raw_idea="BTC leads ALTs")
+
+    assert status.current_stage == "idea_intake_confirmation_pending"
+    assert status.gate_status == "IDEA_INTAKE_PENDING_CONFIRMATION"
+    assert "--confirm-intake" in status.next_action
 
 
 def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exist(tmp_path: Path) -> None:

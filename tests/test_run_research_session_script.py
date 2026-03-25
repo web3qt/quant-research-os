@@ -450,7 +450,7 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
     assert result.returncode == 0
     lineage_root = outputs_root / "btc_leads_high_liquidity_alts_after_shock_events"
     assert (lineage_root / "00_idea_intake").exists()
-    assert "Current stage: idea_intake" in result.stdout
+    assert "Current stage: idea_intake_confirmation_pending" in result.stdout
 
 
 def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted(tmp_path: Path) -> None:
@@ -498,9 +498,37 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     )
 
     assert result.returncode == 0
-    assert "Current stage: mandate_confirmation_pending" in result.stdout
-    assert "Next action: Complete mandate freeze group: research_intent" in result.stdout
+    assert "Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "CONFIRM_IDEA_INTAKE" in result.stdout
     assert not (lineage_root / "01_mandate" / "mandate.md").exists()
+
+
+def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-intake",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert (intake_dir / "idea_intake_transition_approval.yaml").exists()
 
 
 def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -510,6 +538,16 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
     _write_yaml(
         intake_dir / "idea_gate_decision.yaml",
         {

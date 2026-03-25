@@ -14,7 +14,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review -> train_freeze_confirmation_pending -> train_freeze -> train_freeze review -> test_evidence_confirmation_pending -> test_evidence -> test_evidence review -> backtest_ready_confirmation_pending -> backtest_ready -> backtest_ready review -> holdout_validation_confirmation_pending -> holdout_validation -> holdout_validation review`
+- 显式推进 `idea_intake -> idea_intake_confirmation_pending -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review -> train_freeze_confirmation_pending -> train_freeze -> train_freeze review -> test_evidence_confirmation_pending -> test_evidence -> test_evidence review -> backtest_ready_confirmation_pending -> backtest_ready -> backtest_ready review -> holdout_validation_confirmation_pending -> holdout_validation -> holdout_validation review`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -22,6 +22,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 第一版只覆盖：
 
 - `idea_intake`
+- `idea_intake_confirmation_pending`
 - `mandate`
 - `mandate review`
 - `data_ready`
@@ -60,22 +61,23 @@ The user should not need to remember internal commands. Runtime commands are bac
 2. Detect the current stage from disk
 3. Auto-scaffold `00_idea_intake/` when it does not exist
 4. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
-5. 对于一个全新的 raw idea，必须先停在 intake 访谈，不得把用户第一句话直接当成完整 qualification 结论
+5. 对于一个全新的 raw idea，必须先停在 `idea_intake_confirmation_pending`，不得把用户第一句话直接当成完整 qualification 结论
 6. 先显式确认 `observation`
 7. 再显式确认 `primary hypothesis` 与 `counter-hypothesis`
 8. 再显式确认 `market`、`universe`、`target_task`
 9. 再显式确认 `data_source` 与 `bar_size`
 10. 再显式确认 `kill criteria` 或 `reframe` 条件
 11. 在这些 intake 关键项没有得到用户回答前，不得静默填写完整 `qualification_scorecard.yaml` 或直接给出 `GO_TO_MANDATE`
-12. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
-13. Start a grouped mandate freeze conversation instead of silently writing `01_mandate`
+12. Only after the intake interview is explicitly confirmed may the agent internally write the equivalent of `CONFIRM_IDEA_INTAKE`
+13. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
+14. Start a grouped mandate freeze conversation instead of silently writing `01_mandate`
 14. Confirm `research_intent`
 15. Confirm `scope_contract`
 16. Confirm `data_contract`, especially 数据来源哪里来 and what `bar_size` is frozen, for example `1m`, `5m`, or `15m`
 17. Confirm `execution_contract`
 18. Show one final mandate summary
-19. Ask the user one explicit question: `是否确认进入 mandate？`
-20. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
+20. Ask the user one explicit question: `是否确认进入 mandate？`
+21. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
 21. Drive mandate completion with the same discipline as `qros-mandate-author`
 22. When mandate artifacts are ready, move into mandate review
 23. Reuse the same gate discipline as `qros-mandate-review`
@@ -180,6 +182,12 @@ When the stage is `idea_intake`, the agent must ask explicitly before writing a 
 - `kill criteria` 或 `reframe` 条件是什么？
 
 Do not treat the user's first raw-idea sentence as if all of these were already confirmed. Do not silently jump from a raw idea to a completed intake gate.
+
+When the stage is `idea_intake_confirmation_pending`, the agent must ask one explicit question after回显 intake summary:
+
+- `是否确认以上 intake 访谈内容，可以进入正式 qualification？`
+
+Do not write a real gate verdict before this explicit confirmation.
 
 When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
 

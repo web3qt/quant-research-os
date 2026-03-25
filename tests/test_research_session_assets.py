@@ -7,6 +7,7 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
 
     assert skill_path.exists()
     assert "idea_intake" in content
+    assert "idea_intake_confirmation_pending" in content
     assert "mandate" in content
     assert "mandate review" in content.lower()
     assert "mandate_confirmation_pending" in content
@@ -15,6 +16,7 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "observation" in content
     assert "counter-hypothesis" in content or "counter_hypothesis" in content
     assert "kill criteria" in content
+    assert "CONFIRM_IDEA_INTAKE" in content
     assert "data source" in content.lower() or "数据来源" in content
     assert "bar_size" in content or "1m" in content
     assert "research_intent" in content
@@ -63,9 +65,11 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "qros-research-session" in content
     assert "data_ready" in content
     assert "mandate_confirmation_pending" in content
+    assert "idea_intake_confirmation_pending" in content
     assert "用户不需要记住内部命令" in content
     assert "intake" in content.lower()
     assert "kill criteria" in content
+    assert "--confirm-intake" in content
     assert "是否确认进入 mandate" in content
     assert "数据来源" in content
     assert "1m" in content or "5m" in content or "15m" in content

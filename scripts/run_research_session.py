@@ -19,6 +19,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lineage-id", default=None)
     parser.add_argument("--raw-idea", default=None)
     parser.add_argument(
+        "--confirm-intake",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may treat intake interview as complete.",
+    )
+    parser.add_argument(
         "--confirm-mandate",
         action="store_true",
         help="Write an explicit approval artifact so the next session run may build mandate outputs.",
@@ -62,6 +67,7 @@ def main() -> int:
     if args.lineage_id is None and args.raw_idea is None:
         raise SystemExit("Either --lineage-id or --raw-idea must be provided")
     confirm_flags = [
+        args.confirm_intake,
         args.confirm_mandate,
         args.confirm_data_ready,
         args.confirm_signal_ready,
@@ -77,6 +83,7 @@ def main() -> int:
         outputs_root=args.outputs_root.resolve(),
         lineage_id=args.lineage_id,
         raw_idea=args.raw_idea,
+        idea_intake_decision="CONFIRM_IDEA_INTAKE" if args.confirm_intake else None,
         mandate_decision="CONFIRM_MANDATE" if args.confirm_mandate else None,
         data_ready_decision="CONFIRM_DATA_READY" if args.confirm_data_ready else None,
         signal_ready_decision="CONFIRM_SIGNAL_READY" if args.confirm_signal_ready else None,

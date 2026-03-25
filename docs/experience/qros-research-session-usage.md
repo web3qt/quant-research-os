@@ -11,6 +11,7 @@ Instead of remembering multiple commands, you start with one skill and let QROS 
 This version covers:
 
 - `idea_intake`
+- `idea_intake_confirmation_pending`
 - `mandate`
 - `mandate review`
 - `data_ready`
@@ -39,7 +40,7 @@ In Codex, start with:
 
 The agent should then drive the session for you.
 
-对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 intake 访谈，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria。
+对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 `idea_intake_confirmation_pending`，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria，并在得到显式确认后再进入正式 qualification。
 
 ## Internal Runtime
 
@@ -47,6 +48,12 @@ The deterministic backend entry point is still:
 
 ```bash
 python scripts/run_research_session.py --outputs-root outputs --raw-idea "BTC leads high-liquidity alts after shock events"
+```
+
+For debugging or manual recovery, explicit intake interview approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-intake
 ```
 
 For debugging or manual recovery, explicit mandate approval can also be triggered through:
@@ -104,23 +111,24 @@ python scripts/run_research_session.py --outputs-root outputs --lineage-id <line
 The session runtime checks disk state in this order:
 
 1. no intake scaffold yet -> `idea_intake`
-2. intake exists but not admitted -> `idea_intake`
-3. intake admitted but not explicitly approved -> `mandate_confirmation_pending`
-4. intake admitted and explicitly approved, but mandate not built -> `mandate`
-5. mandate artifacts exist but review closure is missing -> `mandate review`
-6. mandate review closure exists -> `data_ready_confirmation_pending`
-7. data_ready artifacts exist but review closure is missing -> `data_ready review`
-8. data_ready review closure exists -> `signal_ready_confirmation_pending`
-9. signal_ready artifacts exist but review closure is missing -> `signal_ready review`
-10. signal_ready review closure exists -> `train_freeze_confirmation_pending`
-11. train_freeze artifacts exist but review closure is missing -> `train_freeze review`
-12. train_freeze review closure exists -> `test_evidence_confirmation_pending`
-13. test_evidence artifacts exist but review closure is missing -> `test_evidence review`
-14. test_evidence review closure exists -> `backtest_ready_confirmation_pending`
-15. backtest_ready artifacts exist but review closure is missing -> `backtest_ready review`
-16. backtest_ready review closure exists -> `holdout_validation_confirmation_pending`
-17. holdout_validation artifacts exist but review closure is missing -> `holdout_validation review`
-18. holdout_validation review closure exists -> session stops and reports completion
+2. intake scaffold exists but intake interview is not explicitly approved -> `idea_intake_confirmation_pending`
+3. intake interview approved but intake gate is not yet admitted -> `idea_intake`
+4. intake admitted but not explicitly approved for mandate -> `mandate_confirmation_pending`
+5. intake admitted and explicitly approved, but mandate not built -> `mandate`
+6. mandate artifacts exist but review closure is missing -> `mandate review`
+7. mandate review closure exists -> `data_ready_confirmation_pending`
+8. data_ready artifacts exist but review closure is missing -> `data_ready review`
+9. data_ready review closure exists -> `signal_ready_confirmation_pending`
+10. signal_ready artifacts exist but review closure is missing -> `signal_ready review`
+11. signal_ready review closure exists -> `train_freeze_confirmation_pending`
+12. train_freeze artifacts exist but review closure is missing -> `train_freeze review`
+13. train_freeze review closure exists -> `test_evidence_confirmation_pending`
+14. test_evidence artifacts exist but review closure is missing -> `test_evidence review`
+15. test_evidence review closure exists -> `backtest_ready_confirmation_pending`
+16. backtest_ready artifacts exist but review closure is missing -> `backtest_ready review`
+17. backtest_ready review closure exists -> `holdout_validation_confirmation_pending`
+18. holdout_validation artifacts exist but review closure is missing -> `holdout_validation review`
+19. holdout_validation review closure exists -> session stops and reports completion
 
 ## Expected User Experience
 
@@ -136,6 +144,7 @@ Then the system:
 - writes deterministic artifacts when it can
 - stops to ask for missing research judgments or explicit governance approval
 - for a brand-new idea, first asks intake questions instead of silently finalizing qualification
+- asks one explicit confirmation question before turning the intake interview into a real qualification verdict
 - confirms `observation`
 - confirms `primary hypothesis`
 - confirms `counter-hypothesis`

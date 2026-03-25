@@ -46,6 +46,8 @@ The agent should:
 - create or resume the lineage
 - scaffold intake artifacts when needed
 - ask only for missing research judgments
+- stop at `idea_intake_confirmation_pending` for a brand-new raw idea
+- explicitly confirm the intake interview before treating qualification as final
 - stop at `mandate_confirmation_pending` when intake is admitted
 - confirm grouped freeze content during the conversation: `research_intent`, `scope_contract`, `data_contract`, `execution_contract`
 - explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`

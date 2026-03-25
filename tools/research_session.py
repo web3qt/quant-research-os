@@ -55,6 +55,7 @@ from tools.train_runtime import (
 
 SessionStage = Literal[
     "idea_intake",
+    "idea_intake_confirmation_pending",
     "mandate_confirmation_pending",
     "mandate_author",
     "mandate_review",
@@ -78,6 +79,7 @@ SessionStage = Literal[
     "holdout_validation_review",
     "holdout_validation_review_complete",
 ]
+IdeaIntakeTransitionDecision = Literal["CONFIRM_IDEA_INTAKE", "HOLD", "REFRAME"]
 MandateTransitionDecision = Literal["CONFIRM_MANDATE", "HOLD", "REFRAME"]
 DataReadyTransitionDecision = Literal["CONFIRM_DATA_READY", "HOLD", "REFRAME"]
 SignalReadyTransitionDecision = Literal["CONFIRM_SIGNAL_READY", "HOLD", "REFRAME"]
@@ -169,6 +171,7 @@ HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+IDEA_INTAKE_TRANSITION_APPROVAL_FILE = "idea_intake_transition_approval.yaml"
 MANDATE_TRANSITION_APPROVAL_FILE = "mandate_transition_approval.yaml"
 DATA_READY_TRANSITION_APPROVAL_FILE = "data_ready_transition_approval.yaml"
 SIGNAL_READY_TRANSITION_APPROVAL_FILE = "signal_ready_transition_approval.yaml"
@@ -274,6 +277,10 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
 
     if not intake_dir.exists():
         return "idea_intake"
+
+    intake_approval = read_idea_intake_transition_decision(lineage_root)
+    if intake_approval != "CONFIRM_IDEA_INTAKE":
+        return "idea_intake_confirmation_pending"
 
     gate_path = intake_dir / "idea_gate_decision.yaml"
     if not gate_path.exists():
@@ -456,6 +463,32 @@ def write_mandate_transition_decision(
     return str(approval_path.relative_to(lineage_root))
 
 
+def write_idea_intake_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: IdeaIntakeTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _idea_intake_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "idea_intake_interview",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
 def write_data_ready_transition_decision(
     lineage_root: Path,
     *,
@@ -619,6 +652,17 @@ def read_mandate_transition_decision(lineage_root: Path) -> str | None:
 
     decision = _read_yaml(approval_path).get("decision")
     if decision in {"CONFIRM_MANDATE", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_idea_intake_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _idea_intake_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_IDEA_INTAKE", "HOLD", "REFRAME"}:
         return str(decision)
     return None
 
@@ -821,6 +865,7 @@ def run_research_session(
     outputs_root: Path,
     lineage_id: str | None = None,
     raw_idea: str | None = None,
+    idea_intake_decision: IdeaIntakeTransitionDecision | None = None,
     mandate_decision: MandateTransitionDecision | None = None,
     data_ready_decision: DataReadyTransitionDecision | None = None,
     signal_ready_decision: SignalReadyTransitionDecision | None = None,
@@ -833,6 +878,10 @@ def run_research_session(
     lineage_root.mkdir(parents=True, exist_ok=True)
 
     artifacts_written: list[str] = []
+    if idea_intake_decision is not None:
+        artifacts_written.append(
+            write_idea_intake_transition_decision(lineage_root, decision=idea_intake_decision)
+        )
     if mandate_decision is not None:
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
@@ -1017,7 +1066,16 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
                 return "DROP", "Reframe or terminate the idea"
         return (
             "IN_PROGRESS",
-            "Ask intake interview questions before finalizing qualification and gate verdict",
+            "Finalize qualification artifacts only after intake interview approval",
+        )
+
+    if current_stage == "idea_intake_confirmation_pending":
+        decision = read_idea_intake_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "IDEA_INTAKE_ON_HOLD", "Wait for explicit CONFIRM_IDEA_INTAKE"
+        return (
+            "IDEA_INTAKE_PENDING_CONFIRMATION",
+            "Run with --confirm-intake or reply CONFIRM_IDEA_INTAKE <lineage_id> after finishing the intake interview",
         )
 
     if current_stage == "mandate_confirmation_pending":
@@ -1136,6 +1194,10 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
 def _read_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+
+def _idea_intake_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "00_idea_intake" / IDEA_INTAKE_TRANSITION_APPROVAL_FILE
 
 
 def _approval_path(lineage_root: Path) -> Path:
