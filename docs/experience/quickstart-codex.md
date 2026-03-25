@@ -14,54 +14,44 @@ or
 ./setup --host codex --mode repo-local
 ```
 
-## 2. Start A Lineage
+## 2. Start From The Unified Skill
 
-```bash
-python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
-```
+In Codex, start with:
 
-This creates `outputs/<lineage_id>/00_idea_intake/`.
+- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+- `qros-research-session help`
 
-## 3. Author The Intake
+## 3. Let The Agent Drive The First-Wave Flow
 
-Use:
+This version of QROS will drive:
 
-- `qros-idea-intake-author`
+- `idea_intake`
+- `mandate`
+- `mandate review`
 
-Fill the intake artifacts and make sure `idea_gate_decision.yaml` reaches `GO_TO_MANDATE`.
+The agent should:
 
-## 4. Build The Mandate
+- create or resume the lineage
+- scaffold intake artifacts when needed
+- ask only for missing research judgments
+- stop after `mandate review`
 
-```bash
-python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
-```
+## 4. What You Should See
 
-Use:
+You should see the agent report:
 
-- `qros-mandate-author`
+- `lineage`
+- `current_stage`
+- `artifacts_written`
+- `gate_status`
+- `next_action`
 
-This creates `outputs/<lineage_id>/01_mandate/`.
+The underlying runtime will write artifacts under `outputs/<lineage_id>/`.
 
-## 5. Run Mandate Review
+## 5. Internal Runtime Note
 
-Move into the relevant stage directory or provide the right context, then run:
+QROS still uses scripts internally for deterministic state transitions, but those are runtime internals, not the primary user workflow.
 
-```bash
-python scripts/run_stage_review.py
-```
+## 6. Next
 
-Use:
-
-- `qros-mandate-review`
-
-## 6. What You Should See
-
-After review, QROS writes closure artifacts such as:
-
-- `latest_review_pack.yaml`
-- `stage_gate_review.yaml`
-- `stage_completion_certificate.yaml`
-
-## Next
-
-After `mandate` passes review, continue into `data_ready` and the later stage review flow.
+After `mandate review`, this version stops. `data_ready` orchestration is not yet part of the single-entry flow.

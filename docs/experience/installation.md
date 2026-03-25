@@ -83,20 +83,16 @@ It verifies:
 
 ## First Commands After Install
 
-```bash
-python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
-python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
-python scripts/run_stage_review.py
-```
+In Codex, start with:
 
-Use these skills first:
+- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+- `qros-research-session help`
 
-- `qros-idea-intake-author`
-- `qros-mandate-author`
-- `qros-mandate-review`
+The recommended user path is skill-first. The runtime scripts still exist, but they are internal plumbing and manual recovery tools, not the main workflow.
 
 ## Troubleshooting
 
 - `--check` reports missing manifest: run `./setup --host codex --mode repo-local` or `user-global`
 - Skill content looks stale: run `./setup --host codex --refresh`
 - Need workflow guidance: open `docs/experience/quickstart-codex.md`
+- Need the unified entry docs: open `docs/experience/qros-research-session-usage.md`

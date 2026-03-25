@@ -4,7 +4,7 @@
 
 `qros-research-session` is the single-entry orchestrator for the first QROS workflow slice.
 
-Instead of remembering multiple commands, you start with one session and let QROS decide where the lineage currently is.
+Instead of remembering multiple commands, you start with one skill and let QROS decide where the lineage currently is.
 
 ## First-Wave Boundary
 
@@ -20,19 +20,24 @@ This version does **not** continue into:
 - `signal_ready`
 - later research stages
 
-## Runtime Entry
+## User Entry
 
-The deterministic backend entry point is:
+In Codex, start with:
+
+- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+- `qros-research-session help`
+
+The agent should then drive the session for you.
+
+## Internal Runtime
+
+The deterministic backend entry point is still:
 
 ```bash
 python scripts/run_research_session.py --outputs-root outputs --raw-idea "BTC leads high-liquidity alts after shock events"
 ```
 
-To resume an existing lineage:
-
-```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id btc_leads_high_liquidity_alts_after_shock_events
-```
+Use it for debugging, manual recovery, or runtime verification. It is not the primary user path.
 
 ## How Stage Detection Works
 

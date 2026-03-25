@@ -8,38 +8,19 @@ Stage-gated research workflow assets for Codex, focused on turning trading ideas
 2. Install QROS for Codex:
 
 ```bash
-./setup --host codex --mode user-global
-```
-
-Or install into the current repo so teammates get the same skills and runtime:
-
-```bash
 ./setup --host codex --mode repo-local
 ```
 
-3. Start a new lineage:
+3. Open Codex in this repo and start from the unified skill entry:
 
-```bash
-python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
-```
+- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+- `qros-research-session help`
 
-4. Use these skills in order:
+4. Let the agent drive the first-wave flow:
 
-- `qros-idea-intake-author`
-- `qros-mandate-author`
-- `qros-mandate-review`
-
-5. Build mandate artifacts after the intake gate passes:
-
-```bash
-python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
-```
-
-6. Run the stage review from the relevant stage directory:
-
-```bash
-python scripts/run_stage_review.py
-```
+- `idea_intake`
+- `mandate`
+- `mandate review`
 
 ## Install
 
@@ -60,23 +41,23 @@ Common commands:
 
 ## First Workflow
 
-The smallest supported flow today is:
+The latest supported user flow is skill-first:
 
-`idea_intake -> mandate -> mandate_review`
+- install the repo with `./setup --host codex --mode repo-local`
+- start from `qros-research-session`
+- let the agent create or resume the lineage
+- let the agent drive `idea_intake -> mandate -> mandate review`
 
-Typical path:
+Example prompts:
 
-```bash
-python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
-python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
-python scripts/run_stage_review.py
-```
+- `qros-research-session 帮我从这个想法开始：BTC 领动高流动性 ALT`
+- `qros-research-session help`
 
 See:
 
 - [installation.md](docs/experience/installation.md)
 - [quickstart-codex.md](docs/experience/quickstart-codex.md)
-- [idea-intake-to-mandate-flow.md](docs/experience/idea-intake-to-mandate-flow.md)
+- [qros-research-session-usage.md](docs/experience/qros-research-session-usage.md)
 
 ## Install Modes
 
@@ -111,3 +92,4 @@ User-global install:
 - Skills not visible: rerun `./setup --host codex --refresh`
 - Unsure whether install is healthy: run `./setup --host codex --check`
 - Need the first-run walkthrough: open `docs/experience/quickstart-codex.md`
+- Need the single-entry workflow details: open `docs/experience/qros-research-session-usage.md`
