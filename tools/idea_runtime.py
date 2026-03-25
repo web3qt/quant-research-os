@@ -75,6 +75,16 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
 
     templates: dict[str, str] = {
         "idea_brief.md": "# Idea Brief\n\n## Raw Idea\n\n- TODO\n\n## Source\n\n- TODO\n",
+        "intake_interview.md": (
+            "# Intake Interview\n\n"
+            "在填写 qualification 和 gate 之前，必须先和用户确认：\n\n"
+            "- observation 到底是什么\n"
+            "- primary hypothesis 是什么\n"
+            "- counter-hypothesis 是什么\n"
+            "- market / universe / target_task 是什么\n"
+            "- data_source / bar_size 是什么\n"
+            "- kill criteria / reframe 条件是什么\n"
+        ),
         "observation_hypothesis_map.md": (
             "# Observation Hypothesis Map\n\n"
             "## Observation\n\n- TODO\n\n"
@@ -82,7 +92,12 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
             "## Counter-Hypothesis\n\n- TODO\n"
         ),
         "research_question_set.md": "# Research Questions\n\n- TODO\n",
-        "artifact_catalog.md": "# Artifact Catalog\n\n- idea_brief.md\n- observation_hypothesis_map.md\n",
+        "artifact_catalog.md": (
+            "# Artifact Catalog\n\n"
+            "- idea_brief.md\n"
+            "- intake_interview.md\n"
+            "- observation_hypothesis_map.md\n"
+        ),
     }
     for name, content in templates.items():
         (intake_dir / name).write_text(content, encoding="utf-8")

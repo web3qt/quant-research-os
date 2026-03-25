@@ -42,6 +42,17 @@
 python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
 ```
 
+对于一个全新的 raw idea，正确行为不是直接从一句话推断完整 intake 结论。应先进行 intake 访谈，至少确认：
+
+- `observation`
+- `primary hypothesis`
+- `counter-hypothesis`
+- `market` / `universe` / `target_task`
+- `data_source` / `bar_size`
+- `kill criteria` 或 `reframe` 条件
+
+只有这些信息收齐后，才应该正式填写 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。
+
 ## Qualification Rules
 
 qualification 至少评估以下 6 项：

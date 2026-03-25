@@ -39,6 +39,8 @@ In Codex, start with:
 
 The agent should then drive the session for you.
 
+对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 intake 访谈，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria。
+
 ## Internal Runtime
 
 The deterministic backend entry point is still:
@@ -133,6 +135,13 @@ Then the system:
 - reports the current stage
 - writes deterministic artifacts when it can
 - stops to ask for missing research judgments or explicit governance approval
+- for a brand-new idea, first asks intake questions instead of silently finalizing qualification
+- confirms `observation`
+- confirms `primary hypothesis`
+- confirms `counter-hypothesis`
+- confirms `market` / `universe` / `target_task`
+- confirms `data_source` / `bar_size`
+- confirms `kill criteria` or `reframe` conditions
 - freezes mandate interactively by group
 - confirms `research_intent`
 - confirms `scope_contract`
@@ -187,18 +196,19 @@ Then the system:
 
 1. Start with a raw idea about BTC leading alt reactions
 2. QROS creates a lineage and scaffolds `00_idea_intake/`
-3. Intake artifacts are filled and `idea_gate_decision.yaml` is produced
-4. If verdict is `GO_TO_MANDATE`, QROS stops at `mandate_confirmation_pending`
-5. QROS enters grouped freeze mode instead of silently writing mandate
-6. QROS confirms `research_intent`
-7. QROS confirms `scope_contract`
-8. QROS confirms `data_contract`
+3. QROS first asks intake questions instead of silently finalizing qualification
+4. Intake artifacts are then filled and `idea_gate_decision.yaml` is produced
+5. If verdict is `GO_TO_MANDATE`, QROS stops at `mandate_confirmation_pending`
+6. QROS enters grouped freeze mode instead of silently writing mandate
+7. QROS confirms `research_intent`
+8. QROS confirms `scope_contract`
+9. QROS confirms `data_contract`
    这里会明确问数据来源和 `bar_size`
-9. QROS confirms `execution_contract`
-10. QROS shows the final grouped mandate summary and asks `是否确认进入 mandate？`
-11. The user answers in natural language
-12. The agent internally records the approval decision and then builds `01_mandate/`
-13. Once mandate review closure exists, QROS enters `data_ready_confirmation_pending`
+10. QROS confirms `execution_contract`
+11. QROS shows the final grouped mandate summary and asks `是否确认进入 mandate？`
+12. The user answers in natural language
+13. The agent internally records the approval decision and then builds `01_mandate/`
+14. Once mandate review closure exists, QROS enters `data_ready_confirmation_pending`
 14. QROS confirms `extraction_contract`
 15. QROS confirms `quality_semantics`
 16. QROS confirms `universe_admission`

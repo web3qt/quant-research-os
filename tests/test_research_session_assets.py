@@ -12,6 +12,9 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "mandate_confirmation_pending" in content
     assert "CONFIRM_MANDATE" in content
     assert "是否确认进入 mandate" in content
+    assert "observation" in content
+    assert "counter-hypothesis" in content or "counter_hypothesis" in content
+    assert "kill criteria" in content
     assert "data source" in content.lower() or "数据来源" in content
     assert "bar_size" in content or "1m" in content
     assert "research_intent" in content
@@ -61,6 +64,8 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "data_ready" in content
     assert "mandate_confirmation_pending" in content
     assert "用户不需要记住内部命令" in content
+    assert "intake" in content.lower()
+    assert "kill criteria" in content
     assert "是否确认进入 mandate" in content
     assert "数据来源" in content
     assert "1m" in content or "5m" in content or "15m" in content
@@ -97,6 +102,18 @@ def test_data_ready_author_skill_exists() -> None:
     assert "universe_admission" in content
     assert "shared_derived_layer" in content
     assert "delivery_contract" in content
+
+
+def test_idea_intake_author_skill_requires_interview() -> None:
+    skill_path = Path(".agents/skills/qros-idea-intake-author/SKILL.md")
+    content = skill_path.read_text(encoding="utf-8")
+
+    assert skill_path.exists()
+    assert "intake" in content.lower()
+    assert "observation" in content
+    assert "counter-hypothesis" in content or "counter_hypothesis" in content
+    assert "kill criteria" in content
+    assert "不能只根据用户一句原始 idea" in content
 
 
 def test_signal_ready_author_skill_exists() -> None:

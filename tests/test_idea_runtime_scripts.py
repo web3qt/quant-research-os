@@ -204,6 +204,7 @@ def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     intake_dir = lineage_root / "00_idea_intake"
     assert intake_dir.exists()
     assert (intake_dir / "idea_brief.md").exists()
+    assert (intake_dir / "intake_interview.md").exists()
     assert (intake_dir / "qualification_scorecard.yaml").exists()
     assert (intake_dir / "idea_gate_decision.yaml").exists()
     assert (intake_dir / "mandate_freeze_draft.yaml").exists()

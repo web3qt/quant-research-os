@@ -1015,7 +1015,10 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
                 return "GO_TO_MANDATE_PENDING_CONFIRMATION", "Await explicit CONFIRM_MANDATE"
             if verdict == "DROP":
                 return "DROP", "Reframe or terminate the idea"
-        return "IN_PROGRESS", "Complete intake artifacts and qualification"
+        return (
+            "IN_PROGRESS",
+            "Ask intake interview questions before finalizing qualification and gate verdict",
+        )
 
     if current_stage == "mandate_confirmation_pending":
         next_group = next_mandate_freeze_group(lineage_root)
