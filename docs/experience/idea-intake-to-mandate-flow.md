@@ -29,6 +29,12 @@
 - `idea_gate_decision.yaml`
 - `artifact_catalog.md`
 
+可以先用下面的命令生成这套模板：
+
+```bash
+python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
+```
+
 ## Qualification Rules
 
 qualification 至少评估以下 6 项：
@@ -70,6 +76,12 @@ qualification 至少评估以下 6 项：
 - `time_split.json`
 - `parameter_grid.yaml`
 - `run_config.toml`
+
+当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，可以运行：
+
+```bash
+python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
+```
 
 ## Example
 
