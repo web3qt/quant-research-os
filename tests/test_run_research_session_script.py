@@ -34,7 +34,7 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
     assert "Current stage: idea_intake" in result.stdout
 
 
-def test_run_research_session_reports_mandate_author_when_intake_admitted(tmp_path: Path) -> None:
+def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
@@ -54,6 +54,65 @@ def test_run_research_session_reports_mandate_author_when_intake_admitted(tmp_pa
     )
     _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+
+    result = run(
+        [
+            "python",
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: mandate_confirmation_pending" in result.stdout
+    assert not (lineage_root / "01_mandate" / "mandate.md").exists()
+
+
+def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+
+    confirm_result = run(
+        [
+            "python",
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-mandate",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert confirm_result.returncode == 0
 
     result = run(
         [

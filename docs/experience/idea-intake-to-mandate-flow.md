@@ -65,7 +65,11 @@ qualification 至少评估以下 6 项：
 - `NEEDS_REFRAME`
 - `DROP`
 
-只有 `GO_TO_MANDATE` 允许进入 `01_mandate`。
+只有 `GO_TO_MANDATE` 才允许申请进入 `01_mandate`。
+
+但 `GO_TO_MANDATE` 不等于立即生成 mandate。
+
+系统会先停在 `mandate_confirmation_pending`，等待显式确认。
 
 ## `01_mandate` Handoff
 
@@ -84,7 +88,13 @@ qualification 至少评估以下 6 项：
 - `parameter_grid.yaml`
 - `run_config.toml`
 
-当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，可以运行：
+当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，先显式确认：
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
+```
+
+确认后才允许生成：
 
 ```bash
 python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>

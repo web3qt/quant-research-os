@@ -14,7 +14,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 自动推进 `idea_intake -> mandate -> mandate review`
+- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -40,17 +40,22 @@ Use the orchestrator runtime:
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 
+The user should not need to remember internal commands. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
+
 ## Working Rules
 
 1. Resolve or create the lineage
 2. Detect the current stage from disk
 3. Auto-scaffold `00_idea_intake/` when it does not exist
 4. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
-5. If the intake gate reaches `GO_TO_MANDATE`, freeze mandate artifacts
-6. Drive mandate completion with the same discipline as `qros-mandate-author`
-7. When mandate artifacts are ready, move into mandate review
-8. Reuse the same gate discipline as `qros-mandate-review`
-9. Stop after `mandate review`; do not silently enter `data_ready`
+5. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
+6. Report why the idea qualified, what risks remain, and that explicit approval is required
+7. Ask the user one explicit question: `是否确认进入 mandate？`
+8. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
+9. Drive mandate completion with the same discipline as `qros-mandate-author`
+10. When mandate artifacts are ready, move into mandate review
+11. Reuse the same gate discipline as `qros-mandate-review`
+12. Stop after `mandate review`; do not silently enter `data_ready`
 
 ## Auto vs Ask
 
@@ -58,7 +63,6 @@ Auto-act when:
 
 - creating a lineage slug
 - scaffolding `00_idea_intake/`
-- building mandate artifacts after `GO_TO_MANDATE`
 - detecting the current stage
 - reporting current state
 
@@ -68,7 +72,13 @@ Ask the user only when:
 - counter-hypothesis is missing
 - kill criteria are missing
 - intake should become `NEEDS_REFRAME` or `DROP`
-- a governance judgment must be made explicitly
+- a governance judgment must be made explicitly, especially `CONFIRM_MANDATE`, `HOLD`, or `REFRAME`
+
+When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
+
+- `是否确认进入 mandate？`
+
+Do not skip this question. Do not imply the transition already happened.
 
 ## State Source Of Truth
 
@@ -89,13 +99,17 @@ After each meaningful step, report:
 - `artifacts_written`
 - `gate_status`
 - `next_action`
+- `why_now`
+- `open_risks`
 
 ## Guardrails
 
 - Do not fabricate `review_findings.yaml`
 - Do not bypass `idea_gate_decision.yaml`
+- Do not bypass `mandate_transition_approval.yaml`
 - Do not bypass mandate review closure
 - Do not claim `data_ready` is unlocked in v1
+- Do not require the user to type backend flags or internal runtime commands during the primary chat workflow
 
 ## Internal Discipline Sources
 

@@ -34,6 +34,8 @@ The agent should:
 - create or resume the lineage
 - scaffold intake artifacts when needed
 - ask only for missing research judgments
+- stop at `mandate_confirmation_pending` when intake is admitted
+- explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
 - stop after `mandate review`
 
 ## 4. What You Should See
@@ -45,6 +47,8 @@ You should see the agent report:
 - `artifacts_written`
 - `gate_status`
 - `next_action`
+- `why_now`
+- `open_risks`
 
 The underlying runtime will write artifacts under `outputs/<lineage_id>/`.
 

@@ -18,6 +18,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--outputs-root", type=Path, required=True)
     parser.add_argument("--lineage-id", default=None)
     parser.add_argument("--raw-idea", default=None)
+    parser.add_argument(
+        "--confirm-mandate",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build mandate outputs.",
+    )
     return parser.parse_args()
 
 
@@ -31,12 +36,21 @@ def main() -> int:
         outputs_root=args.outputs_root.resolve(),
         lineage_id=args.lineage_id,
         raw_idea=args.raw_idea,
+        mandate_decision="CONFIRM_MANDATE" if args.confirm_mandate else None,
     )
 
     print(f"Lineage: {status.lineage_id}")
     print(f"Current stage: {status.current_stage}")
     print(f"Gate status: {status.gate_status}")
     print(f"Next action: {status.next_action}")
+    if status.why_now:
+        print("Why now:")
+        for item in status.why_now:
+            print(f"- {item}")
+    if status.open_risks:
+        print("Open risks:")
+        for item in status.open_risks:
+            print(f"- {item}")
     if status.artifacts_written:
         print("Artifacts written:")
         for item in status.artifacts_written:

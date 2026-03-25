@@ -53,7 +53,9 @@ def test_detect_session_stage_returns_idea_intake_when_gate_not_admitted(tmp_pat
     assert detect_session_stage(lineage_root) == "idea_intake"
 
 
-def test_detect_session_stage_returns_mandate_author_when_admitted_but_not_built(tmp_path: Path) -> None:
+def test_detect_session_stage_returns_pending_confirmation_when_admitted_but_not_approved(
+    tmp_path: Path,
+) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -66,6 +68,37 @@ def test_detect_session_stage_returns_mandate_author_when_admitted_but_not_built
             "approved_scope": {"market": "binance perp"},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "mandate_confirmation_pending"
+
+
+def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitly_approved(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "mandate_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_MANDATE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_gate_verdict": "GO_TO_MANDATE",
         },
     )
 

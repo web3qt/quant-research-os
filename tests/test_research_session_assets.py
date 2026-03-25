@@ -9,7 +9,9 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "idea_intake" in content
     assert "mandate" in content
     assert "mandate review" in content.lower()
-    assert "auto" in content.lower()
+    assert "mandate_confirmation_pending" in content
+    assert "CONFIRM_MANDATE" in content
+    assert "是否确认进入 mandate" in content
     assert "run_research_session.py" in content
 
 
@@ -21,3 +23,6 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "python scripts/run_research_session.py" in content
     assert "qros-research-session" in content
     assert "data_ready" in content
+    assert "mandate_confirmation_pending" in content
+    assert "用户不需要记住内部命令" in content
+    assert "是否确认进入 mandate" in content
