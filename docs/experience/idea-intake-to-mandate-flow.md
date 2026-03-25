@@ -8,6 +8,12 @@
 
 它不直接研究收益，也不直接进入 `data_ready`。
 
+如果你还没安装运行时和 skill，先看：
+
+- `README.md`
+- `docs/experience/installation.md`
+- `docs/experience/quickstart-codex.md`
+
 ## Flow
 
 第一版流程固定为：
@@ -32,6 +38,7 @@
 可以先用下面的命令生成这套模板：
 
 ```bash
+./setup --host codex --mode repo-local
 python scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
 ```
 
@@ -81,6 +88,12 @@ qualification 至少评估以下 6 项：
 
 ```bash
 python scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
+```
+
+完成 mandate 产物后，继续运行：
+
+```bash
+python scripts/run_stage_review.py
 ```
 
 ## Example
