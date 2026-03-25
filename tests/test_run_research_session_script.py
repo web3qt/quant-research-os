@@ -47,12 +47,19 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
-            "approved_scope": {"market": "binance perp"},
+            "approved_scope": {
+                "market": "binance perp",
+                "data_source": "binance um futures klines",
+                "bar_size": "5m",
+            },
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
         },
     )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
+    )
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
 
     result = run(
@@ -88,12 +95,19 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
-            "approved_scope": {"market": "binance perp"},
+            "approved_scope": {
+                "market": "binance perp",
+                "data_source": "binance um futures klines",
+                "bar_size": "5m",
+            },
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
         },
     )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
+    )
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
 
     confirm_result = run(

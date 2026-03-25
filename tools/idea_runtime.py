@@ -34,6 +34,7 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
         intake_dir / "scope_canvas.yaml",
         {
             "market": "",
+            "data_source": "",
             "instrument_type": "",
             "universe": "",
             "bar_size": "",
@@ -93,6 +94,16 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     mandate_dir.mkdir(parents=True, exist_ok=True)
 
     approved_scope = gate_decision.get("approved_scope", {})
+    data_source = _resolve_scope_value("data_source", approved_scope, scope_canvas)
+    bar_size = _resolve_scope_value("bar_size", approved_scope, scope_canvas)
+    if not data_source or not bar_size:
+        missing = []
+        if not data_source:
+            missing.append("data_source")
+        if not bar_size:
+            missing.append("bar_size")
+        raise ValueError(f"confirmed mandate inputs missing: {', '.join(missing)}")
+
     (mandate_dir / "mandate.md").write_text(
         "\n".join(
             [
@@ -107,6 +118,11 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "## Research Questions",
                 "",
                 research_questions.strip(),
+                "",
+                "## Frozen Execution Inputs",
+                "",
+                f"- Data source: {data_source}",
+                f"- Bar size: {bar_size}",
                 "",
                 "## Gate Basis",
                 "",
@@ -123,8 +139,9 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "# Research Scope",
                 "",
                 f"- Market: {approved_scope.get('market', scope_canvas.get('market', ''))}",
+                f"- Data source: {data_source}",
                 f"- Universe: {approved_scope.get('universe', scope_canvas.get('universe', ''))}",
-                f"- Bar size: {approved_scope.get('bar_size', scope_canvas.get('bar_size', ''))}",
+                f"- Bar size: {bar_size}",
                 f"- Target task: {approved_scope.get('target_task', scope_canvas.get('target_task', ''))}",
                 f"- Excluded scope: {', '.join(approved_scope.get('excluded_scope', scope_canvas.get('excluded_scope', [])))}",
             ]
@@ -140,7 +157,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "test": "",
                 "backtest": "",
                 "holdout": "",
-                "bar_size": approved_scope.get("bar_size", scope_canvas.get("bar_size", "")),
+                "bar_size": bar_size,
             },
             indent=2,
             ensure_ascii=False,
@@ -160,7 +177,8 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 'stage = "mandate"',
                 f'lineage_id = "{lineage_root.name}"',
-                f'bar_size = "{approved_scope.get("bar_size", scope_canvas.get("bar_size", ""))}"',
+                f'data_source = "{data_source}"',
+                f'bar_size = "{bar_size}"',
             ]
         )
         + "\n",
@@ -171,7 +189,23 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     (mandate_dir / "field_dictionary.md").write_text(
-        "# Field Dictionary\n\n- TODO: define formal fields consumed by downstream stages.\n",
+        "\n".join(
+            [
+                "# Field Dictionary",
+                "",
+                f"- `data_source`: frozen upstream source for this mandate, currently `{data_source}`.",
+                f"- `bar_size`: frozen research cadence for this mandate, currently `{bar_size}`.",
+                "- TODO: define remaining formal fields consumed by downstream stages.",
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
     return mandate_dir
+
+
+def _resolve_scope_value(key: str, approved_scope: dict[str, Any], scope_canvas: dict[str, Any]) -> str:
+    value = approved_scope.get(key, scope_canvas.get(key, ""))
+    if value is None:
+        return ""
+    return str(value).strip()

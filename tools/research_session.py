@@ -180,6 +180,23 @@ def session_transition_summary(lineage_root: Path) -> tuple[list[str], list[str]
     return why_now, open_risks
 
 
+def missing_mandate_confirmation_inputs(lineage_root: Path) -> list[str]:
+    intake_dir = lineage_root / "00_idea_intake"
+    scope_path = intake_dir / "scope_canvas.yaml"
+    gate_path = intake_dir / "idea_gate_decision.yaml"
+    if not scope_path.exists() or not gate_path.exists():
+        return []
+
+    scope_canvas = _read_yaml(scope_path)
+    approved_scope = _read_yaml(gate_path).get("approved_scope", {})
+    missing: list[str] = []
+    for key in ("data_source", "bar_size"):
+        value = approved_scope.get(key, scope_canvas.get(key, ""))
+        if str(value or "").strip() == "":
+            missing.append(key)
+    return missing
+
+
 def summarize_session_status(
     *,
     lineage_id: str,
@@ -265,6 +282,12 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "IN_PROGRESS", "Complete intake artifacts and qualification"
 
     if current_stage == "mandate_confirmation_pending":
+        missing = missing_mandate_confirmation_inputs(lineage_root)
+        if missing:
+            return (
+                "GO_TO_MANDATE_PENDING_CONFIRMATION",
+                f"Confirm {', '.join(missing)} before final mandate approval",
+            )
         decision = read_mandate_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_MANDATE_ON_HOLD", "Wait for explicit CONFIRM_MANDATE"

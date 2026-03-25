@@ -27,6 +27,9 @@ def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     assert (intake_dir / "idea_brief.md").exists()
     assert (intake_dir / "qualification_scorecard.yaml").exists()
     assert (intake_dir / "idea_gate_decision.yaml").exists()
+    scope_canvas = yaml.safe_load((intake_dir / "scope_canvas.yaml").read_text(encoding="utf-8"))
+    assert "data_source" in scope_canvas
+    assert "bar_size" in scope_canvas
     assert "Scaffolded idea intake" in result.stdout
 
 
@@ -78,6 +81,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
             "why": ["variables are observable"],
             "approved_scope": {
                 "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
                 "universe": "top liquidity alts",
                 "bar_size": "5m",
                 "horizons": ["15m", "30m", "60m"],
@@ -92,6 +96,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
         intake_dir / "scope_canvas.yaml",
         {
             "market": "Binance perpetual",
+            "data_source": "Binance UM futures klines",
             "instrument_type": "perpetual",
             "universe": "top liquidity alts",
             "bar_size": "5m",
@@ -125,4 +130,66 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert (mandate_dir / "run_config.toml").exists()
     assert (mandate_dir / "artifact_catalog.md").exists()
     assert (mandate_dir / "field_dictionary.md").exists()
+    assert "Data source: Binance UM futures klines" in (mandate_dir / "research_scope.md").read_text(
+        encoding="utf-8"
+    )
+    assert 'data_source = "Binance UM futures klines"' in (mandate_dir / "run_config.toml").read_text(
+        encoding="utf-8"
+    )
     assert "Built mandate artifacts" in result.stdout
+
+
+def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_alt_transmission_v1",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["variables are observable"],
+            "approved_scope": {
+                "market": "Binance perpetual",
+                "universe": "top liquidity alts",
+                "target_task": "event-driven relative return study",
+                "excluded_scope": ["low liquidity tails"],
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "Binance perpetual",
+            "instrument_type": "perpetual",
+            "universe": "top liquidity alts",
+            "bar_size": "",
+            "holding_horizons": ["15m", "30m", "60m"],
+            "target_task": "event-driven relative return study",
+            "excluded_scope": ["low liquidity tails"],
+            "budget_days": 10,
+            "max_iterations": 3,
+            "data_source": "",
+        },
+    )
+    (intake_dir / "research_question_set.md").write_text(
+        "# Research Questions\n\n- Does BTC shock lead ALT follow-through?\n",
+        encoding="utf-8",
+    )
+
+    result = run(
+        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "data_source" in result.stderr
+    assert "bar_size" in result.stderr

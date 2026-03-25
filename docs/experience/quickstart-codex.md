@@ -35,6 +35,7 @@ The agent should:
 - scaffold intake artifacts when needed
 - ask only for missing research judgments
 - stop at `mandate_confirmation_pending` when intake is admitted
+- confirm the data source and frozen `bar_size` during the conversation
 - explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
 - stop after `mandate review`
 

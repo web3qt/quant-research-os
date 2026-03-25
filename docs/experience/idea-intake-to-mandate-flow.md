@@ -88,6 +88,13 @@ qualification 至少评估以下 6 项：
 - `parameter_grid.yaml`
 - `run_config.toml`
 
+进入 `mandate` 前，必须先通过询问确认：
+
+- 数据来源哪里来
+- 后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
+
+这两项确认后要冻结进最终 mandate 文档。
+
 当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，先显式确认：
 
 ```bash

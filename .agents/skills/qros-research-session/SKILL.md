@@ -49,13 +49,14 @@ The user should not need to remember internal commands. Runtime commands are bac
 3. Auto-scaffold `00_idea_intake/` when it does not exist
 4. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
 5. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
-6. Report why the idea qualified, what risks remain, and that explicit approval is required
-7. Ask the user one explicit question: `是否确认进入 mandate？`
-8. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
-9. Drive mandate completion with the same discipline as `qros-mandate-author`
-10. When mandate artifacts are ready, move into mandate review
-11. Reuse the same gate discipline as `qros-mandate-review`
-12. Stop after `mandate review`; do not silently enter `data_ready`
+6. Before final confirmation, ask where the mandate data comes from and what bar size should be frozen, for example `1m`, `5m`, or `15m`
+7. Report why the idea qualified, what risks remain, the confirmed data source, the confirmed bar size, and that explicit approval is required
+8. Ask the user one explicit question: `是否确认进入 mandate？`
+9. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
+10. Drive mandate completion with the same discipline as `qros-mandate-author`
+11. When mandate artifacts are ready, move into mandate review
+12. Reuse the same gate discipline as `qros-mandate-review`
+13. Stop after `mandate review`; do not silently enter `data_ready`
 
 ## Auto vs Ask
 
@@ -76,6 +77,8 @@ Ask the user only when:
 
 When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
 
+- `数据来源哪里来？`
+- `后续研究周期基于什么 bar size，比如 1m、5m、15m？`
 - `是否确认进入 mandate？`
 
 Do not skip this question. Do not imply the transition already happened.

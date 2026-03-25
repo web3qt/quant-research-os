@@ -12,6 +12,8 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "mandate_confirmation_pending" in content
     assert "CONFIRM_MANDATE" in content
     assert "是否确认进入 mandate" in content
+    assert "data source" in content.lower() or "数据来源" in content
+    assert "bar_size" in content or "1m" in content
     assert "run_research_session.py" in content
 
 
@@ -26,3 +28,5 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "mandate_confirmation_pending" in content
     assert "用户不需要记住内部命令" in content
     assert "是否确认进入 mandate" in content
+    assert "数据来源" in content
+    assert "1m" in content or "5m" in content or "15m" in content

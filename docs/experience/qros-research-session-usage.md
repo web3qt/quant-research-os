@@ -69,6 +69,8 @@ Then the system:
 - reports the current stage
 - writes deterministic artifacts when it can
 - stops to ask for missing research judgments or explicit governance approval
+- confirms 数据来源哪里来
+- confirms 后续研究周期基于什么 bar size，例如 `1m`、`5m`、`15m`
 - asks `是否确认进入 mandate？` before mandate generation
 
 ## Example Path
@@ -77,10 +79,12 @@ Then the system:
 2. QROS creates a lineage and scaffolds `00_idea_intake/`
 3. Intake artifacts are filled and `idea_gate_decision.yaml` is produced
 4. If verdict is `GO_TO_MANDATE`, QROS stops at `mandate_confirmation_pending`
-5. QROS reports `why_now`, `open_risks`, and asks `是否确认进入 mandate？`
-6. The user answers in natural language
-7. The agent internally records the approval decision and then builds `01_mandate/`
-8. Once mandate review closure exists, the session stops instead of entering `data_ready`
+5. QROS asks 数据来源哪里来
+6. QROS asks 后续研究周期基于什么 bar size，例如 `1m`、`5m`、`15m`
+7. QROS reports `why_now`, `open_risks`, and asks `是否确认进入 mandate？`
+8. The user answers in natural language
+9. The agent internally records the approval decision and then builds `01_mandate/`
+10. Once mandate review closure exists, the session stops instead of entering `data_ready`
 
 ## Why This Exists
 
