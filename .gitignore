@@ -1,0 +1,4 @@
+.qoder/
+.worktrees/
+__pycache__/
+*.pyc

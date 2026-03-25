@@ -1,0 +1,934 @@
+version: 1
+owner_doc: docs/all-sops/第一层-主流程sop/research_workflow_sop.md
+contract_role: machine_readable_stage_gate_truth
+
+status_vocabulary:
+  PASS:
+    can_advance: true
+    scope: research_stage
+    meaning: 当前阶段目标已满足，无保留事项
+  "CONDITIONAL PASS":
+    can_advance: true
+    scope: research_stage
+    meaning: 当前阶段主要目标满足，但存在必须明示的保留事项
+  "PASS FOR RETRY":
+    can_advance: false
+    scope: research_stage
+    meaning: 允许按既定 rollback 范围受控重试，未完成前不得继续晋级
+  RETRY:
+    can_advance: false
+    scope: research_stage
+    meaning: 当前阶段失败，但失败原因仍属于受控可修复问题
+  "NO-GO":
+    can_advance: false
+    scope: governance
+    meaning: 组织上不支持继续推进当前方案
+  GO:
+    can_advance: true
+    scope: governance
+    meaning: 组织上批准进入下一治理或运行阶段
+  "CHILD LINEAGE":
+    can_advance: false
+    scope: governance
+    meaning: 需要以新谱系承接，不允许在原线静默改题
+
+global_rules:
+  - id: companion_field_docs_required
+    description: 每个阶段只要生成 machine-readable artifact，就必须同时生成 artifact_catalog 和 companion field documentation
+  - id: no_gate_doc_no_completion
+    description: 没有阶段 gate 文档，不得视为正式完成该阶段
+  - id: formal_before_audit
+    description: reviewer 和 agent 必须先判 formal gate，再记录 audit-only 发现
+  - id: frozen_inputs_only
+    description: 下游阶段只能消费上游已冻结 artifact，不得临时重算另一套同名结果
+  - id: rollback_must_be_explicit
+    description: 任何 PASS FOR RETRY 或 RETRY 都必须写清 rollback_stage 和 allowed_modifications
+  - id: child_lineage_for_material_change
+    description: 若研究主问题、机制定义、正式 universe 或正式时间切分发生实质变化，必须开 child lineage
+
+review_sequence:
+  - identify_current_stage
+  - load_stage_contract_from_yaml
+  - verify_required_inputs
+  - verify_required_outputs
+  - evaluate_formal_gate
+  - record_audit_only_findings
+  - issue_verdict_using_status_vocabulary
+  - record_rollback_and_downstream_permissions
+
+stage_schema:
+  required_top_level_fields:
+    - stage_id
+    - stage_name
+    - purpose
+    - core_question
+    - allowed_previous_stages
+    - required_inputs
+    - required_outputs
+    - machine_artifacts
+    - human_artifacts
+    - formal_gate
+    - audit_only
+    - verdict_rules
+    - rollback_rules
+    - downstream_permissions
+    - notes
+
+stages:
+  mandate:
+    stage_id: mandate
+    stage_name: Mandate
+    purpose: 冻结研究主问题、时间边界、universe、字段层级和参数边界
+    core_question: 这条研究线到底研究什么、明确不研究什么，以及后续阶段允许消费什么
+    allowed_previous_stages: []
+    required_inputs:
+      - 研究主题说明或专题草稿
+      - 候选 universe 与时间边界提案
+      - 字段族、公式模板、实现栈和并行计划提案
+    required_outputs:
+      - mandate.md
+      - research_scope.md
+      - time_split.json
+      - parameter_grid.yaml
+      - run_config.toml
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - time_split.json
+      - parameter_grid.yaml
+      - run_config.toml
+    human_artifacts:
+      - mandate.md
+      - research_scope.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 研究主问题与明确禁止事项已冻结
+        - 正式时间窗、切分方式、time label 和 no-lookahead 约定已冻结
+        - 正式 universe、准入口径和字段分层已冻结
+        - 参数字典、公式模板、实现栈、parallelization_plan 和 non_rust_exceptions 已写清
+        - 后续 crowding distinctiveness review 的比较基准，以及 capacity review 的流动性代理、参与率边界和自冲击假设边界已写清
+        - required_outputs 全部存在，且 machine-readable artifact 都能追到 companion field documentation
+      fail_any_of:
+        - required_outputs 缺失
+        - 时间窗、universe 或无前视边界未冻结
+        - 只有裸字段名或裸参数名，没有字段解释和参数字典
+        - 研究问题被后验结果倒逼修改但没有重置 mandate
+    audit_only:
+      - 专题样板写法是否足够清楚
+      - 字段命名是否优雅或便于新成员阅读
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 不建议常态使用
+          - 仅当 mandate 内容已冻结且允许阶段内补充非阻断性说明时使用
+      "PASS FOR RETRY":
+        when_any_of:
+          - gate 逻辑已明确，但存在可修复的文档或 artifact 缺口，且 rollback_stage 仍为 mandate
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且问题仍可在当前研究主问题下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 研究主问题发生实质变化
+          - 正式 universe 或正式时间切分需要重定义
+          - 允许信号机制族发生实质变化
+    rollback_rules:
+      default_rollback_stage: mandate
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正字段解释、参数字典和目录契约
+      must_open_child_lineage_when:
+        - 主问题改变
+        - universe 改变
+        - time split 改变
+        - 机制模板改变
+    downstream_permissions:
+      may_advance_to:
+        - data_ready
+      frozen_outputs_consumable_by_next_stage:
+        - time_split.json
+        - parameter_grid.yaml
+        - run_config.toml
+      next_stage_must_not_consume:
+        - test results
+        - backtest results
+        - holdout results
+    notes:
+      - mandate 负责冻结问题，不负责宣布收益结论或交易规则
+      - mandate 只冻结 crowding 和 capacity 的审计口径，不提前宣布容量结论
+
+  data_ready:
+    stage_id: data_ready
+    stage_name: Data Ready
+    purpose: 产出共享、可审计、strategy-agnostic 的 Layer 0 数据基础层
+    core_question: 原始数据能否被转换成统一时间栅格、统一质量语义和可复用统计缓存
+    allowed_previous_stages:
+      - mandate
+    required_inputs:
+      - mandate frozen outputs
+      - 原始市场数据或共享上游数据源
+      - 正式 universe 与时间边界
+    required_outputs:
+      - aligned_bars/
+      - rolling_stats/
+      - qc_report.parquet
+      - dataset_manifest.json
+      - validation_report.md
+      - data_contract.md
+      - dedupe_rule.md
+      - universe_summary.md
+      - universe_exclusions.csv
+      - universe_exclusions.md
+      - data_ready_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - aligned_bars/
+      - rolling_stats/
+      - qc_report.parquet
+      - dataset_manifest.json
+      - universe_exclusions.csv
+    human_artifacts:
+      - validation_report.md
+      - data_contract.md
+      - dedupe_rule.md
+      - universe_summary.md
+      - universe_exclusions.md
+      - data_ready_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 基准腿覆盖审计已完成
+        - dense 时间轴已生成，正式对象时间轴长度一致
+        - 缺失、坏价、stale 和 outlier 语义已显式保留
+        - qc_report 与 dataset_manifest 已生成
+        - 排除项和准入结果已显式记录
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 没有统一时间栅格
+        - 混用 open_time 和 close_time 作为主键
+        - 静默吞掉缺失或静默 forward-fill
+        - 基准腿覆盖或 universe 审计无法解释
+    audit_only:
+      - 个别对象质量偏弱但未触发正式排除
+      - rolling cache 选择是否足够经济
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - formal_gate.pass_all_of 基本满足
+          - 存在显式 reservations，例如保留了边缘质量对象或个别 cache 缺口不阻断下一阶段
+      "PASS FOR RETRY":
+        when_any_of:
+          - processing 或 validation 结果可通过当前阶段修复后重跑
+      RETRY:
+        when_any_of:
+          - 时间对齐、QC 或 dataset manifest 存在可修复缺陷
+      "CHILD LINEAGE":
+        when_any_of:
+          - 正式时间窗或 universe 需要实质改写
+    rollback_rules:
+      default_rollback_stage: data_ready
+      allowed_modifications:
+        - 数据抽取
+        - 时间对齐
+        - QC 规则
+        - admissibility 审计
+      must_open_child_lineage_when:
+        - 想修改 mandate 冻结的时间边界
+        - 想修改 mandate 冻结的 universe 口径
+    downstream_permissions:
+      may_advance_to:
+        - signal_ready
+      frozen_outputs_consumable_by_next_stage:
+        - aligned_bars/
+        - rolling_stats/
+        - qc_report.parquet
+        - dataset_manifest.json
+        - universe_fixed.csv
+      next_stage_must_not_reestimate:
+        - 正式时间边界
+        - universe admission rules
+    notes:
+      - Data Ready 只做共享基础层，不嵌入 thesis-specific 标签
+
+  signal_ready:
+    stage_id: signal_ready
+    stage_name: Signal Ready
+    purpose: 把 mandate 已冻结的表达式模板实例化成统一 schema 的正式信号层
+    core_question: 后续 Train 和 Test 到底在消费哪个字段、哪个 param_id、哪个时间语义
+    allowed_previous_stages:
+      - data_ready
+    required_inputs:
+      - mandate frozen outputs
+      - data_ready frozen outputs
+      - 已冻结的 signal expression template
+    required_outputs:
+      - param_manifest.csv
+      - params/
+      - signal_coverage.csv
+      - signal_coverage.md
+      - signal_coverage_summary.md
+      - signal_contract.md
+      - signal_fields_contract.md
+      - signal_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - param_manifest.csv
+      - params/
+      - signal_coverage.csv
+    human_artifacts:
+      - signal_coverage.md
+      - signal_coverage_summary.md
+      - signal_contract.md
+      - signal_fields_contract.md
+      - signal_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 已显式物化 baseline 或 declared search_batch 的全部 param_id
+        - param_id 身份清晰且有 param_manifest
+        - 正式 timeseries schema、参数元数据和时间语义已冻结
+        - signal gate 文档已生成
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - baseline 或 required param_id 物化失败
+        - failed symbols 或 failed params 大于零
+        - 下游才发现 signal contract 缺失或字段越层
+        - 在 Train 阶段才首次引入未曾在 Signal Ready 物化过的 param_id
+    audit_only:
+      - finite coverage、low_sample_rate、pair_missing_rate 等质量摘要
+      - search batch 中非阻断性的稀疏参数组
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - failed symbols 为零
+          - failed params 为零
+          - skipped params 为零
+      "CONDITIONAL PASS":
+        when_all_of:
+          - baseline 或 required scope 已完整可用
+          - 存在明确 reservations，例如 skipped params、退化参数组或覆盖率告警
+      "PASS FOR RETRY":
+        when_any_of:
+          - required artifacts 基本齐全，但物化范围或 gate 文档需要当前阶段受控补跑
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发且问题仍属于实现或落盘缺陷
+      "CHILD LINEAGE":
+        when_any_of:
+          - 想改变主信号机制定义
+          - 想新增 mandate 未允许的参数维度
+    rollback_rules:
+      default_rollback_stage: signal_ready
+      allowed_modifications:
+        - signal 实现
+        - 字段命名
+        - 标签对齐
+        - companion docs
+      must_open_child_lineage_when:
+        - 改变信号机制模板
+        - 改变字段分层边界
+    downstream_permissions:
+      may_advance_to:
+        - train_calibration
+      frozen_outputs_consumable_by_next_stage:
+        - param_manifest.csv
+        - params/
+        - signal_coverage.csv
+        - signal_fields_contract.md
+      next_stage_must_not_reestimate:
+        - signal definition
+        - param identity space
+    notes:
+      - Signal Ready 负责实例化 signal layer，不负责白名单、收益结论或交易规则
+
+  train_calibration:
+    stage_id: train_calibration
+    stage_name: Train Calibration
+    purpose: 在训练窗内冻结阈值、regime 切点、质量过滤和参数台账
+    core_question: 后续 Test 应该拿哪把已经冻结的尺子去验证，而不是边验证边重估
+    allowed_previous_stages:
+      - signal_ready
+    required_inputs:
+      - signal_ready frozen outputs
+      - mandate time split and parameter grid
+      - 训练窗定义
+    required_outputs:
+      - train_thresholds.json
+      - train_quality.parquet
+      - train_param_ledger.csv
+      - train_rejects.csv
+      - train_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - train_thresholds.json
+      - train_quality.parquet
+      - train_param_ledger.csv
+      - train_rejects.csv
+    human_artifacts:
+      - train_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 所有训练阈值、regime 切点和辅助条件切点仅使用训练窗估计
+        - train_param_ledger 和 train_rejects 都已保存
+        - 保留与拒绝都有明确原因
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 用 test 或 backtest 结果回写 train 阈值
+        - 只保留通过参数，不保留完整搜索轨迹
+        - 没有冻结阈值就进入 Test
+    audit_only:
+      - 参数空间是否仍可继续 coarse-to-fine 收窄
+      - 某些辅助条件切点是否需要在 child lineage 单独升级
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 冻结尺子已足够进入 Test
+          - 仍存在非阻断性 reservations，例如边缘参数仍待后续审计
+      "PASS FOR RETRY":
+        when_any_of:
+          - train 内部冻结逻辑或 ledger 可在当前阶段受控修复
+      RETRY:
+        when_any_of:
+          - 训练阈值、quality 过滤或 ledger 存在可修复缺陷
+      "CHILD LINEAGE":
+        when_any_of:
+          - 想把新的辅助条件变量升级成正式机制而该变量未在上游冻结
+    rollback_rules:
+      default_rollback_stage: train_calibration
+      allowed_modifications:
+        - train threshold estimation
+        - quality filters
+        - ledger generation
+      must_open_child_lineage_when:
+        - 借用 test 或 backtest 信息改 train 尺子
+        - 引入新的正式机制变量
+    downstream_permissions:
+      may_advance_to:
+        - test_evidence
+      frozen_outputs_consumable_by_next_stage:
+        - train_thresholds.json
+        - train_param_ledger.csv
+        - train_rejects.csv
+      next_stage_must_not_reestimate:
+        - frozen thresholds
+        - frozen regime cuts
+        - rejected param_id or symbol-param combinations
+    notes:
+      - Train Calibration 负责定尺子，不负责宣布最终赢家
+
+  test_evidence:
+    stage_id: test_evidence
+    stage_name: Test Evidence
+    purpose: 用独立测试窗验证冻结后的统计结构，并冻结白名单与 best_h
+    core_question: 冻结后的结构是否在独立样本中仍然成立，且哪些对象允许进入 Backtest
+    allowed_previous_stages:
+      - train_calibration
+    required_inputs:
+      - signal_ready frozen timeseries
+      - train_thresholds.json
+      - train_param_ledger.csv
+      - data_ready aligned bars
+      - mandate time_split.json
+    required_outputs:
+      - report_by_h.parquet
+      - symbol_summary.parquet
+      - admissibility_report.parquet
+      - test_gate_table.csv
+      - crowding_review.md
+      - selected_symbols_test.csv
+      - selected_symbols_test.parquet
+      - frozen_spec.json
+      - test_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - report_by_h.parquet
+      - symbol_summary.parquet
+      - admissibility_report.parquet
+      - test_gate_table.csv
+      - selected_symbols_test.csv
+      - selected_symbols_test.parquet
+      - frozen_spec.json
+    human_artifacts:
+      - crowding_review.md
+      - test_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 仅使用 Train 已冻结的 thresholds、regime cuts 和保留对象
+        - formal gate 与 audit gate 已显式分开记录
+        - selected_symbols_test 与 best_h 已冻结
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 在 test 窗里重估 train 阈值
+        - 看了 backtest 再回写 test 白名单但没有 retry 记账
+        - 没有 frozen_spec 就把对象交给 Backtest
+    audit_only:
+      - HAC t 值
+      - monotonic score
+      - 条件分层分析
+      - crowding overlap 与 factor distinctiveness 审计
+      - 高低波与下跌切片
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 评估对象非空
+          - 放行对象与 best_h 已冻结且无保留事项
+      "CONDITIONAL PASS":
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 允许进入 Backtest 的候选非空
+          - 仍存在明确 reservations，例如 single-param continuation 或边缘对象被拒绝
+      "PASS FOR RETRY":
+        when_any_of:
+          - 当前阶段证据逻辑可在不改变上游冻结尺子的前提下受控重跑
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发且仍属于实现或落盘缺陷
+      "CHILD LINEAGE":
+        when_any_of:
+          - 想把 audit-only 的条件层升级成新的正式 gate 或 regime 机制
+          - 需要新机制承接而不是复用当前 frozen spec
+    rollback_rules:
+      default_rollback_stage: test_evidence
+      allowed_modifications:
+        - 统计检验实现
+        - frozen spec 生成
+        - admissibility 聚合
+      must_open_child_lineage_when:
+        - 升级新的辅助条件层为正式机制
+        - 想改变 formal gate 本身
+    downstream_permissions:
+      may_advance_to:
+        - backtest_ready
+      frozen_outputs_consumable_by_next_stage:
+        - selected_symbols_test.csv
+        - selected_symbols_test.parquet
+        - frozen_spec.json
+      next_stage_must_not_reestimate:
+        - whitelist
+        - best_h
+        - formal gate thresholds
+    notes:
+      - Test Evidence 只验证结构，不负责把样本调到最好看
+      - crowding review 默认属于解释证据，不自动等于正式交易 gate
+
+  backtest_ready:
+    stage_id: backtest_ready
+    stage_name: Backtest Ready
+    purpose: 用冻结后的候选集和交易规则验证策略可交易性与正式资金曲线口径
+    core_question: 冻结后的交易规则在独立 OOS 回测中能否成立，且双引擎是否语义一致
+    allowed_previous_stages:
+      - test_evidence
+    required_inputs:
+      - test_evidence frozen_spec.json
+      - selected_symbols_test.csv or selected_symbols_test.parquet
+      - frozen signal fields and best_h
+      - execution, portfolio and risk overlay rules
+    required_outputs:
+      - engine_compare.csv
+      - vectorbt/
+      - backtrader/
+      - strategy_combo_ledger.csv
+      - capacity_review.md
+      - backtest_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - engine_compare.csv
+      - vectorbt/
+      - backtrader/
+      - strategy_combo_ledger.csv
+    human_artifacts:
+      - capacity_review.md
+      - backtest_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 仅使用上游冻结的 whitelist、best_h 和交易规则身份
+        - vectorbt 与 backtrader 双引擎正式回测已完成
+        - 收益、Sharpe、回撤使用正式资金记账口径
+        - capacity_review 已写清 deployable capital、主要容量瓶颈、自冲击边界和成本吞噬位置
+        - 若触发 abnormal performance sanity check，则复核已完成且无阻断性问题
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 只跑单一回测引擎就宣布 Backtest Ready
+        - 在 Backtest 内重新选币或重估 best_h
+        - 成本、容量或资金记账口径无法解释
+        - 双引擎存在语义冲突
+    audit_only:
+      - 容量假设的进一步补强
+      - 更重压力测试
+      - 主备方案收敛前的非阻断性 reservations
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - 至少一套策略组合通过正式收益、回撤、换手、容量和风险约束
+          - 双引擎 semantic_gap 为 false
+          - 若触发异常收益复核，则其 blocking issue 已关闭
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 至少一套策略组合通过 formal gate
+          - 双引擎无语义冲突
+          - 仍存在非阻断性 reservations，例如容量假设或主备双轨未完全收敛
+      "PASS FOR RETRY":
+        when_any_of:
+          - 执行规则过宽、成本模型或引擎对照可在当前阶段受控重跑
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发且问题仍可通过受控重跑修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 需要改变核心交易机制而不是调整已声明的 execution or portfolio layer
+    rollback_rules:
+      default_rollback_stage: backtest_ready
+      allowed_modifications:
+        - execution policy
+        - portfolio policy
+        - risk overlay
+        - cost model implementation
+      must_open_child_lineage_when:
+        - 想重写 alpha 机制
+        - 想回头改 train thresholds 或 test whitelist
+    downstream_permissions:
+      may_advance_to:
+        - holdout_validation
+      frozen_outputs_consumable_by_next_stage:
+        - selected strategy combo
+        - backtest frozen config
+        - engine_compare.csv
+      next_stage_must_not_reestimate:
+        - whitelist
+        - best_h
+        - core signal thresholds
+    notes:
+      - Backtest Ready 负责验证交易规则，不负责重新定义上游研究问题
+      - crowding distinctiveness 的解释工作不应在 Backtest 阶段回写成上游结构结论
+
+  holdout_validation:
+    stage_id: holdout_validation
+    stage_name: Holdout Validation
+    purpose: 用最终未参与设计的窗口验证冻结方案是否没有翻向
+    core_question: 最终冻结方案在 holdout 窗口中是否仍然保持方向与结构稳定
+    allowed_previous_stages:
+      - backtest_ready
+    required_inputs:
+      - backtest frozen config
+      - selected strategy combo
+      - holdout window definition from mandate time split
+    required_outputs:
+      - holdout_run_manifest.json
+      - holdout_backtest_compare.csv
+      - holdout_gate_decision.md
+      - holdout window result files
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - holdout_run_manifest.json
+      - holdout_backtest_compare.csv
+      - holdout window result files
+    human_artifacts:
+      - holdout_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 仅复用 Backtest 冻结方案，不改参数、不改白名单、不改交易规则
+        - 已生成单窗口和合并窗口结果
+        - 结果方向未发生无法解释的翻转
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 用 holdout 调参
+        - 用 holdout 改白名单
+        - 把 holdout 并回 test 或 backtest 当更多样本
+    audit_only:
+      - 低触发、低样本或无交易是否属于正常现象
+      - 细颗粒度漂移解释
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 未出现明显方向翻转或结构崩塌
+      "CONDITIONAL PASS":
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 存在可解释但需记录的漂移或稀疏问题
+      "PASS FOR RETRY":
+        when_any_of:
+          - holdout 执行层或数据层可在不改冻结方案的前提下受控重跑
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发且问题仍属执行或实现缺陷
+      "NO-GO":
+        when_any_of:
+          - 方向明显翻转
+          - 核心结构崩塌且无法用执行或数据问题解释
+      "CHILD LINEAGE":
+        when_any_of:
+          - 需要研究新的机制或新的过滤层来解释 holdout 失效
+    rollback_rules:
+      default_rollback_stage: holdout_validation
+      allowed_modifications:
+        - holdout execution rerun
+        - holdout reporting
+      must_open_child_lineage_when:
+        - 想基于 holdout 结果改正式规则
+    downstream_permissions:
+      may_advance_to:
+        - promotion_decision
+      frozen_outputs_consumable_by_next_stage:
+        - holdout_gate_decision.md
+        - holdout_backtest_compare.csv
+      next_stage_must_not_reestimate:
+        - any research parameter
+        - whitelist
+        - best_h
+    notes:
+      - Holdout 的价值来自它未参与前面定义；一旦用于调参，就失去最终验证意义
+
+  promotion_decision:
+    stage_id: promotion_decision
+    stage_name: Promotion Decision
+    purpose: 形成组织层正式结论，决定是推进、终止、重试还是开子线
+    core_question: 组织上是否允许这条研究线进入下一治理或运行阶段
+    allowed_previous_stages:
+      - holdout_validation
+    required_inputs:
+      - 全部上游阶段 gate 文档
+      - holdout 结论
+      - retry records and negative results
+    required_outputs:
+      - final_research_conclusion.md
+      - dashboard_index.md
+      - retry_record.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - retry_record.md
+    human_artifacts:
+      - final_research_conclusion.md
+      - dashboard_index.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 已形成正式组织结论
+        - primary line 与 child lineage 关系已写清
+        - 正负结果、回退和 retry 轨迹都可追溯
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 只说看起来还不错而不给正式结论
+        - 只保留最终通过版本，不保留失败路径
+        - 上游异常收益复核未关闭却直接给 GO
+    audit_only:
+      - dashboard 呈现是否足够清晰
+      - 是否需要补外部 reviewer
+    verdict_rules:
+      GO:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 组织上批准进入 shadow_admission 或等价下一治理阶段
+      "NO-GO":
+        when_any_of:
+          - 组织上不支持继续推进当前方案
+          - 上游证据不足以支撑下一治理阶段
+      RETRY:
+        when_any_of:
+          - 允许受控回退后继续，但当前还不足以给 GO 或 NO-GO
+      "CHILD LINEAGE":
+        when_any_of:
+          - 候选增益来自新条件、新机制或新规则，且不应直接回写主线
+    rollback_rules:
+      default_rollback_stage: promotion_decision
+      allowed_modifications:
+        - 结论写法
+        - dashboard 汇总
+        - retry 记账
+      must_open_child_lineage_when:
+        - 候选方案代表新机制而不是主线同口径延伸
+    downstream_permissions:
+      may_advance_to:
+        - shadow_admission
+      frozen_outputs_consumable_by_next_stage:
+        - final_research_conclusion.md
+        - primary line decision
+      next_stage_must_not_reestimate:
+        - research evidence
+        - holdout verdict
+    notes:
+      - Promotion Decision 是治理动作，不是研究员个人感受
+
+  shadow_admission:
+    stage_id: shadow_admission
+    stage_name: Shadow Admission
+    purpose: 判断研究线是否具备进入 shadow 的治理条件
+    core_question: 在研究证据之外，执行语义、成本、容量、监控和回滚条件是否足以支撑 shadow
+    allowed_previous_stages:
+      - promotion_decision
+    required_inputs:
+      - promotion GO conclusion
+      - dual-engine backtest evidence
+      - backtest capacity_review.md
+      - cost and capacity review
+      - monitoring and rollback proposal
+    required_outputs:
+      - shadow_gate_decision.md
+      - monitoring_spec.md
+      - rollback_playbook.md
+      - shadow_run_manifest.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - shadow_run_manifest.json
+    human_artifacts:
+      - shadow_gate_decision.md
+      - monitoring_spec.md
+      - rollback_playbook.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 双引擎结果一致性已复核
+        - 成本与容量假设已复核
+        - Backtest 阶段的 capacity review 已映射成 shadow 期间的容量监控与降额/回滚条件
+        - 监控指标与回滚条件已冻结
+        - shadow 期间异常处理规则已写清
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 没有监控指标就进入 shadow
+        - 没有回滚条件就进入 shadow
+        - promotion 还未正式 GO
+    audit_only:
+      - shadow 期间需要额外观察的软风险
+      - 外部依赖可用性
+    verdict_rules:
+      GO:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "NO-GO":
+        when_any_of:
+          - formal_gate.fail_any_of 被触发且短期不可修复
+      "PASS FOR RETRY":
+        when_any_of:
+          - shadow package 接近完整，但监控或回滚文档仍需受控补齐
+      "CHILD LINEAGE":
+        when_any_of:
+          - 发现需要新机制而不是 shadow 治理补强
+    rollback_rules:
+      default_rollback_stage: shadow_admission
+      allowed_modifications:
+        - 监控指标
+        - 回滚条件
+        - shadow 运行手册
+      must_open_child_lineage_when:
+        - 想改变主机制或交易规则本体
+    downstream_permissions:
+      may_advance_to:
+        - canary_production
+      frozen_outputs_consumable_by_next_stage:
+        - shadow_gate_decision.md
+        - monitoring_spec.md
+        - rollback_playbook.md
+      next_stage_must_not_reestimate:
+        - research evidence
+        - backtest configuration
+    notes:
+      - Shadow Admission 不是投产批准，而是更高一级的准入治理
+
+  canary_production:
+    stage_id: canary_production
+    stage_name: Canary / Production
+    purpose: 在小规模真实环境与最终投产审批下验证策略是否仍然可接受
+    core_question: 这条研究线是否具备进入 canary 或 production 的最终治理条件
+    allowed_previous_stages:
+      - shadow_admission
+    required_inputs:
+      - shadow admission GO conclusion
+      - monitoring and rollback package
+      - production ownership and escalation plan
+    required_outputs:
+      - canary_gate_decision.md
+      - production_runbook.md
+      - production_rollback_playbook.md
+      - canary_metrics_spec.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - canary_metrics_spec.md
+    human_artifacts:
+      - canary_gate_decision.md
+      - production_runbook.md
+      - production_rollback_playbook.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 最终运行边界、owner、升级路径和 kill switch 已明确
+        - canary 监控项和生产回滚方案已冻结
+        - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+      fail_any_of:
+        - 没有 kill switch 或 rollback playbook
+        - 没有生产 owner 和升级路径
+        - 试图跳过 shadow 直接进入 production
+    audit_only:
+      - canary 规模和节奏是否仍需更保守
+      - 生产监控阈值是否需要额外观察期
+    verdict_rules:
+      GO:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - 组织上批准进入 canary 或 production
+      "NO-GO":
+        when_any_of:
+          - formal_gate.fail_any_of 被触发
+          - 治理层不批准进入真实环境
+      "PASS FOR RETRY":
+        when_any_of:
+          - canary package 基本完成，但仍需在当前治理层补齐非阻断性文档或演练
+      "CHILD LINEAGE":
+        when_any_of:
+          - 需要新谱系承接新的运行机制或产品形态
+    rollback_rules:
+      default_rollback_stage: canary_production
+      allowed_modifications:
+        - canary rollout plan
+        - monitoring thresholds
+        - escalation and rollback runbook
+      must_open_child_lineage_when:
+        - 想以新的产品或执行机制承接当前研究线
+    downstream_permissions:
+      may_advance_to: []
+      frozen_outputs_consumable_by_next_stage:
+        - canary_gate_decision.md
+        - production_runbook.md
+        - production_rollback_playbook.md
+      next_stage_must_not_reestimate:
+        - any upstream research-stage evidence
+    notes:
+      - Canary / Production 已超出研究本身，属于更高等级工程与风控治理

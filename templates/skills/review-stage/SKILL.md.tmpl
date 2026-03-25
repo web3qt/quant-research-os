@@ -1,0 +1,66 @@
+---
+name: {{SKILL_NAME}}
+description: Codex review skill for {{STAGE_NAME}} stage verification.
+---
+
+# {{STAGE_NAME}} Review
+
+## Purpose
+
+{{STAGE_PURPOSE}}
+
+## Shared Inputs
+
+- `docs/gates/workflow_stage_gates.yaml`
+- `docs/check-sop/review_checklist_master.yaml`
+- `artifact_catalog.md`
+- `field_dictionary.md` or `*_fields.md`
+- `run_manifest.json`
+
+## Required Inputs
+
+{{REQUIRED_INPUTS_BLOCK}}
+
+## Required Outputs
+
+{{REQUIRED_OUTPUTS_BLOCK}}
+
+## Formal Gate
+
+{{FORMAL_GATE_BLOCK}}
+
+## Checklist
+
+{{CHECKLIST_BLOCK}}
+
+## Audit-Only Items
+
+{{AUDIT_ONLY_BLOCK}}
+
+## Closure Artifacts
+
+- `latest_review_pack.yaml`
+- `stage_gate_review.yaml`
+- `stage_completion_certificate.yaml`
+
+## Allowed Verdicts
+
+{{VERDICT_BLOCK}}
+
+## Rollback Rules
+
+{{ROLLBACK_BLOCK}}
+
+## Downstream Permissions
+
+{{DOWNSTREAM_BLOCK}}
+
+## Verdict Flow
+
+1. Confirm current stage
+2. Load the stage contract
+3. Load the stage checklist
+4. Check required inputs and outputs
+5. Evaluate the formal gate first
+6. Record audit-only findings after that
+7. Write closure artifacts
