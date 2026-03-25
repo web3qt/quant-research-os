@@ -129,6 +129,37 @@ def summarize_session_status(
     )
 
 
+def run_research_session(
+    *,
+    outputs_root: Path,
+    lineage_id: str | None = None,
+    raw_idea: str | None = None,
+) -> SessionContext:
+    lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
+    lineage_root.mkdir(parents=True, exist_ok=True)
+
+    artifacts_written: list[str] = []
+    current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "idea_intake":
+        artifacts_written.extend(ensure_intake_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "mandate_author":
+        artifacts_written.extend(build_mandate_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
+    return summarize_session_status(
+        lineage_id=lineage_root.name,
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        artifacts_written=artifacts_written,
+        gate_status=gate_status,
+        next_action=next_action,
+    )
+
+
 def _mandate_outputs_complete(mandate_dir: Path) -> bool:
     return all((mandate_dir / name).exists() for name in MANDATE_REQUIRED_OUTPUTS)
 
@@ -137,3 +168,23 @@ def _mandate_closure_complete(mandate_dir: Path) -> bool:
     if (mandate_dir / "stage_completion_certificate.yaml").exists():
         return True
     return all((mandate_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
+    intake_gate = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
+    if current_stage == "idea_intake":
+        if intake_gate.exists():
+            verdict_text = intake_gate.read_text(encoding="utf-8")
+            if "GO_TO_MANDATE" in verdict_text:
+                return "GO_TO_MANDATE", "Build mandate artifacts"
+            if "DROP" in verdict_text:
+                return "DROP", "Reframe or terminate the idea"
+        return "IN_PROGRESS", "Complete intake artifacts and qualification"
+
+    if current_stage == "mandate_author":
+        return "GO_TO_MANDATE", "Freeze mandate artifacts"
+
+    if current_stage == "mandate_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run mandate review"
+
+    return "REVIEW_COMPLETE", "Stop here until data_ready orchestration exists"
