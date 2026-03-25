@@ -7,6 +7,9 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("tools/review_skillgen/closure_models.py").exists()
     assert Path("tools/review_skillgen/context_inference.py").exists()
     assert Path("tools/review_skillgen/closure_writer.py").exists()
+    assert Path("tools/review_skillgen/review_findings.py").exists()
+    assert Path("tools/review_skillgen/review_engine.py").exists()
+    assert Path("scripts/run_stage_review.py").exists()
 
 
 def test_usage_doc_exists() -> None:

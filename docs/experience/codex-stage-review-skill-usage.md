@@ -44,6 +44,38 @@
 - `Data Ready` 重点看 `dataset_manifest.json`、`qc_report.parquet`、`aligned_bars/`
 - `Signal Ready` 重点看 `param_manifest.csv`、`timeseries/`、`signal_fields_contract.md`
 
+## Reviewer Findings
+
+第一版 review 执行闭环要求在当前 `stage_dir` 下提供：
+
+- `review_findings.yaml`
+
+建议至少包含：
+
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+- `recommended_verdict`
+- `rollback_stage`
+- `allowed_modifications`
+
+自动可判定的硬项由 engine 处理，语义类判断由 reviewer 通过这个文件补充。
+
+## Running The Review Engine
+
+在当前 `outputs/<lineage>/<stage>/` 目录下执行：
+
+```bash
+python scripts/run_stage_review.py
+```
+
+如果不在 stage 目录中，也可以显式传参：
+
+```bash
+python scripts/run_stage_review.py --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
+```
+
 ## Closure Artifacts
 
 review 结束后，skills 统一面向以下 closure artifacts：

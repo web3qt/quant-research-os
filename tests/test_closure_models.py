@@ -38,5 +38,7 @@ def test_allowed_verdicts_include_current_shared_vocabulary() -> None:
         "CONDITIONAL PASS",
         "PASS FOR RETRY",
         "RETRY",
+        "NO-GO",
+        "GO",
         "CHILD LINEAGE",
     }

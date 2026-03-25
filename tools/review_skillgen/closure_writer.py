@@ -33,17 +33,22 @@ def _latest_review_pack(payload: dict[str, Any]) -> dict[str, Any]:
         "stage": payload["stage"],
         "stage_status": payload["stage_status"],
         "final_verdict": payload["final_verdict"],
+        "reviewer_identity": payload.get("reviewer_identity"),
         "review_timestamp_utc": payload["review_timestamp_utc"],
         "blocking_findings": payload["blocking_findings"],
         "reservation_findings": payload["reservation_findings"],
         "info_findings": payload["info_findings"],
         "residual_risks": payload["residual_risks"],
+        "evidence_summary": payload.get("evidence_summary", {}),
     }
 
 
 def _stage_gate_review(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         **_latest_review_pack(payload),
+        "contract_source": payload.get("contract_source"),
+        "checklist_source": payload.get("checklist_source"),
+        "required_outputs_checked": payload.get("required_outputs_checked", {}),
         "rollback_stage": payload.get("rollback_stage"),
         "allowed_modifications": list(payload.get("allowed_modifications", [])),
         "downstream_permissions": list(payload.get("downstream_permissions", [])),

@@ -21,3 +21,5 @@ def test_render_stage_skill_includes_stage_specific_contract() -> None:
     assert "Default rollback stage: mandate" in text
     assert "Audit-only items" in text
     assert "专题样板写法是否足够清楚" in text
+    assert "review_findings.yaml" in text
+    assert "python scripts/run_stage_review.py" in text

@@ -9,6 +9,8 @@ ALLOWED_VERDICTS = {
     "CONDITIONAL PASS",
     "PASS FOR RETRY",
     "RETRY",
+    "NO-GO",
+    "GO",
     "CHILD LINEAGE",
 }
 

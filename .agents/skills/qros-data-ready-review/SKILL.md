@@ -82,6 +82,22 @@ Audit-only items:
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
+## Reviewer Findings File
+
+Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+
+Minimum expected fields:
+
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+- `recommended_verdict`
+- `rollback_stage`
+- `allowed_modifications`
+
+Use reviewer findings for semantic judgment. Let the review engine handle the hard evidence checks and final artifact writing.
+
 ## Allowed Verdicts
 
 - `PASS`: 当前阶段目标已满足，无保留事项
@@ -121,4 +137,6 @@ Audit-only items:
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
 6. Record audit-only findings after that
-7. Write closure artifacts
+7. Save `review_findings.yaml`
+8. Run `python scripts/run_stage_review.py`
+9. Review the generated closure artifacts
