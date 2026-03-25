@@ -1,0 +1,56 @@
+version: "1.0"
+schema_id: "idea-gate-decision-v1"
+title: "Idea Gate Decision Schema"
+purpose: >
+  记录一个 idea 在 qualification 结束后的正式 gate 结论，并决定其是否允许进入 mandate。
+
+allowed_verdicts:
+  - GO_TO_MANDATE
+  - NEEDS_REFRAME
+  - DROP
+
+required_fields:
+  - idea_id
+  - verdict
+  - why
+  - approved_scope
+  - required_reframe_actions
+  - rollback_target
+
+verdict_rules:
+  GO_TO_MANDATE:
+    meaning: "该想法已通过 qualification，可进入 mandate authoring"
+    requires:
+      - "approved_scope 非空"
+      - "counter_hypothesis 已写明"
+      - "kill_criteria 已写明"
+  NEEDS_REFRAME:
+    meaning: "方向可研究，但当前边界或变量定义不足，需重写后再审"
+    requires:
+      - "required_reframe_actions 非空"
+  DROP:
+    meaning: "不值得投入进一步研究预算"
+    requires:
+      - "why 非空"
+
+example:
+  idea_id: "btc_led_alt_transmission_v1"
+  verdict: GO_TO_MANDATE
+  why:
+    - "观察变量可定义"
+    - "存在 plausible mechanism"
+    - "可先做事件研究 baseline"
+  approved_scope:
+    market: "Binance perpetual"
+    universe: "top liquidity alts"
+    bar_size: "5m"
+    horizons:
+      - "15m"
+      - "30m"
+      - "60m"
+    target_task: "event-driven relative return study"
+    excluded_scope:
+      - "low liquidity meme tails"
+      - "cross-exchange propagation"
+  required_reframe_actions: []
+  rollback_target: "00_idea_intake"

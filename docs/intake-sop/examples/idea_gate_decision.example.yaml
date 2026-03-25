@@ -1,0 +1,20 @@
+idea_id: "btc_led_alt_transmission_v1"
+verdict: GO_TO_MANDATE
+why:
+  - "观察变量可定义"
+  - "存在 plausible mechanism"
+  - "可先做事件研究 baseline"
+approved_scope:
+  market: "Binance perpetual"
+  universe: "top liquidity alts"
+  bar_size: "5m"
+  horizons:
+    - "15m"
+    - "30m"
+    - "60m"
+  target_task: "event-driven relative return study"
+  excluded_scope:
+    - "low liquidity meme tails"
+    - "cross-exchange propagation"
+required_reframe_actions: []
+rollback_target: "00_idea_intake"

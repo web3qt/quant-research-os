@@ -1,0 +1,53 @@
+idea_id: "btc_led_alt_transmission_v1"
+reviewer_identity: "codex"
+summary: "验证 BTC 冲击是否会向高流动性 ALT 产生短周期传导"
+dimensions:
+  observability:
+    score: 4
+    evidence:
+      - "可定义 btc_shock_size"
+      - "可定义 alt_future_relative_return"
+    uncertainty:
+      - "事件阈值仍需正式化"
+    kill_reason:
+      - "如果观测变量无法稳定定义，则停止"
+  mechanism_plausibility:
+    score: 4
+    evidence:
+      - "BTC 价格发现主导假设"
+    uncertainty:
+      - "需排除共同 beta 解释"
+    kill_reason:
+      - "若只有同步相关无滞后机制，则停止"
+  tradeability:
+    score: 3
+    evidence:
+      - "存在 15m-60m 潜在滞后窗口"
+    uncertainty:
+      - "成本后空间未知"
+    kill_reason:
+      - "若效应规模明显低于成本，则停止"
+  data_feasibility:
+    score: 4
+    evidence:
+      - "Binance perp 数据可得"
+    uncertainty:
+      - "需确认统一时间栅格"
+    kill_reason:
+      - "若数据版本不稳定，则停止"
+  scoping_clarity:
+    score: 4
+    evidence:
+      - "可限定为 high-liquidity top alts / 5m / 15m-60m"
+    uncertainty:
+      - "是否先做 direction 还是 relative return"
+    kill_reason:
+      - "若范围无法收窄，则停止"
+  distinctiveness:
+    score: 3
+    evidence:
+      - "相对简单 beta 叙事仍需去重"
+    uncertainty:
+      - "可能与市场 beta / lead-lag 研究重合"
+    kill_reason:
+      - "若只是常见 beta 换壳，则停止"
