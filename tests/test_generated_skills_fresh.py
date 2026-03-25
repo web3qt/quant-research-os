@@ -3,11 +3,12 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 from subprocess import run
+import sys
 
 
 def test_generator_dry_run_reports_fresh_outputs() -> None:
     result = run(
-        ["python", "scripts/gen_codex_stage_review_skills.py", "--dry-run"],
+        [sys.executable, "scripts/gen_codex_stage_review_skills.py", "--dry-run"],
         cwd=Path(__file__).resolve().parents[1],
         check=False,
         capture_output=True,
@@ -19,6 +20,10 @@ def test_generator_dry_run_reports_fresh_outputs() -> None:
     assert "qros-mandate-review" in result.stdout
     assert "qros-data-ready-review" in result.stdout
     assert "qros-signal-ready-review" in result.stdout
+    assert "qros-train-freeze-review" in result.stdout
+    assert "qros-test-evidence-review" in result.stdout
+    assert "qros-backtest-ready-review" in result.stdout
+    assert "qros-holdout-validation-review" in result.stdout
     assert "STALE:" not in result.stdout
 
 
@@ -33,7 +38,7 @@ def test_generator_dry_run_reports_stale_outputs_when_generated_file_drifts(tmp_
 
         result = run(
             [
-                "python",
+                sys.executable,
                 "scripts/gen_codex_stage_review_skills.py",
                 "--dry-run",
                 "--output-root",

@@ -1,6 +1,6 @@
 ---
 name: qros-research-session
-description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, data_ready review, signal_ready authoring, and signal_ready review from a single entry point.
+description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, data_ready review, signal_ready authoring, signal_ready review, train_freeze authoring/review, test_evidence authoring/review, backtest_ready authoring/review, and holdout_validation authoring/review from a single entry point.
 ---
 
 # QROS Research Session
@@ -14,7 +14,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review`
+- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review -> train_freeze_confirmation_pending -> train_freeze -> train_freeze review -> test_evidence_confirmation_pending -> test_evidence -> test_evidence review -> backtest_ready_confirmation_pending -> backtest_ready -> backtest_ready review -> holdout_validation_confirmation_pending -> holdout_validation -> holdout_validation review`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -28,10 +28,20 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `data_ready review`
 - `signal_ready`
 - `signal_ready review`
+- `train_freeze`
+- `train_freeze review`
+- `test_evidence`
+- `test_evidence review`
+- `backtest_ready`
+- `backtest_ready review`
+- `holdout_validation`
+- `holdout_validation review`
 
 明确不覆盖：
 
-- 更后续的 train/test/backtest/holdout/shadow
+- `promotion_decision`
+- `shadow_admission`
+- `canary_production`
 
 ## Required Runtime
 
@@ -86,7 +96,55 @@ The user should not need to remember internal commands. Runtime commands are bac
 38. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
 39. When signal_ready artifacts are ready, move into signal_ready review
 40. Reuse the same gate discipline as `qros-signal-ready-review`
-41. Stop after `signal_ready review`; do not silently enter `train_calibration`
+41. After `signal_ready review` closure, enter `train_freeze_confirmation_pending`
+42. Confirm `window_contract`
+43. Confirm `threshold_contract`
+44. Confirm `quality_filters`
+45. Confirm `param_governance`
+46. Confirm `delivery_contract`
+47. Show one final train_freeze summary
+48. Ask the user one explicit question: `是否按以上内容冻结 train_freeze？`
+49. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TRAIN_FREEZE` and freeze train artifacts
+50. Drive train_freeze completion with the same discipline as `qros-train-freeze-author`
+51. When train_freeze artifacts are ready, move into train_freeze review
+52. Reuse the same gate discipline as `qros-train-freeze-review`
+53. After `train_freeze review` closure, enter `test_evidence_confirmation_pending`
+54. Confirm `window_contract`
+55. Confirm `formal_gate_contract`
+56. Confirm `admissibility_contract`
+57. Confirm `audit_contract`
+58. Confirm `delivery_contract`
+59. Show one final test_evidence summary
+60. Ask the user one explicit question: `是否按以上内容冻结 test_evidence？`
+61. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TEST_EVIDENCE` and freeze test_evidence artifacts
+62. Drive test_evidence completion with the same discipline as `qros-test-evidence-author`
+63. When test_evidence artifacts are ready, move into test_evidence review
+64. Reuse the same gate discipline as `qros-test-evidence-review`
+65. After `test_evidence review` closure, enter `backtest_ready_confirmation_pending`
+66. Confirm `execution_policy`
+67. Confirm `portfolio_policy`
+68. Confirm `risk_overlay`
+69. Confirm `engine_contract`
+70. Confirm `delivery_contract`
+71. Show one final backtest_ready summary
+72. Ask the user one explicit question: `是否按以上内容冻结 backtest_ready？`
+73. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_BACKTEST_READY` and freeze backtest_ready artifacts
+74. Drive backtest_ready completion with the same discipline as `qros-backtest-ready-author`
+75. When backtest_ready artifacts are ready, move into backtest_ready review
+76. Reuse the same gate discipline as `qros-backtest-ready-review`
+77. After `backtest_ready review` closure, enter `holdout_validation_confirmation_pending`
+78. Confirm `window_contract`
+79. Confirm `reuse_contract`
+80. Confirm `drift_audit`
+81. Confirm `failure_governance`
+82. Confirm `delivery_contract`
+83. Show one final holdout_validation summary
+84. Ask the user one explicit question: `是否按以上内容冻结 holdout_validation？`
+85. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_HOLDOUT_VALIDATION` and freeze holdout_validation artifacts
+86. Drive holdout_validation completion with the same discipline as `qros-holdout-validation-author`
+87. When holdout_validation artifacts are ready, move into holdout_validation review
+88. Reuse the same gate discipline as `qros-holdout-validation-review`
+89. Stop after `holdout_validation review`; do not silently enter `promotion_decision`
 
 ## Auto vs Ask
 
@@ -140,6 +198,54 @@ When the stage is `signal_ready_confirmation_pending`, the agent must ask explic
 
 Do not skip this question. Do not imply the transition already happened.
 
+When the stage is `train_freeze_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `threshold_contract` 这一组冻结什么？
+- `quality_filters` 这一组冻结什么？
+- `param_governance` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 train_freeze？`
+
+Do not skip this question. Do not imply the transition already happened.
+
+When the stage is `test_evidence_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `formal_gate_contract` 这一组冻结什么？
+- `admissibility_contract` 这一组冻结什么？
+- `audit_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 test_evidence？`
+
+Do not skip this question. Do not imply the transition already happened.
+
+When the stage is `backtest_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `execution_policy` 这一组冻结什么？
+- `portfolio_policy` 这一组冻结什么？
+- `risk_overlay` 这一组冻结什么？
+- `engine_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 backtest_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+
+When the stage is `holdout_validation_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `reuse_contract` 这一组冻结什么？
+- `drift_audit` 这一组冻结什么？
+- `failure_governance` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 holdout_validation？`
+
+Do not skip this question. Do not imply the transition already happened.
+
 ## State Source Of Truth
 
 Use disk artifacts as the primary state:
@@ -148,9 +254,17 @@ Use disk artifacts as the primary state:
 - `outputs/<lineage>/01_mandate/`
 - `outputs/<lineage>/02_data_ready/`
 - `outputs/<lineage>/03_signal_ready/`
+- `outputs/<lineage>/04_train_freeze/`
+- `outputs/<lineage>/05_test_evidence/`
+- `outputs/<lineage>/06_backtest/`
+- `outputs/<lineage>/07_holdout/`
 - mandate review closure artifacts
 - data_ready review closure artifacts
 - signal_ready review closure artifacts
+- train_freeze review closure artifacts
+- test_evidence review closure artifacts
+- backtest_ready review closure artifacts
+- holdout_validation review closure artifacts
 
 Do not rely on chat history alone to determine progress.
 
@@ -176,7 +290,14 @@ After each meaningful step, report:
 - Do not bypass mandate review closure
 - Do not bypass data_ready review closure
 - Do not bypass signal_ready review closure
-- Do not claim `train_calibration` is unlocked in v1
+- Do not bypass train_freeze transition approval
+- Do not bypass train_freeze review closure
+- Do not bypass test_evidence transition approval
+- Do not bypass test_evidence review closure
+- Do not bypass backtest_ready transition approval
+- Do not bypass backtest_ready review closure
+- Do not bypass holdout_validation transition approval
+- Do not bypass holdout_validation review closure
 - Do not require the user to type backend flags or internal runtime commands during the primary chat workflow
 
 ## Internal Discipline Sources
@@ -190,3 +311,11 @@ When writing or reviewing content, follow the same contracts as:
 - `qros-data-ready-review`
 - `qros-signal-ready-author`
 - `qros-signal-ready-review`
+- `qros-train-freeze-author`
+- `qros-train-freeze-review`
+- `qros-test-evidence-author`
+- `qros-test-evidence-review`
+- `qros-backtest-ready-author`
+- `qros-backtest-ready-review`
+- `qros-holdout-validation-author`
+- `qros-holdout-validation-review`

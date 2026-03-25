@@ -17,6 +17,10 @@ FIRST_WAVE_SKILLS = {
     "mandate": "qros-mandate-review",
     "data_ready": "qros-data-ready-review",
     "signal_ready": "qros-signal-ready-review",
+    "train_calibration": "qros-train-freeze-review",
+    "test_evidence": "qros-test-evidence-review",
+    "backtest_ready": "qros-backtest-ready-review",
+    "holdout_validation": "qros-holdout-validation-review",
 }
 
 

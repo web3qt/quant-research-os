@@ -1,5 +1,6 @@
 from pathlib import Path
 from subprocess import run
+import sys
 
 import yaml
 
@@ -34,7 +35,7 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     script_path = repo_root / "scripts" / "run_stage_review.py"
 
     result = run(
-        ["python", str(script_path)],
+        [sys.executable, str(script_path)],
         cwd=stage_dir,
         check=False,
         capture_output=True,
@@ -53,7 +54,7 @@ def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) 
 
     result = run(
         [
-            "python",
+            sys.executable,
             str(script_path),
             "--stage-dir",
             str(stage_dir),

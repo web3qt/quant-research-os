@@ -27,6 +27,30 @@ from tools.signal_ready_runtime import (
     build_signal_ready_from_data_ready,
     scaffold_signal_ready,
 )
+from tools.backtest_runtime import (
+    BACKTEST_READY_DRAFT_FILE,
+    BACKTEST_READY_GROUP_ORDER,
+    build_backtest_ready_from_test_evidence,
+    scaffold_backtest_ready,
+)
+from tools.holdout_runtime import (
+    HOLDOUT_VALIDATION_DRAFT_FILE,
+    HOLDOUT_VALIDATION_GROUP_ORDER,
+    build_holdout_validation_from_backtest,
+    scaffold_holdout_validation,
+)
+from tools.test_evidence_runtime import (
+    TEST_EVIDENCE_DRAFT_FILE,
+    TEST_EVIDENCE_GROUP_ORDER,
+    build_test_evidence_from_train_freeze,
+    scaffold_test_evidence,
+)
+from tools.train_runtime import (
+    TRAIN_FREEZE_DRAFT_FILE,
+    TRAIN_FREEZE_GROUP_ORDER,
+    build_train_freeze_from_signal_ready,
+    scaffold_train_freeze,
+)
 
 
 SessionStage = Literal[
@@ -40,11 +64,27 @@ SessionStage = Literal[
     "signal_ready_confirmation_pending",
     "signal_ready_author",
     "signal_ready_review",
-    "signal_ready_review_complete",
+    "train_freeze_confirmation_pending",
+    "train_freeze_author",
+    "train_freeze_review",
+    "test_evidence_confirmation_pending",
+    "test_evidence_author",
+    "test_evidence_review",
+    "backtest_ready_confirmation_pending",
+    "backtest_ready_author",
+    "backtest_ready_review",
+    "holdout_validation_confirmation_pending",
+    "holdout_validation_author",
+    "holdout_validation_review",
+    "holdout_validation_review_complete",
 ]
 MandateTransitionDecision = Literal["CONFIRM_MANDATE", "HOLD", "REFRAME"]
 DataReadyTransitionDecision = Literal["CONFIRM_DATA_READY", "HOLD", "REFRAME"]
 SignalReadyTransitionDecision = Literal["CONFIRM_SIGNAL_READY", "HOLD", "REFRAME"]
+TrainFreezeTransitionDecision = Literal["CONFIRM_TRAIN_FREEZE", "HOLD", "REFRAME"]
+TestEvidenceTransitionDecision = Literal["CONFIRM_TEST_EVIDENCE", "HOLD", "REFRAME"]
+BacktestReadyTransitionDecision = Literal["CONFIRM_BACKTEST_READY", "HOLD", "REFRAME"]
+HoldoutValidationTransitionDecision = Literal["CONFIRM_HOLDOUT_VALIDATION", "HOLD", "REFRAME"]
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
     "research_scope.md",
@@ -89,9 +129,53 @@ SIGNAL_READY_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+TRAIN_FREEZE_REQUIRED_OUTPUTS = [
+    "train_thresholds.json",
+    "train_quality.parquet",
+    "train_param_ledger.csv",
+    "train_rejects.csv",
+    "train_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TEST_EVIDENCE_REQUIRED_OUTPUTS = [
+    "report_by_h.parquet",
+    "symbol_summary.parquet",
+    "admissibility_report.parquet",
+    "test_gate_table.csv",
+    "crowding_review.md",
+    "selected_symbols_test.csv",
+    "selected_symbols_test.parquet",
+    "frozen_spec.json",
+    "test_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+BACKTEST_READY_REQUIRED_OUTPUTS = [
+    "engine_compare.csv",
+    "vectorbt",
+    "backtrader",
+    "strategy_combo_ledger.csv",
+    "capacity_review.md",
+    "backtest_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
+    "holdout_run_manifest.json",
+    "holdout_backtest_compare.csv",
+    "window_results",
+    "holdout_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 MANDATE_TRANSITION_APPROVAL_FILE = "mandate_transition_approval.yaml"
 DATA_READY_TRANSITION_APPROVAL_FILE = "data_ready_transition_approval.yaml"
 SIGNAL_READY_TRANSITION_APPROVAL_FILE = "signal_ready_transition_approval.yaml"
+TRAIN_FREEZE_TRANSITION_APPROVAL_FILE = "train_transition_approval.yaml"
+TEST_EVIDENCE_TRANSITION_APPROVAL_FILE = "test_evidence_transition_approval.yaml"
+BACKTEST_READY_TRANSITION_APPROVAL_FILE = "backtest_ready_transition_approval.yaml"
+HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_approval.yaml"
 
 
 @dataclass(frozen=True)
@@ -127,11 +211,50 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = lineage_root / "02_data_ready"
     signal_ready_dir = lineage_root / "03_signal_ready"
+    train_dir = lineage_root / "04_train_freeze"
+    test_evidence_dir = lineage_root / "05_test_evidence"
+    backtest_dir = lineage_root / "06_backtest"
+    holdout_dir = lineage_root / "07_holdout"
+
+    if _holdout_validation_outputs_complete(holdout_dir):
+        if _holdout_validation_closure_complete(holdout_dir):
+            return "holdout_validation_review_complete"
+        return "holdout_validation_review"
+
+    if _backtest_ready_outputs_complete(backtest_dir):
+        if not _backtest_ready_closure_complete(backtest_dir):
+            return "backtest_ready_review"
+        approval_decision = read_holdout_validation_transition_decision(lineage_root)
+        if (
+            approval_decision == "CONFIRM_HOLDOUT_VALIDATION"
+            and next_holdout_validation_group(lineage_root) is None
+        ):
+            return "holdout_validation_author"
+        return "holdout_validation_confirmation_pending"
+
+    if _test_evidence_outputs_complete(test_evidence_dir):
+        if not _test_evidence_closure_complete(test_evidence_dir):
+            return "test_evidence_review"
+        approval_decision = read_backtest_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_BACKTEST_READY" and next_backtest_ready_group(lineage_root) is None:
+            return "backtest_ready_author"
+        return "backtest_ready_confirmation_pending"
+
+    if _train_freeze_outputs_complete(train_dir):
+        if not _train_freeze_closure_complete(train_dir):
+            return "train_freeze_review"
+        approval_decision = read_test_evidence_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_TEST_EVIDENCE" and next_test_evidence_group(lineage_root) is None:
+            return "test_evidence_author"
+        return "test_evidence_confirmation_pending"
 
     if _signal_ready_outputs_complete(signal_ready_dir):
-        if _signal_ready_closure_complete(signal_ready_dir):
-            return "signal_ready_review_complete"
-        return "signal_ready_review"
+        if not _signal_ready_closure_complete(signal_ready_dir):
+            return "signal_ready_review"
+        approval_decision = read_train_freeze_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_TRAIN_FREEZE" and next_train_freeze_group(lineage_root) is None:
+            return "train_freeze_author"
+        return "train_freeze_confirmation_pending"
 
     if _data_ready_outputs_complete(data_ready_dir):
         if not _data_ready_closure_complete(data_ready_dir):
@@ -218,6 +341,74 @@ def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
 
     signal_ready_dir = build_signal_ready_from_data_ready(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in signal_ready_dir.iterdir())
+
+
+def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
+    train_dir = lineage_root / "04_train_freeze"
+    if train_dir.exists() and (train_dir / TRAIN_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_train_freeze(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in train_dir.iterdir())
+
+
+def build_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "train_freeze_author":
+        return []
+
+    train_dir = build_train_freeze_from_signal_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in train_dir.iterdir())
+
+
+def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
+    test_dir = lineage_root / "05_test_evidence"
+    if test_dir.exists() and (test_dir / TEST_EVIDENCE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_test_evidence(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in test_dir.iterdir())
+
+
+def build_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "test_evidence_author":
+        return []
+
+    test_dir = build_test_evidence_from_train_freeze(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in test_dir.iterdir())
+
+
+def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
+    backtest_dir = lineage_root / "06_backtest"
+    if backtest_dir.exists() and (backtest_dir / BACKTEST_READY_DRAFT_FILE).exists():
+        return []
+
+    scaffold_backtest_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in backtest_dir.iterdir())
+
+
+def build_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "backtest_ready_author":
+        return []
+
+    backtest_dir = build_backtest_ready_from_test_evidence(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in backtest_dir.iterdir())
+
+
+def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
+    holdout_dir = lineage_root / "07_holdout"
+    if holdout_dir.exists() and (holdout_dir / HOLDOUT_VALIDATION_DRAFT_FILE).exists():
+        return []
+
+    scaffold_holdout_validation(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in holdout_dir.iterdir())
+
+
+def build_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "holdout_validation_author":
+        return []
+
+    holdout_dir = build_holdout_validation_from_backtest(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in holdout_dir.iterdir())
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -317,6 +508,110 @@ def write_signal_ready_transition_decision(
     return str(approval_path.relative_to(lineage_root))
 
 
+def write_train_freeze_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: TrainFreezeTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _train_freeze_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "signal_ready_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
+def write_test_evidence_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: TestEvidenceTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _test_evidence_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "train_freeze_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
+def write_backtest_ready_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: BacktestReadyTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _backtest_ready_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "test_evidence_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
+def write_holdout_validation_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: HoldoutValidationTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _holdout_validation_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "backtest_ready_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
 def read_mandate_transition_decision(lineage_root: Path) -> str | None:
     approval_path = _approval_path(lineage_root)
     if not approval_path.exists():
@@ -346,6 +641,50 @@ def read_signal_ready_transition_decision(lineage_root: Path) -> str | None:
 
     decision = _read_yaml(approval_path).get("decision")
     if decision in {"CONFIRM_SIGNAL_READY", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_train_freeze_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _train_freeze_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_TRAIN_FREEZE", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_test_evidence_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _test_evidence_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_TEST_EVIDENCE", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_backtest_ready_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _backtest_ready_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_BACKTEST_READY", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_holdout_validation_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _holdout_validation_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_HOLDOUT_VALIDATION", "HOLD", "REFRAME"}:
         return str(decision)
     return None
 
@@ -402,6 +741,58 @@ def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_train_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "04_train_freeze" / TRAIN_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return TRAIN_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TRAIN_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_test_evidence_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "05_test_evidence" / TEST_EVIDENCE_DRAFT_FILE
+    if not draft_path.exists():
+        return TEST_EVIDENCE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TEST_EVIDENCE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_backtest_ready_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "06_backtest" / BACKTEST_READY_DRAFT_FILE
+    if not draft_path.exists():
+        return BACKTEST_READY_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in BACKTEST_READY_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_holdout_validation_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "07_holdout" / HOLDOUT_VALIDATION_DRAFT_FILE
+    if not draft_path.exists():
+        return HOLDOUT_VALIDATION_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in HOLDOUT_VALIDATION_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def summarize_session_status(
     *,
     lineage_id: str,
@@ -433,6 +824,10 @@ def run_research_session(
     mandate_decision: MandateTransitionDecision | None = None,
     data_ready_decision: DataReadyTransitionDecision | None = None,
     signal_ready_decision: SignalReadyTransitionDecision | None = None,
+    train_freeze_decision: TrainFreezeTransitionDecision | None = None,
+    test_evidence_decision: TestEvidenceTransitionDecision | None = None,
+    backtest_ready_decision: BacktestReadyTransitionDecision | None = None,
+    holdout_validation_decision: HoldoutValidationTransitionDecision | None = None,
 ) -> SessionContext:
     lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
     lineage_root.mkdir(parents=True, exist_ok=True)
@@ -449,6 +844,24 @@ def run_research_session(
     if signal_ready_decision is not None:
         artifacts_written.append(
             write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
+        )
+    if train_freeze_decision is not None:
+        artifacts_written.append(
+            write_train_freeze_transition_decision(lineage_root, decision=train_freeze_decision)
+        )
+    if test_evidence_decision is not None:
+        artifacts_written.append(
+            write_test_evidence_transition_decision(lineage_root, decision=test_evidence_decision)
+        )
+    if backtest_ready_decision is not None:
+        artifacts_written.append(
+            write_backtest_ready_transition_decision(lineage_root, decision=backtest_ready_decision)
+        )
+    if holdout_validation_decision is not None:
+        artifacts_written.append(
+            write_holdout_validation_transition_decision(
+                lineage_root, decision=holdout_validation_decision
+            )
         )
 
     current_stage = detect_session_stage(lineage_root)
@@ -477,6 +890,38 @@ def run_research_session(
         artifacts_written.extend(build_signal_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
+    if current_stage == "train_freeze_confirmation_pending":
+        artifacts_written.extend(ensure_train_freeze_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "train_freeze_author":
+        artifacts_written.extend(build_train_freeze_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "test_evidence_confirmation_pending":
+        artifacts_written.extend(ensure_test_evidence_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "test_evidence_author":
+        artifacts_written.extend(build_test_evidence_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "backtest_ready_confirmation_pending":
+        artifacts_written.extend(ensure_backtest_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "backtest_ready_author":
+        artifacts_written.extend(build_backtest_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "holdout_validation_confirmation_pending":
+        artifacts_written.extend(ensure_holdout_validation_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "holdout_validation_author":
+        artifacts_written.extend(build_holdout_validation_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     why_now, open_risks = session_transition_summary(lineage_root)
     return summarize_session_status(
@@ -503,6 +948,22 @@ def _signal_ready_outputs_complete(signal_ready_dir: Path) -> bool:
     return all((signal_ready_dir / name).exists() for name in SIGNAL_READY_REQUIRED_OUTPUTS)
 
 
+def _train_freeze_outputs_complete(train_dir: Path) -> bool:
+    return all((train_dir / name).exists() for name in TRAIN_FREEZE_REQUIRED_OUTPUTS)
+
+
+def _test_evidence_outputs_complete(test_dir: Path) -> bool:
+    return all((test_dir / name).exists() for name in TEST_EVIDENCE_REQUIRED_OUTPUTS)
+
+
+def _backtest_ready_outputs_complete(backtest_dir: Path) -> bool:
+    return all((backtest_dir / name).exists() for name in BACKTEST_READY_REQUIRED_OUTPUTS)
+
+
+def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:
+    return all((holdout_dir / name).exists() for name in HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
+
+
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
     if (mandate_dir / "stage_completion_certificate.yaml").exists():
         return True
@@ -519,6 +980,30 @@ def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
     if (signal_ready_dir / "stage_completion_certificate.yaml").exists():
         return True
     return all((signal_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _train_freeze_closure_complete(train_dir: Path) -> bool:
+    if (train_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((train_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _test_evidence_closure_complete(test_dir: Path) -> bool:
+    if (test_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((test_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
+    if (backtest_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((backtest_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
+    if (holdout_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((holdout_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
@@ -577,7 +1062,73 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "signal_ready_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run signal_ready review"
 
-    return "REVIEW_COMPLETE", "Stop here until train_calibration orchestration exists"
+    if current_stage == "train_freeze_confirmation_pending":
+        next_group = next_train_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", f"Complete train_freeze group: {next_group}"
+        decision = read_train_freeze_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
+        return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", "Run with --confirm-train-freeze or reply CONFIRM_TRAIN_FREEZE <lineage_id>"
+
+    if current_stage == "train_freeze_author":
+        return "GO_TO_TRAIN_FREEZE_CONFIRMED", "Freeze train_freeze artifacts"
+
+    if current_stage == "train_freeze_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run train_freeze review"
+
+    if current_stage == "test_evidence_confirmation_pending":
+        next_group = next_test_evidence_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", f"Complete test_evidence group: {next_group}"
+        decision = read_test_evidence_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
+        return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", "Run with --confirm-test-evidence or reply CONFIRM_TEST_EVIDENCE <lineage_id>"
+
+    if current_stage == "test_evidence_author":
+        return "GO_TO_TEST_EVIDENCE_CONFIRMED", "Freeze test_evidence artifacts"
+
+    if current_stage == "test_evidence_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run test_evidence review"
+
+    if current_stage == "backtest_ready_confirmation_pending":
+        next_group = next_backtest_ready_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", f"Complete backtest_ready group: {next_group}"
+        decision = read_backtest_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
+        return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", "Run with --confirm-backtest-ready or reply CONFIRM_BACKTEST_READY <lineage_id>"
+
+    if current_stage == "backtest_ready_author":
+        return "GO_TO_BACKTEST_READY_CONFIRMED", "Freeze backtest_ready artifacts"
+
+    if current_stage == "backtest_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run backtest_ready review"
+
+    if current_stage == "holdout_validation_confirmation_pending":
+        next_group = next_holdout_validation_group(lineage_root)
+        if next_group is not None:
+            return (
+                "GO_TO_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
+                f"Complete holdout_validation group: {next_group}",
+            )
+        decision = read_holdout_validation_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_HOLDOUT_VALIDATION_ON_HOLD", "Wait for explicit CONFIRM_HOLDOUT_VALIDATION"
+        return (
+            "GO_TO_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
+            "Run with --confirm-holdout-validation or reply CONFIRM_HOLDOUT_VALIDATION <lineage_id>",
+        )
+
+    if current_stage == "holdout_validation_author":
+        return "GO_TO_HOLDOUT_VALIDATION_CONFIRMED", "Freeze holdout_validation artifacts"
+
+    if current_stage == "holdout_validation_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run holdout_validation review"
+
+    return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
 
 
 def _read_yaml(path: Path) -> dict:
@@ -594,3 +1145,19 @@ def _data_ready_approval_path(lineage_root: Path) -> Path:
 
 def _signal_ready_approval_path(lineage_root: Path) -> Path:
     return lineage_root / "03_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
+
+
+def _train_freeze_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "04_train_freeze" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
+
+
+def _test_evidence_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "05_test_evidence" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
+
+
+def _backtest_ready_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "06_backtest" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
+
+
+def _holdout_validation_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "07_holdout" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE

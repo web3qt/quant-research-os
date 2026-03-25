@@ -38,6 +38,10 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
     assert "qros-mandate-review" in manifest["installed_skills"]
+    assert "qros-train-freeze-author" in manifest["installed_skills"]
+    assert "qros-test-evidence-author" in manifest["installed_skills"]
+    assert "qros-backtest-ready-author" in manifest["installed_skills"]
+    assert "qros-holdout-validation-author" in manifest["installed_skills"]
     assert "source_git_commit" in manifest
 
 

@@ -33,6 +33,26 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write an explicit approval artifact so the next session run may build signal_ready outputs.",
     )
+    parser.add_argument(
+        "--confirm-train-freeze",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build train_freeze outputs.",
+    )
+    parser.add_argument(
+        "--confirm-test-evidence",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build test_evidence outputs.",
+    )
+    parser.add_argument(
+        "--confirm-backtest-ready",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build backtest_ready outputs.",
+    )
+    parser.add_argument(
+        "--confirm-holdout-validation",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build holdout_validation outputs.",
+    )
     return parser.parse_args()
 
 
@@ -41,7 +61,15 @@ def main() -> int:
 
     if args.lineage_id is None and args.raw_idea is None:
         raise SystemExit("Either --lineage-id or --raw-idea must be provided")
-    confirm_flags = [args.confirm_mandate, args.confirm_data_ready, args.confirm_signal_ready]
+    confirm_flags = [
+        args.confirm_mandate,
+        args.confirm_data_ready,
+        args.confirm_signal_ready,
+        args.confirm_train_freeze,
+        args.confirm_test_evidence,
+        args.confirm_backtest_ready,
+        args.confirm_holdout_validation,
+    ]
     if sum(1 for flag in confirm_flags if flag) > 1:
         raise SystemExit("Use at most one confirmation flag at a time")
 
@@ -52,6 +80,12 @@ def main() -> int:
         mandate_decision="CONFIRM_MANDATE" if args.confirm_mandate else None,
         data_ready_decision="CONFIRM_DATA_READY" if args.confirm_data_ready else None,
         signal_ready_decision="CONFIRM_SIGNAL_READY" if args.confirm_signal_ready else None,
+        train_freeze_decision="CONFIRM_TRAIN_FREEZE" if args.confirm_train_freeze else None,
+        test_evidence_decision="CONFIRM_TEST_EVIDENCE" if args.confirm_test_evidence else None,
+        backtest_ready_decision="CONFIRM_BACKTEST_READY" if args.confirm_backtest_ready else None,
+        holdout_validation_decision=(
+            "CONFIRM_HOLDOUT_VALIDATION" if args.confirm_holdout_validation else None
+        ),
     )
 
     print(f"Lineage: {status.lineage_id}")

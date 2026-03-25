@@ -2,7 +2,7 @@
 
 ## What It Is
 
-`qros-research-session` is the single-entry orchestrator for the first QROS workflow slice.
+`qros-research-session` is the single-entry orchestrator for the current QROS workflow slice.
 
 Instead of remembering multiple commands, you start with one skill and let QROS decide where the lineage currently is.
 
@@ -17,6 +17,14 @@ This version covers:
 - `data_ready review`
 - `signal_ready`
 - `signal_ready review`
+- `train_freeze`
+- `train_freeze review`
+- `test_evidence`
+- `test_evidence review`
+- `backtest_ready`
+- `backtest_ready review`
+- `holdout_validation`
+- `holdout_validation review`
 
 This version does **not** continue into:
 
@@ -57,7 +65,37 @@ For debugging or manual recovery, explicit signal_ready approval can also be tri
 python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-signal-ready
 ```
 
-用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready 和 signal_ready。
+For debugging or manual recovery, explicit train_freeze approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-train-freeze
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready 和 train_freeze。
+
+For debugging or manual recovery, explicit test_evidence approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-test-evidence
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze 和 test_evidence。
+
+For debugging or manual recovery, explicit backtest_ready approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-backtest-ready
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence 和 backtest_ready。
+
+For debugging or manual recovery, explicit holdout_validation approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-holdout-validation
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence、backtest_ready 和 holdout_validation。
 
 ## How Stage Detection Works
 
@@ -72,7 +110,15 @@ The session runtime checks disk state in this order:
 7. data_ready artifacts exist but review closure is missing -> `data_ready review`
 8. data_ready review closure exists -> `signal_ready_confirmation_pending`
 9. signal_ready artifacts exist but review closure is missing -> `signal_ready review`
-10. signal_ready review closure exists -> session stops and reports completion
+10. signal_ready review closure exists -> `train_freeze_confirmation_pending`
+11. train_freeze artifacts exist but review closure is missing -> `train_freeze review`
+12. train_freeze review closure exists -> `test_evidence_confirmation_pending`
+13. test_evidence artifacts exist but review closure is missing -> `test_evidence review`
+14. test_evidence review closure exists -> `backtest_ready_confirmation_pending`
+15. backtest_ready artifacts exist but review closure is missing -> `backtest_ready review`
+16. backtest_ready review closure exists -> `holdout_validation_confirmation_pending`
+17. holdout_validation artifacts exist but review closure is missing -> `holdout_validation review`
+18. holdout_validation review closure exists -> session stops and reports completion
 
 ## Expected User Experience
 
@@ -108,6 +154,34 @@ Then the system:
 - confirms `signal_schema`
 - confirms `delivery_contract`
 - asks `是否按以上内容冻结 signal_ready？` before signal_ready generation
+- after signal_ready review closure, freezes train_freeze interactively by group
+- confirms `window_contract`
+- confirms `threshold_contract`
+- confirms `quality_filters`
+- confirms `param_governance`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 train_freeze？` before train_freeze generation
+- after train_freeze review closure, freezes test_evidence interactively by group
+- confirms `window_contract`
+- confirms `formal_gate_contract`
+- confirms `admissibility_contract`
+- confirms `audit_contract`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 test_evidence？` before test_evidence generation
+- after test_evidence review closure, freezes backtest_ready interactively by group
+- confirms `execution_policy`
+- confirms `portfolio_policy`
+- confirms `risk_overlay`
+- confirms `engine_contract`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 backtest_ready？` before backtest_ready generation
+- after backtest_ready review closure, freezes holdout_validation interactively by group
+- confirms `window_contract`
+- confirms `reuse_contract`
+- confirms `drift_audit`
+- confirms `failure_governance`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 holdout_validation？` before holdout_validation generation
 
 ## Example Path
 
@@ -140,7 +214,39 @@ Then the system:
 26. QROS confirms `delivery_contract`
 27. QROS shows the final grouped signal_ready summary and asks `是否按以上内容冻结 signal_ready？`
 28. The agent internally records the approval decision and then builds `03_signal_ready/`
-29. Once signal_ready review closure exists, the session stops instead of entering later stages
+29. Once signal_ready review closure exists, QROS enters `train_freeze_confirmation_pending`
+30. QROS confirms `window_contract`
+31. QROS confirms `threshold_contract`
+32. QROS confirms `quality_filters`
+33. QROS confirms `param_governance`
+34. QROS confirms `delivery_contract`
+35. QROS shows the final grouped train_freeze summary and asks `是否按以上内容冻结 train_freeze？`
+36. The agent internally records the approval decision and then builds `04_train_freeze/`
+37. Once train_freeze review closure exists, QROS enters `test_evidence_confirmation_pending`
+38. QROS confirms `window_contract`
+39. QROS confirms `formal_gate_contract`
+40. QROS confirms `admissibility_contract`
+41. QROS confirms `audit_contract`
+42. QROS confirms `delivery_contract`
+43. QROS shows the final grouped test_evidence summary and asks `是否按以上内容冻结 test_evidence？`
+44. The agent internally records the approval decision and then builds `05_test_evidence/`
+45. Once test_evidence review closure exists, QROS enters `backtest_ready_confirmation_pending`
+46. QROS confirms `execution_policy`
+47. QROS confirms `portfolio_policy`
+48. QROS confirms `risk_overlay`
+49. QROS confirms `engine_contract`
+50. QROS confirms `delivery_contract`
+51. QROS shows the final grouped backtest_ready summary and asks `是否按以上内容冻结 backtest_ready？`
+52. The agent internally records the approval decision and then builds `06_backtest/`
+53. Once backtest_ready review closure exists, QROS enters `holdout_validation_confirmation_pending`
+54. QROS confirms `window_contract`
+55. QROS confirms `reuse_contract`
+56. QROS confirms `drift_audit`
+57. QROS confirms `failure_governance`
+58. QROS confirms `delivery_contract`
+59. QROS shows the final grouped holdout_validation summary and asks `是否按以上内容冻结 holdout_validation？`
+60. The agent internally records the approval decision and then builds `07_holdout/`
+61. Once holdout_validation review closure exists, the session stops instead of entering later stages
 
 ## Why This Exists
 

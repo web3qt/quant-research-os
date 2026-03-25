@@ -23,6 +23,24 @@ def test_infer_review_context_from_outputs_tree() -> None:
         stage_dir.parent.parent.rmdir()
 
 
+def test_infer_review_context_normalizes_numbered_stage_dirs() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    stage_dir = repo_root / "outputs" / "topic_a" / "04_train_freeze"
+    stage_dir.mkdir(parents=True)
+
+    try:
+        ctx = infer_review_context(stage_dir)
+
+        assert ctx["lineage_id"] == "topic_a"
+        assert ctx["stage"] == "train_calibration"
+        assert ctx["stage_dir"] == stage_dir
+        assert ctx["lineage_root"] == repo_root / "outputs" / "topic_a"
+    finally:
+        stage_dir.rmdir()
+        stage_dir.parent.rmdir()
+        stage_dir.parent.parent.rmdir()
+
+
 def test_infer_review_context_rejects_non_outputs_path(tmp_path: Path) -> None:
     outside_dir = tmp_path / "scratch" / "topic_a"
     outside_dir.mkdir(parents=True)

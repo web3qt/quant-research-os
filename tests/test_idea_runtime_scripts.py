@@ -1,5 +1,6 @@
 from pathlib import Path
 from subprocess import run
+import sys
 
 import yaml
 
@@ -192,7 +193,7 @@ def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -240,7 +241,7 @@ def test_build_mandate_from_intake_requires_go_to_mandate(tmp_path: Path) -> Non
     _write_yaml(intake_dir / "scope_canvas.yaml", {})
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -301,7 +302,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -377,7 +378,7 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft_payload)
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -412,7 +413,7 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
     _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -466,7 +467,7 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
     _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -517,7 +518,7 @@ def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Pa
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
 
     result = run(
-        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
         check=False,
         capture_output=True,
         text=True,

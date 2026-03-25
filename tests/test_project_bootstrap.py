@@ -18,6 +18,10 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("scripts/scaffold_idea_intake.py").exists()
     assert Path("scripts/build_mandate_from_intake.py").exists()
     assert Path("tools/idea_runtime.py").exists()
+    assert Path("tools/backtest_runtime.py").exists()
+    assert Path("tools/holdout_runtime.py").exists()
+    assert Path("tools/test_evidence_runtime.py").exists()
+    assert Path("tools/train_runtime.py").exists()
     assert Path("docs/intake-sop/qualification_scorecard_schema.yaml").exists()
     assert Path("docs/intake-sop/idea_gate_decision_schema.yaml").exists()
     assert Path("docs/experience/installation.md").exists()
@@ -26,6 +30,10 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path(".agents/skills/qros-idea-intake-author/SKILL.md").exists()
     assert Path(".agents/skills/qros-mandate-author/SKILL.md").exists()
     assert Path(".agents/skills/qros-research-session/SKILL.md").exists()
+    assert Path(".agents/skills/qros-train-freeze-author/SKILL.md").exists()
+    assert Path(".agents/skills/qros-test-evidence-author/SKILL.md").exists()
+    assert Path(".agents/skills/qros-backtest-ready-author/SKILL.md").exists()
+    assert Path(".agents/skills/qros-holdout-validation-author/SKILL.md").exists()
 
 
 def test_usage_doc_exists() -> None:

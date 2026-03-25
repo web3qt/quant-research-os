@@ -21,7 +21,7 @@ In Codex, start with:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-## 3. Let The Agent Drive The First-Wave Flow
+## 3. Let The Agent Drive The Current Flow
 
 This version of QROS will drive:
 
@@ -32,6 +32,14 @@ This version of QROS will drive:
 - `data_ready review`
 - `signal_ready`
 - `signal_ready review`
+- `train_freeze`
+- `train_freeze review`
+- `test_evidence`
+- `test_evidence review`
+- `backtest_ready`
+- `backtest_ready review`
+- `holdout_validation`
+- `holdout_validation review`
 
 The agent should:
 
@@ -47,7 +55,19 @@ The agent should:
 - continue into `signal_ready_confirmation_pending` after data_ready review closure
 - confirm grouped signal_ready content during the conversation: `signal_expression`, `param_identity`, `time_semantics`, `signal_schema`, `delivery_contract`
 - explicitly ask `是否按以上内容冻结 signal_ready？` before writing `03_signal_ready/`
-- stop after `signal_ready review`
+- continue into `train_freeze_confirmation_pending` after signal_ready review closure
+- confirm grouped train_freeze content during the conversation: `window_contract`, `threshold_contract`, `quality_filters`, `param_governance`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 train_freeze？` before writing `04_train_freeze/`
+- continue into `test_evidence_confirmation_pending` after train_freeze review closure
+- confirm grouped test_evidence content during the conversation: `window_contract`, `formal_gate_contract`, `admissibility_contract`, `audit_contract`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 test_evidence？` before writing `05_test_evidence/`
+- continue into `backtest_ready_confirmation_pending` after test_evidence review closure
+- confirm grouped backtest_ready content during the conversation: `execution_policy`, `portfolio_policy`, `risk_overlay`, `engine_contract`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 backtest_ready？` before writing `06_backtest/`
+- continue into `holdout_validation_confirmation_pending` after backtest_ready review closure
+- confirm grouped holdout_validation content during the conversation: `window_contract`, `reuse_contract`, `drift_audit`, `failure_governance`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 holdout_validation？` before writing `07_holdout/`
+- stop after `holdout_validation review`
 
 ## 4. What You Should See
 
@@ -69,4 +89,4 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 ## 6. Next
 
-After `signal_ready review`, this version stops. `train_calibration` orchestration is not yet part of the single-entry flow.
+After `holdout_validation review`, this version stops. `promotion_decision` orchestration is not yet part of the single-entry flow.

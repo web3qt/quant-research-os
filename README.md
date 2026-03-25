@@ -19,6 +19,14 @@ QROS 是一个面向 Codex 的阶段式研究工作流。它通过交互式 mand
 - `data_ready review`
 - `signal_ready`
 - `signal_ready review`
+- `train_freeze`
+- `train_freeze review`
+- `test_evidence`
+- `test_evidence review`
+- `backtest_ready`
+- `backtest_ready review`
+- `holdout_validation`
+- `holdout_validation review`
 
 推荐的使用方式是 skill-first：
 

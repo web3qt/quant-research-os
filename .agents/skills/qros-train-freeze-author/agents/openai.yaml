@@ -1,0 +1,2 @@
+name: qros-train-freeze-author
+description: Use when reviewed signal_ready outputs must be frozen into formal train-freeze artifacts through grouped interactive confirmation.
