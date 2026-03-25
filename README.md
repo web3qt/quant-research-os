@@ -1,6 +1,23 @@
 # Quant Research OS
 
-Stage-gated research workflow assets for Codex, focused on turning trading ideas into reviewable, reproducible research lineages.
+QROS is a stage-gated research workflow for Codex. It turns raw trading ideas into reviewable, reproducible research lineages instead of loose chat notes and ad-hoc experiments.
+
+It is built for one core job: take an idea, qualify whether it deserves research budget, freeze a formal mandate through interaction, and keep the workflow auditable as it moves toward later stages.
+
+## First-Wave Flow
+
+Current unified flow:
+
+- `idea_intake`
+- `mandate`
+- `mandate review`
+
+The intended experience is skill-first:
+
+- start from one entry point
+- let the agent create or resume the lineage
+- let the workflow drive the next required interaction
+- keep formal artifacts on disk as the source of truth
 
 ## Quick Start
 
@@ -18,16 +35,18 @@ Stage-gated research workflow assets for Codex, focused on turning trading ideas
 
 4. Let the agent drive the first-wave flow:
 
-- `idea_intake`
-- `mandate`
-- `mandate review`
+- qualify the idea in `idea_intake`
+- freeze the mandate interactively
+- close the first wave at `mandate review`
 
 ## Install
 
 QROS currently supports Codex installs in two modes:
 
-- `repo-local`: copies skills into `.agents/skills/` and runtime assets into `.qros/`
-- `user-global`: copies skills into `~/.codex/skills/` and runtime assets into `~/.qros/`
+- `repo-local`
+  Copies skills into `.agents/skills/` and runtime assets into `.qros/`
+- `user-global`
+  Copies skills into `~/.codex/skills/` and runtime assets into `~/.qros/`
 
 Common commands:
 
@@ -39,29 +58,21 @@ Common commands:
 ./setup --host codex --refresh
 ```
 
-## First Workflow
+Use `repo-local` when the project should carry skills and runtime with it. Use `user-global` when you want one installation shared across projects on your machine.
 
-The latest supported user flow is skill-first:
+## Start In Codex
 
-- install the repo with `./setup --host codex --mode repo-local`
-- start from `qros-research-session`
-- let the agent create or resume the lineage
-- let the agent drive `idea_intake -> mandate -> mandate review`
-
-Example prompts:
+Recommended prompts:
 
 - `qros-research-session 帮我从这个想法开始：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-See:
+## Update Existing Install
 
-- [installation.md](docs/experience/installation.md)
-- [quickstart-codex.md](docs/experience/quickstart-codex.md)
-- [qros-research-session-usage.md](docs/experience/qros-research-session-usage.md)
-
-## Install Modes
-
-Use `repo-local` when the project should carry skills and runtime with it. Use `user-global` when you want one installation shared across projects on your machine.
+- `repo-local`
+  Run `git pull` first. If you want the managed assets rewritten from the latest repo state, run `./setup --host codex --refresh`.
+- `user-global`
+  `git pull` alone is not enough. Rerun `./setup --host codex --refresh` to refresh `~/.codex/skills/` and `~/.qros/`.
 
 ## Runtime Layout
 
@@ -87,9 +98,18 @@ User-global install:
 ~/.qros/install-manifest.json
 ```
 
+## Learn More
+
+Core docs:
+
+- [installation.md](docs/experience/installation.md)
+- [quickstart-codex.md](docs/experience/quickstart-codex.md)
+- [qros-research-session-usage.md](docs/experience/qros-research-session-usage.md)
+
 ## Troubleshooting
 
 - Skills not visible: rerun `./setup --host codex --refresh`
+- Existing install feels out of date: `repo-local` users should `git pull` first; `user-global` users should rerun `./setup --host codex --refresh`
 - Unsure whether install is healthy: run `./setup --host codex --check`
 - Need the first-run walkthrough: open `docs/experience/quickstart-codex.md`
 - Need the single-entry workflow details: open `docs/experience/qros-research-session-usage.md`

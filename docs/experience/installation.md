@@ -66,6 +66,11 @@ Refresh overwrites the managed QROS assets from the current source repo.
 ./setup --host codex --refresh
 ```
 
+For existing users:
+
+- `repo-local`: update the repo first with `git pull`, then run `./setup --host codex --refresh` if you want the managed assets rewritten from the latest checkout
+- `user-global`: `git pull` by itself does not refresh `~/.codex/skills/` or `~/.qros/`; run `./setup --host codex --refresh`
+
 ## Check
 
 Check validates the install without writing files.
