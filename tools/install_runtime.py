@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -144,7 +146,8 @@ def install_qros(
     skills_written: list[str] = []
     for skill_dir in skill_dirs:
         destination = target.skills_root / skill_dir.name
-        _copy_tree(skill_dir, destination)
+        if skill_dir.resolve() != destination.resolve():
+            _copy_tree(skill_dir, destination)
         skills_written.append(skill_dir.name)
 
     runtime_written: list[str] = []
@@ -240,3 +243,58 @@ def _git_commit(repo_root: Path) -> str:
     except (OSError, subprocess.CalledProcessError):
         return ""
     return result.stdout.strip()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Install QROS runtime assets for Codex.")
+    parser.add_argument("--host", default="codex")
+    parser.add_argument("--mode", default="auto", choices=sorted(SUPPORTED_MODES))
+    parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args(argv)
+
+    repo_root = Path(__file__).resolve().parents[1]
+    cwd = Path.cwd()
+    home = Path.home()
+
+    try:
+        target = resolve_install_target(mode=args.mode, cwd=cwd, home=home)
+        if args.check:
+            ok, messages = check_install(
+                repo_root=repo_root,
+                cwd=cwd,
+                home=home,
+                mode=args.mode,
+                host=args.host,
+            )
+            print(f"QROS check mode: {target.mode}")
+            print(f"Skills root: {target.skills_root}")
+            print(f"Runtime root: {target.runtime_root}")
+            if ok:
+                print("QROS install check: OK")
+                return 0
+            for message in messages:
+                print(message)
+            return 1
+
+        result = install_qros(
+            repo_root=repo_root,
+            cwd=cwd,
+            home=home,
+            mode=args.mode,
+            host=args.host,
+        )
+    except InstallError as exc:
+        print(f"QROS setup failed: {exc}", file=sys.stderr)
+        return 1
+
+    action = "refreshed" if args.refresh else "installed"
+    print(f"QROS {action} for host={args.host} mode={result.mode}")
+    print(f"Skills written: {len(result.skills_written)} -> {target.skills_root}")
+    print(f"Runtime files written: {len(result.runtime_written)} -> {target.runtime_root}")
+    print(f"Manifest: {result.manifest_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
