@@ -12,7 +12,9 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("tools/review_skillgen/review_findings.py").exists()
     assert Path("tools/review_skillgen/review_engine.py").exists()
     assert Path("tools/install_runtime.py").exists()
+    assert Path("tools/research_session.py").exists()
     assert Path("scripts/run_stage_review.py").exists()
+    assert Path("scripts/run_research_session.py").exists()
     assert Path("scripts/scaffold_idea_intake.py").exists()
     assert Path("scripts/build_mandate_from_intake.py").exists()
     assert Path("tools/idea_runtime.py").exists()
@@ -22,9 +24,11 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("docs/experience/quickstart-codex.md").exists()
     assert Path(".agents/skills/qros-idea-intake-author/SKILL.md").exists()
     assert Path(".agents/skills/qros-mandate-author/SKILL.md").exists()
+    assert Path(".agents/skills/qros-research-session/SKILL.md").exists()
 
 
 def test_usage_doc_exists() -> None:
     assert Path("docs/experience/codex-stage-review-skill-usage.md").exists()
     assert Path("docs/experience/closure-artifact-writer-usage.md").exists()
     assert Path("docs/experience/idea-intake-to-mandate-flow.md").exists()
+    assert Path("docs/experience/qros-research-session-usage.md").exists()
