@@ -1,0 +1,47 @@
+from pathlib import Path
+
+import yaml
+
+from tools.review_skillgen.closure_models import build_review_payload
+from tools.review_skillgen.closure_writer import write_closure_artifacts
+
+
+def test_write_closure_artifacts_creates_stage_files(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "topic_a" / "mandate"
+    stage_dir.mkdir(parents=True)
+
+    payload = build_review_payload(
+        lineage_id="topic_a",
+        stage="mandate",
+        final_verdict="PASS",
+        stage_status="PASS",
+        rollback_stage="mandate",
+        allowed_modifications=["clarify wording"],
+        downstream_permissions=["data_ready"],
+    )
+
+    write_closure_artifacts(
+        payload,
+        explicit_context={"stage_dir": stage_dir, "lineage_root": stage_dir.parent},
+    )
+
+    latest_review_pack = stage_dir / "latest_review_pack.yaml"
+    stage_gate_review = stage_dir / "stage_gate_review.yaml"
+    certificate = stage_dir / "stage_completion_certificate.yaml"
+
+    assert latest_review_pack.exists()
+    assert stage_gate_review.exists()
+    assert certificate.exists()
+
+    latest_payload = yaml.safe_load(latest_review_pack.read_text(encoding="utf-8"))
+    assert latest_payload["lineage_id"] == "topic_a"
+    assert latest_payload["stage"] == "mandate"
+    assert latest_payload["final_verdict"] == "PASS"
+
+    gate_payload = yaml.safe_load(stage_gate_review.read_text(encoding="utf-8"))
+    assert gate_payload["stage_status"] == "PASS"
+    assert gate_payload["rollback_stage"] == "mandate"
+
+    certificate_payload = yaml.safe_load(certificate.read_text(encoding="utf-8"))
+    assert certificate_payload["allowed_modifications"] == ["clarify wording"]
+    assert certificate_payload["downstream_permissions"] == ["data_ready"]
