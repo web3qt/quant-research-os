@@ -8,6 +8,12 @@ from typing import Literal
 
 import yaml
 
+from tools.data_ready_runtime import (
+    DATA_READY_FREEZE_DRAFT_FILE,
+    DATA_READY_FREEZE_GROUP_ORDER,
+    build_data_ready_from_mandate,
+    scaffold_data_ready,
+)
 from tools.idea_runtime import (
     MANDATE_FREEZE_DRAFT_FILE,
     MANDATE_FREEZE_GROUP_ORDER,
@@ -22,9 +28,13 @@ SessionStage = Literal[
     "mandate_confirmation_pending",
     "mandate_author",
     "mandate_review",
-    "mandate_review_complete",
+    "data_ready_confirmation_pending",
+    "data_ready_author",
+    "data_ready_review",
+    "data_ready_review_complete",
 ]
 MandateTransitionDecision = Literal["CONFIRM_MANDATE", "HOLD", "REFRAME"]
+DataReadyTransitionDecision = Literal["CONFIRM_DATA_READY", "HOLD", "REFRAME"]
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
     "research_scope.md",
@@ -39,7 +49,26 @@ MANDATE_CLOSURE_OUTPUTS = [
     "stage_gate_review.yaml",
     "stage_completion_certificate.yaml",
 ]
+DATA_READY_REQUIRED_OUTPUTS = [
+    "aligned_bars",
+    "rolling_stats",
+    "pair_stats",
+    "benchmark_residual",
+    "topic_basket_state",
+    "qc_report.parquet",
+    "dataset_manifest.json",
+    "validation_report.md",
+    "data_contract.md",
+    "dedupe_rule.md",
+    "universe_summary.md",
+    "universe_exclusions.csv",
+    "universe_exclusions.md",
+    "data_ready_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 MANDATE_TRANSITION_APPROVAL_FILE = "mandate_transition_approval.yaml"
+DATA_READY_TRANSITION_APPROVAL_FILE = "data_ready_transition_approval.yaml"
 
 
 @dataclass(frozen=True)
@@ -73,11 +102,20 @@ def resolve_lineage_root(outputs_root: Path, lineage_id: str | None, raw_idea: s
 def detect_session_stage(lineage_root: Path) -> SessionStage:
     intake_dir = lineage_root / "00_idea_intake"
     mandate_dir = lineage_root / "01_mandate"
+    data_ready_dir = lineage_root / "02_data_ready"
+
+    if _data_ready_outputs_complete(data_ready_dir):
+        if _data_ready_closure_complete(data_ready_dir):
+            return "data_ready_review_complete"
+        return "data_ready_review"
 
     if _mandate_outputs_complete(mandate_dir):
-        if _mandate_closure_complete(mandate_dir):
-            return "mandate_review_complete"
-        return "mandate_review"
+        if not _mandate_closure_complete(mandate_dir):
+            return "mandate_review"
+        approval_decision = read_data_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_DATA_READY" and next_data_ready_freeze_group(lineage_root) is None:
+            return "data_ready_author"
+        return "data_ready_confirmation_pending"
 
     if not intake_dir.exists():
         return "idea_intake"
@@ -114,6 +152,23 @@ def build_mandate_if_admitted(lineage_root: Path) -> list[str]:
 
     mandate_dir = build_mandate_from_intake(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in mandate_dir.iterdir())
+
+
+def ensure_data_ready_scaffold(lineage_root: Path) -> list[str]:
+    data_ready_dir = lineage_root / "02_data_ready"
+    if data_ready_dir.exists() and (data_ready_dir / DATA_READY_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_data_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in data_ready_dir.iterdir())
+
+
+def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "data_ready_author":
+        return []
+
+    data_ready_dir = build_data_ready_from_mandate(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in data_ready_dir.iterdir())
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -161,6 +216,32 @@ def write_mandate_transition_decision(
     return str(approval_path.relative_to(lineage_root))
 
 
+def write_data_ready_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: DataReadyTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _data_ready_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "mandate_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
 def read_mandate_transition_decision(lineage_root: Path) -> str | None:
     approval_path = _approval_path(lineage_root)
     if not approval_path.exists():
@@ -168,6 +249,17 @@ def read_mandate_transition_decision(lineage_root: Path) -> str | None:
 
     decision = _read_yaml(approval_path).get("decision")
     if decision in {"CONFIRM_MANDATE", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_data_ready_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _data_ready_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_DATA_READY", "HOLD", "REFRAME"}:
         return str(decision)
     return None
 
@@ -193,6 +285,19 @@ def next_mandate_freeze_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in MANDATE_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "02_data_ready" / DATA_READY_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return DATA_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in DATA_READY_FREEZE_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -227,6 +332,7 @@ def run_research_session(
     lineage_id: str | None = None,
     raw_idea: str | None = None,
     mandate_decision: MandateTransitionDecision | None = None,
+    data_ready_decision: DataReadyTransitionDecision | None = None,
 ) -> SessionContext:
     lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
     lineage_root.mkdir(parents=True, exist_ok=True)
@@ -235,6 +341,10 @@ def run_research_session(
     if mandate_decision is not None:
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
+        )
+    if data_ready_decision is not None:
+        artifacts_written.append(
+            write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
         )
 
     current_stage = detect_session_stage(lineage_root)
@@ -245,6 +355,14 @@ def run_research_session(
 
     if current_stage == "mandate_author":
         artifacts_written.extend(build_mandate_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "data_ready_confirmation_pending":
+        artifacts_written.extend(ensure_data_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "data_ready_author":
+        artifacts_written.extend(build_data_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
@@ -265,10 +383,20 @@ def _mandate_outputs_complete(mandate_dir: Path) -> bool:
     return all((mandate_dir / name).exists() for name in MANDATE_REQUIRED_OUTPUTS)
 
 
+def _data_ready_outputs_complete(data_ready_dir: Path) -> bool:
+    return all((data_ready_dir / name).exists() for name in DATA_READY_REQUIRED_OUTPUTS)
+
+
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
     if (mandate_dir / "stage_completion_certificate.yaml").exists():
         return True
     return all((mandate_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
+    if (data_ready_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((data_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
@@ -297,7 +425,22 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "mandate_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run mandate review"
 
-    return "REVIEW_COMPLETE", "Stop here until data_ready orchestration exists"
+    if current_stage == "data_ready_confirmation_pending":
+        next_group = next_data_ready_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_DATA_READY_PENDING_CONFIRMATION", f"Complete data_ready freeze group: {next_group}"
+        decision = read_data_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
+        return "GO_TO_DATA_READY_PENDING_CONFIRMATION", "Run with --confirm-data-ready or reply CONFIRM_DATA_READY <lineage_id>"
+
+    if current_stage == "data_ready_author":
+        return "GO_TO_DATA_READY_CONFIRMED", "Freeze data_ready artifacts"
+
+    if current_stage == "data_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run data_ready review"
+
+    return "REVIEW_COMPLETE", "Stop here until signal_ready orchestration exists"
 
 
 def _read_yaml(path: Path) -> dict:
@@ -306,3 +449,7 @@ def _read_yaml(path: Path) -> dict:
 
 def _approval_path(lineage_root: Path) -> Path:
     return lineage_root / "00_idea_intake" / MANDATE_TRANSITION_APPROVAL_FILE
+
+
+def _data_ready_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "02_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE

@@ -13,10 +13,11 @@ This version covers:
 - `idea_intake`
 - `mandate`
 - `mandate review`
+- `data_ready`
+- `data_ready review`
 
 This version does **not** continue into:
 
-- `data_ready`
 - `signal_ready`
 - later research stages
 
@@ -43,7 +44,13 @@ For debugging or manual recovery, explicit mandate approval can also be triggere
 python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
 ```
 
-用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate。
+For debugging or manual recovery, explicit data_ready approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-data-ready
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate 和 data_ready。
 
 ## How Stage Detection Works
 
@@ -54,7 +61,9 @@ The session runtime checks disk state in this order:
 3. intake admitted but not explicitly approved -> `mandate_confirmation_pending`
 4. intake admitted and explicitly approved, but mandate not built -> `mandate`
 5. mandate artifacts exist but review closure is missing -> `mandate review`
-6. mandate review closure exists -> session stops and reports completion
+6. mandate review closure exists -> `data_ready_confirmation_pending`
+7. data_ready artifacts exist but review closure is missing -> `data_ready review`
+8. data_ready review closure exists -> session stops and reports completion
 
 ## Expected User Experience
 
@@ -76,6 +85,13 @@ Then the system:
   这里会明确问数据来源哪里来，以及后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
 - confirms `execution_contract`
 - asks `是否确认进入 mandate？` before mandate generation
+- after mandate review closure, freezes data_ready interactively by group
+- confirms `extraction_contract`
+- confirms `quality_semantics`
+- confirms `universe_admission`
+- confirms `shared_derived_layer`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 data_ready？` before data_ready generation
 
 ## Example Path
 
@@ -92,7 +108,15 @@ Then the system:
 10. QROS shows the final grouped mandate summary and asks `是否确认进入 mandate？`
 11. The user answers in natural language
 12. The agent internally records the approval decision and then builds `01_mandate/`
-13. Once mandate review closure exists, the session stops instead of entering `data_ready`
+13. Once mandate review closure exists, QROS enters `data_ready_confirmation_pending`
+14. QROS confirms `extraction_contract`
+15. QROS confirms `quality_semantics`
+16. QROS confirms `universe_admission`
+17. QROS confirms `shared_derived_layer`
+18. QROS confirms `delivery_contract`
+19. QROS shows the final grouped data_ready summary and asks `是否按以上内容冻结 data_ready？`
+20. The agent internally records the approval decision and then builds `02_data_ready/`
+21. Once data_ready review closure exists, the session stops instead of entering `signal_ready`
 
 ## Why This Exists
 

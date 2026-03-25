@@ -56,6 +56,74 @@ def _mandate_freeze_draft(*, confirmed: bool) -> dict:
     }
 
 
+def _data_ready_freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "extraction_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "data_source": "Binance UM futures klines",
+                    "time_boundary": "2024-01-01 to 2024-12-31",
+                    "primary_time_key": "close_time",
+                    "bar_size": "5m",
+                },
+                "missing_items": [],
+            },
+            "quality_semantics": {
+                "confirmed": confirmed,
+                "draft": {
+                    "missing_policy": "preserve nulls explicitly",
+                    "stale_policy": "mark stale bars",
+                    "bad_price_policy": "flag bad prices",
+                    "outlier_policy": "flag outliers only",
+                    "dedupe_rule": "dedupe on symbol plus close_time",
+                },
+                "missing_items": [],
+            },
+            "universe_admission": {
+                "confirmed": confirmed,
+                "draft": {
+                    "benchmark_symbol": "BTCUSDT",
+                    "coverage_floor": "99.0%",
+                    "admission_rule": "exclude symbols below coverage floor",
+                    "exclusion_reporting": "write csv and md reports",
+                },
+                "missing_items": [],
+            },
+            "shared_derived_layer": {
+                "confirmed": confirmed,
+                "draft": {
+                    "shared_outputs": [
+                        "rolling_stats",
+                        "pair_stats",
+                        "benchmark_residual",
+                        "topic_basket_state",
+                    ],
+                    "layer_boundary_note": "shared layer only, no thesis-specific signals",
+                },
+                "missing_items": [],
+            },
+            "delivery_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "machine_artifacts": [
+                        "aligned_bars/",
+                        "rolling_stats/",
+                        "pair_stats/",
+                        "benchmark_residual/",
+                        "topic_basket_state/",
+                        "qc_report.parquet",
+                        "dataset_manifest.json",
+                    ],
+                    "consumer_stage": "signal_ready",
+                    "frozen_inputs_note": "signal stage must consume frozen outputs",
+                },
+                "missing_items": [],
+            },
+        }
+    }
+
+
 def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "scaffold_idea_intake.py"
@@ -257,6 +325,48 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
     assert result.returncode != 0
     assert "data_source" in result.stderr
     assert "bar_size" in result.stderr
+
+
+def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    mandate_dir = lineage_root / "01_mandate"
+    data_ready_dir = lineage_root / "02_data_ready"
+    mandate_dir.mkdir(parents=True)
+    data_ready_dir.mkdir(parents=True)
+
+    for name, content in {
+        "mandate.md": "# Mandate\n",
+        "research_scope.md": "# Research Scope\n- Data source: Binance UM futures klines\n- Bar size: 5m\n",
+        "time_split.json": "{}\n",
+        "parameter_grid.yaml": "parameters: []\n",
+        "run_config.toml": 'stage = "mandate"\nlineage_id = "btc_alt_transmission_v1"\n',
+        "artifact_catalog.md": "# Artifact Catalog\n",
+        "field_dictionary.md": "# Field Dictionary\n",
+    }.items():
+        (mandate_dir / name).write_text(content, encoding="utf-8")
+
+    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+
+    result = run(
+        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert (data_ready_dir / "aligned_bars").exists()
+    assert (data_ready_dir / "rolling_stats").exists()
+    assert (data_ready_dir / "pair_stats").exists()
+    assert (data_ready_dir / "benchmark_residual").exists()
+    assert (data_ready_dir / "topic_basket_state").exists()
+    assert (data_ready_dir / "dataset_manifest.json").exists()
+    assert (data_ready_dir / "data_contract.md").exists()
+    assert (data_ready_dir / "artifact_catalog.md").exists()
+    assert "Built data_ready artifacts" in result.stdout
 
 
 def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Path) -> None:

@@ -15,6 +15,8 @@ Current unified flow:
 - `idea_intake`
 - `mandate`
 - `mandate review`
+- `data_ready`
+- `data_ready review`
 
 The intended experience is skill-first:
 

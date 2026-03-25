@@ -23,6 +23,11 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write an explicit approval artifact so the next session run may build mandate outputs.",
     )
+    parser.add_argument(
+        "--confirm-data-ready",
+        action="store_true",
+        help="Write an explicit approval artifact so the next session run may build data_ready outputs.",
+    )
     return parser.parse_args()
 
 
@@ -31,12 +36,15 @@ def main() -> int:
 
     if args.lineage_id is None and args.raw_idea is None:
         raise SystemExit("Either --lineage-id or --raw-idea must be provided")
+    if args.confirm_mandate and args.confirm_data_ready:
+        raise SystemExit("Use at most one confirmation flag at a time")
 
     status = run_research_session(
         outputs_root=args.outputs_root.resolve(),
         lineage_id=args.lineage_id,
         raw_idea=args.raw_idea,
         mandate_decision="CONFIRM_MANDATE" if args.confirm_mandate else None,
+        data_ready_decision="CONFIRM_DATA_READY" if args.confirm_data_ready else None,
     )
 
     print(f"Lineage: {status.lineage_id}")

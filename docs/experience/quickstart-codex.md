@@ -28,6 +28,8 @@ This version of QROS will drive:
 - `idea_intake`
 - `mandate`
 - `mandate review`
+- `data_ready`
+- `data_ready review`
 
 The agent should:
 
@@ -37,7 +39,10 @@ The agent should:
 - stop at `mandate_confirmation_pending` when intake is admitted
 - confirm grouped freeze content during the conversation: `research_intent`, `scope_contract`, `data_contract`, `execution_contract`
 - explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
-- stop after `mandate review`
+- continue into `data_ready_confirmation_pending` after mandate review closure
+- confirm grouped data_ready content during the conversation: `extraction_contract`, `quality_semantics`, `universe_admission`, `shared_derived_layer`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 data_ready？` before writing `02_data_ready/`
+- stop after `data_ready review`
 
 ## 4. What You Should See
 
@@ -59,4 +64,4 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 ## 6. Next
 
-After `mandate review`, this version stops. `data_ready` orchestration is not yet part of the single-entry flow.
+After `data_ready review`, this version stops. `signal_ready` orchestration is not yet part of the single-entry flow.

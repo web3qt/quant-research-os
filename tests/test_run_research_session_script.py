@@ -46,6 +46,74 @@ def _freeze_draft(*, confirmed: bool) -> dict:
     }
 
 
+def _data_ready_freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "extraction_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "data_source": "binance um futures klines",
+                    "time_boundary": "2024-01-01 to 2024-12-31",
+                    "primary_time_key": "close_time",
+                    "bar_size": "5m",
+                },
+                "missing_items": [],
+            },
+            "quality_semantics": {
+                "confirmed": confirmed,
+                "draft": {
+                    "missing_policy": "preserve nulls explicitly",
+                    "stale_policy": "mark stale bars",
+                    "bad_price_policy": "flag only",
+                    "outlier_policy": "flag only",
+                    "dedupe_rule": "dedupe by symbol and close_time",
+                },
+                "missing_items": [],
+            },
+            "universe_admission": {
+                "confirmed": confirmed,
+                "draft": {
+                    "benchmark_symbol": "BTCUSDT",
+                    "coverage_floor": "99.0%",
+                    "admission_rule": "exclude symbols below coverage floor",
+                    "exclusion_reporting": "write csv and md reports",
+                },
+                "missing_items": [],
+            },
+            "shared_derived_layer": {
+                "confirmed": confirmed,
+                "draft": {
+                    "shared_outputs": [
+                        "rolling_stats",
+                        "pair_stats",
+                        "benchmark_residual",
+                        "topic_basket_state",
+                    ],
+                    "layer_boundary_note": "shared only, not signal layer",
+                },
+                "missing_items": [],
+            },
+            "delivery_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "machine_artifacts": [
+                        "aligned_bars/",
+                        "rolling_stats/",
+                        "pair_stats/",
+                        "benchmark_residual/",
+                        "topic_basket_state/",
+                        "qc_report.parquet",
+                        "dataset_manifest.json",
+                    ],
+                    "consumer_stage": "signal_ready",
+                    "frozen_inputs_note": "downstream consumes frozen outputs",
+                },
+                "missing_items": [],
+            },
+        }
+    }
+
+
 def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
@@ -261,4 +329,105 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
     )
 
     assert result.returncode == 0
-    assert "Current stage: mandate_review_complete" in result.stdout
+    assert "Current stage: data_ready_confirmation_pending" in result.stdout
+
+
+def test_run_research_session_reports_data_ready_next_group_after_mandate_review_complete(
+    tmp_path: Path,
+) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+
+    result = run(
+        [
+            "python",
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: data_ready_confirmation_pending" in result.stdout
+    assert "Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
+
+
+def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    data_ready_dir = lineage_root / "02_data_ready"
+    mandate_dir.mkdir(parents=True)
+    data_ready_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+
+    confirm_result = run(
+        [
+            "python",
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-data-ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert confirm_result.returncode == 0
+
+    result = run(
+        [
+            "python",
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: data_ready_review" in result.stdout
+    assert (lineage_root / "02_data_ready" / "data_contract.md").exists()

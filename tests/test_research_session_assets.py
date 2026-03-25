@@ -18,6 +18,10 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "scope_contract" in content
     assert "data_contract" in content
     assert "execution_contract" in content
+    assert "data_ready_confirmation_pending" in content
+    assert "extraction_contract" in content
+    assert "shared_derived_layer" in content
+    assert "是否按以上内容冻结 data_ready" in content
     assert "run_research_session.py" in content
 
 
@@ -36,3 +40,19 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "1m" in content or "5m" in content or "15m" in content
     assert "research_intent" in content
     assert "scope_contract" in content
+    assert "data_ready_confirmation_pending" in content
+    assert "shared_derived_layer" in content
+    assert "是否按以上内容冻结 data_ready" in content
+
+
+def test_data_ready_author_skill_exists() -> None:
+    skill_path = Path(".agents/skills/qros-data-ready-author/SKILL.md")
+    content = skill_path.read_text(encoding="utf-8")
+
+    assert skill_path.exists()
+    assert "data_ready" in content.lower()
+    assert "extraction_contract" in content
+    assert "quality_semantics" in content
+    assert "universe_admission" in content
+    assert "shared_derived_layer" in content
+    assert "delivery_contract" in content

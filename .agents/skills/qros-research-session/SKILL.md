@@ -1,6 +1,6 @@
 ---
 name: qros-research-session
-description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, and mandate review from a single entry point.
+description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, and data_ready review from a single entry point.
 ---
 
 # QROS Research Session
@@ -14,7 +14,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review`
+- 显式推进 `idea_intake -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -24,10 +24,11 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `idea_intake`
 - `mandate`
 - `mandate review`
+- `data_ready`
+- `data_ready review`
 
 明确不覆盖：
 
-- `data_ready`
 - `signal_ready`
 - 更后续的 train/test/backtest/holdout/shadow
 
@@ -60,7 +61,19 @@ The user should not need to remember internal commands. Runtime commands are bac
 14. Drive mandate completion with the same discipline as `qros-mandate-author`
 15. When mandate artifacts are ready, move into mandate review
 16. Reuse the same gate discipline as `qros-mandate-review`
-17. Stop after `mandate review`; do not silently enter `data_ready`
+17. After mandate review closure, enter `data_ready_confirmation_pending`
+18. Confirm `extraction_contract`
+19. Confirm `quality_semantics`
+20. Confirm `universe_admission`
+21. Confirm `shared_derived_layer`
+22. Confirm `delivery_contract`
+23. Show one final data_ready summary
+24. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
+25. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
+26. Drive data_ready completion with the same discipline as `qros-data-ready-author`
+27. When data_ready artifacts are ready, move into data_ready review
+28. Reuse the same gate discipline as `qros-data-ready-review`
+29. Stop after `data_ready review`; do not silently enter `signal_ready`
 
 ## Auto vs Ask
 
@@ -77,7 +90,7 @@ Ask the user only when:
 - counter-hypothesis is missing
 - kill criteria are missing
 - intake should become `NEEDS_REFRAME` or `DROP`
-- a governance judgment must be made explicitly, especially `CONFIRM_MANDATE`, `HOLD`, or `REFRAME`
+- a governance judgment must be made explicitly, especially `CONFIRM_MANDATE`, `CONFIRM_DATA_READY`, `HOLD`, or `REFRAME`
 
 When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
 
@@ -90,13 +103,27 @@ When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
 
 Do not skip this question. Do not imply the transition already happened.
 
+When the stage is `data_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `extraction_contract` 这一组冻结什么？
+- `quality_semantics` 这一组冻结什么？
+- `universe_admission` 这一组冻结什么？
+- `shared_derived_layer` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 data_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+
 ## State Source Of Truth
 
 Use disk artifacts as the primary state:
 
 - `outputs/<lineage>/00_idea_intake/`
 - `outputs/<lineage>/01_mandate/`
+- `outputs/<lineage>/02_data_ready/`
 - mandate review closure artifacts
+- data_ready review closure artifacts
 
 Do not rely on chat history alone to determine progress.
 
@@ -117,8 +144,10 @@ After each meaningful step, report:
 - Do not fabricate `review_findings.yaml`
 - Do not bypass `idea_gate_decision.yaml`
 - Do not bypass `mandate_transition_approval.yaml`
+- Do not bypass `data_ready_transition_approval.yaml`
 - Do not bypass mandate review closure
-- Do not claim `data_ready` is unlocked in v1
+- Do not bypass data_ready review closure
+- Do not claim `signal_ready` is unlocked in v1
 - Do not require the user to type backend flags or internal runtime commands during the primary chat workflow
 
 ## Internal Discipline Sources
@@ -128,3 +157,5 @@ When writing or reviewing content, follow the same contracts as:
 - `qros-idea-intake-author`
 - `qros-mandate-author`
 - `qros-mandate-review`
+- `qros-data-ready-author`
+- `qros-data-ready-review`
