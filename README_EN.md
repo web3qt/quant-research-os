@@ -17,6 +17,8 @@ Current unified flow:
 - `mandate review`
 - `data_ready`
 - `data_ready review`
+- `signal_ready`
+- `signal_ready review`
 
 The intended experience is skill-first:
 

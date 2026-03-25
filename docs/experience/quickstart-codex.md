@@ -30,6 +30,8 @@ This version of QROS will drive:
 - `mandate review`
 - `data_ready`
 - `data_ready review`
+- `signal_ready`
+- `signal_ready review`
 
 The agent should:
 
@@ -42,7 +44,10 @@ The agent should:
 - continue into `data_ready_confirmation_pending` after mandate review closure
 - confirm grouped data_ready content during the conversation: `extraction_contract`, `quality_semantics`, `universe_admission`, `shared_derived_layer`, `delivery_contract`
 - explicitly ask `是否按以上内容冻结 data_ready？` before writing `02_data_ready/`
-- stop after `data_ready review`
+- continue into `signal_ready_confirmation_pending` after data_ready review closure
+- confirm grouped signal_ready content during the conversation: `signal_expression`, `param_identity`, `time_semantics`, `signal_schema`, `delivery_contract`
+- explicitly ask `是否按以上内容冻结 signal_ready？` before writing `03_signal_ready/`
+- stop after `signal_ready review`
 
 ## 4. What You Should See
 
@@ -64,4 +69,4 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 ## 6. Next
 
-After `data_ready review`, this version stops. `signal_ready` orchestration is not yet part of the single-entry flow.
+After `signal_ready review`, this version stops. `train_calibration` orchestration is not yet part of the single-entry flow.

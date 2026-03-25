@@ -21,6 +21,12 @@ from tools.idea_runtime import (
     scaffold_idea_intake,
 )
 from tools.review_skillgen.review_engine import run_stage_review
+from tools.signal_ready_runtime import (
+    SIGNAL_READY_FREEZE_DRAFT_FILE,
+    SIGNAL_READY_FREEZE_GROUP_ORDER,
+    build_signal_ready_from_data_ready,
+    scaffold_signal_ready,
+)
 
 
 SessionStage = Literal[
@@ -31,10 +37,14 @@ SessionStage = Literal[
     "data_ready_confirmation_pending",
     "data_ready_author",
     "data_ready_review",
-    "data_ready_review_complete",
+    "signal_ready_confirmation_pending",
+    "signal_ready_author",
+    "signal_ready_review",
+    "signal_ready_review_complete",
 ]
 MandateTransitionDecision = Literal["CONFIRM_MANDATE", "HOLD", "REFRAME"]
 DataReadyTransitionDecision = Literal["CONFIRM_DATA_READY", "HOLD", "REFRAME"]
+SignalReadyTransitionDecision = Literal["CONFIRM_SIGNAL_READY", "HOLD", "REFRAME"]
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
     "research_scope.md",
@@ -67,8 +77,21 @@ DATA_READY_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+SIGNAL_READY_REQUIRED_OUTPUTS = [
+    "param_manifest.csv",
+    "params",
+    "signal_coverage.csv",
+    "signal_coverage.md",
+    "signal_coverage_summary.md",
+    "signal_contract.md",
+    "signal_fields_contract.md",
+    "signal_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 MANDATE_TRANSITION_APPROVAL_FILE = "mandate_transition_approval.yaml"
 DATA_READY_TRANSITION_APPROVAL_FILE = "data_ready_transition_approval.yaml"
+SIGNAL_READY_TRANSITION_APPROVAL_FILE = "signal_ready_transition_approval.yaml"
 
 
 @dataclass(frozen=True)
@@ -103,11 +126,20 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     intake_dir = lineage_root / "00_idea_intake"
     mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = lineage_root / "02_data_ready"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+
+    if _signal_ready_outputs_complete(signal_ready_dir):
+        if _signal_ready_closure_complete(signal_ready_dir):
+            return "signal_ready_review_complete"
+        return "signal_ready_review"
 
     if _data_ready_outputs_complete(data_ready_dir):
-        if _data_ready_closure_complete(data_ready_dir):
-            return "data_ready_review_complete"
-        return "data_ready_review"
+        if not _data_ready_closure_complete(data_ready_dir):
+            return "data_ready_review"
+        approval_decision = read_signal_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_SIGNAL_READY" and next_signal_ready_freeze_group(lineage_root) is None:
+            return "signal_ready_author"
+        return "signal_ready_confirmation_pending"
 
     if _mandate_outputs_complete(mandate_dir):
         if not _mandate_closure_complete(mandate_dir):
@@ -169,6 +201,23 @@ def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
 
     data_ready_dir = build_data_ready_from_mandate(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in data_ready_dir.iterdir())
+
+
+def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    if signal_ready_dir.exists() and (signal_ready_dir / SIGNAL_READY_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_signal_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in signal_ready_dir.iterdir())
+
+
+def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "signal_ready_author":
+        return []
+
+    signal_ready_dir = build_signal_ready_from_data_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in signal_ready_dir.iterdir())
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -242,6 +291,32 @@ def write_data_ready_transition_decision(
     return str(approval_path.relative_to(lineage_root))
 
 
+def write_signal_ready_transition_decision(
+    lineage_root: Path,
+    *,
+    decision: SignalReadyTransitionDecision,
+    approved_by: str = "codex",
+) -> str:
+    approval_path = _signal_ready_approval_path(lineage_root)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
+
+    approval_path.write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "decision": decision,
+                "approved_by": approved_by,
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "source_stage": "data_ready_review_complete",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return str(approval_path.relative_to(lineage_root))
+
+
 def read_mandate_transition_decision(lineage_root: Path) -> str | None:
     approval_path = _approval_path(lineage_root)
     if not approval_path.exists():
@@ -260,6 +335,17 @@ def read_data_ready_transition_decision(lineage_root: Path) -> str | None:
 
     decision = _read_yaml(approval_path).get("decision")
     if decision in {"CONFIRM_DATA_READY", "HOLD", "REFRAME"}:
+        return str(decision)
+    return None
+
+
+def read_signal_ready_transition_decision(lineage_root: Path) -> str | None:
+    approval_path = _signal_ready_approval_path(lineage_root)
+    if not approval_path.exists():
+        return None
+
+    decision = _read_yaml(approval_path).get("decision")
+    if decision in {"CONFIRM_SIGNAL_READY", "HOLD", "REFRAME"}:
         return str(decision)
     return None
 
@@ -303,6 +389,19 @@ def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "03_signal_ready" / SIGNAL_READY_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return SIGNAL_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in SIGNAL_READY_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def summarize_session_status(
     *,
     lineage_id: str,
@@ -333,6 +432,7 @@ def run_research_session(
     raw_idea: str | None = None,
     mandate_decision: MandateTransitionDecision | None = None,
     data_ready_decision: DataReadyTransitionDecision | None = None,
+    signal_ready_decision: SignalReadyTransitionDecision | None = None,
 ) -> SessionContext:
     lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
     lineage_root.mkdir(parents=True, exist_ok=True)
@@ -345,6 +445,10 @@ def run_research_session(
     if data_ready_decision is not None:
         artifacts_written.append(
             write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
+        )
+    if signal_ready_decision is not None:
+        artifacts_written.append(
+            write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
         )
 
     current_stage = detect_session_stage(lineage_root)
@@ -363,6 +467,14 @@ def run_research_session(
 
     if current_stage == "data_ready_author":
         artifacts_written.extend(build_data_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "signal_ready_confirmation_pending":
+        artifacts_written.extend(ensure_signal_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "signal_ready_author":
+        artifacts_written.extend(build_signal_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
@@ -387,6 +499,10 @@ def _data_ready_outputs_complete(data_ready_dir: Path) -> bool:
     return all((data_ready_dir / name).exists() for name in DATA_READY_REQUIRED_OUTPUTS)
 
 
+def _signal_ready_outputs_complete(signal_ready_dir: Path) -> bool:
+    return all((signal_ready_dir / name).exists() for name in SIGNAL_READY_REQUIRED_OUTPUTS)
+
+
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
     if (mandate_dir / "stage_completion_certificate.yaml").exists():
         return True
@@ -397,6 +513,12 @@ def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
     if (data_ready_dir / "stage_completion_certificate.yaml").exists():
         return True
     return all((data_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
+    if (signal_ready_dir / "stage_completion_certificate.yaml").exists():
+        return True
+    return all((signal_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
@@ -440,7 +562,22 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "data_ready_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run data_ready review"
 
-    return "REVIEW_COMPLETE", "Stop here until signal_ready orchestration exists"
+    if current_stage == "signal_ready_confirmation_pending":
+        next_group = next_signal_ready_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", f"Complete signal_ready freeze group: {next_group}"
+        decision = read_signal_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
+        return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", "Run with --confirm-signal-ready or reply CONFIRM_SIGNAL_READY <lineage_id>"
+
+    if current_stage == "signal_ready_author":
+        return "GO_TO_SIGNAL_READY_CONFIRMED", "Freeze signal_ready artifacts"
+
+    if current_stage == "signal_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run signal_ready review"
+
+    return "REVIEW_COMPLETE", "Stop here until train_calibration orchestration exists"
 
 
 def _read_yaml(path: Path) -> dict:
@@ -453,3 +590,7 @@ def _approval_path(lineage_root: Path) -> Path:
 
 def _data_ready_approval_path(lineage_root: Path) -> Path:
     return lineage_root / "02_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE
+
+
+def _signal_ready_approval_path(lineage_root: Path) -> Path:
+    return lineage_root / "03_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE

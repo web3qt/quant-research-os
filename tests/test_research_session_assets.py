@@ -22,6 +22,10 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "extraction_contract" in content
     assert "shared_derived_layer" in content
     assert "是否按以上内容冻结 data_ready" in content
+    assert "signal_ready_confirmation_pending" in content
+    assert "signal_expression" in content
+    assert "param_identity" in content
+    assert "是否按以上内容冻结 signal_ready" in content
     assert "run_research_session.py" in content
 
 
@@ -43,6 +47,9 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "data_ready_confirmation_pending" in content
     assert "shared_derived_layer" in content
     assert "是否按以上内容冻结 data_ready" in content
+    assert "signal_ready_confirmation_pending" in content
+    assert "signal_expression" in content
+    assert "是否按以上内容冻结 signal_ready" in content
 
 
 def test_data_ready_author_skill_exists() -> None:
@@ -55,4 +62,17 @@ def test_data_ready_author_skill_exists() -> None:
     assert "quality_semantics" in content
     assert "universe_admission" in content
     assert "shared_derived_layer" in content
+    assert "delivery_contract" in content
+
+
+def test_signal_ready_author_skill_exists() -> None:
+    skill_path = Path(".agents/skills/qros-signal-ready-author/SKILL.md")
+    content = skill_path.read_text(encoding="utf-8")
+
+    assert skill_path.exists()
+    assert "signal_ready" in content.lower()
+    assert "signal_expression" in content
+    assert "param_identity" in content
+    assert "time_semantics" in content
+    assert "signal_schema" in content
     assert "delivery_contract" in content

@@ -15,10 +15,11 @@ This version covers:
 - `mandate review`
 - `data_ready`
 - `data_ready review`
+- `signal_ready`
+- `signal_ready review`
 
 This version does **not** continue into:
 
-- `signal_ready`
 - later research stages
 
 ## User Entry
@@ -50,7 +51,13 @@ For debugging or manual recovery, explicit data_ready approval can also be trigg
 python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-data-ready
 ```
 
-用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate 和 data_ready。
+For debugging or manual recovery, explicit signal_ready approval can also be triggered through:
+
+```bash
+python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-signal-ready
+```
+
+用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready 和 signal_ready。
 
 ## How Stage Detection Works
 
@@ -63,7 +70,9 @@ The session runtime checks disk state in this order:
 5. mandate artifacts exist but review closure is missing -> `mandate review`
 6. mandate review closure exists -> `data_ready_confirmation_pending`
 7. data_ready artifacts exist but review closure is missing -> `data_ready review`
-8. data_ready review closure exists -> session stops and reports completion
+8. data_ready review closure exists -> `signal_ready_confirmation_pending`
+9. signal_ready artifacts exist but review closure is missing -> `signal_ready review`
+10. signal_ready review closure exists -> session stops and reports completion
 
 ## Expected User Experience
 
@@ -92,6 +101,13 @@ Then the system:
 - confirms `shared_derived_layer`
 - confirms `delivery_contract`
 - asks `是否按以上内容冻结 data_ready？` before data_ready generation
+- after data_ready review closure, freezes signal_ready interactively by group
+- confirms `signal_expression`
+- confirms `param_identity`
+- confirms `time_semantics`
+- confirms `signal_schema`
+- confirms `delivery_contract`
+- asks `是否按以上内容冻结 signal_ready？` before signal_ready generation
 
 ## Example Path
 
@@ -116,7 +132,15 @@ Then the system:
 18. QROS confirms `delivery_contract`
 19. QROS shows the final grouped data_ready summary and asks `是否按以上内容冻结 data_ready？`
 20. The agent internally records the approval decision and then builds `02_data_ready/`
-21. Once data_ready review closure exists, the session stops instead of entering `signal_ready`
+21. Once data_ready review closure exists, QROS enters `signal_ready_confirmation_pending`
+22. QROS confirms `signal_expression`
+23. QROS confirms `param_identity`
+24. QROS confirms `time_semantics`
+25. QROS confirms `signal_schema`
+26. QROS confirms `delivery_contract`
+27. QROS shows the final grouped signal_ready summary and asks `是否按以上内容冻结 signal_ready？`
+28. The agent internally records the approval decision and then builds `03_signal_ready/`
+29. Once signal_ready review closure exists, the session stops instead of entering later stages
 
 ## Why This Exists
 

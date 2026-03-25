@@ -124,6 +124,68 @@ def _data_ready_freeze_draft(*, confirmed: bool) -> dict:
     }
 
 
+def _signal_ready_freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "signal_expression": {
+                "confirmed": confirmed,
+                "draft": {
+                    "baseline_signal": "btc_alt_residual_response",
+                    "upstream_inputs": ["benchmark_residual", "topic_basket_state"],
+                    "state_fields": ["btc_residual_z"],
+                    "filter_fields": ["alt_liquidity_bucket"],
+                },
+                "missing_items": [],
+            },
+            "param_identity": {
+                "confirmed": confirmed,
+                "draft": {
+                    "param_id": "baseline_v1",
+                    "parameter_values": {
+                        "event_window": "15m",
+                        "response_horizon": "30m",
+                        "normalization": "residual_z_v1",
+                    },
+                    "identity_note": "baseline only, no search batch",
+                },
+                "missing_items": [],
+            },
+            "time_semantics": {
+                "confirmed": confirmed,
+                "draft": {
+                    "signal_timestamp": "close_time",
+                    "label_alignment": "future returns start after the completed signal bar",
+                    "no_lookahead_guardrail": "labels use only completed bars",
+                },
+                "missing_items": [],
+            },
+            "signal_schema": {
+                "confirmed": confirmed,
+                "draft": {
+                    "timeseries_schema": ["ts", "symbol", "param_id", "signal_value"],
+                    "quality_fields": ["coverage_rate", "low_sample_rate", "pair_missing_rate"],
+                    "schema_note": "baseline signal schema frozen",
+                },
+                "missing_items": [],
+            },
+            "delivery_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "machine_artifacts": ["param_manifest.csv", "params/", "signal_coverage.csv"],
+                    "doc_artifacts": [
+                        "signal_coverage.md",
+                        "signal_coverage_summary.md",
+                        "signal_contract.md",
+                        "signal_fields_contract.md",
+                    ],
+                    "consumer_stage": "train_calibration",
+                },
+                "missing_items": [],
+            },
+        }
+    }
+
+
 def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "scaffold_idea_intake.py"
@@ -367,6 +429,58 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
     assert (data_ready_dir / "data_contract.md").exists()
     assert (data_ready_dir / "artifact_catalog.md").exists()
     assert "Built data_ready artifacts" in result.stdout
+
+
+def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    data_ready_dir = lineage_root / "02_data_ready"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    data_ready_dir.mkdir(parents=True)
+    signal_ready_dir.mkdir(parents=True)
+
+    for name in [
+        "qc_report.parquet",
+        "dataset_manifest.json",
+        "validation_report.md",
+        "data_contract.md",
+        "dedupe_rule.md",
+        "universe_summary.md",
+        "universe_exclusions.csv",
+        "universe_exclusions.md",
+        "data_ready_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in [
+        "aligned_bars",
+        "rolling_stats",
+        "pair_stats",
+        "benchmark_residual",
+        "topic_basket_state",
+    ]:
+        (data_ready_dir / name).mkdir()
+
+    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+
+    result = run(
+        ["python", str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert (signal_ready_dir / "param_manifest.csv").exists()
+    assert (signal_ready_dir / "params").exists()
+    assert (signal_ready_dir / "signal_coverage.csv").exists()
+    assert (signal_ready_dir / "signal_contract.md").exists()
+    assert (signal_ready_dir / "signal_fields_contract.md").exists()
+    assert (signal_ready_dir / "artifact_catalog.md").exists()
+    assert "Built signal_ready artifacts" in result.stdout
 
 
 def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Path) -> None:

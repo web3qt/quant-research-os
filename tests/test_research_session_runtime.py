@@ -97,6 +97,68 @@ def _data_ready_freeze_draft(*, confirmed: bool) -> dict:
     }
 
 
+def _signal_ready_freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "signal_expression": {
+                "confirmed": confirmed,
+                "draft": {
+                    "baseline_signal": "btc_alt_residual_response",
+                    "upstream_inputs": ["benchmark_residual", "topic_basket_state"],
+                    "state_fields": ["btc_residual_z"],
+                    "filter_fields": ["alt_liquidity_bucket"],
+                },
+                "missing_items": [],
+            },
+            "param_identity": {
+                "confirmed": confirmed,
+                "draft": {
+                    "param_id": "baseline_v1",
+                    "parameter_values": {
+                        "event_window": "15m",
+                        "response_horizon": "30m",
+                        "normalization": "residual_z_v1",
+                    },
+                    "identity_note": "baseline only, no search batch",
+                },
+                "missing_items": [],
+            },
+            "time_semantics": {
+                "confirmed": confirmed,
+                "draft": {
+                    "signal_timestamp": "close_time",
+                    "label_alignment": "future returns start after the completed signal bar",
+                    "no_lookahead_guardrail": "labels use only completed bars",
+                },
+                "missing_items": [],
+            },
+            "signal_schema": {
+                "confirmed": confirmed,
+                "draft": {
+                    "timeseries_schema": ["ts", "symbol", "param_id", "signal_value"],
+                    "quality_fields": ["coverage_rate", "low_sample_rate", "pair_missing_rate"],
+                    "schema_note": "baseline signal schema frozen for downstream consumers",
+                },
+                "missing_items": [],
+            },
+            "delivery_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "machine_artifacts": ["param_manifest.csv", "params/", "signal_coverage.csv"],
+                    "doc_artifacts": [
+                        "signal_coverage.md",
+                        "signal_coverage_summary.md",
+                        "signal_contract.md",
+                        "signal_fields_contract.md",
+                    ],
+                    "consumer_stage": "train_calibration",
+                },
+                "missing_items": [],
+            },
+        }
+    }
+
+
 def test_slugify_idea_derives_stable_lineage_id() -> None:
     assert slugify_idea("BTC leads high-liquidity alts after shock events") == (
         "btc_leads_high_liquidity_alts_after_shock_events"
@@ -360,7 +422,7 @@ def test_detect_session_stage_returns_data_ready_review_when_outputs_exist(tmp_p
     assert detect_session_stage(lineage_root) == "data_ready_review"
 
 
-def test_detect_session_stage_returns_data_ready_review_complete_when_closure_exists(
+def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closure_exists(
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
@@ -390,7 +452,166 @@ def test_detect_session_stage_returns_data_ready_review_complete_when_closure_ex
     ]:
         (data_ready_dir / name).mkdir()
 
-    assert detect_session_stage(lineage_root) == "data_ready_review_complete"
+    assert detect_session_stage(lineage_root) == "signal_ready_confirmation_pending"
+
+
+def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_review_complete(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    data_ready_dir = lineage_root / "02_data_ready"
+    data_ready_dir.mkdir(parents=True)
+    for name in [
+        "qc_report.parquet",
+        "dataset_manifest.json",
+        "validation_report.md",
+        "data_contract.md",
+        "dedupe_rule.md",
+        "universe_summary.md",
+        "universe_exclusions.csv",
+        "universe_exclusions.md",
+        "data_ready_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in [
+        "aligned_bars",
+        "rolling_stats",
+        "pair_stats",
+        "benchmark_residual",
+        "topic_basket_state",
+    ]:
+        (data_ready_dir / name).mkdir()
+
+    assert detect_session_stage(lineage_root) == "signal_ready_confirmation_pending"
+
+
+def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    data_ready_dir = lineage_root / "02_data_ready"
+    data_ready_dir.mkdir(parents=True)
+    for name in [
+        "qc_report.parquet",
+        "dataset_manifest.json",
+        "validation_report.md",
+        "data_contract.md",
+        "dedupe_rule.md",
+        "universe_summary.md",
+        "universe_exclusions.csv",
+        "universe_exclusions.md",
+        "data_ready_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in [
+        "aligned_bars",
+        "rolling_stats",
+        "pair_stats",
+        "benchmark_residual",
+        "topic_basket_state",
+    ]:
+        (data_ready_dir / name).mkdir()
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "signal_ready_confirmation_pending"
+    assert status.next_action == "Complete signal_ready freeze group: signal_expression"
+
+
+def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confirmed(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    data_ready_dir = lineage_root / "02_data_ready"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    data_ready_dir.mkdir(parents=True)
+    signal_ready_dir.mkdir(parents=True)
+    for name in [
+        "qc_report.parquet",
+        "dataset_manifest.json",
+        "validation_report.md",
+        "data_contract.md",
+        "dedupe_rule.md",
+        "universe_summary.md",
+        "universe_exclusions.csv",
+        "universe_exclusions.md",
+        "data_ready_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in [
+        "aligned_bars",
+        "rolling_stats",
+        "pair_stats",
+        "benchmark_residual",
+        "topic_basket_state",
+    ]:
+        (data_ready_dir / name).mkdir()
+    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+    _write_yaml(
+        signal_ready_dir / "signal_ready_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_SIGNAL_READY",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "data_ready_review_complete",
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "signal_ready_author"
+
+
+def test_detect_session_stage_returns_signal_ready_review_when_outputs_exist(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    signal_ready_dir.mkdir(parents=True)
+    for name in [
+        "param_manifest.csv",
+        "signal_coverage.csv",
+        "signal_coverage.md",
+        "signal_coverage_summary.md",
+        "signal_contract.md",
+        "signal_fields_contract.md",
+        "signal_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    (signal_ready_dir / "params").mkdir()
+
+    assert detect_session_stage(lineage_root) == "signal_ready_review"
+
+
+def test_detect_session_stage_returns_signal_ready_review_complete_when_closure_exists(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    signal_ready_dir.mkdir(parents=True)
+    for name in [
+        "param_manifest.csv",
+        "signal_coverage.csv",
+        "signal_coverage.md",
+        "signal_coverage_summary.md",
+        "signal_contract.md",
+        "signal_fields_contract.md",
+        "signal_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    (signal_ready_dir / "params").mkdir()
+
+    assert detect_session_stage(lineage_root) == "signal_ready_review_complete"
 
 
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:
