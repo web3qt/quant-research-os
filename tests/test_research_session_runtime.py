@@ -4,6 +4,7 @@ import yaml
 
 from tools.research_session import (
     detect_session_stage,
+    run_research_session,
     resolve_lineage_root,
     slugify_idea,
     summarize_session_status,
@@ -12,6 +13,20 @@ from tools.research_session import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "research_intent": {"confirmed": confirmed, "draft": {"research_question": "q"}},
+            "scope_contract": {"confirmed": confirmed, "draft": {"market": "binance perp"}},
+            "data_contract": {
+                "confirmed": confirmed,
+                "draft": {"data_source": "binance um futures klines", "bar_size": "5m"},
+            },
+            "execution_contract": {"confirmed": confirmed, "draft": {"time_split_note": "frozen"}},
+        }
+    }
 
 
 def test_slugify_idea_derives_stable_lineage_id() -> None:
@@ -101,8 +116,33 @@ def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitl
             "source_gate_verdict": "GO_TO_MANDATE",
         },
     )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=True))
 
     assert detect_session_stage(lineage_root) == "mandate_author"
+
+
+def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_confirmation_pending"
+    assert status.next_action == "Complete mandate freeze group: research_intent"
 
 
 def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exist(tmp_path: Path) -> None:

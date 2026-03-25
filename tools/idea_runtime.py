@@ -7,8 +7,65 @@ from typing import Any
 import yaml
 
 
+MANDATE_FREEZE_DRAFT_FILE = "mandate_freeze_draft.yaml"
+MANDATE_FREEZE_GROUP_ORDER = [
+    "research_intent",
+    "scope_contract",
+    "data_contract",
+    "execution_contract",
+]
+
+
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _blank_mandate_freeze_draft() -> dict[str, Any]:
+    return {
+        "groups": {
+            "research_intent": {
+                "confirmed": False,
+                "draft": {
+                    "research_question": "",
+                    "primary_hypothesis": "",
+                    "counter_hypothesis": "",
+                    "success_criteria": [],
+                    "failure_criteria": [],
+                    "excluded_topics": [],
+                },
+            },
+            "scope_contract": {
+                "confirmed": False,
+                "draft": {
+                    "market": "",
+                    "universe": "",
+                    "target_task": "",
+                    "excluded_scope": [],
+                    "budget_days": 0,
+                    "max_iterations": 0,
+                },
+            },
+            "data_contract": {
+                "confirmed": False,
+                "draft": {
+                    "data_source": "",
+                    "bar_size": "",
+                    "holding_horizons": [],
+                    "timestamp_semantics": "",
+                    "no_lookahead_guardrail": "",
+                },
+            },
+            "execution_contract": {
+                "confirmed": False,
+                "draft": {
+                    "time_split_note": "",
+                    "parameter_boundary_note": "",
+                    "artifact_contract_note": "",
+                    "crowding_capacity_note": "",
+                },
+            },
+        }
+    }
 
 
 def scaffold_idea_intake(lineage_root: Path) -> Path:
@@ -75,6 +132,7 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
             "rollback_target": "00_idea_intake",
         },
     )
+    _dump_yaml(intake_dir / MANDATE_FREEZE_DRAFT_FILE, _blank_mandate_freeze_draft())
     return intake_dir
 
 
@@ -88,21 +146,33 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     if gate_decision.get("verdict") != "GO_TO_MANDATE":
         raise ValueError("idea_gate_decision verdict must be GO_TO_MANDATE before mandate build")
 
-    scope_canvas = yaml.safe_load((intake_dir / "scope_canvas.yaml").read_text(encoding="utf-8"))
-    research_questions = (intake_dir / "research_question_set.md").read_text(encoding="utf-8")
-
     mandate_dir.mkdir(parents=True, exist_ok=True)
+    freeze_groups = _require_confirmed_freeze_groups(intake_dir)
+    research_intent = freeze_groups["research_intent"]["draft"]
+    scope_contract = freeze_groups["scope_contract"]["draft"]
+    data_contract = freeze_groups["data_contract"]["draft"]
+    execution_contract = freeze_groups["execution_contract"]["draft"]
 
-    approved_scope = gate_decision.get("approved_scope", {})
-    data_source = _resolve_scope_value("data_source", approved_scope, scope_canvas)
-    bar_size = _resolve_scope_value("bar_size", approved_scope, scope_canvas)
-    if not data_source or not bar_size:
-        missing = []
-        if not data_source:
-            missing.append("data_source")
-        if not bar_size:
-            missing.append("bar_size")
-        raise ValueError(f"confirmed mandate inputs missing: {', '.join(missing)}")
+    data_values = _require_draft_values(data_contract, "data_source", "bar_size")
+    data_source = data_values["data_source"]
+    bar_size = data_values["bar_size"]
+    research_question = _required_draft_value(research_intent, "research_question")
+    primary_hypothesis = _required_draft_value(research_intent, "primary_hypothesis")
+    counter_hypothesis = _required_draft_value(research_intent, "counter_hypothesis")
+    market = _required_draft_value(scope_contract, "market")
+    universe = _required_draft_value(scope_contract, "universe")
+    target_task = _required_draft_value(scope_contract, "target_task")
+    time_split_note = _required_draft_value(execution_contract, "time_split_note")
+    parameter_boundary_note = _required_draft_value(execution_contract, "parameter_boundary_note")
+    artifact_contract_note = _required_draft_value(execution_contract, "artifact_contract_note")
+    crowding_capacity_note = _required_draft_value(execution_contract, "crowding_capacity_note")
+    holding_horizons = _string_list(data_contract.get("holding_horizons", []))
+    success_criteria = _string_list(research_intent.get("success_criteria", []))
+    failure_criteria = _string_list(research_intent.get("failure_criteria", []))
+    excluded_topics = _string_list(research_intent.get("excluded_topics", []))
+    excluded_scope = _string_list(scope_contract.get("excluded_scope", []))
+    timestamp_semantics = _required_draft_value(data_contract, "timestamp_semantics")
+    no_lookahead_guardrail = _required_draft_value(data_contract, "no_lookahead_guardrail")
 
     (mandate_dir / "mandate.md").write_text(
         "\n".join(
@@ -115,14 +185,35 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "",
                 "- Convert qualified intake into a formal mandate.",
                 "",
-                "## Research Questions",
+                "## Research Intent",
                 "",
-                research_questions.strip(),
+                f"- Research question: {research_question}",
+                f"- Primary hypothesis: {primary_hypothesis}",
+                f"- Counter-hypothesis: {counter_hypothesis}",
+                f"- Excluded topics: {', '.join(excluded_topics)}",
+                "",
+                "## Success Criteria",
+                "",
+                *[f"- {item}" for item in success_criteria],
+                "",
+                "## Failure Criteria",
+                "",
+                *[f"- {item}" for item in failure_criteria],
                 "",
                 "## Frozen Execution Inputs",
                 "",
                 f"- Data source: {data_source}",
                 f"- Bar size: {bar_size}",
+                f"- Holding horizons: {', '.join(holding_horizons)}",
+                f"- Timestamp semantics: {timestamp_semantics}",
+                f"- No-lookahead guardrail: {no_lookahead_guardrail}",
+                "",
+                "## Execution Contract",
+                "",
+                f"- Time split policy: {time_split_note}",
+                f"- Parameter boundary policy: {parameter_boundary_note}",
+                f"- Artifact contract: {artifact_contract_note}",
+                f"- Crowding/capacity note: {crowding_capacity_note}",
                 "",
                 "## Gate Basis",
                 "",
@@ -138,12 +229,14 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 "# Research Scope",
                 "",
-                f"- Market: {approved_scope.get('market', scope_canvas.get('market', ''))}",
+                f"- Market: {market}",
                 f"- Data source: {data_source}",
-                f"- Universe: {approved_scope.get('universe', scope_canvas.get('universe', ''))}",
+                f"- Universe: {universe}",
                 f"- Bar size: {bar_size}",
-                f"- Target task: {approved_scope.get('target_task', scope_canvas.get('target_task', ''))}",
-                f"- Excluded scope: {', '.join(approved_scope.get('excluded_scope', scope_canvas.get('excluded_scope', [])))}",
+                f"- Target task: {target_task}",
+                f"- Excluded scope: {', '.join(excluded_scope)}",
+                f"- Budget days: {scope_contract.get('budget_days', 0)}",
+                f"- Max iterations: {scope_contract.get('max_iterations', 0)}",
             ]
         )
         + "\n",
@@ -158,6 +251,8 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "backtest": "",
                 "holdout": "",
                 "bar_size": bar_size,
+                "holding_horizons": holding_horizons,
+                "policy_note": time_split_note,
             },
             indent=2,
             ensure_ascii=False,
@@ -177,6 +272,9 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 'stage = "mandate"',
                 f'lineage_id = "{lineage_root.name}"',
+                f'market = "{market}"',
+                f'universe = "{universe}"',
+                f'target_task = "{target_task}"',
                 f'data_source = "{data_source}"',
                 f'bar_size = "{bar_size}"',
             ]
@@ -195,7 +293,9 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "",
                 f"- `data_source`: frozen upstream source for this mandate, currently `{data_source}`.",
                 f"- `bar_size`: frozen research cadence for this mandate, currently `{bar_size}`.",
-                "- TODO: define remaining formal fields consumed by downstream stages.",
+                f"- `holding_horizons`: frozen evaluation horizons, currently `{holding_horizons}`.",
+                f"- `artifact_contract`: {artifact_contract_note}",
+                f"- `no_lookahead_guardrail`: {no_lookahead_guardrail}",
                 "",
             ]
         ),
@@ -204,8 +304,46 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     return mandate_dir
 
 
-def _resolve_scope_value(key: str, approved_scope: dict[str, Any], scope_canvas: dict[str, Any]) -> str:
-    value = approved_scope.get(key, scope_canvas.get(key, ""))
-    if value is None:
-        return ""
-    return str(value).strip()
+def _require_confirmed_freeze_groups(intake_dir: Path) -> dict[str, Any]:
+    draft_path = intake_dir / MANDATE_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        raise ValueError(f"{MANDATE_FREEZE_DRAFT_FILE} is required before mandate build")
+
+    draft_payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
+    groups = draft_payload.get("groups", {})
+    missing_groups = [
+        name for name in MANDATE_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))
+    ]
+    if missing_groups:
+        raise ValueError(
+            f"{MANDATE_FREEZE_DRAFT_FILE} has unconfirmed groups: {', '.join(missing_groups)}"
+        )
+    return groups
+
+
+def _required_draft_value(group_payload: dict[str, Any], key: str) -> str:
+    value = group_payload.get(key, "")
+    normalized = str(value).strip()
+    if not normalized:
+        raise ValueError(f"confirmed mandate inputs missing: {key}")
+    return normalized
+
+
+def _require_draft_values(group_payload: dict[str, Any], *keys: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    missing: list[str] = []
+    for key in keys:
+        value = str(group_payload.get(key, "")).strip()
+        if not value:
+            missing.append(key)
+            continue
+        values[key] = value
+    if missing:
+        raise ValueError(f"confirmed mandate inputs missing: {', '.join(missing)}")
+    return values
+
+
+def _string_list(raw_value: Any) -> list[str]:
+    if not isinstance(raw_value, list):
+        return []
+    return [str(item) for item in raw_value if str(item).strip()]

@@ -8,6 +8,44 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _freeze_draft(*, confirmed: bool) -> dict:
+    return {
+        "groups": {
+            "research_intent": {
+                "confirmed": confirmed,
+                "draft": {
+                    "research_question": "Does BTC lead ALTs?",
+                    "primary_hypothesis": "BTC leads price discovery.",
+                    "counter_hypothesis": "Shared beta only.",
+                },
+            },
+            "scope_contract": {
+                "confirmed": confirmed,
+                "draft": {"market": "binance perp", "universe": "high liquidity alts", "target_task": "study"},
+            },
+            "data_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "data_source": "binance um futures klines",
+                    "bar_size": "5m",
+                    "holding_horizons": ["15m", "30m"],
+                    "timestamp_semantics": "close-to-close utc bars",
+                    "no_lookahead_guardrail": "labels use completed bars only",
+                },
+            },
+            "execution_contract": {
+                "confirmed": confirmed,
+                "draft": {
+                    "time_split_note": "freeze windows before signal work",
+                    "parameter_boundary_note": "event-window params only",
+                    "artifact_contract_note": "register every machine-readable artifact",
+                    "crowding_capacity_note": "reuse one liquidity proxy later",
+                },
+            },
+        }
+    }
+
+
 def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
@@ -60,6 +98,7 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
         intake_dir / "scope_canvas.yaml",
         {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
     )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
 
     result = run(
@@ -79,6 +118,7 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
 
     assert result.returncode == 0
     assert "Current stage: mandate_confirmation_pending" in result.stdout
+    assert "Next action: Complete mandate freeze group: research_intent" in result.stdout
     assert not (lineage_root / "01_mandate" / "mandate.md").exists()
 
 
@@ -108,6 +148,7 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
         intake_dir / "scope_canvas.yaml",
         {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
     )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=True))
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
 
     confirm_result = run(

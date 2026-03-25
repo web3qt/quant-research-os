@@ -69,8 +69,12 @@ Then the system:
 - reports the current stage
 - writes deterministic artifacts when it can
 - stops to ask for missing research judgments or explicit governance approval
-- confirms 数据来源哪里来
-- confirms 后续研究周期基于什么 bar size，例如 `1m`、`5m`、`15m`
+- freezes mandate interactively by group
+- confirms `research_intent`
+- confirms `scope_contract`
+- confirms `data_contract`
+  这里会明确问数据来源哪里来，以及后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
+- confirms `execution_contract`
 - asks `是否确认进入 mandate？` before mandate generation
 
 ## Example Path
@@ -79,12 +83,16 @@ Then the system:
 2. QROS creates a lineage and scaffolds `00_idea_intake/`
 3. Intake artifacts are filled and `idea_gate_decision.yaml` is produced
 4. If verdict is `GO_TO_MANDATE`, QROS stops at `mandate_confirmation_pending`
-5. QROS asks 数据来源哪里来
-6. QROS asks 后续研究周期基于什么 bar size，例如 `1m`、`5m`、`15m`
-7. QROS reports `why_now`, `open_risks`, and asks `是否确认进入 mandate？`
-8. The user answers in natural language
-9. The agent internally records the approval decision and then builds `01_mandate/`
-10. Once mandate review closure exists, the session stops instead of entering `data_ready`
+5. QROS enters grouped freeze mode instead of silently writing mandate
+6. QROS confirms `research_intent`
+7. QROS confirms `scope_contract`
+8. QROS confirms `data_contract`
+   这里会明确问数据来源和 `bar_size`
+9. QROS confirms `execution_contract`
+10. QROS shows the final grouped mandate summary and asks `是否确认进入 mandate？`
+11. The user answers in natural language
+12. The agent internally records the approval decision and then builds `01_mandate/`
+13. Once mandate review closure exists, the session stops instead of entering `data_ready`
 
 ## Why This Exists
 

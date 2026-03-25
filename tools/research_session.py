@@ -8,7 +8,12 @@ from typing import Literal
 
 import yaml
 
-from tools.idea_runtime import build_mandate_from_intake, scaffold_idea_intake
+from tools.idea_runtime import (
+    MANDATE_FREEZE_DRAFT_FILE,
+    MANDATE_FREEZE_GROUP_ORDER,
+    build_mandate_from_intake,
+    scaffold_idea_intake,
+)
 from tools.review_skillgen.review_engine import run_stage_review
 
 
@@ -86,7 +91,7 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
         return "idea_intake"
 
     approval_decision = read_mandate_transition_decision(lineage_root)
-    if approval_decision == "CONFIRM_MANDATE":
+    if approval_decision == "CONFIRM_MANDATE" and next_mandate_freeze_group(lineage_root) is None:
         return "mandate_author"
     if approval_decision == "REFRAME":
         return "idea_intake"
@@ -180,21 +185,17 @@ def session_transition_summary(lineage_root: Path) -> tuple[list[str], list[str]
     return why_now, open_risks
 
 
-def missing_mandate_confirmation_inputs(lineage_root: Path) -> list[str]:
-    intake_dir = lineage_root / "00_idea_intake"
-    scope_path = intake_dir / "scope_canvas.yaml"
-    gate_path = intake_dir / "idea_gate_decision.yaml"
-    if not scope_path.exists() or not gate_path.exists():
-        return []
+def next_mandate_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return MANDATE_FREEZE_GROUP_ORDER[0]
 
-    scope_canvas = _read_yaml(scope_path)
-    approved_scope = _read_yaml(gate_path).get("approved_scope", {})
-    missing: list[str] = []
-    for key in ("data_source", "bar_size"):
-        value = approved_scope.get(key, scope_canvas.get(key, ""))
-        if str(value or "").strip() == "":
-            missing.append(key)
-    return missing
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in MANDATE_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
 
 
 def summarize_session_status(
@@ -282,12 +283,9 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "IN_PROGRESS", "Complete intake artifacts and qualification"
 
     if current_stage == "mandate_confirmation_pending":
-        missing = missing_mandate_confirmation_inputs(lineage_root)
-        if missing:
-            return (
-                "GO_TO_MANDATE_PENDING_CONFIRMATION",
-                f"Confirm {', '.join(missing)} before final mandate approval",
-            )
+        next_group = next_mandate_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_MANDATE_PENDING_CONFIRMATION", f"Complete mandate freeze group: {next_group}"
         decision = read_mandate_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_MANDATE_ON_HOLD", "Wait for explicit CONFIRM_MANDATE"
