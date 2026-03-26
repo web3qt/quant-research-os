@@ -1,0 +1,2 @@
+name: qros-holdout-validation-author
+description: Use when reviewed backtest_ready outputs must be frozen into formal holdout_validation artifacts through grouped interactive confirmation.
