@@ -52,6 +52,22 @@ qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
 qros-research-session help
 ```
 
+## 日常使用
+
+正常使用时，直接在研究仓里通过 skill 名称进入：
+
+```text
+qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
+qros-mandate-review
+```
+
+如果要做手动诊断或恢复，可以直接调用仓库里的稳定 wrapper：
+
+```bash
+~/.codex/qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+~/.codex/qros/bin/qros-review
+```
+
 ## 安装后更新
 
 更新只需要：
