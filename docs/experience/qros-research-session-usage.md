@@ -2,13 +2,13 @@
 
 ## What It Is
 
-`qros-research-session` is the single-entry orchestrator for the current QROS workflow slice.
+`qros-research-session` 是当前这段 QROS 工作流的统一单入口 orchestrator。
 
-Instead of remembering multiple commands, you start with one skill and let QROS decide where the lineage currently is.
+用户不需要记多个命令，只要从这一个 skill 开始，让 QROS 判断当前 lineage 处在哪个阶段。
 
 ## First-Wave Boundary
 
-This version covers:
+当前版本覆盖：
 
 - `idea_intake`
 - `idea_intake_confirmation_pending`
@@ -27,60 +27,60 @@ This version covers:
 - `holdout_validation`
 - `holdout_validation review`
 
-This version does **not** continue into:
+当前版本**不会**继续进入：
 
-- later research stages
+- 更后面的研究阶段
 
 ## User Entry
 
-In Codex, start with:
+在 Codex 里，可以这样开始：
 
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-The agent should then drive the session for you.
+之后 agent 会接管并推进整个 session。
 
-Codex finds the skill through `~/.agents/skills/qros`, which should point to `~/.codex/qros/skills`.
+Codex 会通过 `~/.agents/skills/qros` 找到这个 skill；这个路径应当指向 `~/.codex/qros/skills`。
 
 对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 `idea_intake_confirmation_pending`，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria，并在得到显式确认后再进入正式 qualification。
 
 QROS 仓库是工作流框架，不是研究产物仓。安装后，agent 应该在用户当前打开的 research repo 中推进 lineage，并把正式阶段产物写到那个 repo 的 `outputs/<lineage_id>/` 下；空目录、placeholder 文件和只有合同语义的说明文档不能被当作 `data_ready` 或其他阶段已经真实完成。
 
-Review failure is not ordinary debugging. 当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
+阶段 review 失败不是普通调试。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
 ## Internal Runtime
 
-The deterministic backend entry point lives in the cloned repo:
+deterministic backend 的入口在克隆下来的仓库里：
 
 ```bash
 ~/.codex/qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
 ```
 
-For debugging or manual recovery, explicit intake interview approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 intake interview approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-intake
 ```
 
-For debugging or manual recovery, explicit mandate approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 mandate approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-mandate
 ```
 
-For debugging or manual recovery, explicit data_ready approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 data_ready approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-data-ready
 ```
 
-For debugging or manual recovery, explicit signal_ready approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 signal_ready approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-signal-ready
 ```
 
-For debugging or manual recovery, explicit train_freeze approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 train_freeze approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-train-freeze
@@ -90,7 +90,7 @@ For debugging or manual recovery, explicit train_freeze approval can also be tri
 
 对于 `data_ready`，这里的“build `02_data_ready/`”指的是在当前研究仓真实物化共享数据层和证据，而不是只在 QROS 框架仓里演示目录结构，或只写一份 skeleton 文档。
 
-For debugging or manual recovery, explicit test_evidence approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 test_evidence approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-test-evidence
@@ -100,7 +100,7 @@ For debugging or manual recovery, explicit test_evidence approval can also be tr
 
 对于 `signal_ready`、`train_freeze`、`test_evidence`、`backtest_ready` 和 `holdout_validation`，这里的“build stage dir”同样指在当前研究仓真实生成该阶段要求的正式产物和证据，而不是只落目录、placeholder 文件或合同说明文档。
 
-For debugging or manual recovery, explicit backtest_ready approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 backtest_ready approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-backtest-ready
@@ -108,7 +108,7 @@ For debugging or manual recovery, explicit backtest_ready approval can also be t
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence 和 backtest_ready。
 
-For debugging or manual recovery, explicit holdout_validation approval can also be triggered through:
+如果要做调试或手动恢复，也可以通过下面的命令显式触发 holdout_validation approval：
 
 ```bash
 ~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-holdout-validation
@@ -118,7 +118,7 @@ For debugging or manual recovery, explicit holdout_validation approval can also 
 
 ## How Stage Detection Works
 
-The session runtime checks disk state in this order:
+session runtime 会按下面这个顺序检查磁盘状态：
 
 1. no intake scaffold yet -> `idea_intake`
 2. intake scaffold exists but intake interview is not explicitly approved -> `idea_intake_confirmation_pending`
@@ -140,165 +140,165 @@ The session runtime checks disk state in this order:
 18. holdout_validation artifacts exist but review closure is missing -> `holdout_validation review`
 19. holdout_validation review closure exists -> session stops and reports completion
 
-If a reviewed stage closes with `PASS FOR RETRY`, `RETRY`, `NO-GO`, or `CHILD LINEAGE`, the session must stop normal stage progression and enter `qros-stage-failure-handler` instead of opening the next stage.
+如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
 
 ## Expected User Experience
 
-You start from one skill:
+用户从一个 skill 开始：
 
 - `qros-research-session`
 
-Then the system:
+然后系统会：
 
-- resolves or creates the lineage
-- scaffolds intake if needed
-- reports the current stage
-- writes deterministic artifacts when it can
-- stops to ask for missing research judgments or explicit governance approval
-- for a brand-new idea, first asks intake questions instead of silently finalizing qualification
-- asks one explicit confirmation question before turning the intake interview into a real qualification verdict
-- confirms `observation`
-- confirms `primary hypothesis`
-- confirms `counter-hypothesis`
-- confirms `market` / `universe` / `target_task`
-- confirms `data_source` / `bar_size`
-- confirms `kill criteria` or `reframe` conditions
-- freezes mandate interactively by group
-- confirms `research_intent`
-- confirms `scope_contract`
-- confirms `data_contract`
+- 解析或创建 lineage
+- 如果需要，先 scaffold intake
+- 报告当前 stage
+- 在可以确定性写盘时写入 deterministic artifacts
+- 遇到缺失的研究判断或显式治理批准时停下来提问
+- 对于一个全新的想法，先问 intake 问题，而不是静默完成 qualification
+- 在把 intake interview 变成正式 qualification verdict 之前，先问一个显式确认问题
+- 确认 `observation`
+- 确认 `primary hypothesis`
+- 确认 `counter-hypothesis`
+- 确认 `market` / `universe` / `target_task`
+- 确认 `data_source` / `bar_size`
+- 确认 `kill criteria` 或 `reframe` 条件
+- 按 group 交互式冻结 mandate
+- 确认 `research_intent`
+- 确认 `scope_contract`
+- 确认 `data_contract`
   这里会明确问数据来源哪里来，以及后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
-- confirms `execution_contract`
-- asks `是否确认进入 mandate？` before mandate generation
-- after mandate review closure, freezes data_ready interactively by group
-- confirms `extraction_contract`
-- confirms `quality_semantics`
-- confirms `universe_admission`
-- confirms `shared_derived_layer`
-- confirms `delivery_contract`
-- makes the active research repo materialize the shared outputs and QC or coverage evidence promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `data_ready`
-- asks `是否按以上内容冻结 data_ready？` before data_ready generation
-- after data_ready review closure, freezes signal_ready interactively by group
-- confirms `signal_expression`
-- confirms `param_identity`
-- confirms `time_semantics`
-- confirms `signal_schema`
-- confirms `delivery_contract`
-- makes the active research repo materialize baseline signal timeseries, param manifests and coverage evidence promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `signal_ready`
-- asks `是否按以上内容冻结 signal_ready？` before signal_ready generation
-- after signal_ready review closure, freezes train_freeze interactively by group
-- confirms `window_contract`
-- confirms `threshold_contract`
-- confirms `quality_filters`
-- confirms `param_governance`
-- confirms `delivery_contract`
-- makes the active research repo materialize train thresholds, quality outputs and ledgers promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `train_freeze`
-- asks `是否按以上内容冻结 train_freeze？` before train_freeze generation
-- after train_freeze review closure, freezes test_evidence interactively by group
-- confirms `window_contract`
-- confirms `formal_gate_contract`
-- confirms `admissibility_contract`
-- confirms `audit_contract`
-- confirms `delivery_contract`
-- makes the active research repo materialize independent-sample statistics, admissibility outputs and frozen selections promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `test_evidence`
-- asks `是否按以上内容冻结 test_evidence？` before test_evidence generation
-- after test_evidence review closure, freezes backtest_ready interactively by group
-- confirms `execution_policy`
-- confirms `portfolio_policy`
-- confirms `risk_overlay`
-- confirms `engine_contract`
-- confirms `delivery_contract`
-- makes the active research repo materialize dual-engine backtest outputs, combo ledgers and capacity evidence promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `backtest_ready`
-- asks `是否按以上内容冻结 backtest_ready？` before backtest_ready generation
-- after backtest_ready review closure, freezes holdout_validation interactively by group
-- confirms `window_contract`
-- confirms `reuse_contract`
-- confirms `drift_audit`
-- confirms `failure_governance`
-- confirms `delivery_contract`
-- makes the active research repo materialize single-window, merged-window and comparison outputs promised by those groups
-- does not count empty directories, placeholder files, or contract-only markdown as a completed `holdout_validation`
-- asks `是否按以上内容冻结 holdout_validation？` before holdout_validation generation
+- 确认 `execution_contract`
+- 在生成 mandate 前先问 `是否确认进入 mandate？`
+- mandate review closure 完成后，按 group 交互式冻结 data_ready
+- 确认 `extraction_contract`
+- 确认 `quality_semantics`
+- 确认 `universe_admission`
+- 确认 `shared_derived_layer`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的共享输出，以及 QC 或 coverage 证据
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `data_ready`
+- 在生成 data_ready 前先问 `是否按以上内容冻结 data_ready？`
+- data_ready review closure 完成后，按 group 交互式冻结 signal_ready
+- 确认 `signal_expression`
+- 确认 `param_identity`
+- 确认 `time_semantics`
+- 确认 `signal_schema`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的 baseline signal timeseries、param manifests 和 coverage 证据
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `signal_ready`
+- 在生成 signal_ready 前先问 `是否按以上内容冻结 signal_ready？`
+- signal_ready review closure 完成后，按 group 交互式冻结 train_freeze
+- 确认 `window_contract`
+- 确认 `threshold_contract`
+- 确认 `quality_filters`
+- 确认 `param_governance`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的 train thresholds、质量输出和 ledgers
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `train_freeze`
+- 在生成 train_freeze 前先问 `是否按以上内容冻结 train_freeze？`
+- train_freeze review closure 完成后，按 group 交互式冻结 test_evidence
+- 确认 `window_contract`
+- 确认 `formal_gate_contract`
+- 确认 `admissibility_contract`
+- 确认 `audit_contract`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的 independent-sample statistics、admissibility outputs 和 frozen selections
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `test_evidence`
+- 在生成 test_evidence 前先问 `是否按以上内容冻结 test_evidence？`
+- test_evidence review closure 完成后，按 group 交互式冻结 backtest_ready
+- 确认 `execution_policy`
+- 确认 `portfolio_policy`
+- 确认 `risk_overlay`
+- 确认 `engine_contract`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的 dual-engine backtest outputs、combo ledgers 和 capacity evidence
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `backtest_ready`
+- 在生成 backtest_ready 前先问 `是否按以上内容冻结 backtest_ready？`
+- backtest_ready review closure 完成后，按 group 交互式冻结 holdout_validation
+- 确认 `window_contract`
+- 确认 `reuse_contract`
+- 确认 `drift_audit`
+- 确认 `failure_governance`
+- 确认 `delivery_contract`
+- 让当前 research repo 真实物化这些 group 承诺的 single-window、merged-window 和 comparison outputs
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `holdout_validation`
+- 在生成 holdout_validation 前先问 `是否按以上内容冻结 holdout_validation？`
 
 ## Example Path
 
-1. Start with a raw idea about BTC leading alt reactions
-2. QROS creates a lineage and scaffolds `00_idea_intake/`
-3. QROS first asks intake questions instead of silently finalizing qualification
-4. Intake artifacts are then filled and `idea_gate_decision.yaml` is produced
-5. If verdict is `GO_TO_MANDATE`, QROS stops at `mandate_confirmation_pending`
-6. QROS enters grouped freeze mode instead of silently writing mandate
-7. QROS confirms `research_intent`
-8. QROS confirms `scope_contract`
-9. QROS confirms `data_contract`
+1. 从一个关于 BTC 带动 alt 反应的 raw idea 开始
+2. QROS 创建 lineage，并 scaffold `00_idea_intake/`
+3. QROS 会先问 intake 问题，而不是静默完成 qualification
+4. 然后补齐 intake artifacts，并产出 `idea_gate_decision.yaml`
+5. 如果 verdict 是 `GO_TO_MANDATE`，QROS 会停在 `mandate_confirmation_pending`
+6. QROS 进入 grouped freeze 模式，而不是静默写出 mandate
+7. QROS 确认 `research_intent`
+8. QROS 确认 `scope_contract`
+9. QROS 确认 `data_contract`
    这里会明确问数据来源和 `bar_size`
-10. QROS confirms `execution_contract`
-11. QROS shows the final grouped mandate summary and asks `是否确认进入 mandate？`
-12. The user answers in natural language
-13. The agent internally records the approval decision and then builds `01_mandate/`
-14. Once mandate review closure exists, QROS enters `data_ready_confirmation_pending`
-15. QROS confirms `extraction_contract`
-16. QROS confirms `quality_semantics`
-17. QROS confirms `universe_admission`
-18. QROS confirms `shared_derived_layer`
-19. QROS confirms `delivery_contract`
-20. QROS shows the final grouped data_ready summary and asks `是否按以上内容冻结 data_ready？`
-21. The agent internally records the approval decision and then builds `02_data_ready/` in the active research repo
-22. That build is expected to materialize real shared data artifacts and evidence rather than only scaffold directories or placeholder files
-23. Once data_ready review closure exists, QROS enters `signal_ready_confirmation_pending`
-24. QROS confirms `signal_expression`
-25. QROS confirms `param_identity`
-26. QROS confirms `time_semantics`
-27. QROS confirms `signal_schema`
-28. QROS confirms `delivery_contract`
-29. QROS shows the final grouped signal_ready summary and asks `是否按以上内容冻结 signal_ready？`
-30. The agent internally records the approval decision and then builds `03_signal_ready/` in the active research repo
-31. That build is expected to materialize real signal timeseries, param manifests and coverage evidence rather than only scaffold directories or placeholder files
-32. Once signal_ready review closure exists, QROS enters `train_freeze_confirmation_pending`
-33. QROS confirms `window_contract`
-34. QROS confirms `threshold_contract`
-35. QROS confirms `quality_filters`
-36. QROS confirms `param_governance`
-37. QROS confirms `delivery_contract`
-38. QROS shows the final grouped train_freeze summary and asks `是否按以上内容冻结 train_freeze？`
-39. The agent internally records the approval decision and then builds `04_train_freeze/` in the active research repo
-40. That build is expected to materialize real train thresholds, quality outputs and ledgers rather than only scaffold directories or placeholder files
-41. Once train_freeze review closure exists, QROS enters `test_evidence_confirmation_pending`
-42. QROS confirms `window_contract`
-43. QROS confirms `formal_gate_contract`
-44. QROS confirms `admissibility_contract`
-45. QROS confirms `audit_contract`
-46. QROS confirms `delivery_contract`
-47. QROS shows the final grouped test_evidence summary and asks `是否按以上内容冻结 test_evidence？`
-48. The agent internally records the approval decision and then builds `05_test_evidence/` in the active research repo
-49. That build is expected to materialize real test statistics, admissibility outputs and frozen selection artifacts rather than only scaffold directories or placeholder files
-50. Once test_evidence review closure exists, QROS enters `backtest_ready_confirmation_pending`
-51. QROS confirms `execution_policy`
-52. QROS confirms `portfolio_policy`
-53. QROS confirms `risk_overlay`
-54. QROS confirms `engine_contract`
-55. QROS confirms `delivery_contract`
-56. QROS shows the final grouped backtest_ready summary and asks `是否按以上内容冻结 backtest_ready？`
-57. The agent internally records the approval decision and then builds `06_backtest/` in the active research repo
-58. That build is expected to materialize real dual-engine backtest outputs, combo ledgers and capacity evidence rather than only scaffold directories or placeholder files
-59. Once backtest_ready review closure exists, QROS enters `holdout_validation_confirmation_pending`
-60. QROS confirms `window_contract`
-61. QROS confirms `reuse_contract`
-62. QROS confirms `drift_audit`
-63. QROS confirms `failure_governance`
-64. QROS confirms `delivery_contract`
-65. QROS shows the final grouped holdout_validation summary and asks `是否按以上内容冻结 holdout_validation？`
-66. The agent internally records the approval decision and then builds `07_holdout/` in the active research repo
-67. That build is expected to materialize real single-window, merged-window and comparison outputs rather than only scaffold directories or placeholder files
-68. Once holdout_validation review closure exists, the session stops instead of entering later stages
+10. QROS 确认 `execution_contract`
+11. QROS 展示最终的 grouped mandate summary，并询问 `是否确认进入 mandate？`
+12. 用户用自然语言回答
+13. agent 在内部记录批准决定，然后构建 `01_mandate/`
+14. mandate review closure 完成后，QROS 进入 `data_ready_confirmation_pending`
+15. QROS 确认 `extraction_contract`
+16. QROS 确认 `quality_semantics`
+17. QROS 确认 `universe_admission`
+18. QROS 确认 `shared_derived_layer`
+19. QROS 确认 `delivery_contract`
+20. QROS 展示最终的 grouped data_ready summary，并询问 `是否按以上内容冻结 data_ready？`
+21. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `02_data_ready/`
+22. 这个 build 应该真实物化共享数据产物和证据，而不是只 scaffold 目录或写 placeholder 文件
+23. data_ready review closure 完成后，QROS 进入 `signal_ready_confirmation_pending`
+24. QROS 确认 `signal_expression`
+25. QROS 确认 `param_identity`
+26. QROS 确认 `time_semantics`
+27. QROS 确认 `signal_schema`
+28. QROS 确认 `delivery_contract`
+29. QROS 展示最终的 grouped signal_ready summary，并询问 `是否按以上内容冻结 signal_ready？`
+30. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `03_signal_ready/`
+31. 这个 build 应该真实物化 signal timeseries、param manifests 和 coverage 证据，而不是只 scaffold 目录或写 placeholder 文件
+32. signal_ready review closure 完成后，QROS 进入 `train_freeze_confirmation_pending`
+33. QROS 确认 `window_contract`
+34. QROS 确认 `threshold_contract`
+35. QROS 确认 `quality_filters`
+36. QROS 确认 `param_governance`
+37. QROS 确认 `delivery_contract`
+38. QROS 展示最终的 grouped train_freeze summary，并询问 `是否按以上内容冻结 train_freeze？`
+39. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `04_train_freeze/`
+40. 这个 build 应该真实物化 train thresholds、质量输出和 ledgers，而不是只 scaffold 目录或写 placeholder 文件
+41. train_freeze review closure 完成后，QROS 进入 `test_evidence_confirmation_pending`
+42. QROS 确认 `window_contract`
+43. QROS 确认 `formal_gate_contract`
+44. QROS 确认 `admissibility_contract`
+45. QROS 确认 `audit_contract`
+46. QROS 确认 `delivery_contract`
+47. QROS 展示最终的 grouped test_evidence summary，并询问 `是否按以上内容冻结 test_evidence？`
+48. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `05_test_evidence/`
+49. 这个 build 应该真实物化 test statistics、admissibility outputs 和 frozen selection artifacts，而不是只 scaffold 目录或写 placeholder 文件
+50. test_evidence review closure 完成后，QROS 进入 `backtest_ready_confirmation_pending`
+51. QROS 确认 `execution_policy`
+52. QROS 确认 `portfolio_policy`
+53. QROS 确认 `risk_overlay`
+54. QROS 确认 `engine_contract`
+55. QROS 确认 `delivery_contract`
+56. QROS 展示最终的 grouped backtest_ready summary，并询问 `是否按以上内容冻结 backtest_ready？`
+57. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `06_backtest/`
+58. 这个 build 应该真实物化 dual-engine backtest outputs、combo ledgers 和 capacity evidence，而不是只 scaffold 目录或写 placeholder 文件
+59. backtest_ready review closure 完成后，QROS 进入 `holdout_validation_confirmation_pending`
+60. QROS 确认 `window_contract`
+61. QROS 确认 `reuse_contract`
+62. QROS 确认 `drift_audit`
+63. QROS 确认 `failure_governance`
+64. QROS 确认 `delivery_contract`
+65. QROS 展示最终的 grouped holdout_validation summary，并询问 `是否按以上内容冻结 holdout_validation？`
+66. agent 在内部记录批准决定，然后在当前 active research repo 中构建 `07_holdout/`
+67. 这个 build 应该真实物化 single-window、merged-window 和 comparison outputs，而不是只 scaffold 目录或写 placeholder 文件
+68. holdout_validation review closure 完成后，session 会停止，而不是继续进入更后面的阶段
 
 ## Why This Exists
 
-The goal is to hide internal scripts behind a coherent skill flow.
+这个设计的目标，是把内部脚本隐藏在一个一致的 skill 流程后面。
 
-The scripts still matter as the deterministic runtime, but the user should primarily interact through `qros-research-session`.
+这些脚本仍然重要，因为它们是 deterministic runtime；但从用户视角，主要应该通过 `qros-research-session` 交互。
