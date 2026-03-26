@@ -171,6 +171,8 @@ HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
+NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
 IDEA_INTAKE_TRANSITION_APPROVAL_FILE = "idea_intake_transition_approval.yaml"
 MANDATE_TRANSITION_APPROVAL_FILE = "mandate_transition_approval.yaml"
 DATA_READY_TRANSITION_APPROVAL_FILE = "data_ready_transition_approval.yaml"
@@ -1013,45 +1015,58 @@ def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:
     return all((holdout_dir / name).exists() for name in HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
 
 
+def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
+    payload = _read_yaml(stage_dir / "stage_completion_certificate.yaml")
+    if not payload:
+        return True
+
+    stage_status = payload.get("stage_status") or payload.get("final_verdict")
+    if stage_status in ADVANCING_COMPLETION_STATUSES:
+        return True
+    if stage_status in NON_ADVANCING_COMPLETION_STATUSES:
+        return False
+    return True
+
+
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
     if (mandate_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(mandate_dir)
     return all((mandate_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
     if (data_ready_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(data_ready_dir)
     return all((data_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
     if (signal_ready_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(signal_ready_dir)
     return all((signal_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _train_freeze_closure_complete(train_dir: Path) -> bool:
     if (train_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(train_dir)
     return all((train_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _test_evidence_closure_complete(test_dir: Path) -> bool:
     if (test_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(test_dir)
     return all((test_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
     if (backtest_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(backtest_dir)
     return all((backtest_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
     if (holdout_dir / "stage_completion_certificate.yaml").exists():
-        return True
+        return _completion_certificate_allows_progress(holdout_dir)
     return all((holdout_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
@@ -1193,7 +1208,10 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
 
 def _read_yaml(path: Path) -> dict:
-    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict):
+        return payload
+    return {}
 
 
 def _idea_intake_approval_path(lineage_root: Path) -> Path:

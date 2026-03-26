@@ -15,6 +15,118 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_stage_completion_certificate(
+    path: Path,
+    *,
+    stage_status: str = "PASS",
+    final_verdict: str | None = None,
+) -> None:
+    _write_yaml(
+        path,
+        {
+            "stage_status": stage_status,
+            "final_verdict": final_verdict or stage_status,
+        },
+    )
+
+
+def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+
+    file_outputs: dict[str, list[str]] = {
+        "mandate": [
+            "mandate.md",
+            "research_scope.md",
+            "time_split.json",
+            "parameter_grid.yaml",
+            "run_config.toml",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "data_ready": [
+            "qc_report.parquet",
+            "dataset_manifest.json",
+            "validation_report.md",
+            "data_contract.md",
+            "dedupe_rule.md",
+            "universe_summary.md",
+            "universe_exclusions.csv",
+            "universe_exclusions.md",
+            "data_ready_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "signal_ready": [
+            "param_manifest.csv",
+            "signal_coverage.csv",
+            "signal_coverage.md",
+            "signal_coverage_summary.md",
+            "signal_contract.md",
+            "signal_fields_contract.md",
+            "signal_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "train_freeze": [
+            "train_thresholds.json",
+            "train_quality.parquet",
+            "train_param_ledger.csv",
+            "train_rejects.csv",
+            "train_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "test_evidence": [
+            "report_by_h.parquet",
+            "symbol_summary.parquet",
+            "admissibility_report.parquet",
+            "test_gate_table.csv",
+            "crowding_review.md",
+            "selected_symbols_test.csv",
+            "selected_symbols_test.parquet",
+            "frozen_spec.json",
+            "test_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "backtest_ready": [
+            "engine_compare.csv",
+            "strategy_combo_ledger.csv",
+            "capacity_review.md",
+            "backtest_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "holdout_validation": [
+            "holdout_run_manifest.json",
+            "holdout_backtest_compare.csv",
+            "holdout_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+    }
+    dir_outputs: dict[str, list[str]] = {
+        "mandate": [],
+        "data_ready": [
+            "aligned_bars",
+            "rolling_stats",
+            "pair_stats",
+            "benchmark_residual",
+            "topic_basket_state",
+        ],
+        "signal_ready": ["params"],
+        "train_freeze": [],
+        "test_evidence": [],
+        "backtest_ready": ["vectorbt", "backtrader"],
+        "holdout_validation": ["window_results"],
+    }
+
+    for name in file_outputs[stage]:
+        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in dir_outputs[stage]:
+        (stage_dir / name).mkdir()
+
+
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -1305,6 +1417,44 @@ def test_detect_session_stage_returns_holdout_validation_review_complete_when_cl
     (holdout_dir / "window_results").mkdir()
 
     assert detect_session_stage(lineage_root) == "holdout_validation_review_complete"
+
+
+def test_detect_session_stage_does_not_advance_on_retry_completion_certificate(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    cases = [
+        ("mandate", lineage_root / "01_mandate", "mandate_review"),
+        ("data_ready", lineage_root / "02_data_ready", "data_ready_review"),
+        ("signal_ready", lineage_root / "03_signal_ready", "signal_ready_review"),
+        ("train_freeze", lineage_root / "04_train_freeze", "train_freeze_review"),
+        ("test_evidence", lineage_root / "05_test_evidence", "test_evidence_review"),
+        ("backtest_ready", lineage_root / "06_backtest", "backtest_ready_review"),
+        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_review"),
+    ]
+
+    for stage, stage_dir, expected_stage in cases:
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="RETRY")
+
+        assert detect_session_stage(lineage_root) == expected_stage, stage
+
+
+def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    cases = [
+        ("mandate", lineage_root / "01_mandate", "data_ready_confirmation_pending"),
+        ("data_ready", lineage_root / "02_data_ready", "signal_ready_confirmation_pending"),
+        ("signal_ready", lineage_root / "03_signal_ready", "train_freeze_confirmation_pending"),
+        ("train_freeze", lineage_root / "04_train_freeze", "test_evidence_confirmation_pending"),
+        ("test_evidence", lineage_root / "05_test_evidence", "backtest_ready_confirmation_pending"),
+        ("backtest_ready", lineage_root / "06_backtest", "holdout_validation_confirmation_pending"),
+        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_review_complete"),
+    ]
+
+    for stage, stage_dir, expected_stage in cases:
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+
+        assert detect_session_stage(lineage_root) == expected_stage, stage
 
 
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:

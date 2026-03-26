@@ -90,7 +90,7 @@
 
 ## Required Outputs
 
-第一版 `data_ready` 至少 formalize 这些产物：
+第一版 `data_ready` 至少要让 agent 在目标 research repo 中物化这些产物：
 
 - `aligned_bars/`
 - `rolling_stats/`
@@ -108,7 +108,7 @@
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
-第一版不需要真的完成大规模数据计算，但必须把阶段 skeleton、数据合同、交付清单和 review 可消费的 formal outputs 稳定落盘。
+QROS 框架仓不负责替具体研究线直接沉淀真实数据产物；但当 agent 在用户的 research repo 中执行 `data_ready` 时，必须把这些产物真实物化出来，并提供 review 可消费的证据。阶段 skeleton、目录脚手架、placeholder 文件和只有合同语义的说明文档，只能用于框架开发或测试，不得被当作某条研究线的 `data_ready` 完成。
 
 ## Runtime Strategy
 

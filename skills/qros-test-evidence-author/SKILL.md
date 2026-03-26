@@ -9,7 +9,9 @@ description: Use when reviewed train_freeze outputs must be frozen into formal t
 
 只在 `train_freeze review` closure 完成之后，把 `04_train_freeze` 冻结成正式 `05_test_evidence` 产物。
 
-这里的 `test_evidence` 不是替策略跑真实统计检验，而是把后续 `backtest_ready` 必须复用的 test 合同正式落盘。
+这里的 `test_evidence` 不是在 QROS 框架仓里写一份 test 合同示意，而是要在当前 research repo 中把后续 `backtest_ready` 必须复用的 test 统计证据正式落盘。
+
+QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `05_test_evidence` 需要交付的 test 统计结果、admissibility 结果和冻结对象，而不是把 placeholder 文件或只有合同语义的说明文档当作 test_evidence 完成。
 
 ## Required Inputs
 
@@ -49,6 +51,8 @@ description: Use when reviewed train_freeze outputs must be frozen into formal t
 - 只能消费已经通过 review closure 的 train_freeze 产物
 - 当前阶段只冻结 test 合同，不替策略宣布交易层胜利
 - formal gate 与 audit gate 必须显式分开
+- 必须在当前研究仓真实生成独立测试窗上的统计证据、admissibility 结果和冻结 whitelist/best_h
+- placeholder `parquet/csv/json/md`、空目录或只有说明文档都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 test_evidence？`
 - 不得在 test 窗里重估 train thresholds、whitelist 或 best_h
@@ -61,6 +65,8 @@ description: Use when reviewed train_freeze outputs must be frozen into formal t
 4. 再收敛并确认 `admissibility_contract`
 5. 再收敛并确认 `audit_contract`
 6. 最后确认 `delivery_contract`
-7. 输出一份 grouped test_evidence summary
-8. 只有用户最终批准后，才生成正式 `05_test_evidence` artifacts
-9. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+7. 明确当前 research repo 中由谁负责真实生成 test 统计证据、admissibility 结果、selected symbols 和 frozen spec
+8. 输出一份 grouped test_evidence summary
+9. 只有用户最终批准后，才生成正式 `05_test_evidence` artifacts
+10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 test_evidence 完成

@@ -11,6 +11,8 @@ description: Use when reviewed data_ready outputs must be frozen into formal bas
 
 这里的 `signal_ready` 不是静默跑参数搜索，而是交互式冻结“正式 baseline signal 合同”。
 
+QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `03_signal_ready` 需要交付的 baseline signal timeseries、param 身份和 coverage 证据，而不是把空目录、placeholder 文件或只有合同语义的说明文档当作 signal_ready 完成。
+
 ## Required Inputs
 
 - `02_data_ready/dataset_manifest.json`
@@ -47,6 +49,8 @@ description: Use when reviewed data_ready outputs must be frozen into formal bas
 - 只能消费已经通过 review closure 的 data_ready 产物
 - 第一版只允许冻结 baseline signal
 - 不得产出 search batch 或 full frozen grid
+- 必须在当前研究仓真实生成 baseline `param_id` 对应的时序产物、manifest 和 coverage 证据
+- 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 signal_ready？`
 - 不得静默修改 mandate 已冻结的核心机制边界
@@ -59,6 +63,8 @@ description: Use when reviewed data_ready outputs must be frozen into formal bas
 4. 再收敛并确认 `time_semantics`
 5. 再收敛并确认 `signal_schema`
 6. 最后确认 `delivery_contract`
-7. 输出一份 grouped signal_ready summary
-8. 只有用户最终批准后，才生成正式 `03_signal_ready` artifacts
-9. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+7. 明确当前 research repo 中由谁负责真实生成 signal timeseries、param manifest、coverage 证据和字段合同
+8. 输出一份 grouped signal_ready summary
+9. 只有用户最终批准后，才生成正式 `03_signal_ready` artifacts
+10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 signal_ready 完成

@@ -55,6 +55,8 @@ Reuse the deterministic runtime rather than improvising directory state in chat.
 
 The user should not need to remember internal commands. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
 
+QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
+
 ## Working Rules
 
 1. Resolve or create the lineage
@@ -87,73 +89,85 @@ The user should not need to remember internal commands. Runtime commands are bac
 27. Confirm `universe_admission`
 28. Confirm `shared_derived_layer`
 29. Confirm `delivery_contract`
-30. Show one final data_ready summary
-31. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
-32. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
-33. Drive data_ready completion with the same discipline as `qros-data-ready-author`
-34. When data_ready artifacts are ready, move into data_ready review
-35. Reuse the same gate discipline as `qros-data-ready-review`
-36. After data_ready review closure, enter `signal_ready_confirmation_pending`
-37. Confirm `signal_expression`
-38. Confirm `param_identity`
-39. Confirm `time_semantics`
-40. Confirm `signal_schema`
-41. Confirm `delivery_contract`
-42. Show one final signal_ready summary
-43. Ask the user one explicit question: `是否按以上内容冻结 signal_ready？`
-44. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_SIGNAL_READY` and freeze signal_ready artifacts
-45. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
-46. When signal_ready artifacts are ready, move into signal_ready review
-47. Reuse the same gate discipline as `qros-signal-ready-review`
-48. After `signal_ready review` closure, enter `train_freeze_confirmation_pending`
-49. Confirm `window_contract`
-50. Confirm `threshold_contract`
-51. Confirm `quality_filters`
-52. Confirm `param_governance`
-53. Confirm `delivery_contract`
-54. Show one final train_freeze summary
-55. Ask the user one explicit question: `是否按以上内容冻结 train_freeze？`
-56. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TRAIN_FREEZE` and freeze train artifacts
-57. Drive train_freeze completion with the same discipline as `qros-train-freeze-author`
-58. When train_freeze artifacts are ready, move into train_freeze review
-59. Reuse the same gate discipline as `qros-train-freeze-review`
-60. After `train_freeze review` closure, enter `test_evidence_confirmation_pending`
-61. Confirm `window_contract`
-62. Confirm `formal_gate_contract`
-63. Confirm `admissibility_contract`
-64. Confirm `audit_contract`
-65. Confirm `delivery_contract`
-66. Show one final test_evidence summary
-67. Ask the user one explicit question: `是否按以上内容冻结 test_evidence？`
-68. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TEST_EVIDENCE` and freeze test_evidence artifacts
-69. Drive test_evidence completion with the same discipline as `qros-test-evidence-author`
-70. When test_evidence artifacts are ready, move into test_evidence review
-71. Reuse the same gate discipline as `qros-test-evidence-review`
-72. After `test_evidence review` closure, enter `backtest_ready_confirmation_pending`
-73. Confirm `execution_policy`
-74. Confirm `portfolio_policy`
-75. Confirm `risk_overlay`
-76. Confirm `engine_contract`
-77. Confirm `delivery_contract`
-78. Show one final backtest_ready summary
-79. Ask the user one explicit question: `是否按以上内容冻结 backtest_ready？`
-80. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_BACKTEST_READY` and freeze backtest_ready artifacts
-81. Drive backtest_ready completion with the same discipline as `qros-backtest-ready-author`
-82. When backtest_ready artifacts are ready, move into backtest_ready review
-83. Reuse the same gate discipline as `qros-backtest-ready-review`
-84. After `backtest_ready review` closure, enter `holdout_validation_confirmation_pending`
-85. Confirm `window_contract`
-86. Confirm `reuse_contract`
-87. Confirm `drift_audit`
-88. Confirm `failure_governance`
-89. Confirm `delivery_contract`
-90. Show one final holdout_validation summary
-91. Ask the user one explicit question: `是否按以上内容冻结 holdout_validation？`
-92. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_HOLDOUT_VALIDATION` and freeze holdout_validation artifacts
-93. Drive holdout_validation completion with the same discipline as `qros-holdout-validation-author`
-94. When holdout_validation artifacts are ready, move into holdout_validation review
-95. Reuse the same gate discipline as `qros-holdout-validation-review`
-96. Stop after `holdout_validation review`; do not silently enter `promotion_decision`
+30. For `data_ready`, ensure the active research repo actually materializes dense aligned data, shared caches, and QC or coverage evidence required by the stage contract
+31. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `data_ready` completion
+32. Show one final data_ready summary
+33. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
+34. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
+35. Drive data_ready completion with the same discipline as `qros-data-ready-author`
+36. When data_ready artifacts are ready, move into data_ready review
+37. Reuse the same gate discipline as `qros-data-ready-review`
+38. After data_ready review closure, enter `signal_ready_confirmation_pending`
+39. Confirm `signal_expression`
+40. Confirm `param_identity`
+41. Confirm `time_semantics`
+42. Confirm `signal_schema`
+43. Confirm `delivery_contract`
+44. For `signal_ready`, ensure the active research repo actually materializes baseline signal timeseries, param manifests and coverage evidence required by the stage contract
+45. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `signal_ready` completion
+46. Show one final signal_ready summary
+47. Ask the user one explicit question: `是否按以上内容冻结 signal_ready？`
+48. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_SIGNAL_READY` and freeze signal_ready artifacts
+49. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
+50. When signal_ready artifacts are ready, move into signal_ready review
+51. Reuse the same gate discipline as `qros-signal-ready-review`
+52. After `signal_ready review` closure, enter `train_freeze_confirmation_pending`
+53. Confirm `window_contract`
+54. Confirm `threshold_contract`
+55. Confirm `quality_filters`
+56. Confirm `param_governance`
+57. Confirm `delivery_contract`
+58. For `train_freeze`, ensure the active research repo actually materializes train thresholds, quality evidence and param ledgers required by the stage contract
+59. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `train_freeze` completion
+60. Show one final train_freeze summary
+61. Ask the user one explicit question: `是否按以上内容冻结 train_freeze？`
+62. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TRAIN_FREEZE` and freeze train artifacts
+63. Drive train_freeze completion with the same discipline as `qros-train-freeze-author`
+64. When train_freeze artifacts are ready, move into train_freeze review
+65. Reuse the same gate discipline as `qros-train-freeze-review`
+66. After `train_freeze review` closure, enter `test_evidence_confirmation_pending`
+67. Confirm `window_contract`
+68. Confirm `formal_gate_contract`
+69. Confirm `admissibility_contract`
+70. Confirm `audit_contract`
+71. Confirm `delivery_contract`
+72. For `test_evidence`, ensure the active research repo actually materializes independent-sample statistics, admissibility outputs and frozen selection artifacts required by the stage contract
+73. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `test_evidence` completion
+74. Show one final test_evidence summary
+75. Ask the user one explicit question: `是否按以上内容冻结 test_evidence？`
+76. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TEST_EVIDENCE` and freeze test_evidence artifacts
+77. Drive test_evidence completion with the same discipline as `qros-test-evidence-author`
+78. When test_evidence artifacts are ready, move into test_evidence review
+79. Reuse the same gate discipline as `qros-test-evidence-review`
+80. After `test_evidence review` closure, enter `backtest_ready_confirmation_pending`
+81. Confirm `execution_policy`
+82. Confirm `portfolio_policy`
+83. Confirm `risk_overlay`
+84. Confirm `engine_contract`
+85. Confirm `delivery_contract`
+86. For `backtest_ready`, ensure the active research repo actually materializes dual-engine backtest outputs, combo ledgers and capacity evidence required by the stage contract
+87. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `backtest_ready` completion
+88. Show one final backtest_ready summary
+89. Ask the user one explicit question: `是否按以上内容冻结 backtest_ready？`
+90. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_BACKTEST_READY` and freeze backtest_ready artifacts
+91. Drive backtest_ready completion with the same discipline as `qros-backtest-ready-author`
+92. When backtest_ready artifacts are ready, move into backtest_ready review
+93. Reuse the same gate discipline as `qros-backtest-ready-review`
+94. After `backtest_ready review` closure, enter `holdout_validation_confirmation_pending`
+95. Confirm `window_contract`
+96. Confirm `reuse_contract`
+97. Confirm `drift_audit`
+98. Confirm `failure_governance`
+99. Confirm `delivery_contract`
+100. For `holdout_validation`, ensure the active research repo actually materializes single-window, merged-window and comparison outputs required by the stage contract
+101. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `holdout_validation` completion
+102. Show one final holdout_validation summary
+103. Ask the user one explicit question: `是否按以上内容冻结 holdout_validation？`
+104. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_HOLDOUT_VALIDATION` and freeze holdout_validation artifacts
+105. Drive holdout_validation completion with the same discipline as `qros-holdout-validation-author`
+106. When holdout_validation artifacts are ready, move into holdout_validation review
+107. Reuse the same gate discipline as `qros-holdout-validation-review`
+108. Stop after `holdout_validation review`; do not silently enter `promotion_decision`
 
 ## Auto vs Ask
 
@@ -207,10 +221,12 @@ When the stage is `data_ready_confirmation_pending`, the agent must ask explicit
 - `universe_admission` 这一组冻结什么？
 - `shared_derived_layer` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 dense data、rolling caches、QC/coverage artifacts？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 data_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `data_ready`.
 
 When the stage is `signal_ready_confirmation_pending`, the agent must ask explicitly:
 
@@ -219,10 +235,12 @@ When the stage is `signal_ready_confirmation_pending`, the agent must ask explic
 - `time_semantics` 这一组冻结什么？
 - `signal_schema` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 signal timeseries、param manifests、coverage artifacts？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 signal_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `signal_ready`.
 
 When the stage is `train_freeze_confirmation_pending`, the agent must ask explicitly:
 
@@ -231,10 +249,12 @@ When the stage is `train_freeze_confirmation_pending`, the agent must ask explic
 - `quality_filters` 这一组冻结什么？
 - `param_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 thresholds、quality artifacts、param ledgers？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 train_freeze？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `train_freeze`.
 
 When the stage is `test_evidence_confirmation_pending`, the agent must ask explicitly:
 
@@ -243,10 +263,12 @@ When the stage is `test_evidence_confirmation_pending`, the agent must ask expli
 - `admissibility_contract` 这一组冻结什么？
 - `audit_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 test statistics、admissibility outputs、frozen selection artifacts？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 test_evidence？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `test_evidence`.
 
 When the stage is `backtest_ready_confirmation_pending`, the agent must ask explicitly:
 
@@ -255,10 +277,12 @@ When the stage is `backtest_ready_confirmation_pending`, the agent must ask expl
 - `risk_overlay` 这一组冻结什么？
 - `engine_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 dual-engine outputs、combo ledgers、capacity artifacts？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 backtest_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `backtest_ready`.
 
 When the stage is `holdout_validation_confirmation_pending`, the agent must ask explicitly:
 
@@ -267,10 +291,12 @@ When the stage is `holdout_validation_confirmation_pending`, the agent must ask 
 - `drift_audit` 这一组冻结什么？
 - `failure_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 single-window、merged-window、comparison artifacts？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 holdout_validation？`
 
 Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `holdout_validation`.
 
 ## State Source Of Truth
 

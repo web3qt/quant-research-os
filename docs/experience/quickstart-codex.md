@@ -47,21 +47,33 @@ The agent should:
 - explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
 - continue into `data_ready_confirmation_pending` after mandate review closure
 - confirm grouped data_ready content during the conversation: `extraction_contract`, `quality_semantics`, `universe_admission`, `shared_derived_layer`, `delivery_contract`
+- make the active research repo materially generate the shared data outputs and QC or coverage evidence promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `data_ready`
 - explicitly ask `是否按以上内容冻结 data_ready？` before writing `02_data_ready/`
 - continue into `signal_ready_confirmation_pending` after data_ready review closure
 - confirm grouped signal_ready content during the conversation: `signal_expression`, `param_identity`, `time_semantics`, `signal_schema`, `delivery_contract`
+- make the active research repo materially generate baseline signal timeseries, param manifests and coverage evidence promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `signal_ready`
 - explicitly ask `是否按以上内容冻结 signal_ready？` before writing `03_signal_ready/`
 - continue into `train_freeze_confirmation_pending` after signal_ready review closure
 - confirm grouped train_freeze content during the conversation: `window_contract`, `threshold_contract`, `quality_filters`, `param_governance`, `delivery_contract`
+- make the active research repo materially generate train thresholds, quality outputs and ledgers promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `train_freeze`
 - explicitly ask `是否按以上内容冻结 train_freeze？` before writing `04_train_freeze/`
 - continue into `test_evidence_confirmation_pending` after train_freeze review closure
 - confirm grouped test_evidence content during the conversation: `window_contract`, `formal_gate_contract`, `admissibility_contract`, `audit_contract`, `delivery_contract`
+- make the active research repo materially generate test statistics, admissibility outputs and frozen selections promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `test_evidence`
 - explicitly ask `是否按以上内容冻结 test_evidence？` before writing `05_test_evidence/`
 - continue into `backtest_ready_confirmation_pending` after test_evidence review closure
 - confirm grouped backtest_ready content during the conversation: `execution_policy`, `portfolio_policy`, `risk_overlay`, `engine_contract`, `delivery_contract`
+- make the active research repo materially generate dual-engine backtest outputs, combo ledgers and capacity evidence promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `backtest_ready`
 - explicitly ask `是否按以上内容冻结 backtest_ready？` before writing `06_backtest/`
 - continue into `holdout_validation_confirmation_pending` after backtest_ready review closure
 - confirm grouped holdout_validation content during the conversation: `window_contract`, `reuse_contract`, `drift_audit`, `failure_governance`, `delivery_contract`
+- make the active research repo materially generate single-window, merged-window and comparison outputs promised by that freeze
+- never treat empty directories, placeholder files, or contract-only markdown as completed `holdout_validation`
 - explicitly ask `是否按以上内容冻结 holdout_validation？` before writing `07_holdout/`
 - stop after `holdout_validation review`
 
@@ -77,7 +89,9 @@ You should see the agent report:
 - `why_now`
 - `open_risks`
 
-The underlying runtime will write artifacts under `outputs/<lineage_id>/`.
+The underlying runtime will write artifacts under `outputs/<lineage_id>/` in the active research repo.
+
+For `data_ready` and later stages, those artifacts are expected to be real stage deliverables. Directory skeletons, placeholder files, and doc-only stand-ins are not enough to claim the stage is complete.
 
 ## 5. Internal Runtime Note
 
