@@ -133,5 +133,5 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 5. Evaluate the formal gate first
 6. Record audit-only findings after that
 7. Save `review_findings.yaml`
-8. Run `python scripts/run_stage_review.py`
+8. Run `~/.codex/qros/bin/qros-review`
 9. Review the generated closure artifacts

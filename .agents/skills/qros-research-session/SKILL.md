@@ -48,8 +48,8 @@ description: Use when the user wants to start one orchestrated QROS conversation
 
 Use the orchestrator runtime:
 
-- `python scripts/run_research_session.py --outputs-root outputs --raw-idea "<idea>"`
-- `python scripts/run_research_session.py --outputs-root outputs --lineage-id "<lineage_id>"`
+- `~/.codex/qros/bin/qros-session --raw-idea "<idea>"`
+- `~/.codex/qros/bin/qros-session --lineage-id "<lineage_id>"`
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 

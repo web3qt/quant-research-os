@@ -6,6 +6,8 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("README.md").exists()
     assert Path("setup").exists()
     assert Path("skills").exists()
+    assert Path("bin/qros-session").exists()
+    assert Path("bin/qros-review").exists()
     assert Path(".codex/INSTALL.md").exists()
     assert Path("tools/research_session.py").exists()
     assert Path("tools/review_skillgen/__init__.py").exists()

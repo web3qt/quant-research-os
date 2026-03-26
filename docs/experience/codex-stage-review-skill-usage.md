@@ -67,13 +67,13 @@
 在当前 `outputs/<lineage>/<stage>/` 目录下执行：
 
 ```bash
-python scripts/run_stage_review.py
+~/.codex/qros/bin/qros-review
 ```
 
 如果不在 stage 目录中，也可以显式传参：
 
 ```bash
-python scripts/run_stage_review.py --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
+~/.codex/qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 
 ## Closure Artifacts
