@@ -93,6 +93,8 @@ The underlying runtime will write artifacts under `outputs/<lineage_id>/` in the
 
 For `data_ready` and later stages, those artifacts are expected to be real stage deliverables. Directory skeletons, placeholder files, and doc-only stand-ins are not enough to claim the stage is complete.
 
+Review failure is not ordinary debugging. If a stage review ends with `PASS FOR RETRY`, `RETRY`, `NO-GO`, or `CHILD LINEAGE`, the session should stop normal stage progression, surface `requires_failure_handling`, and switch into `qros-stage-failure-handler`.
+
 ## 5. Internal Runtime Note
 
 QROS still uses scripts internally for deterministic state transitions, but those are runtime internals, not the primary user workflow.

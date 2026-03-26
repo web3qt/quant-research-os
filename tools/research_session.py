@@ -193,6 +193,10 @@ class SessionContext:
     next_action: str
     why_now: list[str]
     open_risks: list[str]
+    review_verdict: str | None = None
+    requires_failure_handling: bool = False
+    failure_stage: str | None = None
+    failure_reason_summary: str | None = None
 
 
 def slugify_idea(raw_idea: str) -> str:
@@ -849,6 +853,10 @@ def summarize_session_status(
     next_action: str,
     why_now: list[str] | None = None,
     open_risks: list[str] | None = None,
+    review_verdict: str | None = None,
+    requires_failure_handling: bool = False,
+    failure_stage: str | None = None,
+    failure_reason_summary: str | None = None,
 ) -> SessionContext:
     return SessionContext(
         lineage_id=lineage_id,
@@ -859,6 +867,10 @@ def summarize_session_status(
         next_action=next_action,
         why_now=why_now or [],
         open_risks=open_risks or [],
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+        failure_stage=failure_stage,
+        failure_reason_summary=failure_reason_summary,
     )
 
 
@@ -974,6 +986,12 @@ def run_research_session(
         current_stage = detect_session_stage(lineage_root)
 
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
+    review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
+        _latest_review_failure_status(lineage_root)
+    )
+    if requires_failure_handling and failure_stage is not None:
+        gate_status = "FAILURE_HANDLING_REQUIRED"
+        next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
     why_now, open_risks = session_transition_summary(lineage_root)
     return summarize_session_status(
         lineage_id=lineage_root.name,
@@ -984,6 +1002,10 @@ def run_research_session(
         next_action=next_action,
         why_now=why_now,
         open_risks=open_risks,
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+        failure_stage=failure_stage,
+        failure_reason_summary=failure_reason_summary,
     )
 
 
@@ -1026,6 +1048,50 @@ def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
     if stage_status in NON_ADVANCING_COMPLETION_STATUSES:
         return False
     return True
+
+
+def _review_verdict_from_stage_dir(stage_dir: Path) -> str | None:
+    certificate_path = stage_dir / "stage_completion_certificate.yaml"
+    if not certificate_path.exists():
+        return None
+
+    payload = _read_yaml(certificate_path)
+    if not payload:
+        return None
+
+    verdict = payload.get("stage_status") or payload.get("final_verdict")
+    if isinstance(verdict, str) and verdict.strip():
+        return verdict
+    return None
+
+
+def _latest_review_failure_status(
+    lineage_root: Path,
+) -> tuple[str | None, bool, str | None, str | None]:
+    review_stage_dirs = [
+        ("holdout_validation_review", lineage_root / "07_holdout", True),
+        ("backtest_ready_review", lineage_root / "06_backtest", True),
+        ("test_evidence_review", lineage_root / "05_test_evidence", True),
+        ("train_freeze_review", lineage_root / "04_train_freeze", True),
+        ("signal_ready_review", lineage_root / "03_signal_ready", True),
+        ("data_ready_review", lineage_root / "02_data_ready", True),
+        ("mandate_review", lineage_root / "01_mandate", False),
+    ]
+
+    for review_stage, stage_dir, routes_into_failure_handler in review_stage_dirs:
+        verdict = _review_verdict_from_stage_dir(stage_dir)
+        if verdict is None:
+            continue
+        if verdict in NON_ADVANCING_COMPLETION_STATUSES and routes_into_failure_handler:
+            return (
+                verdict,
+                True,
+                review_stage,
+                f"{review_stage} requires failure handling because review verdict is {verdict}.",
+            )
+        return verdict, False, None, None
+
+    return None, False, None, None
 
 
 def _mandate_closure_complete(mandate_dir: Path) -> bool:

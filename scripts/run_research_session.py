@@ -98,6 +98,13 @@ def main() -> int:
     print(f"Lineage: {status.lineage_id}")
     print(f"Current stage: {status.current_stage}")
     print(f"Gate status: {status.gate_status}")
+    if status.review_verdict is not None:
+        print(f"Review verdict: {status.review_verdict}")
+    print(f"Requires failure handling: {status.requires_failure_handling}")
+    if status.failure_stage is not None:
+        print(f"Failure stage: {status.failure_stage}")
+    if status.failure_reason_summary is not None:
+        print(f"Failure reason: {status.failure_reason_summary}")
     print(f"Next action: {status.next_action}")
     if status.why_now:
         print("Why now:")

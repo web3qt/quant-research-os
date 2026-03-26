@@ -46,6 +46,8 @@ Codex finds the skill through `~/.agents/skills/qros`, which should point to `~/
 
 QROS 仓库是工作流框架，不是研究产物仓。安装后，agent 应该在用户当前打开的 research repo 中推进 lineage，并把正式阶段产物写到那个 repo 的 `outputs/<lineage_id>/` 下；空目录、placeholder 文件和只有合同语义的说明文档不能被当作 `data_ready` 或其他阶段已经真实完成。
 
+Review failure is not ordinary debugging. 当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
+
 ## Internal Runtime
 
 The deterministic backend entry point lives in the cloned repo:
@@ -137,6 +139,8 @@ The session runtime checks disk state in this order:
 17. backtest_ready review closure exists -> `holdout_validation_confirmation_pending`
 18. holdout_validation artifacts exist but review closure is missing -> `holdout_validation review`
 19. holdout_validation review closure exists -> session stops and reports completion
+
+If a reviewed stage closes with `PASS FOR RETRY`, `RETRY`, `NO-GO`, or `CHILD LINEAGE`, the session must stop normal stage progression and enter `qros-stage-failure-handler` instead of opening the next stage.
 
 ## Expected User Experience
 

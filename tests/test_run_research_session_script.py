@@ -9,6 +9,21 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_stage_completion_certificate(
+    path: Path,
+    *,
+    stage_status: str = "PASS",
+    final_verdict: str | None = None,
+) -> None:
+    _write_yaml(
+        path,
+        {
+            "stage_status": stage_status,
+            "final_verdict": final_verdict or stage_status,
+        },
+    )
+
+
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -1201,6 +1216,53 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
     assert result.returncode == 0
     assert "Current stage: backtest_ready_confirmation_pending" in result.stdout
     assert "Next action: Complete backtest_ready group: execution_policy" in result.stdout
+
+
+def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    test_dir = lineage_root / "05_test_evidence"
+    test_dir.mkdir(parents=True)
+    for name in [
+        "report_by_h.parquet",
+        "symbol_summary.parquet",
+        "admissibility_report.parquet",
+        "test_gate_table.csv",
+        "crowding_review.md",
+        "selected_symbols_test.csv",
+        "selected_symbols_test.parquet",
+        "frozen_spec.json",
+        "test_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (test_dir / name).write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(test_dir / "stage_completion_certificate.yaml", stage_status="RETRY")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: test_evidence_review" in result.stdout
+    assert "Review verdict: RETRY" in result.stdout
+    assert "Requires failure handling: True" in result.stdout
+    assert "Failure stage: test_evidence_review" in result.stdout
+    assert "qros-stage-failure-handler" in result.stdout
+    assert "backtest_ready_confirmation_pending" not in result.stdout
 
 
 def test_run_research_session_builds_backtest_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
