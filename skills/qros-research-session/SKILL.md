@@ -57,6 +57,27 @@ The user should not need to remember internal commands. Runtime commands are bac
 
 QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
 
+## Failure Routing
+
+Review failure is not ordinary debugging.
+
+When runtime status reports `requires_failure_handling = true`, the current conversation must switch into `qros-stage-failure-handler`.
+
+The automatic failure-routing trigger verdicts are:
+
+- `PASS FOR RETRY`
+- `RETRY`
+- `NO-GO`
+- `CHILD LINEAGE`
+
+When any of those verdicts appear for the current reviewed stage, the agent must:
+
+- stop normal stage progression
+- not enter the next `*_confirmation_pending`
+- not continue ordinary authoring for the same stage
+- reuse runtime failure-routing status instead of ad hoc judgment
+- follow `qros-stage-failure-handler` before any further stage edits
+
 ## Working Rules
 
 1. Resolve or create the lineage
@@ -185,6 +206,8 @@ Ask the user only when:
 - kill criteria are missing
 - intake should become `NEEDS_REFRAME` or `DROP`
 - a governance judgment must be made explicitly, especially `CONFIRM_MANDATE`, `CONFIRM_DATA_READY`, `CONFIRM_SIGNAL_READY`, `HOLD`, or `REFRAME`
+
+If runtime status reports `requires_failure_handling = true`, do not keep following the normal authoring or review path in this skill. Switch to `qros-stage-failure-handler` immediately.
 
 When the stage is `idea_intake`, the agent must ask explicitly before writing a real qualification verdict:
 
