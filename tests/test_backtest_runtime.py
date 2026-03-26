@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
 from tools.backtest_runtime import build_backtest_ready_from_test_evidence, scaffold_backtest_ready
@@ -7,6 +8,34 @@ from tools.backtest_runtime import build_backtest_ready_from_test_evidence, scaf
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_fake_parquet(path: Path) -> None:
+    path.write_bytes(b"PAR1test-payloadPAR1")
+
+
+def _prepare_real_backtest_engine_outputs(backtest_dir: Path) -> None:
+    (backtest_dir / "engine_compare.csv").write_text(
+        "\n".join(
+            [
+                "engine,gross_return,net_return,max_drawdown,semantic_gap",
+                "vectorbt,0.12,0.09,-0.08,false",
+                "backtrader,0.119,0.089,-0.081,false",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    for engine_name in ("vectorbt", "backtrader"):
+        engine_dir = backtest_dir / engine_name
+        engine_dir.mkdir(exist_ok=True)
+        for name in (
+            "trades.parquet",
+            "symbol_metrics.parquet",
+            "portfolio_timeseries.parquet",
+            "portfolio_summary.parquet",
+        ):
+            _write_fake_parquet(engine_dir / name)
 
 
 def _backtest_ready_draft(*, confirmed: bool) -> dict:
@@ -115,6 +144,7 @@ def test_build_backtest_ready_writes_required_outputs(tmp_path: Path) -> None:
     backtest_dir = lineage_root / "06_backtest"
     backtest_dir.mkdir(parents=True)
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _prepare_real_backtest_engine_outputs(backtest_dir)
 
     built_dir = build_backtest_ready_from_test_evidence(lineage_root)
 
@@ -128,3 +158,38 @@ def test_build_backtest_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert (backtest_dir / "artifact_catalog.md").exists()
     assert (backtest_dir / "field_dictionary.md").exists()
     assert (backtest_dir / "backtest_frozen_config.json").exists()
+
+
+def test_build_backtest_ready_rejects_placeholder_engine_outputs(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    _prepare_test_evidence_stage(lineage_root)
+    backtest_dir = lineage_root / "06_backtest"
+    backtest_dir.mkdir(parents=True)
+    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+
+    for engine_name in ("vectorbt", "backtrader"):
+        engine_dir = backtest_dir / engine_name
+        engine_dir.mkdir()
+        (engine_dir / "trades.parquet").write_text(
+            f"placeholder trades artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
+        (engine_dir / "symbol_metrics.parquet").write_text(
+            f"placeholder symbol metrics artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
+        (engine_dir / "portfolio_timeseries.parquet").write_text(
+            f"placeholder portfolio timeseries artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
+        (engine_dir / "portfolio_summary.parquet").write_text(
+            f"placeholder portfolio summary artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
+    (backtest_dir / "engine_compare.csv").write_text(
+        "engine_a,engine_b,semantic_gap,note\nvectorbt,backtrader,false,placeholder\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="real dual-engine backtest outputs"):
+        build_backtest_ready_from_test_evidence(lineage_root)
