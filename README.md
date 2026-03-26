@@ -4,12 +4,19 @@
 
 QROS 是一个面向 Codex 的阶段式研究工作流。它通过交互式 mandate 冻结、正式产物和流程门禁，把原始交易想法转成可审查、可复现、可追溯的研究线。
 
-## Codex 快速安装
+## 快速开始
 
 直接对 Codex 说：
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
+```
+
+安装完成后，在你的研究仓里打开 Codex，从统一入口开始研究流程：
+
+```text
+qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
+qros-research-session help
 ```
 
 ## 为什么使用 QROS
@@ -42,23 +49,6 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 - 让 agent 创建或恢复 research lineage
 - 让工作流驱动下一步必须发生的交互
 - 让正式产物落盘并成为唯一事实来源
-
-## 快速开始
-
-先把 QROS clone 到固定位置，再把 skills 链接给 Codex：
-
-```bash
-git clone <QROS_REPO_URL> ~/.codex/qros
-mkdir -p ~/.agents/skills
-ln -s ~/.codex/qros/skills ~/.agents/skills/qros
-```
-
-然后在你的研究仓里打开 Codex，从下面的统一入口开始：
-
-```text
-qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
-qros-research-session help
-```
 
 ## 日常使用
 
