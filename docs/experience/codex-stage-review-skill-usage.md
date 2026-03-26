@@ -8,7 +8,7 @@
 - `qros-data-ready-review`
 - `qros-signal-ready-review`
 
-它们都是由生成器写入 `.agents/skills/` 的 Codex skills。
+它们都是通过 `~/.agents/skills/qros -> ~/.codex/qros/skills` symlink 暴露给 Codex 的 skills。
 
 ## What These Skills Do
 
@@ -94,9 +94,9 @@ python scripts/gen_codex_stage_review_skills.py
 
 这个命令会重写：
 
-- `.agents/skills/qros-mandate-review/`
-- `.agents/skills/qros-data-ready-review/`
-- `.agents/skills/qros-signal-ready-review/`
+- `~/.codex/qros/skills/qros-mandate-review/`
+- `~/.codex/qros/skills/qros-data-ready-review/`
+- `~/.codex/qros/skills/qros-signal-ready-review/`
 
 ## Freshness Validation
 

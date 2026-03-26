@@ -37,66 +37,38 @@ QROS 是一个面向 Codex 的阶段式研究工作流。它通过交互式 mand
 
 ## 快速开始
 
-在当前仓库里为 Codex 安装 QROS：
+先把 QROS clone 到固定位置，再把 skills 链接给 Codex：
 
 ```bash
-./setup --host codex --mode repo-local
+git clone <QROS_REPO_URL> ~/.codex/qros
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/qros/skills ~/.agents/skills/qros
 ```
 
-然后在这个仓库里打开 Codex，从下面的统一入口开始：
+然后在你的研究仓里打开 Codex，从下面的统一入口开始：
 
 ```text
 qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
 qros-research-session help
 ```
 
-## 安装模式
+## 安装后更新
 
-- `repo-local`
-  技能写入 `.agents/skills/`，运行时资产写入 `.qros/`
-- `user-global`
-  技能写入 `~/.codex/skills/`，运行时资产写入 `~/.qros/`
-
-常用命令：
+更新只需要：
 
 ```bash
-./setup --host codex --mode repo-local
-./setup --host codex --mode user-global
-./setup --host codex --mode auto
-./setup --host codex --check
-./setup --host codex --refresh
+cd ~/.codex/qros
+git pull
 ```
-
-## 已安装用户如何更新
-
-- `repo-local`
-  先执行 `git pull`。如果你希望受管资产按最新仓库状态重写，再执行 `./setup --host codex --refresh`。
-- `user-global`
-  只执行 `git pull` 不够。还需要执行 `./setup --host codex --refresh`，刷新 `~/.codex/skills/` 和 `~/.qros/`。
 
 ## 运行时布局
 
-Repo-local 安装：
-
 ```text
-.agents/skills/qros-*/
-.qros/scripts/
-.qros/tools/
-.qros/templates/
-.qros/docs/
-.qros/install-manifest.json
+~/.codex/qros/skills/
+~/.agents/skills/qros -> ~/.codex/qros/skills
 ```
 
-User-global 安装：
-
-```text
-~/.codex/skills/qros-*/
-~/.qros/scripts/
-~/.qros/tools/
-~/.qros/templates/
-~/.qros/docs/
-~/.qros/install-manifest.json
-```
+Codex 扫描 `~/.agents/skills/`，`qros` 入口通过 symlink 指向仓库里的 skill tree.
 
 ## 延伸阅读
 
@@ -106,6 +78,6 @@ User-global 安装：
 
 ## 常见问题
 
-- 看不到技能：重新执行 `./setup --host codex --refresh`
-- 感觉安装内容过旧：`repo-local` 用户先执行 `git pull`；`user-global` 用户重新执行 `./setup --host codex --refresh`
-- 不确定安装是否正常：执行 `./setup --host codex --check`
+- 看不到技能：确认 `~/.agents/skills/qros` 指向 `~/.codex/qros/skills`
+- 感觉安装内容过旧：进入 `~/.codex/qros` 执行 `git pull`
+- 不确定安装是否正常：在 Codex 中查看 `qros-research-session` 是否可见

@@ -40,44 +40,46 @@ In Codex, start with:
 
 The agent should then drive the session for you.
 
+Codex finds the skill through `~/.agents/skills/qros`, which should point to `~/.codex/qros/skills`.
+
 对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 `idea_intake_confirmation_pending`，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria，并在得到显式确认后再进入正式 qualification。
 
 ## Internal Runtime
 
-The deterministic backend entry point is still:
+The deterministic backend entry point lives in the cloned repo:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --raw-idea "BTC leads high-liquidity alts after shock events"
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --raw-idea "BTC leads high-liquidity alts after shock events"
 ```
 
 For debugging or manual recovery, explicit intake interview approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-intake
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-intake
 ```
 
 For debugging or manual recovery, explicit mandate approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
 ```
 
 For debugging or manual recovery, explicit data_ready approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-data-ready
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-data-ready
 ```
 
 For debugging or manual recovery, explicit signal_ready approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-signal-ready
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-signal-ready
 ```
 
 For debugging or manual recovery, explicit train_freeze approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-train-freeze
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-train-freeze
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready 和 train_freeze。
@@ -85,7 +87,7 @@ python scripts/run_research_session.py --outputs-root outputs --lineage-id <line
 For debugging or manual recovery, explicit test_evidence approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-test-evidence
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-test-evidence
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze 和 test_evidence。
@@ -93,7 +95,7 @@ python scripts/run_research_session.py --outputs-root outputs --lineage-id <line
 For debugging or manual recovery, explicit backtest_ready approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-backtest-ready
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-backtest-ready
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence 和 backtest_ready。
@@ -101,7 +103,7 @@ python scripts/run_research_session.py --outputs-root outputs --lineage-id <line
 For debugging or manual recovery, explicit holdout_validation approval can also be triggered through:
 
 ```bash
-python scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-holdout-validation
+python ~/.codex/qros/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-holdout-validation
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence、backtest_ready 和 holdout_validation。

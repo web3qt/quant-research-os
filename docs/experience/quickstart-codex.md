@@ -2,16 +2,10 @@
 
 ## 1. Install
 
-Choose one:
-
 ```bash
-./setup --host codex --mode user-global
-```
-
-or
-
-```bash
-./setup --host codex --mode repo-local
+git clone <QROS_REPO_URL> ~/.codex/qros
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/qros/skills ~/.agents/skills/qros
 ```
 
 ## 2. Start From The Unified Skill
@@ -92,3 +86,5 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 ## 6. Next
 
 After `holdout_validation review`, this version stops. `promotion_decision` orchestration is not yet part of the single-entry flow.
+
+Codex discovers QROS through `~/.agents/skills/qros`, which should point to `~/.codex/qros/skills`.

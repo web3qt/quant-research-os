@@ -9,82 +9,44 @@ First version supports:
 Install entry point:
 
 ```bash
-./setup --host codex --mode repo-local
-./setup --host codex --mode user-global
+git clone <QROS_REPO_URL> ~/.codex/qros
+mkdir -p ~/.agents/skills
+ln -s ~/.codex/qros/skills ~/.agents/skills/qros
 ```
 
-## Repo-Local Install
+This keeps QROS as a cloned repo while exposing skills through Codex's native discovery path.
 
-Use this when QROS should live inside the current project.
-
-```bash
-./setup --host codex --mode repo-local
-```
+## Install Layout
 
 What it writes:
 
-- `.agents/skills/qros-*`
-- `.qros/scripts/`
-- `.qros/tools/`
-- `.qros/templates/`
-- `.qros/docs/`
-- `.qros/install-manifest.json`
+- `~/.codex/qros/skills/`
+- `~/.agents/skills/qros -> ~/.codex/qros/skills`
 
-## User-Global Install
+## Update
 
-Use this when you want one installation shared across local projects.
+Update overwrites the cloned repo in place.
 
 ```bash
-./setup --host codex --mode user-global
+cd ~/.codex/qros
+git pull
 ```
 
-What it writes:
-
-- `~/.codex/skills/qros-*`
-- `~/.qros/scripts/`
-- `~/.qros/tools/`
-- `~/.qros/templates/`
-- `~/.qros/docs/`
-- `~/.qros/install-manifest.json`
-
-## Auto Mode
-
-`auto` resolves to:
-
-- `repo-local` when the current directory already looks like a project with `.agents/`
-- otherwise `user-global`
-
-```bash
-./setup --host codex --mode auto
-```
-
-## Refresh
-
-Refresh overwrites the managed QROS assets from the current source repo.
-
-```bash
-./setup --host codex --refresh
-```
-
-For existing users:
-
-- `repo-local`: update the repo first with `git pull`, then run `./setup --host codex --refresh` if you want the managed assets rewritten from the latest checkout
-- `user-global`: `git pull` by itself does not refresh `~/.codex/skills/` or `~/.qros/`; run `./setup --host codex --refresh`
+Codex will immediately see the updated skills because `~/.agents/skills/qros` points at the repo skill tree.
 
 ## Check
 
-Check validates the install without writing files.
+Check is simple:
 
 ```bash
-./setup --host codex --check
+test -L ~/.agents/skills/qros
+test -d ~/.codex/qros/skills
 ```
 
 It verifies:
 
-- expected `qros-*` skills exist
-- runtime assets exist
-- `install-manifest.json` exists
-- manifest contains the expected install metadata
+- Codex can discover QROS skills through `~/.agents/skills/`
+- the symlink points at the repo skill tree
 
 ## First Commands After Install
 
@@ -93,11 +55,11 @@ In Codex, start with:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-The recommended user path is skill-first. The runtime scripts still exist, but they are internal plumbing and manual recovery tools, not the main workflow.
+The recommended user path is still skill-first. The repo clone and symlink are only how Codex finds the skills.
 
 ## Troubleshooting
 
-- `--check` reports missing manifest: run `./setup --host codex --mode repo-local` or `user-global`
-- Skill content looks stale: run `./setup --host codex --refresh`
+- `Codex` cannot see the skills: verify `~/.agents/skills/qros` points to `~/.codex/qros/skills`
+- Skill content looks stale: run `cd ~/.codex/qros && git pull`
 - Need workflow guidance: open `docs/experience/quickstart-codex.md`
 - Need the unified entry docs: open `docs/experience/qros-research-session-usage.md`
