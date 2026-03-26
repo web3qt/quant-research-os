@@ -24,6 +24,34 @@ def _write_stage_completion_certificate(
     )
 
 
+def _write_fake_parquet(path: Path) -> None:
+    path.write_bytes(b"PAR1test-payloadPAR1")
+
+
+def _prepare_real_backtest_engine_outputs(backtest_dir: Path) -> None:
+    (backtest_dir / "engine_compare.csv").write_text(
+        "\n".join(
+            [
+                "engine,gross_return,net_return,max_drawdown,semantic_gap",
+                "vectorbt,0.12,0.09,-0.08,false",
+                "backtrader,0.119,0.089,-0.081,false",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    for engine_name in ("vectorbt", "backtrader"):
+        engine_dir = backtest_dir / engine_name
+        engine_dir.mkdir(exist_ok=True)
+        for name in (
+            "trades.parquet",
+            "symbol_metrics.parquet",
+            "portfolio_timeseries.parquet",
+            "portfolio_summary.parquet",
+        ):
+            _write_fake_parquet(engine_dir / name)
+
+
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -1265,7 +1293,9 @@ def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp
     assert "backtest_ready_confirmation_pending" not in result.stdout
 
 
-def test_run_research_session_builds_backtest_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
+def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engine_outputs(
+    tmp_path: Path,
+) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
@@ -1321,6 +1351,67 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
         cwd=repo_root,
     )
 
+    assert confirm_result.returncode != 0
+    assert "real dual-engine backtest outputs are missing or placeholder" in confirm_result.stderr
+
+
+def test_run_research_session_builds_backtest_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    test_dir = lineage_root / "05_test_evidence"
+    backtest_dir = lineage_root / "06_backtest"
+    test_dir.mkdir(parents=True)
+    backtest_dir.mkdir(parents=True)
+    for name in [
+        "report_by_h.parquet",
+        "symbol_summary.parquet",
+        "admissibility_report.parquet",
+        "test_gate_table.csv",
+        "crowding_review.md",
+        "selected_symbols_test.csv",
+        "selected_symbols_test.parquet",
+        "frozen_spec.json",
+        "test_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "stage_completion_certificate.yaml",
+    ]:
+        (test_dir / name).write_text("ok\n", encoding="utf-8")
+    (test_dir / "selected_symbols_test.csv").write_text(
+        "\n".join(
+            [
+                "symbol,param_id,best_h",
+                "ETHUSDT,baseline_v1,30m",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (test_dir / "frozen_spec.json").write_text(
+        '{"selected_symbols":["ETHUSDT"],"best_h":"30m"}\n',
+        encoding="utf-8",
+    )
+    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _prepare_real_backtest_engine_outputs(backtest_dir)
+
+    confirm_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-backtest-ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
     assert confirm_result.returncode == 0
 
     result = run(
@@ -1353,7 +1444,6 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
     backtest_dir = lineage_root / "06_backtest"
     backtest_dir.mkdir(parents=True)
     for name in [
-        "engine_compare.csv",
         "strategy_combo_ledger.csv",
         "capacity_review.md",
         "backtest_gate_decision.md",
@@ -1362,8 +1452,7 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
         "stage_completion_certificate.yaml",
     ]:
         (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    _prepare_real_backtest_engine_outputs(backtest_dir)
 
     result = run(
         [
@@ -1403,7 +1492,6 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
         encoding="utf-8",
     )
     for name in [
-        "engine_compare.csv",
         "strategy_combo_ledger.csv",
         "capacity_review.md",
         "backtest_gate_decision.md",
@@ -1412,8 +1500,7 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
         "stage_completion_certificate.yaml",
     ]:
         (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    _prepare_real_backtest_engine_outputs(backtest_dir)
     (backtest_dir / "backtest_frozen_config.json").write_text(
         '{"selected_symbols":["ETHUSDT"],"best_h":"30m"}\n',
         encoding="utf-8",

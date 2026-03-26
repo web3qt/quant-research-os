@@ -125,6 +125,27 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         (stage_dir / name).write_text("ok\n", encoding="utf-8")
     for name in dir_outputs[stage]:
         (stage_dir / name).mkdir()
+    if stage == "backtest_ready":
+        (stage_dir / "engine_compare.csv").write_text(
+            "\n".join(
+                [
+                    "engine,gross_return,net_return,max_drawdown,semantic_gap",
+                    "vectorbt,0.12,0.09,-0.08,false",
+                    "backtrader,0.119,0.089,-0.081,false",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        for engine_name in ("vectorbt", "backtrader"):
+            engine_dir = stage_dir / engine_name
+            for name in (
+                "trades.parquet",
+                "symbol_metrics.parquet",
+                "portfolio_timeseries.parquet",
+                "portfolio_summary.parquet",
+            ):
+                (engine_dir / name).write_bytes(b"PAR1test-payloadPAR1")
 
 
 def _freeze_draft(*, confirmed: bool) -> dict:
@@ -1282,7 +1303,31 @@ def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_conf
 def test_detect_session_stage_returns_backtest_ready_review_when_outputs_exist(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
+    _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
+
+    assert detect_session_stage(lineage_root) == "backtest_ready_review"
+
+
+def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_are_placeholder(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    test_dir = lineage_root / "05_test_evidence"
+    backtest_dir = lineage_root / "06_backtest"
+    _write_minimal_stage_outputs(test_dir, stage="test_evidence")
+    (test_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
     backtest_dir.mkdir(parents=True)
+    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_yaml(
+        backtest_dir / "backtest_ready_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_BACKTEST_READY",
+            "approved_by": "tester",
+            "approved_at": "2026-03-26T10:00:00Z",
+            "source_stage": "test_evidence_review_complete",
+        },
+    )
     for name in [
         "engine_compare.csv",
         "strategy_combo_ledger.csv",
@@ -1290,12 +1335,22 @@ def test_detect_session_stage_returns_backtest_ready_review_when_outputs_exist(t
         "backtest_gate_decision.md",
         "artifact_catalog.md",
         "field_dictionary.md",
+        "backtest_frozen_config.json",
     ]:
         (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    for engine_name in ("vectorbt", "backtrader"):
+        engine_dir = backtest_dir / engine_name
+        engine_dir.mkdir()
+        (engine_dir / "trades.parquet").write_text(
+            f"placeholder trades artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
+        (engine_dir / "portfolio_summary.parquet").write_text(
+            f"placeholder portfolio summary artifact for {engine_name}\n",
+            encoding="utf-8",
+        )
 
-    assert detect_session_stage(lineage_root) == "backtest_ready_review"
+    assert detect_session_stage(lineage_root) == "backtest_ready_author"
 
 
 def test_detect_session_stage_returns_backtest_ready_review_complete_when_closure_exists(
@@ -1303,19 +1358,8 @@ def test_detect_session_stage_returns_backtest_ready_review_complete_when_closur
 ) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
-    backtest_dir.mkdir(parents=True)
-    for name in [
-        "engine_compare.csv",
-        "strategy_combo_ledger.csv",
-        "capacity_review.md",
-        "backtest_gate_decision.md",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "stage_completion_certificate.yaml",
-    ]:
-        (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
+    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
 
     assert detect_session_stage(lineage_root) == "holdout_validation_confirmation_pending"
 
@@ -1324,19 +1368,8 @@ def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Pa
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
-    backtest_dir.mkdir(parents=True)
-    for name in [
-        "engine_compare.csv",
-        "strategy_combo_ledger.csv",
-        "capacity_review.md",
-        "backtest_gate_decision.md",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "stage_completion_certificate.yaml",
-    ]:
-        (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
+    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
@@ -1350,20 +1383,9 @@ def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
     holdout_dir = lineage_root / "07_holdout"
-    backtest_dir.mkdir(parents=True)
+    _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     holdout_dir.mkdir(parents=True)
-    for name in [
-        "engine_compare.csv",
-        "strategy_combo_ledger.csv",
-        "capacity_review.md",
-        "backtest_gate_decision.md",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "stage_completion_certificate.yaml",
-    ]:
-        (backtest_dir / name).write_text("ok\n", encoding="utf-8")
-    (backtest_dir / "vectorbt").mkdir()
-    (backtest_dir / "backtrader").mkdir()
+    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
     _write_yaml(
         holdout_dir / "holdout_validation_draft.yaml",
         _holdout_validation_draft(confirmed=True),

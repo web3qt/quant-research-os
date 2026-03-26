@@ -30,6 +30,7 @@ from tools.signal_ready_runtime import (
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
     BACKTEST_READY_GROUP_ORDER,
+    backtest_ready_real_outputs_complete,
     build_backtest_ready_from_test_evidence,
     scaffold_backtest_ready,
 )
@@ -1030,7 +1031,9 @@ def _test_evidence_outputs_complete(test_dir: Path) -> bool:
 
 
 def _backtest_ready_outputs_complete(backtest_dir: Path) -> bool:
-    return all((backtest_dir / name).exists() for name in BACKTEST_READY_REQUIRED_OUTPUTS)
+    return all((backtest_dir / name).exists() for name in BACKTEST_READY_REQUIRED_OUTPUTS) and backtest_ready_real_outputs_complete(
+        backtest_dir
+    )
 
 
 def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:

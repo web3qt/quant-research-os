@@ -16,6 +16,12 @@ BACKTEST_READY_GROUP_ORDER = [
     "engine_contract",
     "delivery_contract",
 ]
+BACKTEST_ENGINE_REQUIRED_FILES = (
+    "trades.parquet",
+    "symbol_metrics.parquet",
+    "portfolio_timeseries.parquet",
+    "portfolio_summary.parquet",
+)
 
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
@@ -194,11 +200,6 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    with (backtest_dir / "engine_compare.csv").open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["engine_a", "engine_b", "semantic_gap", "note"])
-        writer.writerow(["vectorbt", "backtrader", "false", semantic_compare_rule])
-
     with (backtest_dir / "strategy_combo_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["combo_id", "execution_rule", "portfolio_rule", "risk_overlay", "status"])
@@ -221,42 +222,6 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-
-    for engine_name in ("vectorbt", "backtrader"):
-        engine_dir = backtest_dir / engine_name
-        engine_dir.mkdir(exist_ok=True)
-        (engine_dir / "selected_symbols.csv").write_text(
-            "symbol\n" + "\n".join(selected_symbols) + "\n",
-            encoding="utf-8",
-        )
-        (engine_dir / "trades.parquet").write_text(
-            f"placeholder trades artifact for {engine_name}\n",
-            encoding="utf-8",
-        )
-        (engine_dir / "symbol_metrics.parquet").write_text(
-            f"placeholder symbol metrics artifact for {engine_name}\n",
-            encoding="utf-8",
-        )
-        (engine_dir / "portfolio_timeseries.parquet").write_text(
-            f"placeholder portfolio timeseries artifact for {engine_name}\n",
-            encoding="utf-8",
-        )
-        (engine_dir / "portfolio_summary.parquet").write_text(
-            f"placeholder portfolio summary artifact for {engine_name}\n",
-            encoding="utf-8",
-        )
-        (engine_dir / "summary.txt").write_text(
-            "\n".join(
-                [
-                    f"Engine: {engine_name}",
-                    f"Selected symbols: {', '.join(selected_symbols)}",
-                    f"Best horizon: {best_h}",
-                    f"Capital base: {capital_base}",
-                ]
-            )
-            + "\n",
-            encoding="utf-8",
-        )
 
     (backtest_dir / "capacity_review.md").write_text(
         "\n".join(
@@ -329,7 +294,68 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
+    _require_real_dual_engine_backtest_outputs(backtest_dir)
+
     return backtest_dir
+
+
+def backtest_ready_real_outputs_complete(backtest_dir: Path) -> bool:
+    compare_path = backtest_dir / "engine_compare.csv"
+    if not compare_path.exists() or _engine_compare_is_placeholder(compare_path):
+        return False
+
+    for engine_name in ("vectorbt", "backtrader"):
+        engine_dir = backtest_dir / engine_name
+        if not _engine_dir_has_real_outputs(engine_dir):
+            return False
+    return True
+
+
+def _require_real_dual_engine_backtest_outputs(backtest_dir: Path) -> None:
+    if backtest_ready_real_outputs_complete(backtest_dir):
+        return
+    raise ValueError(
+        "real dual-engine backtest outputs are missing or placeholder; "
+        "prepare vectorbt/backtrader results plus a real engine_compare.csv in the active research repo before freezing backtest_ready"
+    )
+
+
+def _engine_dir_has_real_outputs(engine_dir: Path) -> bool:
+    if not engine_dir.exists() or not engine_dir.is_dir():
+        return False
+    for name in BACKTEST_ENGINE_REQUIRED_FILES:
+        artifact_path = engine_dir / name
+        if not artifact_path.exists() or not _is_real_parquet_artifact(artifact_path):
+            return False
+    return True
+
+
+def _is_real_parquet_artifact(path: Path) -> bool:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return False
+    if len(payload) < 8:
+        return False
+    if payload[:4] != b"PAR1" or payload[-4:] != b"PAR1":
+        return False
+    return True
+
+
+def _engine_compare_is_placeholder(path: Path) -> bool:
+    try:
+        rows = list(csv.reader(path.read_text(encoding="utf-8").splitlines()))
+    except (OSError, UnicodeDecodeError):
+        return True
+    if len(rows) < 2:
+        return True
+    header = rows[0]
+    data_rows = rows[1:]
+    if header == ["engine_a", "engine_b", "semantic_gap", "note"] and len(data_rows) == 1:
+        row = data_rows[0]
+        if len(row) >= 4 and row[0] == "vectorbt" and row[1] == "backtrader" and row[2] == "false":
+            return True
+    return False
 
 
 def _load_test_selection(lineage_root: Path) -> tuple[list[str], str]:
