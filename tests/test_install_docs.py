@@ -6,8 +6,9 @@ def test_install_docs_reference_supported_commands() -> None:
     installation = Path("docs/experience/installation.md").read_text(encoding="utf-8")
     quickstart = Path("docs/experience/quickstart-codex.md").read_text(encoding="utf-8")
     session_usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
+    codex_guide = Path("docs/README.codex.md").read_text(encoding="utf-8")
 
-    combined = "\n".join([readme, installation, quickstart, session_usage])
+    combined = "\n".join([readme, installation, quickstart, session_usage, codex_guide])
 
     assert "git clone" in combined
     assert "~/.codex/qros" in combined
@@ -20,3 +21,6 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "qros-research-session help" in combined
     assert "~/.codex/qros/bin/qros-session" in combined
     assert "~/.codex/qros/bin/qros-review" in combined
+    assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
+    assert "Restart Codex" in combined
+    assert "Uninstalling" in combined

@@ -29,6 +29,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("docs/intake-sop/qualification_scorecard_schema.yaml").exists()
     assert Path("docs/intake-sop/idea_gate_decision_schema.yaml").exists()
     assert Path("docs/experience/installation.md").exists()
+    assert Path("docs/README.codex.md").exists()
     assert Path("docs/experience/quickstart-codex.md").exists()
     assert Path("docs/experience/qros-research-session-usage.md").exists()
     assert Path("skills/qros-idea-intake-author/SKILL.md").exists()
