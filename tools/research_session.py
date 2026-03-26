@@ -1069,20 +1069,20 @@ def _latest_review_failure_status(
     lineage_root: Path,
 ) -> tuple[str | None, bool, str | None, str | None]:
     review_stage_dirs = [
-        ("holdout_validation_review", lineage_root / "07_holdout"),
-        ("backtest_ready_review", lineage_root / "06_backtest"),
-        ("test_evidence_review", lineage_root / "05_test_evidence"),
-        ("train_freeze_review", lineage_root / "04_train_freeze"),
-        ("signal_ready_review", lineage_root / "03_signal_ready"),
-        ("data_ready_review", lineage_root / "02_data_ready"),
-        ("mandate_review", lineage_root / "01_mandate"),
+        ("holdout_validation_review", lineage_root / "07_holdout", True),
+        ("backtest_ready_review", lineage_root / "06_backtest", True),
+        ("test_evidence_review", lineage_root / "05_test_evidence", True),
+        ("train_freeze_review", lineage_root / "04_train_freeze", True),
+        ("signal_ready_review", lineage_root / "03_signal_ready", True),
+        ("data_ready_review", lineage_root / "02_data_ready", True),
+        ("mandate_review", lineage_root / "01_mandate", False),
     ]
 
-    for review_stage, stage_dir in review_stage_dirs:
+    for review_stage, stage_dir, routes_into_failure_handler in review_stage_dirs:
         verdict = _review_verdict_from_stage_dir(stage_dir)
         if verdict is None:
             continue
-        if verdict in NON_ADVANCING_COMPLETION_STATUSES:
+        if verdict in NON_ADVANCING_COMPLETION_STATUSES and routes_into_failure_handler:
             return (
                 verdict,
                 True,

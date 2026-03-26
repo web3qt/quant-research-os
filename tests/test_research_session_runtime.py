@@ -1515,6 +1515,27 @@ def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handli
     assert status.failure_reason_summary is None
 
 
+def test_run_research_session_does_not_route_mandate_review_into_failure_handler(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="RETRY")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review"
+    assert status.review_verdict == "RETRY"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
+    assert status.gate_status == "REVIEW_PENDING"
+    assert status.next_action == "Write review_findings.yaml and run mandate review"
+
+
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
 
