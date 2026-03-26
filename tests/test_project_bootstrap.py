@@ -35,6 +35,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("skills/qros-idea-intake-author/SKILL.md").exists()
     assert Path("skills/qros-mandate-author/SKILL.md").exists()
     assert Path("skills/qros-research-session/SKILL.md").exists()
+    assert Path("skills/qros-stage-failure-handler/SKILL.md").exists()
     assert Path("skills/qros-train-freeze-author/SKILL.md").exists()
     assert Path("skills/qros-test-evidence-author/SKILL.md").exists()
     assert Path("skills/qros-backtest-ready-author/SKILL.md").exists()
