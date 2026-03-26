@@ -1457,6 +1457,64 @@ def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: 
         assert detect_session_stage(lineage_root) == expected_stage, stage
 
 
+def test_run_research_session_requires_failure_handling_on_non_advancing_review_verdicts(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    cases = [
+        ("btc_leads_alts_retry", "RETRY", "test_evidence", "05_test_evidence", "test_evidence_review"),
+        (
+            "btc_leads_alts_pass_for_retry",
+            "PASS FOR RETRY",
+            "train_freeze",
+            "04_train_freeze",
+            "train_freeze_review",
+        ),
+        ("btc_leads_alts_no_go", "NO-GO", "backtest_ready", "06_backtest", "backtest_ready_review"),
+        (
+            "btc_leads_alts_child_lineage",
+            "CHILD LINEAGE",
+            "data_ready",
+            "02_data_ready",
+            "data_ready_review",
+        ),
+    ]
+
+    for lineage_id, verdict, stage, stage_dir_name, expected_stage in cases:
+        lineage_root = outputs_root / lineage_id
+        stage_dir = lineage_root / stage_dir_name
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status=verdict)
+
+        status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+
+        assert status.current_stage == expected_stage
+        assert status.review_verdict == verdict
+        assert status.requires_failure_handling is True
+        assert status.failure_stage == expected_stage
+        assert "failure" in status.next_action.lower()
+        assert status.failure_reason_summary == f"{expected_stage} requires failure handling because review verdict is {verdict}."
+
+
+def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handling(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "05_test_evidence"
+
+    _write_minimal_stage_outputs(stage_dir, stage="test_evidence")
+    _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "backtest_ready_confirmation_pending"
+    assert status.review_verdict == "PASS"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
+
+
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
 
@@ -1475,3 +1533,7 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
     assert status.artifacts_written == ["00_idea_intake/idea_brief.md"]
     assert status.gate_status == "NEEDS_REFRAME"
     assert status.next_action == "Fill qualification inputs"
+    assert status.review_verdict is None
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
