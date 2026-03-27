@@ -1,4 +1,4 @@
-# 06\_holdout\_validation\_sop — Holdout Validation 阶段标准操作流程（机构级）
+# 06_holdout_validation_sop — Holdout Validation 阶段标准操作流程（机构级）
 
 | 字段 | 值 |
 |------|-----|
