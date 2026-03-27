@@ -31,6 +31,18 @@ status_vocabulary:
     can_advance: false
     scope: governance
     meaning: 需要以新谱系承接，不允许在原线静默改题
+  GO_TO_MANDATE:
+    can_advance: true
+    scope: idea_intake
+    meaning: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+  NEEDS_REFRAME:
+    can_advance: false
+    scope: idea_intake
+    meaning: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+  DROP:
+    can_advance: false
+    scope: idea_intake
+    meaning: 不值得投入进一步研究预算，终止该想法
 
 global_rules:
   - id: companion_field_docs_required
@@ -75,12 +87,110 @@ stage_schema:
     - notes
 
 stages:
+  idea_intake:
+    stage_id: idea_intake
+    stage_name: Idea Intake
+    purpose: 在进入研究管线前，评估原始想法是否具备正式冻结研究边界的成熟度
+    core_question: 这个想法是否有可观测的变量、合理的机制假设和足够清晰的边界，值得投入正式研究预算
+    allowed_previous_stages: []
+    required_inputs:
+      - 原始想法描述（一句话或简短说明）
+      - 研究员对机制的初步猜想
+      - 初步的 market / universe / data source 设想
+    required_outputs:
+      - idea_brief.md
+      - observation_hypothesis_map.md
+      - research_question_set.md
+      - scope_canvas.yaml
+      - qualification_scorecard.yaml
+      - idea_gate_decision.yaml
+      - artifact_catalog.md
+    machine_artifacts:
+      - scope_canvas.yaml
+      - qualification_scorecard.yaml
+      - idea_gate_decision.yaml
+    human_artifacts:
+      - idea_brief.md
+      - observation_hypothesis_map.md
+      - research_question_set.md
+      - artifact_catalog.md
+    formal_gate:
+      verdict_vocabulary: idea_gate_decision_schema.yaml
+      pass_all_of:
+        - idea_brief 已完成，包含 observation、primary_hypothesis、counter_hypothesis、kill_criteria
+        - research_question_set 已完成，主问题唯一，每个问题有可证伪条件
+        - scope_canvas 已完成，excluded_scope 非空
+        - qualification_scorecard 已完成，6 个维度全部有分、evidence 和 kill_reason
+        - idea_gate_decision 已完成，verdict 为允许值之一，required fields 全部非空
+        - GO_TO_MANDATE 时 approved_scope 非空
+        - artifact_catalog 已完成，所有 required outputs 已登记
+      fail_any_of:
+        - counter_hypothesis 未写明
+        - kill_criteria 未写明
+        - qualification 期间查看了真实数据结果
+        - idea_gate_decision.verdict 不是允许值之一
+        - GO_TO_MANDATE 但 approved_scope 为空
+        - required_outputs 缺失
+    audit_only:
+      - qualification 评分理由是否充分
+      - scope_canvas 粗口径是否合理
+      - counter_hypothesis 是否真正有挑战性
+    verdict_rules:
+      GO_TO_MANDATE:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+          - idea_gate_decision.approved_scope 非空
+          - idea_gate_decision.counter_hypothesis 已写明
+          - idea_gate_decision.kill_criteria 已写明
+      NEEDS_REFRAME:
+        when_any_of:
+          - 方向可研究但边界或变量定义不足
+          - qualification_scorecard 多个维度低于 3 分
+          - required_reframe_actions 非空
+      DROP:
+        when_any_of:
+          - 观测变量无法稳定定义
+          - 机制不 plausible 且无对立假设
+          - formal_gate.fail_any_of 被触发且不可修复
+    rollback_rules:
+      default_rollback_stage: idea_intake
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失字段
+        - 重写 counter_hypothesis
+        - 补充 kill_criteria
+        - 重写 qualification_scorecard
+      must_restart_qualification_when:
+        - counter_hypothesis 被认定无效
+        - kill_criteria 过于宽泛
+        - 访谈期间发现查看了数据
+        - NEEDS_REFRAME 后进行了实质修改
+    downstream_permissions:
+      may_advance_to:
+        - mandate
+      precondition_before_advance:
+        - idea_gate_decision.verdict == GO_TO_MANDATE
+        - 通过 run_research_session.py --confirm-mandate 完成四组交互式确认
+      frozen_outputs_consumable_by_next_stage:
+        - qualification_scorecard.yaml
+        - research_question_set.md
+        - scope_canvas.yaml
+        - idea_gate_decision.yaml
+      next_stage_must_not_consume:
+        - 任何未经 idea_gate_decision 批准的扩展 scope
+    notes:
+      - Idea Intake 不属于正式研究管线阶段，不生成 field_dictionary（无 signal/data 层字段）
+      - GO_TO_MANDATE 后必须停在 mandate_confirmation_pending，等待四组交互式确认
+      - companion field documentation 制度仅适用于 scope_canvas / scorecard / gate_decision 的字段说明，由 idea_brief 和 research_question_set 承担
+
   mandate:
     stage_id: mandate
     stage_name: Mandate
     purpose: 冻结研究主问题、时间边界、universe、字段层级和参数边界
     core_question: 这条研究线到底研究什么、明确不研究什么，以及后续阶段允许消费什么
-    allowed_previous_stages: []
+    allowed_previous_stages:
+      - idea_intake
     required_inputs:
       - 研究主题说明或专题草稿
       - 候选 universe 与时间边界提案
