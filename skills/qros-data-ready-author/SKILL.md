@@ -61,16 +61,34 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 data_ready？`
 - 不得静默修改 mandate 冻结的时间边界和 universe 口径
 
+## Gate Discipline
+
+### 排除项声明（即使为空也必须显式记录）
+`universe_exclusions.csv` 和 `universe_exclusions.md` 必须存在：
+- 有排除项时：列出每条排除原因
+- **无排除项时**：必须显式声明 `no_exclusions: true`，不允许用空文件或省略代替"没有排除"
+
+### 质量语义：保留标记，不静默填补
+`aligned_bars/` 中的缺失值、stale 价、outlier 必须用**显式质量标记**保留，不允许：
+- 静默 forward-fill
+- 静默删除有问题的 bar
+
+`quality_semantics` 冻结时，必须明确列出每种异常情况的处理方式（标记/删除/保留），并在 `data_contract.md` 中写清语义。
+
+### 覆盖异常必须有解释
+`validation_report.md` 中出现的任何覆盖率异常（如基准腿覆盖低、某 symbol 时间段大量缺失）必须有明确解释。无法解释的覆盖异常**不得**通过 formal gate。
+
 ## Working Rules
 
 1. 确认 `01_mandate/stage_completion_certificate.yaml` 已存在
 2. 先收敛并确认 `extraction_contract`
-3. 再收敛并确认 `quality_semantics`
-4. 再收敛并确认 `universe_admission`
+3. 再收敛并确认 `quality_semantics`；明确每种异常的处理语义（标记/保留，不静默填）
+4. 再收敛并确认 `universe_admission`；确认排除项已显式记录（即使为空）
 5. 再收敛并确认 `shared_derived_layer`
 6. 最后确认 `delivery_contract`
 7. 明确当前 research repo 中由谁负责真实生成 `aligned_bars/`、rolling 缓存、coverage/QC 证据和 shared derived outputs
 8. 输出一份 grouped data_ready summary
 9. 只有用户最终批准后，才生成正式 `02_data_ready` artifacts
-10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 data_ready 完成
+10. 验证 `validation_report.md` 中所有覆盖异常已有解释
+11. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+12. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 data_ready 完成

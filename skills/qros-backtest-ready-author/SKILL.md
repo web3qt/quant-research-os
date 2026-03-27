@@ -51,14 +51,43 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 backtest_ready？`
 - 不得在 backtest 阶段重新选币或重估 best_h
 
+## Gate Discipline
+
+### 双引擎语义冲突解决定义
+`engine_compare.csv` 中出现双引擎显著分歧时，必须有明确的解决规则：
+- 必须在 `engine_contract` 冻结时预先定义：何为"显著分歧"（如 Sharpe 差 > X、最大回撤差 > Y）
+- 显著分歧出现时的处置流程（以哪个引擎为准，还是进入人工审核）
+- 不允许事后根据哪个引擎结果更好来决定采用哪套
+
+### 成本与容量可解释性要求
+`capacity_review.md` 中的每条容量结论必须可追溯至具体数据：
+- 成本假设必须写明来源（参考数据、历史 fill rate、mandate 中的参与率边界）
+- 容量估算必须基于 `01_mandate/time_split.json` 中记录的流动性代理变量和参与率边界
+- 禁止填写无数据支撑的容量数字（如"估计可容纳 100万"无依据）
+- 容量结论需与 mandate 中的 `crowding distinctiveness review` 基准保持一致
+
+### 组合台账 combo_ledger 必须有理由
+`strategy_combo_ledger.csv` 中每条组合配置记录必须包含非空的 `selection_rationale` 字段：
+- 说明该组合配置的选择依据（信号多样性、风险分散、mandate 约束等）
+- 禁止以"回测结果好"为单一理由选择组合配置
+- 若有多个备选组合，必须记录未选择原因
+
+### 异常表现必须触发溯源核查
+若 backtest 结果出现以下任一异常表现，必须在宣布完成前完成溯源核查：
+- Sharpe 显著高于 test_evidence 阶段的统计结论（如 test IC 均值仅 0.02，backtest Sharpe 却达到 3.0）
+- 最大回撤极低但换手率极高（成本假设可能失真）
+- 双引擎结果高度一致但与 test 窗统计差异极大
+
+溯源核查结论必须写入 `backtest_gate_decision.md`；无法解释的异常不得通过 formal gate。
+
 ## Working Rules
 
 1. 确认 `05_test_evidence/stage_completion_certificate.yaml` 已存在
 2. 先收敛并确认 `execution_policy`
-3. 再收敛并确认 `portfolio_policy`
+3. 再收敛并确认 `portfolio_policy`；确认 combo_ledger 每条记录有 selection_rationale
 4. 再收敛并确认 `risk_overlay`
-5. 再收敛并确认 `engine_contract`
-6. 最后确认 `delivery_contract`
+5. 再收敛并确认 `engine_contract`；确认双引擎语义冲突解决规则已预先定义
+6. 最后确认 `delivery_contract`；确认 capacity_review 成本假设可追溯，异常表现已溯源
 7. 明确当前 research repo 中由谁负责真实生成双引擎回测结果、engine compare、combo ledger 和 capacity evidence
 8. 输出一份 grouped backtest_ready summary
 9. 只有用户最终批准后，才生成正式 `06_backtest` artifacts

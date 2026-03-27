@@ -53,13 +53,41 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 train_freeze？`
 - 不得借用 test/backtest 结果回写 train 尺子
 
+## Gate Discipline
+
+### 严禁用 Test/Backtest 结果回写 Train 尺子
+这是最严重的信息泄露。以下任何行为都必须触发 **CHILD LINEAGE**：
+- 用已知 test 窗结果反推阈值
+- 用回测 Sharpe 选择分位切点
+- 基于下游表现调整质量过滤条件
+
+如果用户提到"根据 test 结果调一下阈值"，必须明确拒绝并说明原因。
+
+### Reject Ledger 必须有原因
+`train_rejects.csv` 中每条拒绝记录必须包含非空的 `reject_reason` 字段。参数粗筛的理由只能是：
+- 超出 mandate 参数边界
+- 信号计算失败
+- 覆盖率低于质量阈值
+
+不允许以"收益不好"为由拒绝参数。
+
+### 阈值语义分离
+`train_thresholds.json` 必须明确区分以下四类，不允许混用在同一层级下：
+- `quantile_thresholds`：信号分位切点
+- `regime_cuts`：市场状态切点（训练窗分布特征需单独记录）
+- `quality_filters`：质量过滤条件
+- `auxiliary_conditions`：辅助条件切点
+
+### 搜索过程统计
+必须产出 `search_statistics.json`，包含：total_params / passed / rejected / median_metric / best_metric / z_score（或等价统计量）。缺少搜索过程统计不得宣布 train 完成。
+
 ## Working Rules
 
 1. 确认 `03_signal_ready/stage_completion_certificate.yaml` 已存在
 2. 先收敛并确认 `window_contract`
-3. 再收敛并确认 `threshold_contract`
-4. 再收敛并确认 `quality_filters`
-5. 再收敛并确认 `param_governance`
+3. 再收敛并确认 `threshold_contract`；核查阈值语义分离（见上）
+4. 再收敛并确认 `quality_filters`；确认质量过滤与阈值语义隔离
+5. 再收敛并确认 `param_governance`；确认 reject_reason 字段必须非空
 6. 最后确认 `delivery_contract`
 7. 明确当前 research repo 中由谁负责真实生成 thresholds、quality 证据、param ledger 和 reject ledger
 8. 输出一份 grouped train_freeze summary
