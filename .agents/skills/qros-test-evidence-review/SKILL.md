@@ -51,11 +51,13 @@ Must pass all of:
 - formal gate 与 audit gate 已显式分开记录
 - selected_symbols_test 与 best_h 已冻结
 - 若 formal gate 直接引用 t 值、p 值、回归显著性或残差型证据，已记录稳健推断口径或免做理由
+- 若 formal gate 把跨窗口关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制延续作为通过依据，已记录结构突变检验 protocol 或免做理由
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
 Must fail none of:
 - 在 test 窗里重估 train 阈值
 - 看了 backtest 再回写 test 白名单但没有 retry 记账
 - 把未经说明的原始 OLS 显著性直接作为 formal gate 通过依据
+- 把跨窗口关系连续性或系数稳定性直接作为 formal gate 通过依据，却没有说明结构突变检验 protocol 或免做理由
 - 没有 frozen_spec 就把对象交给 Backtest
 
 ## Checklist
@@ -67,7 +69,9 @@ Stage checklist:
 - [blocking] 白名单、best_h 或后续候选集已冻结
 - [blocking] 未看了 Backtest 再回写 Test 白名单
 - [blocking] 若 formal gate 引用了 t 值、p 值、回归显著性或残差型证据，已写明稳健推断口径或免做理由
+- [blocking] 若 formal gate 把跨窗口关系连续性、回归系数稳定性或 lead-lag 结构延续作为通过依据，已记录结构突变检验 protocol 或免做理由
 - [reservation] 若有条件分层分析，其定位为 audit evidence 或已明确冻结为正式 gate
+- [reservation] 若做了结构突变或参数稳定性审计，已区分 regime mismatch、样本问题与机制失效
 - [reservation] 若仅给出原始 OLS 显著性而无异方差/自相关稳健性说明，不得升级为 formal pass 证据
 
 ## Audit-Only Items
@@ -75,6 +79,7 @@ Stage checklist:
 Audit-only items:
 - HAC t 值
 - 异方差/自相关稳健性说明（例如 Newey-West、White、Breusch-Pagan）
+- 结构突变检验或参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
 - monotonic score
 - 条件分层分析
 - crowding overlap 与 factor distinctiveness 审计
@@ -83,7 +88,9 @@ Audit-only items:
 ## Reviewer Guidance
 
 - 当 formal gate 直接引用时间序列回归、残差回归、因子收益回归或任何 `t`/`p` 显著性时，优先检查是否说明 `HAC / Newey-West` 等稳健口径。
+- 当 formal gate 声称 lead-lag、beta、threshold 机制或回归系数在 Train/Test 间稳定延续时，检查是否说明 `Chow`、`Bai-Perron`、`CUSUM` 或 rolling coefficient stability 等结构突变 protocol，或写清免做理由。
 - 当主要风险在于方差不稳定而不是搜索噪声时，检查是否记录 `White` / `Breusch-Pagan` 诊断，或把 `WLS` / `GLS` / `ARCH` / `GARCH` 写入修正建议或 residual risks。
+- 不要把显著 break 机械等同于 `NO-GO`；先区分它更像 regime mismatch、样本过短，还是机制本身断裂。
 - 不要把具体统计库名当作要求；skill 只要求方法口径清楚、结论边界清楚。
 
 ## Closure Artifacts

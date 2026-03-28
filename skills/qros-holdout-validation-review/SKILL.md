@@ -43,10 +43,12 @@ Must pass all of:
 - 仅复用 Backtest 冻结方案，不改参数、不改白名单、不改交易规则
 - 已生成单窗口和合并窗口结果
 - 结果方向未发生无法解释的翻转
+- 若 verdict 依赖“结构仍连续”或“结果退化只是 regime 不匹配而非机制断裂”的判断，已记录结构突变检验 protocol 或免做理由
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
 Must fail none of:
 - 用 holdout 调参
 - 用 holdout 改白名单
+- 把“只是 regime 变了”或“关系仍连续”作为 holdout 通过依据，却没有说明结构突变检验 protocol 或免做理由
 - 把 holdout 并回 test 或 backtest 当更多样本
 
 ## Checklist
@@ -56,13 +58,22 @@ Stage checklist:
 - [blocking] 单窗口和合并窗口结果均已落地
 - [blocking] 未用 holdout 调任何参数、白名单或规则
 - [blocking] 已解释无交易、低样本或低触发是否属于正常现象
-- [reservation] 已检查 holdout 是否暴露孤峰参数、selection bias 或断崖退化
+- [blocking] 若 verdict 依赖结构连续性或用 regime mismatch 解释退化，已记录结构突变检验 protocol 或免做理由
+- [reservation] 已检查 holdout 是否暴露孤峰参数、selection bias、断崖退化或显著结构突变
+- [reservation] 若检出显著结构突变，已说明其更接近 regime mismatch、样本问题还是机制断裂
 
 ## Audit-Only Items
 
 Audit-only items:
 - 低触发、低样本或无交易是否属于正常现象
 - 细颗粒度漂移解释
+- 结构突变与参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
+
+## Reviewer Guidance
+
+- 当 reviewer 想用“结构仍连续”或“只是 regime 不匹配而非机制断裂”来支持 `PASS` / `CONDITIONAL PASS` 时，先检查是否写明结构突变检验 protocol，或给出合理免做理由。
+- `Chow` 适合已知断点，`Bai-Perron` 适合未知或多断点，`CUSUM` 与 rolling coefficient stability 适合作为持续漂移的辅助证据。
+- 不要把显著 break 机械等同于 `NO-GO`；但若 break 无法解释，且伴随方向翻转或核心结构崩塌，就不能支持 formal `PASS`。
 
 ## Closure Artifacts
 

@@ -314,12 +314,30 @@ stages:
         evidence:
           - "review notes"
       - id: "TEST-006"
+        severity: "blocking"
+        check: "若 formal gate 引用了 t 值、p 值、回归显著性或残差型证据，已写明稳健推断口径或免做理由"
+        evidence:
+          - "test_gate_decision.md"
+          - "review notes"
+      - id: "TEST-007"
+        severity: "blocking"
+        check: "若 formal gate 把跨窗口关系连续性、回归系数稳定性或 lead-lag 结构延续作为通过依据，已记录结构突变检验 protocol 或免做理由"
+        evidence:
+          - "test_gate_decision.md"
+          - "review notes"
+      - id: "TEST-008"
         severity: "reservation"
         check: "若有条件分层分析，其定位为 audit evidence 或已明确冻结为正式 gate"
         evidence:
           - "condition_bucket_summary.csv"
           - "report_by_h_with_conditions.*"
           - "test_gate_decision.md"
+      - id: "TEST-009"
+        severity: "reservation"
+        check: "若做了结构突变或参数稳定性审计，已区分 regime mismatch、样本问题与机制失效"
+        evidence:
+          - "test_gate_decision.md"
+          - "review notes"
 
   backtest_ready:
     stage_name: "Backtest Ready"
@@ -403,10 +421,22 @@ stages:
         evidence:
           - "holdout_gate_decision.md"
       - id: "HOLDOUT-005"
+        severity: "blocking"
+        check: "若 verdict 依赖结构连续性或用 regime mismatch 解释退化，已记录结构突变检验 protocol 或免做理由"
+        evidence:
+          - "holdout_gate_decision.md"
+          - "review notes"
+      - id: "HOLDOUT-006"
         severity: "reservation"
-        check: "已检查 holdout 是否暴露孤峰参数、selection bias 或断崖退化"
+        check: "已检查 holdout 是否暴露孤峰参数、selection bias、断崖退化或显著结构突变"
         evidence:
           - "holdout_backtest_compare.csv"
+          - "review notes"
+      - id: "HOLDOUT-007"
+        severity: "reservation"
+        check: "若检出显著结构突变，已说明其更接近 regime mismatch、样本问题还是机制断裂"
+        evidence:
+          - "holdout_gate_decision.md"
           - "review notes"
 
   promotion_decision:

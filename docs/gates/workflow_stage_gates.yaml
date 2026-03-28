@@ -593,15 +593,18 @@ stages:
         - formal gate 与 audit gate 已显式分开记录
         - selected_symbols_test 与 best_h 已冻结
         - 若 formal gate 直接引用 t 值、p 值、回归显著性或残差型证据，已记录稳健推断口径或免做理由
+        - 若 formal gate 把跨窗口关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制延续作为通过依据，已记录结构突变检验 protocol 或免做理由
         - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
       fail_any_of:
         - 在 test 窗里重估 train 阈值
         - 看了 backtest 再回写 test 白名单但没有 retry 记账
         - 把未经说明的原始 OLS 显著性直接作为 formal gate 通过依据
+        - 把跨窗口关系连续性或系数稳定性直接作为 formal gate 通过依据，却没有说明结构突变检验 protocol 或免做理由
         - 没有 frozen_spec 就把对象交给 Backtest
     audit_only:
       - HAC t 值
       - 异方差/自相关稳健性说明（例如 Newey-West、White、Breusch-Pagan）
+      - 结构突变检验或参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
       - monotonic score
       - 条件分层分析
       - crowding overlap 与 factor distinctiveness 审计
@@ -650,6 +653,7 @@ stages:
     notes:
       - Test Evidence 只验证结构，不负责把样本调到最好看
       - 回归或残差型统计证据若要进入 formal gate，必须说明稳健推断口径；未说明的原始 OLS 显著性最多只能停留在 audit-only
+      - 若 formal gate 声称关系在窗口间稳定延续，必须披露结构突变检验 protocol 或免做理由
       - crowding review 默认属于解释证据，不自动等于正式交易 gate
 
   backtest_ready:
@@ -776,14 +780,17 @@ stages:
         - 仅复用 Backtest 冻结方案，不改参数、不改白名单、不改交易规则
         - 已生成单窗口和合并窗口结果
         - 结果方向未发生无法解释的翻转
+        - 若 verdict 依赖“结构仍连续”或“结果退化只是 regime 不匹配而非机制断裂”的判断，已记录结构突变检验 protocol 或免做理由
         - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
       fail_any_of:
         - 用 holdout 调参
         - 用 holdout 改白名单
+        - 把“只是 regime 变了”或“关系仍连续”作为 holdout 通过依据，却没有说明结构突变检验 protocol 或免做理由
         - 把 holdout 并回 test 或 backtest 当更多样本
     audit_only:
       - 低触发、低样本或无交易是否属于正常现象
       - 细颗粒度漂移解释
+      - 结构突变与参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
     verdict_rules:
       PASS:
         when_all_of:
@@ -825,6 +832,7 @@ stages:
         - best_h
     notes:
       - Holdout 的价值来自它未参与前面定义；一旦用于调参，就失去最终验证意义
+      - 若用 regime mismatch 而非机制失效解释 holdout 退化，必须交代结构突变检验口径或免做理由
 
   promotion_decision:
     stage_id: promotion_decision

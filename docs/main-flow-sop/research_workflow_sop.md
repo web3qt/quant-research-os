@@ -162,7 +162,7 @@
 
 **Test 只验证结构，不做收益最大化。**
 
-**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）；若 formal gate 直接引用 `t` 值、`p` 值、回归显著性或残差型证据，必须记录稳健推断口径或免做理由。
+**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）；若 formal gate 直接引用 `t` 值、`p` 值、回归显著性或残差型证据，必须记录稳健推断口径或免做理由；若 formal gate 进一步声称关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制在窗口间稳定延续，必须记录结构突变检验 protocol 或免做理由。
 
 **禁止**：在 test 里重估 train 分位阈值；看了 backtest 再回写 test 白名单不做 retry 记账；临时新增 Mandate 中未声明的正式规则。
 
@@ -196,7 +196,7 @@
 
 **Holdout 的价值就在于它没有参与前面的任何定义、筛选和冻结。**
 
-**必须完成**：复用 backtest 冻结方案（照单执行）；滚动 OOS 一致性检查（3-5 个子窗口，≥60% 方向一致）；regime 平稳性审计；跨阶段性能退化追踪。
+**必须完成**：复用 backtest 冻结方案（照单执行）；滚动 OOS 一致性检查（3-5 个子窗口，≥60% 方向一致）；regime 平稳性审计；跨阶段性能退化追踪；若 verdict 依赖“结构仍连续”或“结果退化只是 regime 不匹配而非机制断裂”的判断，必须记录结构突变检验 protocol 或免做理由。
 
 **禁止**：用 holdout 调任何参数；因 holdout 不好看就改 symbol 白名单；重新定义研究问题；把 holdout 并入 test/backtest。
 
