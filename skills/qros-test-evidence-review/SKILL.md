@@ -54,6 +54,7 @@ Must pass all of:
 - 若 formal gate 依赖残差近似独立、原始 OLS 误差设定，或用“未见明显 serial correlation”支撑结论，已记录自相关诊断 protocol 或免做理由
 - 若 formal gate 依赖多变量回归里单个系数的符号、显著性或增量解释，已记录多重共线性诊断 protocol 或免做理由
 - 若 formal gate 把跨窗口关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制延续作为通过依据，已记录结构突变检验 protocol 或免做理由
+- 若 formal gate 依赖可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构，已记录防虚假回归 protocol 或免做理由
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
 Must fail none of:
 - 在 test 窗里重估 train 阈值
@@ -62,6 +63,7 @@ Must fail none of:
 - 把残差近似独立、原始 OLS 误差设定或“未见明显 serial correlation”直接作为 formal gate 通过依据，却没有说明自相关诊断 protocol 或免做理由
 - 把多变量回归里单个系数的符号、显著性或增量解释直接作为 formal gate 通过依据，却没有说明多重共线性诊断 protocol 或免做理由
 - 把跨窗口关系连续性或系数稳定性直接作为 formal gate 通过依据，却没有说明结构突变检验 protocol 或免做理由
+- 把可能非平稳的 level-series 回归、长期均衡关系或 spread mean-reversion 直接作为 formal gate 通过依据，却没有说明防虚假回归 protocol 或免做理由
 - 没有 frozen_spec 就把对象交给 Backtest
 
 ## Checklist
@@ -76,10 +78,12 @@ Stage checklist:
 - [blocking] 若 formal gate 依赖残差近似独立、原始 OLS 误差设定，或用“未见明显 serial correlation”支撑结论，已记录自相关诊断 protocol 或免做理由
 - [blocking] 若 formal gate 依赖多变量回归里单个系数的符号、显著性或增量解释，已记录多重共线性诊断 protocol 或免做理由
 - [blocking] 若 formal gate 把跨窗口关系连续性、回归系数稳定性或 lead-lag 结构延续作为通过依据，已记录结构突变检验 protocol 或免做理由
+- [blocking] 若 formal gate 依赖可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构，已记录防虚假回归 protocol 或免做理由
 - [reservation] 若有条件分层分析，其定位为 audit evidence 或已明确冻结为正式 gate
 - [reservation] 若做了自相关诊断，已说明 Durbin-Watson、Breusch-Godfrey LM、Ljung-Box 或同类方法的适用边界与结论
 - [reservation] 若做了多重共线性诊断，已说明 VIF、condition number 或同类方法的适用边界与结论
 - [reservation] 若做了结构突变或参数稳定性审计，已区分 regime mismatch、样本问题与机制失效
+- [reservation] 若做了单位根、协整或防虚假回归诊断，已说明 ADF、Phillips-Perron、KPSS、Engle-Granger、Johansen 或同类方法的适用边界与结论
 - [reservation] 若仅给出原始 OLS 显著性而无异方差/自相关稳健性说明，不得升级为 formal pass 证据
 
 ## Audit-Only Items
@@ -90,6 +94,7 @@ Audit-only items:
 - 自相关诊断（例如 Durbin-Watson、Breusch-Godfrey LM、Ljung-Box）
 - 多重共线性诊断（例如 VIF、condition number、pairwise correlation matrix）
 - 结构突变检验或参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
+- 防虚假回归与非平稳处理说明（例如 ADF、Phillips-Perron、KPSS、Engle-Granger、Johansen、returns/differencing）
 - monotonic score
 - 条件分层分析
 - crowding overlap 与 factor distinctiveness 审计
@@ -101,10 +106,13 @@ Audit-only items:
 - 当 formal gate 进一步依赖残差独立性或原始 `OLS` 误差设定时，检查是否说明 `Breusch-Godfrey LM`、`Durbin-Watson`、`Ljung-Box` 或同类 serial-correlation diagnostic，或写清免做理由。
 - 当 formal gate 进一步依赖多变量回归里单个系数的符号、显著性或“控制后仍显著”的增量解释时，检查是否说明 `VIF`、`condition number` 或同类 multicollinearity diagnostic，或写清免做理由。
 - 当 formal gate 声称 lead-lag、beta、threshold 机制或回归系数在 Train/Test 间稳定延续时，检查是否说明 `Chow`、`Bai-Perron`、`CUSUM` 或 rolling coefficient stability 等结构突变 protocol，或写清免做理由。
+- 当 formal gate 依赖价格水平、OI、TVL、累计资金费率等可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构时，检查是否说明 `ADF`、`Phillips-Perron`、`KPSS`、`Engle-Granger`、`Johansen` 或同类防虚假回归 protocol，或写清免做理由。
 - 当主要风险在于方差不稳定而不是搜索噪声时，检查是否记录 `White` / `Breusch-Pagan` 诊断，或把 `WLS` / `GLS` / `ARCH` / `GARCH` 写入修正建议或 residual risks。
 - `Breusch-Godfrey LM` 通常比 `Durbin-Watson` 更适合作为正式回归审计依据；`Durbin-Watson` 可以作为快速一阶检查，`Ljung-Box` 更适合作为补充审计。
 - 高 `VIF` 不自动等于模型失效，但会削弱单个系数解释；pairwise correlation matrix 只能快速筛查，不能自动替代 `VIF` 或整体矩阵诊断。
 - 不要把显著 break 机械等同于 `NO-GO`；先区分它更像 regime mismatch、样本过短，还是机制本身断裂。
+- 不要把 regime stationarity audit、结构突变检验和单位根/协整问题混为一谈；它们分别对应窗口分布偏移、参数稳定性和 level-series 非平稳风险。
+- 如果 series 非平稳且没有 cointegration 证据，level-series 的 `t` 值或高 `R^2` 不能直接支撑 formal `PASS`。
 - 不要把具体统计库名当作要求；skill 只要求方法口径清楚、结论边界清楚。
 
 ## Closure Artifacts

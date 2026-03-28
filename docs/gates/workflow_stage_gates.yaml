@@ -596,6 +596,7 @@ stages:
         - 若 formal gate 依赖残差近似独立、原始 OLS 误差设定，或用“未见明显 serial correlation”支撑结论，已记录自相关诊断 protocol 或免做理由
         - 若 formal gate 依赖多变量回归里单个系数的符号、显著性或增量解释，已记录多重共线性诊断 protocol 或免做理由
         - 若 formal gate 把跨窗口关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制延续作为通过依据，已记录结构突变检验 protocol 或免做理由
+        - 若 formal gate 依赖可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构，已记录防虚假回归 protocol 或免做理由
         - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
       fail_any_of:
         - 在 test 窗里重估 train 阈值
@@ -604,6 +605,7 @@ stages:
         - 把残差近似独立、原始 OLS 误差设定或“未见明显 serial correlation”直接作为 formal gate 通过依据，却没有说明自相关诊断 protocol 或免做理由
         - 把多变量回归里单个系数的符号、显著性或增量解释直接作为 formal gate 通过依据，却没有说明多重共线性诊断 protocol 或免做理由
         - 把跨窗口关系连续性或系数稳定性直接作为 formal gate 通过依据，却没有说明结构突变检验 protocol 或免做理由
+        - 把可能非平稳的 level-series 回归、长期均衡关系或 spread mean-reversion 直接作为 formal gate 通过依据，却没有说明防虚假回归 protocol 或免做理由
         - 没有 frozen_spec 就把对象交给 Backtest
     audit_only:
       - HAC t 值
@@ -611,6 +613,7 @@ stages:
       - 自相关诊断（例如 Durbin-Watson、Breusch-Godfrey LM、Ljung-Box）
       - 多重共线性诊断（例如 VIF、condition number、pairwise correlation matrix）
       - 结构突变检验或参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
+      - 防虚假回归与非平稳处理说明（例如 ADF、Phillips-Perron、KPSS、Engle-Granger、Johansen、returns/differencing）
       - monotonic score
       - 条件分层分析
       - crowding overlap 与 factor distinctiveness 审计

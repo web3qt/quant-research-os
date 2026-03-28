@@ -162,7 +162,7 @@
 
 **Test 只验证结构，不做收益最大化。**
 
-**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）；若 formal gate 直接引用 `t` 值、`p` 值、回归显著性或残差型证据，必须记录稳健推断口径或免做理由；若 formal gate 进一步依赖残差近似独立、原始 `OLS` 误差设定或“未见明显 serial correlation”这类判断，必须记录自相关诊断 protocol 或免做理由；若 formal gate 进一步依赖多变量回归中单个系数的符号、显著性或增量解释，必须记录多重共线性诊断 protocol 或免做理由；若 formal gate 进一步声称关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制在窗口间稳定延续，必须记录结构突变检验 protocol 或免做理由。
+**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）；若 formal gate 直接引用 `t` 值、`p` 值、回归显著性或残差型证据，必须记录稳健推断口径或免做理由；若 formal gate 进一步依赖残差近似独立、原始 `OLS` 误差设定或“未见明显 serial correlation”这类判断，必须记录自相关诊断 protocol 或免做理由；若 formal gate 进一步依赖多变量回归中单个系数的符号、显著性或增量解释，必须记录多重共线性诊断 protocol 或免做理由；若 formal gate 进一步声称关系连续性、回归系数稳定性、lead-lag 结构或 threshold 机制在窗口间稳定延续，必须记录结构突变检验 protocol 或免做理由；若 formal gate 进一步依赖可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构，必须记录防虚假回归 protocol 或免做理由。
 
 **禁止**：在 test 里重估 train 分位阈值；看了 backtest 再回写 test 白名单不做 retry 记账；临时新增 Mandate 中未声明的正式规则。
 
