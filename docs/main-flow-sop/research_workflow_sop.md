@@ -162,7 +162,7 @@
 
 **Test 只验证结构，不做收益最大化。**
 
-**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）。
+**必须完成**：复用 train 冻结阈值（不重估）；在测试窗计算统计证据；冻结白名单/best_h；记录 formal gate 与 audit gate；完成多重检验校正（搜索 ≥ 20 时必须生成 `data_mining_adjustment.json`）；若 formal gate 直接引用 `t` 值、`p` 值、回归显著性或残差型证据，必须记录稳健推断口径或免做理由。
 
 **禁止**：在 test 里重估 train 分位阈值；看了 backtest 再回写 test 白名单不做 retry 记账；临时新增 Mandate 中未声明的正式规则。
 

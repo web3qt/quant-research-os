@@ -592,13 +592,16 @@ stages:
         - 仅使用 Train 已冻结的 thresholds、regime cuts 和保留对象
         - formal gate 与 audit gate 已显式分开记录
         - selected_symbols_test 与 best_h 已冻结
+        - 若 formal gate 直接引用 t 值、p 值、回归显著性或残差型证据，已记录稳健推断口径或免做理由
         - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
       fail_any_of:
         - 在 test 窗里重估 train 阈值
         - 看了 backtest 再回写 test 白名单但没有 retry 记账
+        - 把未经说明的原始 OLS 显著性直接作为 formal gate 通过依据
         - 没有 frozen_spec 就把对象交给 Backtest
     audit_only:
       - HAC t 值
+      - 异方差/自相关稳健性说明（例如 Newey-West、White、Breusch-Pagan）
       - monotonic score
       - 条件分层分析
       - crowding overlap 与 factor distinctiveness 审计
@@ -646,6 +649,7 @@ stages:
         - formal gate thresholds
     notes:
       - Test Evidence 只验证结构，不负责把样本调到最好看
+      - 回归或残差型统计证据若要进入 formal gate，必须说明稳健推断口径；未说明的原始 OLS 显著性最多只能停留在 audit-only
       - crowding review 默认属于解释证据，不自动等于正式交易 gate
 
   backtest_ready:
