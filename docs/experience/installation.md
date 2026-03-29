@@ -9,9 +9,9 @@ First version supports:
 Install entry point:
 
 ```bash
-git clone <QROS_REPO_URL> ~/.codex/qros
+git clone <QROS_REPO_URL> ~/.qros
 mkdir -p ~/.agents/skills
-ln -s ~/.codex/qros/skills ~/.agents/skills/qros
+ln -s ~/.qros/skills ~/.agents/skills/qros
 ```
 
 This keeps QROS as a cloned repo while exposing skills through Codex's native discovery path.
@@ -20,15 +20,15 @@ This keeps QROS as a cloned repo while exposing skills through Codex's native di
 
 What it writes:
 
-- `~/.codex/qros/skills/`
-- `~/.agents/skills/qros -> ~/.codex/qros/skills`
+- `~/.qros/skills/`
+- `~/.agents/skills/qros -> ~/.qros/skills`
 
 ## Update
 
 Update overwrites the cloned repo in place.
 
 ```bash
-cd ~/.codex/qros
+cd ~/.qros
 git pull
 ```
 
@@ -40,7 +40,7 @@ Check is simple:
 
 ```bash
 test -L ~/.agents/skills/qros
-test -d ~/.codex/qros/skills
+test -d ~/.qros/skills
 ```
 
 It verifies:
@@ -59,7 +59,7 @@ The recommended user path is still skill-first. The repo clone and symlink are o
 
 ## Troubleshooting
 
-- `Codex` cannot see the skills: verify `~/.agents/skills/qros` points to `~/.codex/qros/skills`
-- Skill content looks stale: run `cd ~/.codex/qros && git pull`
+- `Codex` cannot see the skills: verify `~/.agents/skills/qros` points to `~/.qros/skills`
+- Skill content looks stale: run `cd ~/.qros && git pull`
 - Need workflow guidance: open `docs/experience/quickstart-codex.md`
 - Need the unified entry docs: open `docs/experience/qros-research-session-usage.md`

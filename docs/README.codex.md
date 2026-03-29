@@ -22,14 +22,14 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 1. Clone the repo:
 
 ```bash
-git clone https://github.com/web3qt/quant-research-os.git ~/.codex/qros
+git clone https://github.com/web3qt/quant-research-os.git ~/.qros
 ```
 
 2. Create the skills symlink:
 
 ```bash
 mkdir -p ~/.agents/skills
-ln -s ~/.codex/qros/skills ~/.agents/skills/qros
+ln -s ~/.qros/skills ~/.agents/skills/qros
 ```
 
 3. Restart Codex.
@@ -41,7 +41,7 @@ Codex has native skill discovery. It scans `~/.agents/skills/` at startup, parse
 QROS skills become visible through a single symlink:
 
 ```text
-~/.agents/skills/qros/ -> ~/.codex/qros/skills/
+~/.agents/skills/qros/ -> ~/.qros/skills/
 ```
 
 ## Usage
@@ -54,14 +54,14 @@ Skills are the normal entrypoint:
 If you need deterministic runtime debugging or manual recovery, use the repo-local wrappers:
 
 ```bash
-~/.codex/qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-~/.codex/qros/bin/qros-review
+~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+~/.qros/bin/qros-review
 ```
 
 ## Updating
 
 ```bash
-cd ~/.codex/qros
+cd ~/.qros
 git pull
 ```
 
@@ -74,7 +74,7 @@ rm ~/.agents/skills/qros
 Optionally remove the clone:
 
 ```bash
-rm -rf ~/.codex/qros
+rm -rf ~/.qros
 ```
 
 ## Troubleshooting
@@ -90,7 +90,7 @@ ls -la ~/.agents/skills/qros
 2. Check the skill tree exists:
 
 ```bash
-ls ~/.codex/qros/skills
+ls ~/.qros/skills
 ```
 
 3. Restart Codex. Skills are discovered at startup.

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SKILL_FILE="${CLAUDE_PLUGIN_ROOT}/skills/using-qros/SKILL.md"
+
+if [[ ! -f "$SKILL_FILE" ]]; then
+  echo '{"hookSpecificOutput": {}}'
+  exit 0
+fi
+
+CONTENT=$(cat "$SKILL_FILE")
+
+# Escape for JSON embedding
+ESCAPED=$(printf '%s' "$CONTENT" | python3 -c '
+import sys, json
+content = sys.stdin.read()
+print(json.dumps(content))
+' 2>/dev/null || printf '"%s"' "$(printf '%s' "$CONTENT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\n/\\n/g')")
+
+printf '{"hookSpecificOutput": {"additionalContext": %s}}\n' "$ESCAPED"

@@ -1,0 +1,32 @@
+{
+  "name": "qros",
+  "owner": {
+    "name": "web3qt"
+  },
+  "metadata": {
+    "description": "Stage-gated quant research workflow: from raw idea to validated alpha",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "quant-research-os",
+      "source": "./",
+      "description": "Stage-gated quant research workflow: from raw idea to validated alpha through formal freeze gates and review discipline",
+      "version": "0.1.0",
+      "author": {
+        "name": "web3qt"
+      },
+      "homepage": "https://github.com/web3qt/quant-research-os",
+      "repository": "https://github.com/web3qt/quant-research-os",
+      "license": "MIT",
+      "keywords": [
+        "quant",
+        "research",
+        "workflow",
+        "alpha",
+        "backtest",
+        "crypto"
+      ]
+    }
+  ]
+}

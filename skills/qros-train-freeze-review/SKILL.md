@@ -1,6 +1,6 @@
 ---
 name: qros-train-freeze-review
-description: Codex review skill for Train Calibration stage verification.
+description: Use when train_freeze artifacts have been authored and must pass formal gate review before advancing to test_evidence stage.
 ---
 
 # Train Calibration Review
@@ -127,5 +127,5 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 5. Evaluate the formal gate first
 6. Record audit-only findings after that
 7. Save `review_findings.yaml`
-8. Run `~/.codex/qros/bin/qros-review`
+8. Run `~/.qros/bin/qros-review`
 9. Review the generated closure artifacts

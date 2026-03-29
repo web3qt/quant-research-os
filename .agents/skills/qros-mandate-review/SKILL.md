@@ -1,6 +1,6 @@
 ---
 name: qros-mandate-review
-description: Codex review skill for Mandate stage verification.
+description: Use when mandate artifacts have been authored and must pass formal gate review before advancing to data_ready stage.
 ---
 
 # Mandate Review
@@ -133,5 +133,5 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 5. Evaluate the formal gate first
 6. Record audit-only findings after that
 7. Save `review_findings.yaml`
-8. Run `~/.codex/qros/bin/qros-review`
+8. Run `~/.qros/bin/qros-review`
 9. Review the generated closure artifacts

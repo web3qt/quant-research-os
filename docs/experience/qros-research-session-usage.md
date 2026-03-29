@@ -40,7 +40,7 @@
 
 之后 agent 会接管并推进整个 session。
 
-Codex 会通过 `~/.agents/skills/qros` 找到这个 skill；这个路径应当指向 `~/.codex/qros/skills`。
+Codex 会通过 `~/.agents/skills/qros` 找到这个 skill；这个路径应当指向 `~/.qros/skills`。
 
 对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 `idea_intake_confirmation_pending`，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria，并在得到显式确认后再进入正式 qualification。
 
@@ -53,37 +53,37 @@ QROS 仓库是工作流框架，不是研究产物仓。安装后，agent 应该
 deterministic backend 的入口在克隆下来的仓库里：
 
 ```bash
-~/.codex/qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
 ```
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 intake interview approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-intake
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-intake
 ```
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 mandate approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-mandate
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-mandate
 ```
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 data_ready approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-data-ready
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-data-ready
 ```
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 signal_ready approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-signal-ready
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-signal-ready
 ```
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 train_freeze approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-train-freeze
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-train-freeze
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready 和 train_freeze。
@@ -93,7 +93,7 @@ deterministic backend 的入口在克隆下来的仓库里：
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 test_evidence approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-test-evidence
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-test-evidence
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze 和 test_evidence。
@@ -103,7 +103,7 @@ deterministic backend 的入口在克隆下来的仓库里：
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 backtest_ready approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-backtest-ready
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-backtest-ready
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence 和 backtest_ready。
@@ -111,7 +111,7 @@ deterministic backend 的入口在克隆下来的仓库里：
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 holdout_validation approval：
 
 ```bash
-~/.codex/qros/bin/qros-session --lineage-id <lineage_id> --confirm-holdout-validation
+~/.qros/bin/qros-session --lineage-id <lineage_id> --confirm-holdout-validation
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence、backtest_ready 和 holdout_validation。

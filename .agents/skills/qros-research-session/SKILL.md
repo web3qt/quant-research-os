@@ -48,8 +48,8 @@ description: Use when the user wants to start one orchestrated QROS conversation
 
 Use the orchestrator runtime:
 
-- `~/.codex/qros/bin/qros-session --raw-idea "<idea>"`
-- `~/.codex/qros/bin/qros-session --lineage-id "<lineage_id>"`
+- `~/.qros/bin/qros-session --raw-idea "<idea>"`
+- `~/.qros/bin/qros-session --lineage-id "<lineage_id>"`
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 

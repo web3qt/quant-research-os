@@ -11,14 +11,14 @@ Enable QROS skills in Codex via native skill discovery. Just clone and symlink.
 1. Clone the QROS repository:
 
 ```bash
-git clone https://github.com/web3qt/quant-research-os.git ~/.codex/qros
+git clone https://github.com/web3qt/quant-research-os.git ~/.qros
 ```
 
 2. Create the skills symlink:
 
 ```bash
 mkdir -p ~/.agents/skills
-ln -s ~/.codex/qros/skills ~/.agents/skills/qros
+ln -s ~/.qros/skills ~/.agents/skills/qros
 ```
 
 3. Restart Codex to discover the skills.
@@ -29,12 +29,12 @@ ln -s ~/.codex/qros/skills ~/.agents/skills/qros
 ls -la ~/.agents/skills/qros
 ```
 
-You should see a symlink pointing to `~/.codex/qros/skills`.
+You should see a symlink pointing to `~/.qros/skills`.
 
 ## Updating
 
 ```bash
-cd ~/.codex/qros
+cd ~/.qros
 git pull
 ```
 
@@ -49,5 +49,5 @@ rm ~/.agents/skills/qros
 Optionally delete the clone:
 
 ```bash
-rm -rf ~/.codex/qros
+rm -rf ~/.qros
 ```

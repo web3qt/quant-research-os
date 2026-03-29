@@ -2,7 +2,31 @@
 
 English | [中文](README.md)
 
-QROS is a stage-gated research workflow for Codex. It turns raw trading ideas into reviewable, reproducible, and auditable research lineages through interactive mandate freezing, formal artifacts, and workflow gates.
+QROS is a stage-gated research workflow for AI coding agents. It turns raw trading ideas into reviewable, reproducible, and auditable research lineages through interactive mandate freezing, formal artifacts, and workflow gates.
+
+## Quick Start
+
+### Claude Code
+
+```text
+/plugin marketplace add web3qt/quant-research-os
+/plugin install quant-research-os@qros
+```
+
+After installation, mention a quantitative research idea in a new session and QROS will activate automatically.
+
+### Codex
+
+```text
+Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
+```
+
+## Start Research
+
+```text
+qros-research-session Help me research this idea: BTC leads high-liquidity alts after shock events
+qros-research-session help
+```
 
 ## Why QROS
 
@@ -19,6 +43,14 @@ Current unified flow:
 - `data_ready review`
 - `signal_ready`
 - `signal_ready review`
+- `train_freeze`
+- `train_freeze review`
+- `test_evidence`
+- `test_evidence review`
+- `backtest_ready`
+- `backtest_ready review`
+- `holdout_validation`
+- `holdout_validation review`
 
 The intended experience is skill-first:
 
@@ -27,77 +59,43 @@ The intended experience is skill-first:
 - let the workflow drive the next required interaction
 - keep formal artifacts on disk as the source of truth
 
-## Quick Start
+## Updating
 
-Install QROS for Codex inside this repository:
-
-```bash
-./setup --host codex --mode repo-local
-```
-
-Then open Codex in this repo and start with:
+**Claude Code:**
 
 ```text
-qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
-qros-research-session help
+/plugin update quant-research-os
 ```
 
-## Install Modes
-
-- `repo-local`
-  Skills are written into `.agents/skills/` and runtime assets into `.qros/`
-- `user-global`
-  Skills are written into `~/.codex/skills/` and runtime assets into `~/.qros/`
-
-Common commands:
+**Codex / manual install:**
 
 ```bash
-./setup --host codex --mode repo-local
-./setup --host codex --mode user-global
-./setup --host codex --mode auto
-./setup --host codex --check
-./setup --host codex --refresh
+cd ~/.qros && git pull
 ```
-
-## Update Existing Install
-
-- `repo-local`
-  Run `git pull` first. If you want managed assets rewritten from the latest repo state, run `./setup --host codex --refresh`.
-- `user-global`
-  `git pull` alone is not enough. Run `./setup --host codex --refresh` to refresh `~/.codex/skills/` and `~/.qros/`.
 
 ## Runtime Layout
 
-Repo-local install:
+**Plugin install (Claude Code):**
+
+The plugin system manages skill discovery and hook injection automatically.
+
+**Manual install (Codex / generic):**
 
 ```text
-.agents/skills/qros-*/
-.qros/scripts/
-.qros/tools/
-.qros/templates/
-.qros/docs/
-.qros/install-manifest.json
-```
-
-User-global install:
-
-```text
-~/.codex/skills/qros-*/
-~/.qros/scripts/
-~/.qros/tools/
-~/.qros/templates/
-~/.qros/docs/
-~/.qros/install-manifest.json
+~/.qros/skills/
+~/.agents/skills/qros -> ~/.qros/skills
 ```
 
 ## Learn More
 
-- [Installation](docs/experience/installation.md)
+- [Claude Code Installation](.claude/INSTALL.md)
+- [Codex Installation](docs/experience/installation.md)
 - [Quickstart For Codex](docs/experience/quickstart-codex.md)
 - [QROS Research Session Usage](docs/experience/qros-research-session-usage.md)
 
 ## Troubleshooting
 
-- Skills not visible: rerun `./setup --host codex --refresh`
-- Existing install feels out of date: `repo-local` users should `git pull` first; `user-global` users should rerun `./setup --host codex --refresh`
-- Unsure whether install is healthy: run `./setup --host codex --check`
+- Claude Code: skills not visible after install — restart session or run `/plugin update quant-research-os`
+- Codex: skills not visible — verify `~/.agents/skills/qros` points to `~/.qros/skills`
+- Stale install: Claude Code `/plugin update quant-research-os`; Codex `cd ~/.qros && git pull`
+- Unsure if install is healthy: start a new session and mention a quant research idea to test auto-trigger

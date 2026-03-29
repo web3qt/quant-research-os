@@ -22,4 +22,4 @@ def test_render_stage_skill_includes_stage_specific_contract() -> None:
     assert "Audit-only items" in text
     assert "专题样板写法是否足够清楚" in text
     assert "review_findings.yaml" in text
-    assert "~/.codex/qros/bin/qros-review" in text
+    assert "~/.qros/bin/qros-review" in text

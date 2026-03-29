@@ -1,6 +1,6 @@
 ---
 name: qros-signal-ready-review
-description: Codex review skill for Signal Ready stage verification.
+description: Use when signal_ready artifacts have been authored and must pass formal gate review before advancing to train_freeze stage.
 ---
 
 # Signal Ready Review
@@ -133,5 +133,5 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 5. Evaluate the formal gate first
 6. Record audit-only findings after that
 7. Save `review_findings.yaml`
-8. Run `~/.codex/qros/bin/qros-review`
+8. Run `~/.qros/bin/qros-review`
 9. Review the generated closure artifacts

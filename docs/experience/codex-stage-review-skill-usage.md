@@ -8,7 +8,7 @@
 - `qros-data-ready-review`
 - `qros-signal-ready-review`
 
-它们都是通过 `~/.agents/skills/qros -> ~/.codex/qros/skills` symlink 暴露给 Codex 的 skills。
+它们都是通过 `~/.agents/skills/qros -> ~/.qros/skills` symlink 暴露给 Codex 的 skills。
 
 ## What These Skills Do
 
@@ -67,13 +67,13 @@
 在当前 `outputs/<lineage>/<stage>/` 目录下执行：
 
 ```bash
-~/.codex/qros/bin/qros-review
+~/.qros/bin/qros-review
 ```
 
 如果不在 stage 目录中，也可以显式传参：
 
 ```bash
-~/.codex/qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
+~/.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 
 ## Closure Artifacts
@@ -94,9 +94,9 @@ python scripts/gen_codex_stage_review_skills.py
 
 这个命令会重写：
 
-- `~/.codex/qros/skills/qros-mandate-review/`
-- `~/.codex/qros/skills/qros-data-ready-review/`
-- `~/.codex/qros/skills/qros-signal-ready-review/`
+- `~/.qros/skills/qros-mandate-review/`
+- `~/.qros/skills/qros-data-ready-review/`
+- `~/.qros/skills/qros-signal-ready-review/`
 
 ## Freshness Validation
 
