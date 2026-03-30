@@ -18,6 +18,10 @@ SUPPORTED_RESEARCH_ROUTES = {
     "time_series_signal",
     "cross_sectional_factor",
 }
+SUPPORTED_FACTOR_ROLES = {"standalone_alpha", "regime_filter", "combo_filter"}
+SUPPORTED_FACTOR_STRUCTURES = {"single_factor", "multi_factor_score"}
+SUPPORTED_PORTFOLIO_EXPRESSIONS = {"long_short_market_neutral", "long_only_rank"}
+SUPPORTED_NEUTRALIZATION_POLICIES = {"none", "market_beta_neutral", "group_neutral"}
 
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
@@ -34,6 +38,12 @@ def _blank_mandate_freeze_draft() -> dict[str, Any]:
                     "primary_hypothesis": "",
                     "counter_hypothesis": "",
                     "research_route": "",
+                    "factor_role": "",
+                    "factor_structure": "",
+                    "portfolio_expression": "",
+                    "neutralization_policy": "",
+                    "target_strategy_reference": "",
+                    "group_taxonomy_reference": "",
                     "excluded_routes": [],
                     "route_rationale": [],
                     "success_criteria": [],
@@ -194,6 +204,28 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         _required_draft_value(research_intent, "research_route"),
         field_name="confirmed mandate inputs research_route",
     )
+    factor_role = _optional_supported_value(
+        research_intent.get("factor_role", ""),
+        supported=SUPPORTED_FACTOR_ROLES,
+        field_name="confirmed mandate inputs factor_role",
+    )
+    factor_structure = _optional_supported_value(
+        research_intent.get("factor_structure", ""),
+        supported=SUPPORTED_FACTOR_STRUCTURES,
+        field_name="confirmed mandate inputs factor_structure",
+    )
+    portfolio_expression = _optional_supported_value(
+        research_intent.get("portfolio_expression", ""),
+        supported=SUPPORTED_PORTFOLIO_EXPRESSIONS,
+        field_name="confirmed mandate inputs portfolio_expression",
+    )
+    neutralization_policy = _optional_supported_value(
+        research_intent.get("neutralization_policy", ""),
+        supported=SUPPORTED_NEUTRALIZATION_POLICIES,
+        field_name="confirmed mandate inputs neutralization_policy",
+    )
+    target_strategy_reference = _optional_string(research_intent.get("target_strategy_reference", ""))
+    group_taxonomy_reference = _optional_string(research_intent.get("group_taxonomy_reference", ""))
     market = _required_draft_value(scope_contract, "market")
     universe = _required_draft_value(scope_contract, "universe")
     target_task = _required_draft_value(scope_contract, "target_task")
@@ -224,6 +256,29 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         raise ValueError("confirmed mandate inputs excluded_routes must match rejected intake candidate_routes")
     if research_route in excluded_routes:
         raise ValueError("confirmed mandate inputs excluded_routes cannot include research_route")
+    if research_route == "cross_sectional_factor":
+        missing_csf_identity = [
+            field_name
+            for field_name, field_value in (
+                ("factor_role", factor_role),
+                ("factor_structure", factor_structure),
+                ("portfolio_expression", portfolio_expression),
+                ("neutralization_policy", neutralization_policy),
+            )
+            if not field_value
+        ]
+        if missing_csf_identity:
+            raise ValueError(
+                "confirmed mandate inputs missing CSF identity fields: " + ", ".join(missing_csf_identity)
+            )
+        if factor_role in {"regime_filter", "combo_filter"} and not target_strategy_reference:
+            raise ValueError(
+                "confirmed mandate inputs missing: target_strategy_reference for filter/combo cross_sectional_factor route"
+            )
+        if neutralization_policy == "group_neutral" and not group_taxonomy_reference:
+            raise ValueError(
+                "confirmed mandate inputs missing: group_taxonomy_reference for group_neutral cross_sectional_factor route"
+            )
 
     (mandate_dir / "mandate.md").write_text(
         "\n".join(
@@ -242,6 +297,12 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 f"- Primary hypothesis: {primary_hypothesis}",
                 f"- Counter-hypothesis: {counter_hypothesis}",
                 f"- Research route: {research_route}",
+                f"- Factor role: {factor_role or 'n/a'}",
+                f"- Factor structure: {factor_structure or 'n/a'}",
+                f"- Portfolio expression: {portfolio_expression or 'n/a'}",
+                f"- Neutralization policy: {neutralization_policy or 'n/a'}",
+                f"- Target strategy reference: {target_strategy_reference or 'n/a'}",
+                f"- Group taxonomy reference: {group_taxonomy_reference or 'n/a'}",
                 f"- Excluded routes: {', '.join(excluded_routes)}",
                 f"- Excluded topics: {', '.join(excluded_topics)}",
                 "",
@@ -304,6 +365,12 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         mandate_dir / "research_route.yaml",
         {
             "research_route": research_route,
+            "factor_role": factor_role,
+            "factor_structure": factor_structure,
+            "portfolio_expression": portfolio_expression,
+            "neutralization_policy": neutralization_policy,
+            "target_strategy_reference": target_strategy_reference,
+            "group_taxonomy_reference": group_taxonomy_reference,
             "excluded_routes": excluded_routes,
             "route_rationale": route_rationale,
             "route_change_policy": {
@@ -363,6 +430,12 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "# Field Dictionary",
                 "",
                 f"- `research_route`: frozen route contract for this mandate, currently `{research_route}`.",
+                f"- `factor_role`: CSF factor role, currently `{factor_role or 'n/a'}`.",
+                f"- `factor_structure`: CSF factor structure, currently `{factor_structure or 'n/a'}`.",
+                f"- `portfolio_expression`: CSF portfolio expression, currently `{portfolio_expression or 'n/a'}`.",
+                f"- `neutralization_policy`: CSF neutralization policy, currently `{neutralization_policy or 'n/a'}`.",
+                f"- `target_strategy_reference`: CSF target strategy reference, currently `{target_strategy_reference or 'n/a'}`.",
+                f"- `group_taxonomy_reference`: CSF group taxonomy reference, currently `{group_taxonomy_reference or 'n/a'}`.",
                 f"- `excluded_routes`: alternative routes rejected at mandate freeze, currently `{excluded_routes}`.",
                 f"- `data_source`: frozen upstream source for this mandate, currently `{data_source}`.",
                 f"- `bar_size`: frozen research cadence for this mandate, currently `{bar_size}`.",
@@ -474,3 +547,18 @@ def _require_supported_route_list(route_values: list[str], *, field_name: str) -
         normalized.append(route_name)
         seen.add(route_name)
     return normalized
+
+
+def _optional_supported_value(value: object, *, supported: set[str], field_name: str) -> str:
+    normalized = _optional_string(value)
+    if not normalized:
+        return ""
+    if normalized not in supported:
+        raise ValueError(f"{field_name} must be one of: {', '.join(sorted(supported))}")
+    return normalized
+
+
+def _optional_string(value: object) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()

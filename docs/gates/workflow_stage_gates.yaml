@@ -262,6 +262,11 @@ stages:
     downstream_permissions:
       may_advance_to:
         - data_ready
+        - csf_data_ready
+      precondition_before_advance:
+        - 研究路线已冻结
+        - 若 research_route = cross_sectional_factor，则进入 csf_data_ready
+        - 若 research_route = time_series_signal，则继续进入 data_ready
       frozen_outputs_consumable_by_next_stage:
         - time_split.json
         - parameter_grid.yaml
@@ -273,6 +278,533 @@ stages:
     notes:
       - mandate 负责冻结问题，不负责宣布收益结论或交易规则
       - mandate 只冻结 crowding 和 capacity 的审计口径，不提前宣布容量结论
+      - cross_sectional_factor 进入独立 csf_* 流程，不再复用旧的时序 stage 语义
+
+  csf_data_ready:
+    stage_id: csf_data_ready
+    stage_name: CSF Data Ready
+    purpose: 产出截面因子路线的 date x asset 面板底座、universe membership 和 eligibility mask
+    core_question: 是否已经形成稳定、可审计、可复用的截面研究底座
+    allowed_previous_stages:
+      - mandate
+    required_inputs:
+      - mandate frozen outputs
+      - 截面 universe 提案
+      - 截面共享字段底座提案
+    required_outputs:
+      - panel_manifest.json
+      - asset_universe_membership.parquet
+      - cross_section_coverage.parquet
+      - eligibility_base_mask.parquet
+      - shared_feature_base/
+      - csf_data_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - panel_manifest.json
+      - asset_universe_membership.parquet
+      - cross_section_coverage.parquet
+      - eligibility_base_mask.parquet
+    human_artifacts:
+      - csf_data_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 面板主键明确且唯一：date + asset
+        - 截面覆盖可审计
+        - universe membership 显式记录
+        - eligibility mask 作为独立底座存在
+        - 共享字段具备时间语义和缺失语义
+        - 如允许 group_neutral，taxonomy 已冻结或显式版本化
+      fail_any_of:
+        - 只有资产时序表，没有显式截面面板合同
+        - universe membership 无法按日期重建
+        - eligibility 规则混在下游因子代码里
+        - 覆盖率波动显著却没有报告
+        - 分组中性化需要的 taxonomy 在下游临时补
+    audit_only:
+      - 面板字段命名是否清楚
+      - 共享字段说明是否便于 reviewer 追踪
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的面板或说明缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 面板语义改到不再是截面研究
+    rollback_rules:
+      default_rollback_stage: csf_data_ready
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正截面面板主键与 membership 规则
+      must_open_child_lineage_when:
+        - 面板主键改变
+        - universe 改变
+        - eligibility 语义改变
+    downstream_permissions:
+      may_advance_to:
+        - csf_signal_ready
+      precondition_before_advance:
+        - panel_manifest.json 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - panel_manifest.json
+        - asset_universe_membership.parquet
+        - cross_section_coverage.parquet
+        - eligibility_base_mask.parquet
+      next_stage_must_not_consume:
+        - 未冻结的时序主线信号产物
+    notes:
+      - stage_dir = 02_csf_data_ready
+      - 该阶段只为 cross_sectional_factor 主线服务
+
+  csf_signal_ready:
+    stage_id: csf_signal_ready
+    stage_name: CSF Signal Ready
+    purpose: 将已冻结的截面研究语义实例化为可比较、可复现的因子面板合同
+    core_question: 因子或多因子分数是否已经被定义成统一、可比较、可复现的截面面板合同
+    allowed_previous_stages:
+      - csf_data_ready
+    required_inputs:
+      - 已冻结的 csf_data_ready 输出
+      - 因子表达式或多因子组合草案
+      - 因子方向与时间语义提案
+    required_outputs:
+      - factor_panel.parquet
+      - factor_manifest.yaml
+      - factor_field_dictionary.md
+      - factor_coverage_report.parquet
+      - factor_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - factor_panel.parquet
+      - factor_manifest.yaml
+      - factor_coverage_report.parquet
+    human_artifacts:
+      - factor_field_dictionary.md
+      - factor_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - factor_id / factor_version / factor_direction 已冻结
+        - factor_panel 可唯一表示同一时点不同资产的因子值
+        - 所有输入字段都来自 csf_data_ready
+        - 多因子组合公式是确定性的
+        - 缺失值、coverage、eligibility 传递规则已写清
+        - 因子方向明确，不允许到 test/backtest 再解释
+      fail_any_of:
+        - 因子定义依赖 train/test/backtest 结果回写
+        - factor_panel 无法稳定重建
+        - 多因子组合权重在后续阶段才学习
+        - factor_direction 不清楚
+        - eligibility 与 factor computation 混成一团
+        - test 才知道的 quantile / cutoff 被偷写回 signal
+    audit_only:
+      - 因子命名是否足够可读
+      - 多因子组合描述是否清楚
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的信号合同缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 因子语义改到不再是截面研究
+    rollback_rules:
+      default_rollback_stage: csf_signal_ready
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正因子方向与组合公式
+      must_open_child_lineage_when:
+        - 因子结构从截面改为时序
+        - 因子角色发生实质变化
+    downstream_permissions:
+      may_advance_to:
+        - csf_train_freeze
+      precondition_before_advance:
+        - factor_panel.parquet 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - factor_panel.parquet
+        - factor_manifest.yaml
+        - factor_coverage_report.parquet
+      next_stage_must_not_consume:
+        - 未冻结的 train 尺子
+    notes:
+      - stage_dir = 03_csf_signal_ready
+
+  csf_train_freeze:
+    stage_id: csf_train_freeze
+    stage_name: CSF Train Freeze
+    purpose: 冻结截面因子的预处理、中性化、分组、再平衡和 admissible variants
+    core_question: 截面因子的 train 尺子如何冻结，才能保证后续 test/backtest 只复用不重估
+    allowed_previous_stages:
+      - csf_signal_ready
+    required_inputs:
+      - 已冻结的 csf_signal_ready 输出
+      - 预处理 / neutralization / bucket 提案
+      - rebalance 与 eligibility 提案
+    required_outputs:
+      - csf_train_freeze.yaml
+      - train_factor_quality.parquet
+      - train_variant_ledger.csv
+      - train_variant_rejects.csv
+      - train_bucket_diagnostics.parquet
+      - csf_train_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - csf_train_freeze.yaml
+      - train_factor_quality.parquet
+      - train_variant_ledger.csv
+      - train_variant_rejects.csv
+    human_artifacts:
+      - train_bucket_diagnostics.parquet
+      - csf_train_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - preprocess、standardize、neutralize、bucket、rebalance、eligibility 全部冻结
+        - 所有 train variant 都有身份记录
+        - reject 不是静默丢弃，而是显式记账
+        - downstream test 只能复用 frozen train rules
+        - neutralization 如存在，必须有独立合同和诊断
+      fail_any_of:
+        - 根据 test/backtest 结果回写 train 口径
+        - 只有保留者，没有 reject ledger
+        - quantile / bucket 规则未冻结
+        - neutralization 存在但没有独立合同
+        - rebalance / lag / overlap 口径未冻结
+        - 在 train 内直接用收益最大化选 final winner
+    audit_only:
+      - train 尺子命名是否清楚
+      - reject ledger 是否可追踪
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 train 尺子缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 研究语义变化导致 train 尺子不再适用
+    rollback_rules:
+      default_rollback_stage: csf_train_freeze
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正 train 口径与 reject 记账
+      must_open_child_lineage_when:
+        - 预处理语义改变
+        - neutralization 大类改变
+    downstream_permissions:
+      may_advance_to:
+        - csf_test_evidence
+      precondition_before_advance:
+        - csf_train_freeze.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - csf_train_freeze.yaml
+        - train_factor_quality.parquet
+        - train_variant_ledger.csv
+      next_stage_must_not_consume:
+        - 未冻结的 train 搜索轨迹
+    notes:
+      - stage_dir = 04_csf_train_freeze
+
+  csf_test_evidence:
+    stage_id: csf_test_evidence
+    stage_name: CSF Test Evidence
+    purpose: 在独立样本里验证截面因子排序能力或 filter / combo 条件改善能力
+    core_question: 冻结后的截面证据在独立样本里是否仍然成立
+    allowed_previous_stages:
+      - csf_train_freeze
+    required_inputs:
+      - 已冻结的 csf_train_freeze 输出
+      - 独立测试窗
+      - factor_role / target_strategy_reference
+    required_outputs:
+      - csf_test_gate_table.csv
+      - csf_selected_variants_test.csv
+      - csf_test_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - csf_test_gate_table.csv
+      - csf_selected_variants_test.csv
+    human_artifacts:
+      - csf_test_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 只复用 csf_train_freeze 的 frozen rules
+        - "`standalone_alpha` 使用 Rank IC / ICIR / bucket spread / monotonicity / breadth / stability"
+        - "`regime_filter / combo_filter` 使用 gated vs ungated 改善证据"
+        - 全量 test ledger 保留
+        - selected / rejected variants 有显式记账
+      fail_any_of:
+        - test 内重估 train 尺子
+        - 新增未冻结 variant
+        - 看 backtest 后回写 selected_variants_test
+        - 只保留通过者，不保留全量 ledger
+        - 搜索量较大却不做 multiple testing 校正
+    audit_only:
+      - 证据表述是否足以让 reviewer 读懂角色差异
+      - 样本覆盖是否解释充分
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 test 证据缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 证据语义从截面切到别的研究问题
+    rollback_rules:
+      default_rollback_stage: csf_test_evidence
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正证据表述
+      must_open_child_lineage_when:
+        - factor_role 变化导致证据语义改变
+        - 证据本体从截面排序改为别的任务
+    downstream_permissions:
+      may_advance_to:
+        - csf_backtest_ready
+      precondition_before_advance:
+        - csf_selected_variants_test.csv 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - csf_selected_variants_test.csv
+        - csf_test_contract.md
+      next_stage_must_not_consume:
+        - 未冻结的 test 搜索轨迹
+    notes:
+      - stage_dir = 05_csf_test_evidence
+
+  csf_backtest_ready:
+    stage_id: csf_backtest_ready
+    stage_name: CSF Backtest Ready
+    purpose: 将冻结后的因子分数映射成正式组合，并验证成本后的经济可行性
+    core_question: 冻结后的因子分数映射成正式组合后，是否具备成本后的经济可行性
+    allowed_previous_stages:
+      - csf_test_evidence
+    required_inputs:
+      - 已冻结的 csf_test_evidence 输出
+      - portfolio_expression 提案
+      - cost / capacity 提案
+    required_outputs:
+      - portfolio_contract.yaml
+      - portfolio_weight_panel.parquet
+      - rebalance_ledger.csv
+      - turnover_capacity_report.parquet
+      - cost_assumption_report.md
+      - engine_compare.csv
+      - portfolio_summary.parquet
+      - name_level_metrics.parquet
+      - drawdown_report.json
+      - csf_backtest_gate_table.csv
+      - csf_backtest_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - portfolio_contract.yaml
+      - portfolio_weight_panel.parquet
+      - rebalance_ledger.csv
+      - turnover_capacity_report.parquet
+      - engine_compare.csv
+    human_artifacts:
+      - cost_assumption_report.md
+      - portfolio_summary.parquet
+      - name_level_metrics.parquet
+      - drawdown_report.json
+      - csf_backtest_gate_table.csv
+      - csf_backtest_contract.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 只消费 csf_selected_variants_test 中通过的 variants
+        - 组合规则 machine-readable 冻结
+        - 成本后结果仍具经济意义
+        - 换手、容量、参与率分析完整
+        - 组合结果不是极少数 name 或日期单独支撑
+        - 组合表达与 mandate 冻结一致
+      fail_any_of:
+        - backtest 内重新挑选 variant
+        - 改变 long/short cut 或权重规则却不回退
+        - 只报 gross，不报 net after cost
+        - 没有 name-level concentration 诊断
+        - 容量分析缺失
+        - 结果只靠单一极端窗口或单一资产支撑
+    audit_only:
+      - 组合表达是否足够清晰
+      - 成本假设是否解释充分
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的组合合同缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 组合表达已变成不同研究问题
+    rollback_rules:
+      default_rollback_stage: csf_backtest_ready
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正组合权重和成本假设
+      must_open_child_lineage_when:
+        - portfolio_expression 大类变化
+        - 组合表达从截面切到别的研究问题
+    downstream_permissions:
+      may_advance_to:
+        - csf_holdout_validation
+      precondition_before_advance:
+        - portfolio_contract.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - portfolio_contract.yaml
+        - portfolio_weight_panel.parquet
+        - csf_backtest_gate_table.csv
+      next_stage_must_not_consume:
+        - 未冻结的权重搜索轨迹
+    notes:
+      - stage_dir = 06_csf_backtest_ready
+
+  csf_holdout_validation:
+    stage_id: csf_holdout_validation
+    stage_name: CSF Holdout Validation
+    purpose: 在最后完全未参与设计的窗口里验证冻结方案是否仍然稳定
+    core_question: 最终冻结方案在 holdout 窗口里是否仍然没有翻向或塌陷
+    allowed_previous_stages:
+      - csf_backtest_ready
+    required_inputs:
+      - 已冻结的 csf_backtest_ready 输出
+      - 最终 holdout 窗口
+      - regime shift 审计提案
+    required_outputs:
+      - csf_holdout_run_manifest.json
+      - holdout_factor_diagnostics.parquet
+      - holdout_test_compare.parquet
+      - holdout_portfolio_compare.parquet
+      - rolling_holdout_stability.json
+      - regime_shift_audit.json
+      - csf_holdout_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - csf_holdout_run_manifest.json
+      - holdout_factor_diagnostics.parquet
+      - holdout_test_compare.parquet
+      - holdout_portfolio_compare.parquet
+      - rolling_holdout_stability.json
+      - regime_shift_audit.json
+    human_artifacts:
+      - csf_holdout_gate_decision.md
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 只复用冻结方案，不重估上游尺子
+        - 主要方向未翻向
+        - 退化可解释且未超过容忍边界
+        - holdout 覆盖和 breadth 未塌到不可解释
+        - regime shift 明显时，必须显式审计
+      fail_any_of:
+        - 在 holdout 调参
+        - 在 holdout 改 bucket cut、neutralization、weight mapping
+        - 主要证据翻向
+        - 结果只靠极少数窗口支撑
+        - regime shift 明显却没有审计结论
+    audit_only:
+      - holdout 文字总结是否清楚
+      - regime shift 解释是否足够完整
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+          - formal_gate.fail_any_of 全部未触发
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 holdout 说明缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - holdout 结果显示研究问题本身需要重做
+    rollback_rules:
+      default_rollback_stage: csf_holdout_validation
+      allowed_modifications:
+        - 澄清文档表述
+        - 补全缺失 artifact
+        - 修正 holdout 审计说明
+      must_open_child_lineage_when:
+        - holdout 表明研究语义已改变
+        - regime shift 解释要求重设研究问题
+    downstream_permissions:
+      may_advance_to:
+        - promotion_decision
+      precondition_before_advance:
+        - csf_holdout_gate_decision.md 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - csf_holdout_gate_decision.md
+        - regime_shift_audit.json
+      next_stage_must_not_consume:
+        - 未冻结的 holdout 调参结果
+    notes:
+      - stage_dir = 07_csf_holdout_validation
 
   data_ready:
     stage_id: data_ready

@@ -1,6 +1,6 @@
 ---
 name: qros-research-session
-description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, data_ready review, signal_ready authoring, signal_ready review, train_freeze authoring/review, test_evidence authoring/review, backtest_ready authoring/review, and holdout_validation authoring/review from a single entry point.
+description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, data_ready review, signal_ready authoring, signal_ready review, train_freeze authoring/review, test_evidence authoring/review, backtest_ready authoring/review, holdout_validation authoring/review, and the cross_sectional_factor branch from a single entry point.
 ---
 
 # QROS Research Session
@@ -15,6 +15,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 自动识别或创建 lineage
 - 自动判断当前 stage
 - 显式推进 `idea_intake -> idea_intake_confirmation_pending -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review -> train_freeze_confirmation_pending -> train_freeze -> train_freeze review -> test_evidence_confirmation_pending -> test_evidence -> test_evidence review -> backtest_ready_confirmation_pending -> backtest_ready -> backtest_ready review -> holdout_validation_confirmation_pending -> holdout_validation -> holdout_validation review`
+- 在 `research_route = cross_sectional_factor` 时，显式推进 `csf_data_ready_confirmation_pending -> csf_data_ready -> csf_data_ready review -> csf_signal_ready_confirmation_pending -> csf_signal_ready -> csf_signal_ready review -> csf_train_freeze_confirmation_pending -> csf_train_freeze -> csf_train_freeze review -> csf_test_evidence_confirmation_pending -> csf_test_evidence -> csf_test_evidence review -> csf_backtest_ready_confirmation_pending -> csf_backtest_ready -> csf_backtest_ready review -> csf_holdout_validation_confirmation_pending -> csf_holdout_validation -> csf_holdout_validation review`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -38,6 +39,21 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `holdout_validation`
 - `holdout_validation review`
 
+在 `research_route = cross_sectional_factor` 时，第一版还覆盖：
+
+- `csf_data_ready`
+- `csf_data_ready review`
+- `csf_signal_ready`
+- `csf_signal_ready review`
+- `csf_train_freeze`
+- `csf_train_freeze review`
+- `csf_test_evidence`
+- `csf_test_evidence review`
+- `csf_backtest_ready`
+- `csf_backtest_ready review`
+- `csf_holdout_validation`
+- `csf_holdout_validation review`
+
 明确不覆盖：
 
 - `promotion_decision`
@@ -56,6 +72,58 @@ Reuse the deterministic runtime rather than improvising directory state in chat.
 The user should not need to remember internal commands. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
 
 QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
+
+## CSF Route Branch
+
+When `research_route = cross_sectional_factor`, do not continue to use the default stage contract as if it were a time-series route.
+
+After mandate review closure, switch to the independent CSF chain:
+
+- `csf_data_ready_confirmation_pending`
+- `csf_data_ready`
+- `csf_data_ready review`
+- `csf_signal_ready_confirmation_pending`
+- `csf_signal_ready`
+- `csf_signal_ready review`
+- `csf_train_freeze_confirmation_pending`
+- `csf_train_freeze`
+- `csf_train_freeze review`
+- `csf_test_evidence_confirmation_pending`
+- `csf_test_evidence`
+- `csf_test_evidence review`
+- `csf_backtest_ready_confirmation_pending`
+- `csf_backtest_ready`
+- `csf_backtest_ready review`
+- `csf_holdout_validation_confirmation_pending`
+- `csf_holdout_validation`
+- `csf_holdout_validation review`
+
+Use the CSF-specific grouped confirmations and ask for these frozen contract groups in order:
+
+- `panel_contract`
+- `quality_semantics`
+- `universe_admission`
+- `shared_derived_layer`
+- `delivery_contract`
+- `factor_identity`
+- `factor_role_contract`
+- `factor_structure_contract`
+- `neutralization_policy`
+- `preprocess_contract`
+- `neutralization_contract`
+- `ranking_bucket_contract`
+- `rebalance_contract`
+- `window_contract`
+- `formal_gate_contract`
+- `admissibility_contract`
+- `audit_contract`
+- `execution_policy`
+- `portfolio_policy`
+- `risk_overlay`
+- `engine_contract`
+- `reuse_contract`
+- `drift_audit`
+- `failure_governance`
 
 ## Failure Routing
 
@@ -323,6 +391,90 @@ When the stage is `holdout_validation_confirmation_pending`, the agent must ask 
 Do not skip this question. Do not imply the transition already happened.
 Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `holdout_validation`.
 
+When `research_route = cross_sectional_factor` and the stage is `csf_data_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `panel_contract` 这一组冻结什么？
+- `quality_semantics` 这一组冻结什么？
+- `universe_admission` 这一组冻结什么？
+- `shared_derived_layer` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 panel manifests、coverage artifacts、shared feature layers？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_data_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_data_ready`.
+
+When `research_route = cross_sectional_factor` and the stage is `csf_signal_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `factor_identity` 这一组冻结什么？
+- `factor_role_contract` 这一组冻结什么？
+- `factor_structure_contract` 这一组冻结什么？
+- `neutralization_policy` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 factor panels、factor manifests、coverage artifacts？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_signal_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_signal_ready`.
+
+When `research_route = cross_sectional_factor` and the stage is `csf_train_freeze_confirmation_pending`, the agent must ask explicitly:
+
+- `preprocess_contract` 这一组冻结什么？
+- `neutralization_contract` 这一组冻结什么？
+- `ranking_bucket_contract` 这一组冻结什么？
+- `rebalance_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 train rules、quality artifacts、variant ledgers？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_train_freeze？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_train_freeze`.
+
+When `research_route = cross_sectional_factor` and the stage is `csf_test_evidence_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `formal_gate_contract` 这一组冻结什么？
+- `admissibility_contract` 这一组冻结什么？
+- `audit_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 factor statistics、admissibility outputs、frozen selection artifacts？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_test_evidence？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_test_evidence`.
+
+When `research_route = cross_sectional_factor` and the stage is `csf_backtest_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `execution_policy` 这一组冻结什么？
+- `portfolio_policy` 这一组冻结什么？
+- `risk_overlay` 这一组冻结什么？
+- `engine_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 portfolio outputs、combo ledgers、capacity artifacts？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_backtest_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_backtest_ready`.
+
+When `research_route = cross_sectional_factor` and the stage is `csf_holdout_validation_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `reuse_contract` 这一组冻结什么？
+- `drift_audit` 这一组冻结什么？
+- `failure_governance` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 single-window、merged-window、comparison artifacts？
+- 每组回显当前 freeze draft，并单独确认
+- `是否按以上内容冻结 csf_holdout_validation？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_holdout_validation`.
+
 ## State Source Of Truth
 
 Use disk artifacts as the primary state:
@@ -335,6 +487,12 @@ Use disk artifacts as the primary state:
 - `outputs/<lineage>/05_test_evidence/`
 - `outputs/<lineage>/06_backtest/`
 - `outputs/<lineage>/07_holdout/`
+- `outputs/<lineage>/02_csf_data_ready/`
+- `outputs/<lineage>/03_csf_signal_ready/`
+- `outputs/<lineage>/04_csf_train_freeze/`
+- `outputs/<lineage>/05_csf_test_evidence/`
+- `outputs/<lineage>/06_csf_backtest_ready/`
+- `outputs/<lineage>/07_csf_holdout_validation/`
 - mandate review closure artifacts
 - data_ready review closure artifacts
 - signal_ready review closure artifacts
@@ -342,6 +500,12 @@ Use disk artifacts as the primary state:
 - test_evidence review closure artifacts
 - backtest_ready review closure artifacts
 - holdout_validation review closure artifacts
+- csf_data_ready review closure artifacts
+- csf_signal_ready review closure artifacts
+- csf_train_freeze review closure artifacts
+- csf_test_evidence review closure artifacts
+- csf_backtest_ready review closure artifacts
+- csf_holdout_validation review closure artifacts
 
 Do not rely on chat history alone to determine progress.
 
@@ -375,6 +539,12 @@ After each meaningful step, report:
 - Do not bypass backtest_ready review closure
 - Do not bypass holdout_validation transition approval
 - Do not bypass holdout_validation review closure
+- Do not bypass csf_data_ready review closure
+- Do not bypass csf_signal_ready review closure
+- Do not bypass csf_train_freeze review closure
+- Do not bypass csf_test_evidence review closure
+- Do not bypass csf_backtest_ready review closure
+- Do not bypass csf_holdout_validation review closure
 - Do not require the user to type backend flags or internal runtime commands during the primary chat workflow
 
 ## Internal Discipline Sources
@@ -396,3 +566,15 @@ When writing or reviewing content, follow the same contracts as:
 - `qros-backtest-ready-review`
 - `qros-holdout-validation-author`
 - `qros-holdout-validation-review`
+- `qros-csf-data-ready-author`
+- `qros-csf-data-ready-review`
+- `qros-csf-signal-ready-author`
+- `qros-csf-signal-ready-review`
+- `qros-csf-train-freeze-author`
+- `qros-csf-train-freeze-review`
+- `qros-csf-test-evidence-author`
+- `qros-csf-test-evidence-review`
+- `qros-csf-backtest-ready-author`
+- `qros-csf-backtest-ready-review`
+- `qros-csf-holdout-validation-author`
+- `qros-csf-holdout-validation-review`

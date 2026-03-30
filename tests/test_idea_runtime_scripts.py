@@ -39,6 +39,12 @@ def _mandate_freeze_draft(*, confirmed: bool) -> dict:
                     "primary_hypothesis": "BTC drives price discovery for high-liquidity ALTs.",
                     "counter_hypothesis": "Observed moves are only shared beta.",
                     "research_route": "cross_sectional_factor",
+                    "factor_role": "standalone_alpha",
+                    "factor_structure": "single_factor",
+                    "portfolio_expression": "long_short_market_neutral",
+                    "neutralization_policy": "group_neutral",
+                    "target_strategy_reference": "",
+                    "group_taxonomy_reference": "sector_bucket_v1",
                     "excluded_routes": ["time_series_signal"],
                     "route_rationale": [
                         "The thesis is expressed as cross-asset ranking rather than single-asset direction."
@@ -348,6 +354,11 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert (mandate_dir / "field_dictionary.md").exists()
     route_payload = yaml.safe_load((mandate_dir / "research_route.yaml").read_text(encoding="utf-8"))
     assert route_payload["research_route"] == "cross_sectional_factor"
+    assert route_payload["factor_role"] == "standalone_alpha"
+    assert route_payload["factor_structure"] == "single_factor"
+    assert route_payload["portfolio_expression"] == "long_short_market_neutral"
+    assert route_payload["neutralization_policy"] == "group_neutral"
+    assert route_payload["group_taxonomy_reference"] == "sector_bucket_v1"
     assert route_payload["excluded_routes"] == ["time_series_signal"]
     assert "BTC drives price discovery for high-liquidity ALTs." in (mandate_dir / "mandate.md").read_text(
         encoding="utf-8"

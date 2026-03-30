@@ -11,19 +11,26 @@ owner:
   - "Reviewer"
   - "Referee"
 depends_on:
-  - "docs/all-sops/第一层-主流程sop/research_workflow_sop.md"
-  - "docs/all-sops/workflow_stage_gates.yaml"
+  - "docs/main-flow-sop/research_workflow_sop.md"
+  - "docs/gates/workflow_stage_gates.yaml"
+  - "docs/main-flow-sop/00_mandate_sop_cn.md"
+  - "docs/main-flow-sop/01_csf_data_ready_sop_cn.md"
+  - "docs/main-flow-sop/02_csf_signal_ready_sop_cn.md"
+  - "docs/main-flow-sop/03_csf_train_freeze_sop_cn.md"
+  - "docs/main-flow-sop/04_csf_test_evidence_sop_cn.md"
+  - "docs/main-flow-sop/05_csf_backtest_ready_sop_cn.md"
+  - "docs/main-flow-sop/06_csf_holdout_validation_sop_cn.md"
   - "stage_completion_standard_cn.md"
   - "lineage_change_control_sop_cn.md"
 
 meta:
   purpose: >
     为所有正式研究阶段提供统一、machine-readable 的 reviewer 检查表。
-    该文件不替代 docs/all-sops/workflow_stage_gates.yaml 的 formal contract，而是把“如何审查阶段是否可信完成”
+    该文件不替代 docs/gates/workflow_stage_gates.yaml 的 formal contract，而是把“如何审查阶段是否可信完成”
     标准化，供人工 reviewer、agent reviewer、CI 检查脚本和 gate 工具统一消费。
   usage_order:
     - "先识别当前 stage"
-    - "读取 docs/all-sops/workflow_stage_gates.yaml 中该 stage 的 formal contract"
+    - "读取 docs/gates/workflow_stage_gates.yaml 中该 stage 的 formal contract"
     - "核对 required_inputs / required_outputs / formal_gate / verdict_rules / rollback_rules"
     - "再读取本文件对应 stage 的 review checklist"
     - "先判断 blocking issues，再判断 reservations"
@@ -42,7 +49,7 @@ global_checks:
   - id: "GLOBAL-001"
     title: "formal contract referenced"
     severity: "blocking"
-    check: "当前 stage 的 docs/all-sops/workflow_stage_gates.yaml contract 已被明确引用"
+    check: "当前 stage 的 docs/gates/workflow_stage_gates.yaml contract 已被明确引用"
     evidence:
       - "stage gate 文档"
       - "review notes"
@@ -147,6 +154,305 @@ stages:
         check: "若关键字段或参数仅列名称未解释，则不得通过"
         evidence:
           - "mandate.md"
+      - id: "MANDATE-009"
+        severity: "blocking"
+        check: "若 research_route = cross_sectional_factor，则 factor_role、factor_structure、portfolio_expression、neutralization_policy 已冻结；且 non-standalone 需要 target_strategy_reference，group_neutral 需要 group_taxonomy_reference"
+        evidence:
+          - "mandate.md"
+          - "research_route.yaml"
+
+  csf_data_ready:
+    stage_name: "CSF Data Ready"
+    recommended_gate_doc: "csf_data_ready_gate_decision.md"
+    checks:
+      - id: "CSF-DATA-001"
+        severity: "blocking"
+        check: "已形成显式的 date x asset 面板合同，而不是零散资产时序表"
+        evidence:
+          - "panel_manifest.json"
+          - "csf_data_contract.md"
+      - id: "CSF-DATA-002"
+        severity: "blocking"
+        check: "universe membership 按日期显式记录且可重建"
+        evidence:
+          - "asset_universe_membership.parquet"
+          - "universe_exclusions.md"
+      - id: "CSF-DATA-003"
+        severity: "blocking"
+        check: "eligibility_base_mask 作为独立底座冻结，未混入后续因子逻辑"
+        evidence:
+          - "eligibility_base_mask.parquet"
+          - "csf_data_contract.md"
+      - id: "CSF-DATA-004"
+        severity: "blocking"
+        check: "截面覆盖、缺失和共享字段语义已显式记录"
+        evidence:
+          - "cross_section_coverage.parquet"
+          - "shared_feature_base/"
+          - "field_dictionary.md"
+      - id: "CSF-DATA-005"
+        severity: "blocking"
+        check: "若后续允许 group_neutral，group taxonomy 已冻结或版本化"
+        evidence:
+          - "asset_taxonomy_snapshot.*"
+          - "csf_data_contract.md"
+      - id: "CSF-DATA-006"
+        severity: "blocking"
+        check: "artifact catalog 与 field dictionary 已同步登记 CSF 数据底座"
+        evidence:
+          - "artifact_catalog.md"
+          - "field_dictionary.md"
+      - id: "CSF-DATA-007"
+        severity: "reservation"
+        check: "覆盖率波动、边缘样本或 taxonomy 版本切换均已明确记录在审查材料中"
+        evidence:
+          - "cross_section_coverage.parquet"
+          - "csf_data_gate_decision.md"
+
+  csf_signal_ready:
+    stage_name: "CSF Signal Ready"
+    recommended_gate_doc: "csf_signal_ready_gate_decision.md"
+    checks:
+      - id: "CSF-SIGNAL-000"
+        severity: "blocking"
+        check: "factor_role、factor_structure、portfolio_expression、neutralization_policy 均来自 mandate 冻结；non-standalone 具备 target_strategy_reference，group_neutral 具备 group_taxonomy_reference"
+        evidence:
+          - "mandate.md"
+          - "research_route.yaml"
+      - id: "CSF-SIGNAL-001"
+        severity: "blocking"
+        check: "factor_id、factor_version、factor_direction 已冻结"
+        evidence:
+          - "factor_manifest.yaml"
+          - "factor_contract.md"
+      - id: "CSF-SIGNAL-002"
+        severity: "blocking"
+        check: "factor_panel 以统一面板主键唯一表示同一时点不同资产的因子值"
+        evidence:
+          - "factor_panel.parquet"
+          - "factor_manifest.yaml"
+      - id: "CSF-SIGNAL-003"
+        severity: "blocking"
+        check: "raw_factor_fields、derived_factor_fields 和 final_score_field 已写清"
+        evidence:
+          - "factor_field_dictionary.md"
+          - "factor_contract.md"
+      - id: "CSF-SIGNAL-004"
+        severity: "blocking"
+        check: "多因子组合公式是确定性的，不依赖 train-learned weights"
+        evidence:
+          - "component_factor_manifest.yaml"
+          - "factor_manifest.yaml"
+      - id: "CSF-SIGNAL-005"
+        severity: "blocking"
+        check: "缺失值策略、coverage contract 和 eligibility 传递规则已冻结"
+        evidence:
+          - "factor_coverage_report.parquet"
+          - "factor_contract.md"
+      - id: "CSF-SIGNAL-006"
+        severity: "blocking"
+        check: "若需要组内排序或组中性化，factor group context 已冻结"
+        evidence:
+          - "factor_group_context.parquet"
+          - "factor_contract.md"
+      - id: "CSF-SIGNAL-007"
+        severity: "blocking"
+        check: "不得把过滤器语义伪装成独立 alpha 语义"
+        evidence:
+          - "factor_contract.md"
+          - "review notes"
+
+  csf_train_freeze:
+    stage_name: "CSF Train Freeze"
+    recommended_gate_doc: "csf_train_freeze_gate_decision.md"
+    checks:
+      - id: "CSF-TRAIN-001"
+        severity: "blocking"
+        check: "winsorize、standardize、missing fill 和 coverage floor 口径已冻结"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "csf_train_contract.md"
+      - id: "CSF-TRAIN-002"
+        severity: "blocking"
+        check: "neutralization policy、beta estimation window 和 group taxonomy reference 已冻结"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "train_neutralization_diagnostics.parquet"
+      - id: "CSF-TRAIN-003"
+        severity: "blocking"
+        check: "bucket schema、quantile count、tie-break rule 和 min names per bucket 已冻结"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "train_bucket_diagnostics.parquet"
+      - id: "CSF-TRAIN-004"
+        severity: "blocking"
+        check: "rebalance frequency、signal lag 和 overlap policy 已冻结"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "csf_train_contract.md"
+      - id: "CSF-TRAIN-005"
+        severity: "blocking"
+        check: "train variant ledger 与 reject ledger 均已保存，且可解释拒绝原因"
+        evidence:
+          - "train_variant_ledger.csv"
+          - "train_variant_rejects.csv"
+      - id: "CSF-TRAIN-006"
+        severity: "blocking"
+        check: "未根据 test/backtest 结果回写 train freeze"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "review notes"
+      - id: "CSF-TRAIN-007"
+        severity: "reservation"
+        check: "search governance 只用于排除荒谬区间或不可研究 variant，不得以收益最大化方式选胜者"
+        evidence:
+          - "train_factor_quality.parquet"
+          - "csf_train_contract.md"
+
+  csf_test_evidence:
+    stage_name: "CSF Test Evidence"
+    recommended_gate_doc: "csf_test_gate_decision.md"
+    checks:
+      - id: "CSF-TEST-001"
+        severity: "blocking"
+        check: "standalone_alpha 场景下，Rank IC、ICIR、分组收益、单调性、breadth 和子窗口稳定性均已检查"
+        evidence:
+          - "rank_ic_timeseries.parquet"
+          - "bucket_returns.parquet"
+          - "subperiod_stability_report.json"
+      - id: "CSF-TEST-002"
+        severity: "blocking"
+        check: "regime_filter / combo_filter 场景下，target strategy reference 和 gated vs ungated 对比已冻结"
+        evidence:
+          - "target_strategy_condition_compare.parquet"
+          - "gated_vs_ungated_summary.json"
+      - id: "CSF-TEST-003"
+        severity: "blocking"
+        check: "test 使用的 preprocess、neutralization、bucket 和 rebalance 规则全部来自 train freeze"
+        evidence:
+          - "frozen_spec.json"
+          - "csf_test_gate_decision.md"
+      - id: "CSF-TEST-004"
+        severity: "blocking"
+        check: "selected variants 和 rejected variants 都已保留，并可追溯决策理由"
+        evidence:
+          - "csf_selected_variants_test.csv"
+          - "csf_test_gate_table.csv"
+      - id: "CSF-TEST-005"
+        severity: "blocking"
+        check: "未在 test 重估 train 尺子，也未新增未冻结的 variant"
+        evidence:
+          - "review notes"
+          - "csf_test_gate_decision.md"
+      - id: "CSF-TEST-006"
+        severity: "blocking"
+        check: "若使用 filter 语义，check 结果体现条件改善而不是独立赚钱"
+        evidence:
+          - "filter_condition_panel.parquet"
+          - "target_strategy_condition_compare.parquet"
+      - id: "CSF-TEST-007"
+        severity: "reservation"
+        check: "若存在多重测试或多个候选 variant，已保留完整 ledger 而非只保留通过项"
+        evidence:
+          - "csf_test_gate_table.csv"
+          - "artifact_catalog.md"
+
+  csf_backtest_ready:
+    stage_name: "CSF Backtest Ready"
+    recommended_gate_doc: "csf_backtest_gate_decision.md"
+    checks:
+      - id: "CSF-BACKTEST-001"
+        severity: "blocking"
+        check: "backtest 只消费 test 阶段冻结通过的 variant 与组合规则"
+        evidence:
+          - "frozen_spec.json"
+          - "portfolio_contract.yaml"
+      - id: "CSF-BACKTEST-002"
+        severity: "blocking"
+        check: "long_short_market_neutral 与 long_only_rank 的组合表达已冻结"
+        evidence:
+          - "portfolio_contract.yaml"
+          - "csf_backtest_contract.md"
+      - id: "CSF-BACKTEST-003"
+        severity: "blocking"
+        check: "weight mapping、gross / net exposure、turnover、cost 和 capacity 口径已冻结"
+        evidence:
+          - "portfolio_weight_panel.parquet"
+          - "turnover_capacity_report.parquet"
+          - "cost_assumption_report.md"
+      - id: "CSF-BACKTEST-004"
+        severity: "blocking"
+        check: "净收益、回撤和资金曲线基于正式资金记账口径"
+        evidence:
+          - "portfolio_summary.parquet"
+          - "drawdown_report.json"
+      - id: "CSF-BACKTEST-005"
+        severity: "blocking"
+        check: "未在 backtest 中重新挑选 variant、重估权重或改写组合规则"
+        evidence:
+          - "review notes"
+          - "csf_backtest_gate_decision.md"
+      - id: "CSF-BACKTEST-006"
+        severity: "blocking"
+        check: "若为 regime_filter / combo_filter，target strategy compare 与 gated / ungated summary 已一并冻结"
+        evidence:
+          - "target_strategy_compare.parquet"
+          - "gated_portfolio_summary.parquet"
+          - "ungated_portfolio_summary.parquet"
+      - id: "CSF-BACKTEST-007"
+        severity: "reservation"
+        check: "name-level concentration、engine compare 和异常收益 sanity check 已保留"
+        evidence:
+          - "name_level_metrics.parquet"
+          - "engine_compare.csv"
+          - "csf_backtest_gate_decision.md"
+
+  csf_holdout_validation:
+    stage_name: "CSF Holdout Validation"
+    recommended_gate_doc: "csf_holdout_gate_decision.md"
+    checks:
+      - id: "CSF-HOLDOUT-001"
+        severity: "blocking"
+        check: "holdout 只复用冻结方案，不重新调参或改写组合规则"
+        evidence:
+          - "csf_holdout_run_manifest.json"
+          - "frozen_spec.json"
+      - id: "CSF-HOLDOUT-002"
+        severity: "blocking"
+        check: "holdout_factor_diagnostics 已记录 coverage、breadth、方向一致性和分桶稳定性"
+        evidence:
+          - "holdout_factor_diagnostics.parquet"
+          - "rolling_holdout_stability.json"
+      - id: "CSF-HOLDOUT-003"
+        severity: "blocking"
+        check: "holdout_test_compare 与 holdout_portfolio_compare 已生成"
+        evidence:
+          - "holdout_test_compare.parquet"
+          - "holdout_portfolio_compare.parquet"
+      - id: "CSF-HOLDOUT-004"
+        severity: "blocking"
+        check: "regime_shift_audit 已明确记录是否存在显著结构迁移"
+        evidence:
+          - "regime_shift_audit.json"
+          - "csf_holdout_gate_decision.md"
+      - id: "CSF-HOLDOUT-005"
+        severity: "blocking"
+        check: "未在 holdout 中回写 train/test/backtest 的任何冻结对象"
+        evidence:
+          - "review notes"
+          - "csf_holdout_gate_decision.md"
+      - id: "CSF-HOLDOUT-006"
+        severity: "blocking"
+        check: "若主要证据退化，已区分 regime mismatch、样本问题和机制断裂"
+        evidence:
+          - "csf_holdout_gate_decision.md"
+          - "regime_shift_audit.json"
+      - id: "CSF-HOLDOUT-007"
+        severity: "reservation"
+        check: "最终 holdout 结论、残留风险和后续 lineage 建议均已写明"
+        evidence:
+          - "csf_holdout_gate_decision.md"
+          - "artifact_catalog.md"
 
   data_ready:
     stage_name: "Data Ready"

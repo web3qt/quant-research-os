@@ -99,6 +99,14 @@ def main() -> int:
     print(f"Current stage: {status.current_stage}")
     if status.current_route is not None:
         print(f"Research route: {status.current_route}")
+    if status.factor_role is not None:
+        print(f"Factor role: {status.factor_role}")
+    if status.factor_structure is not None:
+        print(f"Factor structure: {status.factor_structure}")
+    if status.portfolio_expression is not None:
+        print(f"Portfolio expression: {status.portfolio_expression}")
+    if status.neutralization_policy is not None:
+        print(f"Neutralization policy: {status.neutralization_policy}")
     print(f"Gate status: {status.gate_status}")
     if status.review_verdict is not None:
         print(f"Review verdict: {status.review_verdict}")

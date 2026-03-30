@@ -63,12 +63,17 @@
 
 ## 3. 标准阶段流转
 
-正式研究必须按顺序推进，**不允许跳阶段**：
+正式研究必须按顺序推进，**不允许跳阶段**。
+在 `00_mandate` 冻结 `research_route` 之后，研究流程按 route 分叉：
 
 ```
-00_idea_intake → 00_mandate → 01_data_ready → 02_signal_ready → 03_train_calibration
-→ 04_test_evidence → 05_backtest_ready → 06_holdout_validation
-→ 07_promotion_decision → 08_shadow_admission → 09_canary_production
+00_idea_intake → 00_mandate
+├─ time_series_signal → 01_data_ready → 02_signal_ready → 03_train_calibration
+│                    → 04_test_evidence → 05_backtest_ready → 06_holdout_validation
+└─ cross_sectional_factor → 01_csf_data_ready → 02_csf_signal_ready → 03_csf_train_freeze
+                         → 04_csf_test_evidence → 05_csf_backtest_ready → 06_csf_holdout_validation
+
+07_promotion_decision → 08_shadow_admission → 09_canary_production
 ```
 
 **注意**：`00_idea_intake` 是前置资格评估阶段，不属于正式研究管线。只有 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 且通过交互式确认后，才允许进入 `00_mandate`。
@@ -98,6 +103,8 @@
 **核心问题**：这条研究线研究什么，不研究什么。
 
 **必须冻结**：主问题、研究路线、时间窗切分、Universe 口径、允许字段族（含层级和消费阶段说明）、信号机制与表达式模板（含符号说明、时间语义、无前视约定）、参数边界与字典、容量/拥挤审计口径、实现栈。
+
+**路线分叉**：`time_series_signal` 继续沿用 `01_data_ready -> 06_holdout_validation` 主线；`cross_sectional_factor` 进入独立 `01_csf_data_ready -> 06_csf_holdout_validation` 流程，不能再把后者当作前者的一个特例。
 
 **禁止**：一边抽数据一边改 Universe；先扫结果再回写研究边界；未冻结 time_split 就看 test/backtest。
 

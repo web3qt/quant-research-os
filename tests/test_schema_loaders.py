@@ -9,7 +9,7 @@ def test_gate_schema_contains_first_wave_stages() -> None:
 
 
 def test_checklist_schema_contains_first_wave_stages() -> None:
-    checklist = load_checklist_schema("docs/check-sop/review_checklist_master.yaml")
+    checklist = load_checklist_schema("docs/review-sop/review_checklist_master.yaml")
     assert "mandate" in checklist["stages"]
     assert "data_ready" in checklist["stages"]
     assert "signal_ready" in checklist["stages"]

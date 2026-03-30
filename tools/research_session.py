@@ -14,6 +14,42 @@ from tools.data_ready_runtime import (
     build_data_ready_from_mandate,
     scaffold_data_ready,
 )
+from tools.csf_backtest_runtime import (
+    CSF_BACKTEST_READY_DRAFT_FILE,
+    CSF_BACKTEST_READY_GROUP_ORDER,
+    build_csf_backtest_ready_from_test_evidence,
+    scaffold_csf_backtest_ready,
+)
+from tools.csf_data_ready_runtime import (
+    CSF_DATA_READY_FREEZE_DRAFT_FILE,
+    CSF_DATA_READY_FREEZE_GROUP_ORDER,
+    build_csf_data_ready_from_mandate,
+    scaffold_csf_data_ready,
+)
+from tools.csf_holdout_runtime import (
+    CSF_HOLDOUT_VALIDATION_DRAFT_FILE,
+    CSF_HOLDOUT_VALIDATION_GROUP_ORDER,
+    build_csf_holdout_validation_from_backtest,
+    scaffold_csf_holdout_validation,
+)
+from tools.csf_signal_ready_runtime import (
+    CSF_SIGNAL_READY_FREEZE_DRAFT_FILE,
+    CSF_SIGNAL_READY_FREEZE_GROUP_ORDER,
+    build_csf_signal_ready_from_data_ready,
+    scaffold_csf_signal_ready,
+)
+from tools.csf_test_evidence_runtime import (
+    CSF_TEST_EVIDENCE_DRAFT_FILE,
+    CSF_TEST_EVIDENCE_GROUP_ORDER,
+    build_csf_test_evidence_from_train_freeze,
+    scaffold_csf_test_evidence,
+)
+from tools.csf_train_runtime import (
+    CSF_TRAIN_FREEZE_DRAFT_FILE,
+    CSF_TRAIN_FREEZE_GROUP_ORDER,
+    build_csf_train_freeze_from_signal_ready,
+    scaffold_csf_train_freeze,
+)
 from tools.idea_runtime import (
     MANDATE_FREEZE_DRAFT_FILE,
     MANDATE_FREEZE_GROUP_ORDER,
@@ -62,6 +98,25 @@ SessionStage = Literal[
     "mandate_confirmation_pending",
     "mandate_author",
     "mandate_review",
+    "csf_data_ready_confirmation_pending",
+    "csf_data_ready_author",
+    "csf_data_ready_review",
+    "csf_signal_ready_confirmation_pending",
+    "csf_signal_ready_author",
+    "csf_signal_ready_review",
+    "csf_train_freeze_confirmation_pending",
+    "csf_train_freeze_author",
+    "csf_train_freeze_review",
+    "csf_test_evidence_confirmation_pending",
+    "csf_test_evidence_author",
+    "csf_test_evidence_review",
+    "csf_backtest_ready_confirmation_pending",
+    "csf_backtest_ready_author",
+    "csf_backtest_ready_review",
+    "csf_holdout_validation_confirmation_pending",
+    "csf_holdout_validation_author",
+    "csf_holdout_validation_review",
+    "csf_holdout_validation_review_complete",
     "data_ready_confirmation_pending",
     "data_ready_author",
     "data_ready_review",
@@ -123,6 +178,18 @@ DATA_READY_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+CSF_DATA_READY_REQUIRED_OUTPUTS = [
+    "panel_manifest.json",
+    "asset_universe_membership.parquet",
+    "cross_section_coverage.parquet",
+    "eligibility_base_mask.parquet",
+    "shared_feature_base",
+    "asset_taxonomy_snapshot.parquet",
+    "csf_data_contract.md",
+    "csf_data_ready_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 SIGNAL_READY_REQUIRED_OUTPUTS = [
     "param_manifest.csv",
     "params",
@@ -135,12 +202,35 @@ SIGNAL_READY_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+CSF_SIGNAL_READY_REQUIRED_OUTPUTS = [
+    "factor_panel.parquet",
+    "factor_manifest.yaml",
+    "component_factor_manifest.yaml",
+    "factor_coverage_report.parquet",
+    "factor_group_context.parquet",
+    "factor_contract.md",
+    "factor_field_dictionary.md",
+    "csf_signal_ready_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 TRAIN_FREEZE_REQUIRED_OUTPUTS = [
     "train_thresholds.json",
     "train_quality.parquet",
     "train_param_ledger.csv",
     "train_rejects.csv",
     "train_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS = [
+    "csf_train_freeze.yaml",
+    "train_factor_quality.parquet",
+    "train_variant_ledger.csv",
+    "train_variant_rejects.csv",
+    "train_bucket_diagnostics.parquet",
+    "train_neutralization_diagnostics.parquet",
+    "csf_train_contract.md",
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
@@ -157,6 +247,22 @@ TEST_EVIDENCE_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS = [
+    "rank_ic_timeseries.parquet",
+    "rank_ic_summary.json",
+    "bucket_returns.parquet",
+    "monotonicity_report.json",
+    "breadth_coverage_report.parquet",
+    "subperiod_stability_report.json",
+    "filter_condition_panel.parquet",
+    "target_strategy_condition_compare.parquet",
+    "gated_vs_ungated_summary.json",
+    "csf_test_gate_table.csv",
+    "csf_selected_variants_test.csv",
+    "csf_test_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 BACKTEST_READY_REQUIRED_OUTPUTS = [
     "engine_compare.csv",
     "vectorbt",
@@ -167,11 +273,37 @@ BACKTEST_READY_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+CSF_BACKTEST_READY_REQUIRED_OUTPUTS = [
+    "portfolio_contract.yaml",
+    "portfolio_weight_panel.parquet",
+    "rebalance_ledger.csv",
+    "turnover_capacity_report.parquet",
+    "cost_assumption_report.md",
+    "portfolio_summary.parquet",
+    "name_level_metrics.parquet",
+    "drawdown_report.json",
+    "target_strategy_compare.parquet",
+    "csf_backtest_gate_table.csv",
+    "csf_backtest_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "holdout_run_manifest.json",
     "holdout_backtest_compare.csv",
     "window_results",
     "holdout_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
+    "csf_holdout_run_manifest.json",
+    "holdout_factor_diagnostics.parquet",
+    "holdout_test_compare.parquet",
+    "holdout_portfolio_compare.parquet",
+    "rolling_holdout_stability.json",
+    "regime_shift_audit.json",
+    "csf_holdout_gate_decision.md",
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
@@ -198,6 +330,10 @@ class SessionContext:
     next_action: str
     why_now: list[str]
     open_risks: list[str]
+    factor_role: str | None = None
+    factor_structure: str | None = None
+    portfolio_expression: str | None = None
+    neutralization_policy: str | None = None
     review_verdict: str | None = None
     requires_failure_handling: bool = False
     failure_stage: str | None = None
@@ -229,6 +365,85 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     test_evidence_dir = lineage_root / "05_test_evidence"
     backtest_dir = lineage_root / "06_backtest"
     holdout_dir = lineage_root / "07_holdout"
+    csf_data_ready_dir = lineage_root / "02_csf_data_ready"
+    csf_signal_ready_dir = lineage_root / "03_csf_signal_ready"
+    csf_train_dir = lineage_root / "04_csf_train_freeze"
+    csf_test_evidence_dir = lineage_root / "05_csf_test_evidence"
+    csf_backtest_dir = lineage_root / "06_csf_backtest_ready"
+    csf_holdout_dir = lineage_root / "07_csf_holdout_validation"
+    is_csf_route = _is_csf_route(lineage_root)
+
+    if is_csf_route:
+        if _csf_holdout_validation_outputs_complete(csf_holdout_dir):
+            if _csf_holdout_validation_closure_complete(csf_holdout_dir):
+                return "csf_holdout_validation_review_complete"
+            return "csf_holdout_validation_review"
+
+        if _csf_backtest_ready_outputs_complete(csf_backtest_dir):
+            if not _csf_backtest_ready_closure_complete(csf_backtest_dir):
+                return "csf_backtest_ready_review"
+            approval_decision = read_holdout_validation_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_HOLDOUT_VALIDATION"
+                and next_csf_holdout_validation_group(lineage_root) is None
+            ):
+                return "csf_holdout_validation_author"
+            return "csf_holdout_validation_confirmation_pending"
+
+        if _csf_test_evidence_outputs_complete(csf_test_evidence_dir):
+            if not _csf_test_evidence_closure_complete(csf_test_evidence_dir):
+                return "csf_test_evidence_review"
+            approval_decision = read_backtest_ready_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_BACKTEST_READY"
+                and next_csf_backtest_ready_group(lineage_root) is None
+            ):
+                return "csf_backtest_ready_author"
+            return "csf_backtest_ready_confirmation_pending"
+
+        if _csf_train_freeze_outputs_complete(csf_train_dir):
+            if not _csf_train_freeze_closure_complete(csf_train_dir):
+                return "csf_train_freeze_review"
+            approval_decision = read_test_evidence_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_TEST_EVIDENCE"
+                and next_csf_test_evidence_group(lineage_root) is None
+            ):
+                return "csf_test_evidence_author"
+            return "csf_test_evidence_confirmation_pending"
+
+        if _csf_signal_ready_outputs_complete(csf_signal_ready_dir):
+            if not _csf_signal_ready_closure_complete(csf_signal_ready_dir):
+                return "csf_signal_ready_review"
+            approval_decision = read_train_freeze_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_TRAIN_FREEZE"
+                and next_csf_train_freeze_group(lineage_root) is None
+            ):
+                return "csf_train_freeze_author"
+            return "csf_train_freeze_confirmation_pending"
+
+        if _csf_data_ready_outputs_complete(csf_data_ready_dir):
+            if not _csf_data_ready_closure_complete(csf_data_ready_dir):
+                return "csf_data_ready_review"
+            approval_decision = read_signal_ready_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_SIGNAL_READY"
+                and next_csf_signal_ready_freeze_group(lineage_root) is None
+            ):
+                return "csf_signal_ready_author"
+            return "csf_signal_ready_confirmation_pending"
+
+        if _mandate_outputs_complete(mandate_dir):
+            if not _mandate_closure_complete(mandate_dir):
+                return "mandate_review"
+            approval_decision = read_data_ready_transition_decision(lineage_root)
+            if (
+                approval_decision == "CONFIRM_DATA_READY"
+                and next_csf_data_ready_freeze_group(lineage_root) is None
+            ):
+                return "csf_data_ready_author"
+            return "csf_data_ready_confirmation_pending"
 
     if _holdout_validation_outputs_complete(holdout_dir):
         if _holdout_validation_closure_complete(holdout_dir):
@@ -346,6 +561,23 @@ def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
     return sorted(str(path.relative_to(lineage_root)) for path in data_ready_dir.iterdir())
 
 
+def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "02_csf_data_ready"
+    if stage_dir.exists() and (stage_dir / CSF_DATA_READY_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_data_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_data_ready_author":
+        return []
+
+    stage_dir = build_csf_data_ready_from_mandate(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
 def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
     signal_ready_dir = lineage_root / "03_signal_ready"
     if signal_ready_dir.exists() and (signal_ready_dir / SIGNAL_READY_FREEZE_DRAFT_FILE).exists():
@@ -361,6 +593,23 @@ def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
 
     signal_ready_dir = build_signal_ready_from_data_ready(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in signal_ready_dir.iterdir())
+
+
+def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "03_csf_signal_ready"
+    if stage_dir.exists() and (stage_dir / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_signal_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_signal_ready_author":
+        return []
+
+    stage_dir = build_csf_signal_ready_from_data_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
 
 
 def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -380,6 +629,23 @@ def build_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
     return sorted(str(path.relative_to(lineage_root)) for path in train_dir.iterdir())
 
 
+def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "04_csf_train_freeze"
+    if stage_dir.exists() and (stage_dir / CSF_TRAIN_FREEZE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_train_freeze(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_train_freeze_author":
+        return []
+
+    stage_dir = build_csf_train_freeze_from_signal_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
 def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
     test_dir = lineage_root / "05_test_evidence"
     if test_dir.exists() and (test_dir / TEST_EVIDENCE_DRAFT_FILE).exists():
@@ -395,6 +661,23 @@ def build_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
 
     test_dir = build_test_evidence_from_train_freeze(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in test_dir.iterdir())
+
+
+def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "05_csf_test_evidence"
+    if stage_dir.exists() and (stage_dir / CSF_TEST_EVIDENCE_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_test_evidence(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_test_evidence_author":
+        return []
+
+    stage_dir = build_csf_test_evidence_from_train_freeze(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
 
 
 def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -414,6 +697,23 @@ def build_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
     return sorted(str(path.relative_to(lineage_root)) for path in backtest_dir.iterdir())
 
 
+def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "06_csf_backtest_ready"
+    if stage_dir.exists() and (stage_dir / CSF_BACKTEST_READY_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_backtest_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_backtest_ready_author":
+        return []
+
+    stage_dir = build_csf_backtest_ready_from_test_evidence(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
 def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
     holdout_dir = lineage_root / "07_holdout"
     if holdout_dir.exists() and (holdout_dir / HOLDOUT_VALIDATION_DRAFT_FILE).exists():
@@ -429,6 +729,23 @@ def build_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
 
     holdout_dir = build_holdout_validation_from_backtest(lineage_root)
     return sorted(str(path.relative_to(lineage_root)) for path in holdout_dir.iterdir())
+
+
+def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "07_csf_holdout_validation"
+    if stage_dir.exists() and (stage_dir / CSF_HOLDOUT_VALIDATION_DRAFT_FILE).exists():
+        return []
+
+    scaffold_csf_holdout_validation(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_csf_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "csf_holdout_validation_author":
+        return []
+
+    stage_dir = build_csf_holdout_validation_from_backtest(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -780,6 +1097,25 @@ def current_research_route(lineage_root: Path) -> str | None:
     return None
 
 
+def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
+    mandate_route_path = lineage_root / "01_mandate" / "research_route.yaml"
+    if not mandate_route_path.exists():
+        return {
+            "factor_role": None,
+            "factor_structure": None,
+            "portfolio_expression": None,
+            "neutralization_policy": None,
+        }
+
+    route_payload = _read_yaml(mandate_route_path)
+    return {
+        "factor_role": _optional_payload_value(route_payload.get("factor_role")),
+        "factor_structure": _optional_payload_value(route_payload.get("factor_structure")),
+        "portfolio_expression": _optional_payload_value(route_payload.get("portfolio_expression")),
+        "neutralization_policy": _optional_payload_value(route_payload.get("neutralization_policy")),
+    }
+
+
 def next_mandate_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
     if not draft_path.exists():
@@ -806,6 +1142,19 @@ def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_csf_data_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "02_csf_data_ready" / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_DATA_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_DATA_READY_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "03_signal_ready" / SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
@@ -814,6 +1163,19 @@ def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in SIGNAL_READY_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_csf_signal_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "03_csf_signal_ready" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_SIGNAL_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_SIGNAL_READY_FREEZE_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -832,6 +1194,19 @@ def next_train_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_csf_train_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "04_csf_train_freeze" / CSF_TRAIN_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_TRAIN_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_TRAIN_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_test_evidence_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "05_test_evidence" / TEST_EVIDENCE_DRAFT_FILE
     if not draft_path.exists():
@@ -840,6 +1215,19 @@ def next_test_evidence_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in TEST_EVIDENCE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_csf_test_evidence_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "05_csf_test_evidence" / CSF_TEST_EVIDENCE_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_TEST_EVIDENCE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_TEST_EVIDENCE_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -858,6 +1246,19 @@ def next_backtest_ready_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_csf_backtest_ready_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "06_csf_backtest_ready" / CSF_BACKTEST_READY_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_BACKTEST_READY_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_BACKTEST_READY_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "07_holdout" / HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
@@ -866,6 +1267,19 @@ def next_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in HOLDOUT_VALIDATION_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_csf_holdout_validation_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "07_csf_holdout_validation" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+    if not draft_path.exists():
+        return CSF_HOLDOUT_VALIDATION_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in CSF_HOLDOUT_VALIDATION_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -882,6 +1296,10 @@ def summarize_session_status(
     next_action: str,
     why_now: list[str] | None = None,
     open_risks: list[str] | None = None,
+    factor_role: str | None = None,
+    factor_structure: str | None = None,
+    portfolio_expression: str | None = None,
+    neutralization_policy: str | None = None,
     review_verdict: str | None = None,
     requires_failure_handling: bool = False,
     failure_stage: str | None = None,
@@ -897,6 +1315,10 @@ def summarize_session_status(
         next_action=next_action,
         why_now=why_now or [],
         open_risks=open_risks or [],
+        factor_role=factor_role,
+        factor_structure=factor_structure,
+        portfolio_expression=portfolio_expression,
+        neutralization_policy=neutralization_policy,
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
@@ -1015,6 +1437,54 @@ def run_research_session(
         artifacts_written.extend(build_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
+    if current_stage == "csf_data_ready_confirmation_pending":
+        artifacts_written.extend(ensure_csf_data_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_data_ready_author":
+        artifacts_written.extend(build_csf_data_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_signal_ready_confirmation_pending":
+        artifacts_written.extend(ensure_csf_signal_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_signal_ready_author":
+        artifacts_written.extend(build_csf_signal_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_train_freeze_confirmation_pending":
+        artifacts_written.extend(ensure_csf_train_freeze_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_train_freeze_author":
+        artifacts_written.extend(build_csf_train_freeze_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_test_evidence_confirmation_pending":
+        artifacts_written.extend(ensure_csf_test_evidence_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_test_evidence_author":
+        artifacts_written.extend(build_csf_test_evidence_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_backtest_ready_confirmation_pending":
+        artifacts_written.extend(ensure_csf_backtest_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_backtest_ready_author":
+        artifacts_written.extend(build_csf_backtest_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_holdout_validation_confirmation_pending":
+        artifacts_written.extend(ensure_csf_holdout_validation_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage == "csf_holdout_validation_author":
+        artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)
@@ -1024,6 +1494,7 @@ def run_research_session(
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
     why_now, open_risks = session_transition_summary(lineage_root)
     current_route = current_research_route(lineage_root)
+    route_contract = current_route_contract(lineage_root)
     return summarize_session_status(
         lineage_id=lineage_root.name,
         lineage_root=lineage_root,
@@ -1034,6 +1505,10 @@ def run_research_session(
         next_action=next_action,
         why_now=why_now,
         open_risks=open_risks,
+        factor_role=route_contract["factor_role"],
+        factor_structure=route_contract["factor_structure"],
+        portfolio_expression=route_contract["portfolio_expression"],
+        neutralization_policy=route_contract["neutralization_policy"],
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
@@ -1049,16 +1524,32 @@ def _data_ready_outputs_complete(data_ready_dir: Path) -> bool:
     return all((data_ready_dir / name).exists() for name in DATA_READY_REQUIRED_OUTPUTS)
 
 
+def _csf_data_ready_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_DATA_READY_REQUIRED_OUTPUTS)
+
+
 def _signal_ready_outputs_complete(signal_ready_dir: Path) -> bool:
     return all((signal_ready_dir / name).exists() for name in SIGNAL_READY_REQUIRED_OUTPUTS)
+
+
+def _csf_signal_ready_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_SIGNAL_READY_REQUIRED_OUTPUTS)
 
 
 def _train_freeze_outputs_complete(train_dir: Path) -> bool:
     return all((train_dir / name).exists() for name in TRAIN_FREEZE_REQUIRED_OUTPUTS)
 
 
+def _csf_train_freeze_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS)
+
+
 def _test_evidence_outputs_complete(test_dir: Path) -> bool:
     return all((test_dir / name).exists() for name in TEST_EVIDENCE_REQUIRED_OUTPUTS)
+
+
+def _csf_test_evidence_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS)
 
 
 def _backtest_ready_outputs_complete(backtest_dir: Path) -> bool:
@@ -1067,8 +1558,16 @@ def _backtest_ready_outputs_complete(backtest_dir: Path) -> bool:
     )
 
 
+def _csf_backtest_ready_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_BACKTEST_READY_REQUIRED_OUTPUTS)
+
+
 def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:
     return all((holdout_dir / name).exists() for name in HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
+
+
+def _csf_holdout_validation_outputs_complete(stage_dir: Path) -> bool:
+    return all((stage_dir / name).exists() for name in CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
 
 
 def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
@@ -1102,15 +1601,26 @@ def _review_verdict_from_stage_dir(stage_dir: Path) -> str | None:
 def _latest_review_failure_status(
     lineage_root: Path,
 ) -> tuple[str | None, bool, str | None, str | None]:
-    review_stage_dirs = [
-        ("holdout_validation_review", lineage_root / "07_holdout", True),
-        ("backtest_ready_review", lineage_root / "06_backtest", True),
-        ("test_evidence_review", lineage_root / "05_test_evidence", True),
-        ("train_freeze_review", lineage_root / "04_train_freeze", True),
-        ("signal_ready_review", lineage_root / "03_signal_ready", True),
-        ("data_ready_review", lineage_root / "02_data_ready", True),
-        ("mandate_review", lineage_root / "01_mandate", False),
-    ]
+    if _is_csf_route(lineage_root):
+        review_stage_dirs = [
+            ("csf_holdout_validation_review", lineage_root / "07_csf_holdout_validation", True),
+            ("csf_backtest_ready_review", lineage_root / "06_csf_backtest_ready", True),
+            ("csf_test_evidence_review", lineage_root / "05_csf_test_evidence", True),
+            ("csf_train_freeze_review", lineage_root / "04_csf_train_freeze", True),
+            ("csf_signal_ready_review", lineage_root / "03_csf_signal_ready", True),
+            ("csf_data_ready_review", lineage_root / "02_csf_data_ready", True),
+            ("mandate_review", lineage_root / "01_mandate", False),
+        ]
+    else:
+        review_stage_dirs = [
+            ("holdout_validation_review", lineage_root / "07_holdout", True),
+            ("backtest_ready_review", lineage_root / "06_backtest", True),
+            ("test_evidence_review", lineage_root / "05_test_evidence", True),
+            ("train_freeze_review", lineage_root / "04_train_freeze", True),
+            ("signal_ready_review", lineage_root / "03_signal_ready", True),
+            ("data_ready_review", lineage_root / "02_data_ready", True),
+            ("mandate_review", lineage_root / "01_mandate", False),
+        ]
 
     for review_stage, stage_dir, routes_into_failure_handler in review_stage_dirs:
         verdict = _review_verdict_from_stage_dir(stage_dir)
@@ -1140,10 +1650,22 @@ def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
     return all((data_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
+def _csf_data_ready_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
 def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
     if (signal_ready_dir / "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(signal_ready_dir)
     return all((signal_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _csf_signal_ready_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _train_freeze_closure_complete(train_dir: Path) -> bool:
@@ -1152,10 +1674,22 @@ def _train_freeze_closure_complete(train_dir: Path) -> bool:
     return all((train_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
+def _csf_train_freeze_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
 def _test_evidence_closure_complete(test_dir: Path) -> bool:
     if (test_dir / "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(test_dir)
     return all((test_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _csf_test_evidence_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
@@ -1164,10 +1698,22 @@ def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
     return all((backtest_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
+def _csf_backtest_ready_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
 def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
     if (holdout_dir / "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(holdout_dir)
     return all((holdout_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
+def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
+    if (stage_dir / "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
@@ -1212,6 +1758,21 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "mandate_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run mandate review"
 
+    if current_stage == "csf_data_ready_confirmation_pending":
+        next_group = next_csf_data_ready_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", f"Complete csf_data_ready freeze group: {next_group}"
+        decision = read_data_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
+        return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", "Run with --confirm-data-ready or reply CONFIRM_DATA_READY <lineage_id>"
+
+    if current_stage == "csf_data_ready_author":
+        return "GO_TO_CSF_DATA_READY_CONFIRMED", "Freeze csf_data_ready artifacts"
+
+    if current_stage == "csf_data_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_data_ready review"
+
     if current_stage == "data_ready_confirmation_pending":
         next_group = next_data_ready_freeze_group(lineage_root)
         if next_group is not None:
@@ -1242,6 +1803,21 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "signal_ready_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run signal_ready review"
 
+    if current_stage == "csf_signal_ready_confirmation_pending":
+        next_group = next_csf_signal_ready_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", f"Complete csf_signal_ready freeze group: {next_group}"
+        decision = read_signal_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
+        return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", "Run with --confirm-signal-ready or reply CONFIRM_SIGNAL_READY <lineage_id>"
+
+    if current_stage == "csf_signal_ready_author":
+        return "GO_TO_CSF_SIGNAL_READY_CONFIRMED", "Freeze csf_signal_ready artifacts"
+
+    if current_stage == "csf_signal_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_signal_ready review"
+
     if current_stage == "train_freeze_confirmation_pending":
         next_group = next_train_freeze_group(lineage_root)
         if next_group is not None:
@@ -1256,6 +1832,21 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
     if current_stage == "train_freeze_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run train_freeze review"
+
+    if current_stage == "csf_train_freeze_confirmation_pending":
+        next_group = next_csf_train_freeze_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", f"Complete csf_train_freeze group: {next_group}"
+        decision = read_train_freeze_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
+        return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", "Run with --confirm-train-freeze or reply CONFIRM_TRAIN_FREEZE <lineage_id>"
+
+    if current_stage == "csf_train_freeze_author":
+        return "GO_TO_CSF_TRAIN_FREEZE_CONFIRMED", "Freeze csf_train_freeze artifacts"
+
+    if current_stage == "csf_train_freeze_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_train_freeze review"
 
     if current_stage == "test_evidence_confirmation_pending":
         next_group = next_test_evidence_group(lineage_root)
@@ -1272,6 +1863,21 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "test_evidence_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run test_evidence review"
 
+    if current_stage == "csf_test_evidence_confirmation_pending":
+        next_group = next_csf_test_evidence_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", f"Complete csf_test_evidence group: {next_group}"
+        decision = read_test_evidence_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
+        return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", "Run with --confirm-test-evidence or reply CONFIRM_TEST_EVIDENCE <lineage_id>"
+
+    if current_stage == "csf_test_evidence_author":
+        return "GO_TO_CSF_TEST_EVIDENCE_CONFIRMED", "Freeze csf_test_evidence artifacts"
+
+    if current_stage == "csf_test_evidence_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_test_evidence review"
+
     if current_stage == "backtest_ready_confirmation_pending":
         next_group = next_backtest_ready_group(lineage_root)
         if next_group is not None:
@@ -1286,6 +1892,21 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
     if current_stage == "backtest_ready_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run backtest_ready review"
+
+    if current_stage == "csf_backtest_ready_confirmation_pending":
+        next_group = next_csf_backtest_ready_group(lineage_root)
+        if next_group is not None:
+            return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", f"Complete csf_backtest_ready group: {next_group}"
+        decision = read_backtest_ready_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
+        return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", "Run with --confirm-backtest-ready or reply CONFIRM_BACKTEST_READY <lineage_id>"
+
+    if current_stage == "csf_backtest_ready_author":
+        return "GO_TO_CSF_BACKTEST_READY_CONFIRMED", "Freeze csf_backtest_ready artifacts"
+
+    if current_stage == "csf_backtest_ready_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_backtest_ready review"
 
     if current_stage == "holdout_validation_confirmation_pending":
         next_group = next_holdout_validation_group(lineage_root)
@@ -1308,6 +1929,27 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "holdout_validation_review":
         return "REVIEW_PENDING", "Write review_findings.yaml and run holdout_validation review"
 
+    if current_stage == "csf_holdout_validation_confirmation_pending":
+        next_group = next_csf_holdout_validation_group(lineage_root)
+        if next_group is not None:
+            return (
+                "GO_TO_CSF_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
+                f"Complete csf_holdout_validation group: {next_group}",
+            )
+        decision = read_holdout_validation_transition_decision(lineage_root)
+        if decision == "HOLD":
+            return "GO_TO_CSF_HOLDOUT_VALIDATION_ON_HOLD", "Wait for explicit CONFIRM_HOLDOUT_VALIDATION"
+        return (
+            "GO_TO_CSF_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
+            "Run with --confirm-holdout-validation or reply CONFIRM_HOLDOUT_VALIDATION <lineage_id>",
+        )
+
+    if current_stage == "csf_holdout_validation_author":
+        return "GO_TO_CSF_HOLDOUT_VALIDATION_CONFIRMED", "Freeze csf_holdout_validation artifacts"
+
+    if current_stage == "csf_holdout_validation_review":
+        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_holdout_validation review"
+
     return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
 
 
@@ -1326,6 +1968,15 @@ def _read_yaml(path: Path) -> dict:
     return {}
 
 
+def _optional_payload_value(value: object) -> str | None:
+    normalized = str(value).strip()
+    return normalized or None
+
+
+def _is_csf_route(lineage_root: Path) -> bool:
+    return current_research_route(lineage_root) == "cross_sectional_factor"
+
+
 def _idea_intake_approval_path(lineage_root: Path) -> Path:
     return lineage_root / "00_idea_intake" / IDEA_INTAKE_TRANSITION_APPROVAL_FILE
 
@@ -1335,24 +1986,36 @@ def _approval_path(lineage_root: Path) -> Path:
 
 
 def _data_ready_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "02_csf_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "02_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE
 
 
 def _signal_ready_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "03_csf_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "03_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
 
 
 def _train_freeze_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "04_csf_train_freeze" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
     return lineage_root / "04_train_freeze" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
 
 
 def _test_evidence_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "05_csf_test_evidence" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
     return lineage_root / "05_test_evidence" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
 
 
 def _backtest_ready_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "06_csf_backtest_ready" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "06_backtest" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
 
 
 def _holdout_validation_approval_path(lineage_root: Path) -> Path:
+    if _is_csf_route(lineage_root):
+        return lineage_root / "07_csf_holdout_validation" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
     return lineage_root / "07_holdout" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE

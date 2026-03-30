@@ -4,7 +4,7 @@ from tools.review_skillgen.render import render_stage_skill
 
 def test_render_stage_skill_includes_stage_specific_contract() -> None:
     gates = load_gate_schema("docs/gates/workflow_stage_gates.yaml")
-    checklist = load_checklist_schema("docs/check-sop/review_checklist_master.yaml")
+    checklist = load_checklist_schema("docs/review-sop/review_checklist_master.yaml")
 
     text = render_stage_skill(
         stage_key="mandate",

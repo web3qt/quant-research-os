@@ -17,10 +17,10 @@ def _write_yaml(path: Path, payload: dict) -> None:
 
 def _route_assessment() -> dict:
     return {
-        "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
-        "recommended_route": "cross_sectional_factor",
-        "why_recommended": ["Cross-asset sorting is the main expression."],
-        "why_not_other_routes": {"time_series_signal": ["Single-asset direction is secondary."]},
+        "candidate_routes": ["time_series_signal", "cross_sectional_factor"],
+        "recommended_route": "time_series_signal",
+        "why_recommended": ["Single-asset direction is the main expression."],
+        "why_not_other_routes": {"cross_sectional_factor": ["Cross-asset sorting is secondary."]},
         "route_risks": ["Universe breadth may be limited."],
         "route_decision_pending": True,
     }
@@ -167,9 +167,9 @@ def _freeze_draft(*, confirmed: bool) -> dict:
                 "confirmed": confirmed,
                 "draft": {
                     "research_question": "q",
-                    "research_route": "cross_sectional_factor",
-                    "excluded_routes": ["time_series_signal"],
-                    "route_rationale": ["Ranking across assets is the primary expression."],
+                    "research_route": "time_series_signal",
+                    "excluded_routes": ["cross_sectional_factor"],
+                    "route_rationale": ["Single-asset direction is the primary expression."],
                 },
             },
             "scope_contract": {"confirmed": confirmed, "draft": {"market": "binance perp"}},
@@ -698,7 +698,7 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
     assert status.current_stage == "mandate_confirmation_pending"
-    assert status.current_route == "cross_sectional_factor"
+    assert status.current_route == "time_series_signal"
     assert status.next_action == "Complete mandate freeze group: research_intent"
 
 
