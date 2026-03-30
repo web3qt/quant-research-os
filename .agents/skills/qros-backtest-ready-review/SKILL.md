@@ -58,6 +58,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `05_test_evidence/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] 输入白名单和交易规则来自上游冻结文件
 - [blocking] vectorbt 与 backtrader 两套正式回测均已完成
 - [blocking] 双引擎关键结果一致，semantic_gap = false

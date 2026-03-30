@@ -29,26 +29,32 @@ description: Use when failure_class is determined for test_evidence stage. Runs 
 ### `EVIDENCE_ABSENT`
 定义：正式 test 期中，核心结构证据不存在、方向错误或不足以支撑晋级。
 典型：`Q5` 没有负向回归 / `gamma >= 0` / `DC_N` 未显著高于基线 / `DownLinkGap` 不显著大于 0
+contamination_path: → backtest（无有效证据支撑白名单/best_h 冻结）, holdout
 
 ### `EVIDENCE_FRAGILE`
 定义：证据存在，但极其脆弱，对窗口、切片、参数或 symbol 子集高度敏感。
 典型：train/test 都略有边但轻微改动就断崖 / 统计只在少数参数点成立不形成平台 / 某几个 symbol 撑起总结果
+contamination_path: → backtest（脆弱证据导致冻结对象在回测中不稳定）, holdout
 
 ### `REGIME_SPECIFIC_FAIL`
 定义：证据只在极窄 market regime 成立，超出该 regime 即失效。
 典型：只在低波期有用 / 只在牛市/熊市/risk-off 有效 / 只有极端环境下才出现结构
+contamination_path: → backtest（仅 regime 内有效导致回测覆盖面不足）, holdout（holdout 时 regime 可能不同）
 
 ### `SELECTION_BIAS_FAIL`
 定义：由于多次试验、重复筛选、挑切片、挑 symbol、挑 side，导致当前 test evidence 不再可信。
 典型：记录不清试过多少变体 / `best_h`、白名单、side、阈值看过 test 结果后才定 / 反复切 test 窗、换 regime 分层直到结果成立
+contamination_path: → backtest（偏差白名单/best_h 导致回测不可信）, holdout（selection bias 在 holdout 暴露）
 
 ### `ARTIFACT_REPRO_FAIL`
 定义：test evidence 产物无法稳定复现，或无法从底层时序追溯。
 典型：同配置重跑 summary 不一致 / 汇总表与单币时序对不上 / `best_h` 来源路径不清楚 / symbol summary 与 report_by_h 不可核对
+contamination_path: → backtest（不可复现的证据导致冻结对象不可审计）, holdout
 
 ### `SCOPE_DRIFT_FAIL`
 定义：当前 test evidence 讨论的问题已经偏离原研究问题。
 典型：原题是双边结构审计，test 时只汇报对自己有利的一边 / 原题是 structure evidence，却在这层混入执行收益优化 / 原题是双边研究，却在 evidence 阶段静默改成单边
+contamination_path: → backtest（研究范围偏差导致回测验证的是错误问题）, holdout
 
 ## Triage Sequence（五步标准操作）
 

@@ -29,30 +29,37 @@ description: Use when failure_class is determined for train_freeze stage. Runs t
 ### `FREEZE_MISSING`
 定义：应该冻结的对象没有被冻结，或只有口头说明没有正式产物。
 典型：没有 `time_split.json` / 没有 `parameter_grid.yaml` / 没有 `selected_symbols_train.csv` / 没有明确 `freeze_manifest`
+contamination_path: → test_evidence, backtest, holdout（缺失冻结对象导致下游无合法输入可消费）
 
 ### `FREEZE_AMBIGUOUS`
 定义：冻结对象看似存在，但语义不明确，无法判断后续是否消费同一对象。
 典型：「高波过滤已冻结」但未说明是 train 统计还是全样本统计 / 文档声明某种 `entry_mode`，代码却仍接受其他模式
+contamination_path: → test_evidence（语义不清导致阈值/白名单消费歧义）, backtest, holdout
 
 ### `LEAKED_FREEZE_FAIL`
 定义：冻结对象直接或间接使用了 test / backtest / holdout 信息。
 典型：用全样本 `ResidualZ` 估分位阈值 / 用 test 期结果重排 `selected_symbols` / 用 backtest 表现选 `best_h` 再回写 `03` / 先看 OOS 再决定 train 门槛
+contamination_path: → test_evidence, backtest, holdout（污染的冻结阈值/白名单/参数使所有下游验证失效）
 
 ### `MULTIPLE_TESTING_FAIL`
 定义：freeze 前进行了大量搜索，但没有记录候选空间、试验次数与选择纪律。
 典型：扫了很多窗口、阈值、过滤器，只留下一个最优组合 / 没有 trial log / 无法区分哪些参数是预先声明，哪些是探索后提案
+contamination_path: → test_evidence（选择偏差导致白名单/best_h 不可信）, backtest, holdout
 
 ### `POST_FREEZE_DRIFT`
 定义：freeze 之后对冻结对象进行了静默改写，但未新开 child lineage，也未重新审批。
 典型：`selected_symbols_train.csv` 被覆盖 / `q20/q40/q60/q80` 被重算但路径不变 / `best_h` 从 `04` 回写进 `03`
+contamination_path: → test_evidence, backtest, holdout（被篡改的冻结对象使下游消费的对象与审批时不一致）
 
 ### `REPRO_FAIL`
 定义：在相同输入、相同版本下，freeze 结果无法稳定复现。
 典型：两次运行白名单不一致 / 参数集顺序依赖随机种子但未记录
+contamination_path: → test_evidence, backtest, holdout（不可复现的冻结使下游产物不可审计）
 
 ### `SCOPE_FAIL`
 定义：借 `03_train_freeze` 之名，实质上改变了研究问题。
 典型：原题是双边 `OB/OS`，freeze 时变成 `OB only` / 原题是结构审计，freeze 时变成收益最优化
+contamination_path: → test_evidence, backtest, holdout（研究范围偏差导致全 pipeline 证据偏离原问题）
 
 ## Triage Sequence（五步标准操作）
 

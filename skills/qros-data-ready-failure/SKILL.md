@@ -29,30 +29,37 @@ description: Use when failure_class is determined for data_ready stage. Runs the
 ### `DATA_MISSING`
 定义：数据源或字段缺失，导致无法满足最小研究合同。
 典型：某些 symbol 无历史文件 / pair_stats 缺失 / 关键质量标记未生成
+contamination_path: → signal_ready, train_freeze, test_evidence, backtest, holdout（基础层数据缺失阻断全 pipeline）
 
 ### `DATA_MISALIGNMENT`
 定义：时间对齐、采样频率、session 边界、收益归属窗口不正确。
 典型：`r_t` 实际对应 `t+1` / ALT 与 BTC 使用不同 bar close 定义 / train/test 边界穿越错误
+contamination_path: → signal_ready（时间错位导致信号构造错误）, train_freeze, test_evidence, backtest, holdout
 
 ### `LEAKAGE_FAIL`
 定义：未来函数、标签泄漏、样本外信息混入研究窗口。
 典型：使用未来价格补缺 / 用全样本统计量做 train 标准化 / 使用未来退市信息过滤样本
+contamination_path: → signal_ready, train_freeze, test_evidence, backtest, holdout（泄漏统计量通过标准化/阈值链式传播至所有下游阶段）
 
 ### `QUALITY_FAIL`
 定义：缺失、stale、outlier、停牌、异常成交等质量问题超出门槛。
 典型：窗口有效样本严重不足 / stale bar 连续出现但未处理
+contamination_path: → signal_ready（质量门禁缺失导致信号不可靠）, train_freeze, test_evidence
 
 ### `SCHEMA_FAIL`
 定义：字段名、类型、单位、语义不符合合同。
 典型：return 与 log_return 混用 / 百分比与小数混用 / 文档写的是 kappa，实际产物是 beta
+contamination_path: → signal_ready（schema 不匹配导致字段消费错误）, train_freeze, test_evidence
 
 ### `REPRO_FAIL`
 定义：同一版本配置下无法稳定复现同一底表或统计摘要。
 典型：重跑文件 hash 变化 / 随机处理未固化 seed / 输入源版本漂移
+contamination_path: → signal_ready, train_freeze, test_evidence, backtest, holdout（不可复现的基础层使所有下游产物不可审计）
 
 ### `SCOPE_FAIL`
 定义：数据准备已经偏离 `00_mandate` 声明的研究范围。
 典型：Mandate 只允许 1m，Data Ready 却混入 5m / Universe 被临时扩池或缩池
+contamination_path: → signal_ready, train_freeze, test_evidence, backtest, holdout（研究范围偏差导致全 pipeline 证据偏离原问题）
 
 ## Triage Sequence（五步标准操作）
 

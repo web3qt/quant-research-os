@@ -53,6 +53,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `03_signal_ready/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] 训练阈值、分位尺子、regime 切点已冻结
 - [blocking] 训练质量过滤已冻结，且未把 test/backtest 信息带入
 - [blocking] 完整参数 ledger 已保存

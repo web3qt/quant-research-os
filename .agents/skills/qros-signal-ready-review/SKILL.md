@@ -58,6 +58,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `02_data_ready/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] 信号字段合同已生成，字段 schema 固定
 - [blocking] param_id 身份已显式落地，并存在 param manifest
 - [blocking] timeseries 已落盘，且下游无需临时重算同名信号

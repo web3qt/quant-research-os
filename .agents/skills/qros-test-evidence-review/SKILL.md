@@ -69,6 +69,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `04_train_freeze/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] Test 使用的阈值完全来自 Train 冻结对象
 - [blocking] formal gate 与 audit-only 已分开记录
 - [blocking] 统计证据在独立样本上计算，未在 test 重估训练尺子

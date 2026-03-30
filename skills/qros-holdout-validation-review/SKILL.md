@@ -54,6 +54,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `06_backtest/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] Holdout 使用的规则未再修改，且完全来自 Backtest 冻结方案
 - [blocking] 单窗口和合并窗口结果均已落地
 - [blocking] 未用 holdout 调任何参数、白名单或规则

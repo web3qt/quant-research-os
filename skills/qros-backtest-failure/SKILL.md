@@ -29,22 +29,27 @@ description: Use when failure_class is determined for backtest_ready stage. Runs
 ### `ENG_FAIL`
 定义：当前失败首先来自工程、实现或 correctness 问题，而不是研究本身。
 典型：双引擎结果不一致 / 同配置复跑不一致 / 费用单位、名义仓位、账户预算换算错误 / 下单/成交/持仓状态机逻辑错误 / 时间标签或进入退出时点错位
+contamination_path: → holdout（工程问题传播到 holdout 回测）
 
 ### `EXEC_FAIL`
 定义：统计上可能仍有边，但冻结规则在真实账户级语义下不具备经济性。
 典型：`gross_pnl_sum > 0` 但 `net_pnl_sum < 0` / `gross/trade` 明显低于 `fee/trade` / 交易次数过多换手过高 / capacity 或成本稍微上调就崩 / 当前执行更像"事件持有器"而不是原研究想要的执行器
+contamination_path: → holdout（经济性不足在 holdout 会进一步恶化）
 
 ### `RESEARCH_FAIL`
 定义：回测失败暴露出上游证据冻结不足、sample-out discipline 失守或 evidence contract 不稳。
 典型：`04_test_evidence` 只在局部切片成立 / `best_h`、白名单或 freeze discipline 被破坏 / 当前 backtest 与上游冻结对象不一致 / 核心机制在交易口径下无法由上游证据支撑
+contamination_path: → holdout（上游证据不稳导致回测和 holdout 结论均不可靠）
 
 ### `THESIS_FAIL`
 定义：在合理实现、合理成本与合理执行口径下，机制本身不再成立。
 典型：边际太薄无法覆盖合理成本 / 多轮修复后仍无经济意义 / 策略身份被执行摩擦挤压得面目全非 / 继续投入已不具研究价值
+contamination_path: → holdout（机制失效在 holdout 最终确认）
 
 ### `SCOPE_FAIL`
 定义：为了拯救回测，必须改变研究主问题、Universe、执行语义或策略身份。
 典型：通过新增风险过滤器把策略改成另一类问题 / 静默改变 Universe 或持有期 / 把 alpha 线改成 execution-only 线 / 在原线内重写退出语义并改变身份
+contamination_path: → holdout（研究范围偏差在 holdout 最终确认时暴露）
 
 ## Triage Sequence（四步标准操作）
 

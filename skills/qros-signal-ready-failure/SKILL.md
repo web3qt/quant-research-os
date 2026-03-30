@@ -29,30 +29,37 @@ description: Use when failure_class is determined for signal_ready stage. Runs t
 ### `FORMULA_FAIL`
 定义：信号表达式、窗口边界、分母、门槛或样本条件实现错误。
 典型：`DC_up`/`DC_down` 分母错 / `ResidualZ` 标准化窗口不对 / `OB/OS` 阈值实现与合同不符 / `DownLinkGap` 方向写反
+contamination_path: → train_freeze, test_evidence, backtest, holdout（错误公式导致冻结阈值/证据全部失效）
 
 ### `TEMPORAL_LEAK_FAIL`
 定义：信号使用了 `t` 时点不可见信息，或提前消费未来冻结对象。
 典型：使用未来 bar 计算当前信号 / 在 `02` 层使用 `best_h`、test quantile、正式白名单 / 消费 `04_test_evidence` 结果
+contamination_path: → train_freeze, test_evidence, backtest, holdout（含未来信息的信号使所有基于它的冻结和验证失效）
 
 ### `SEMANTIC_DRIFT_FAIL`
 定义：字段名看似不变，但字段语义已不再回答原研究问题。
 典型：名叫 `ResidualZ` 实际加入未声明过滤 / 用多层 if-rule 把字段变成后验收益优化器
+contamination_path: → train_freeze, test_evidence, backtest, holdout（语义偏离导致下游所有证据不再回答原研究问题）
 
 ### `QUALITY_GATE_FAIL`
 定义：信号物化成功，但质量门禁不足，无法安全支持下游消费。
 典型：缺少 `low_sample` / 缺少 `missing_rate_window` / `pair_missing` 未正确传播 / 下游无法拒绝劣质记录
+contamination_path: → train_freeze（质量门禁缺失导致冻结质量不可控）, test_evidence, backtest
 
 ### `SCHEMA_FAIL`
 定义：字段命名、类型、序列化、分区规则或 artifact catalog 不满足合同。
 典型：字段缺失或拼写不一致 / 同名字段类型不一致 / artifact 路径与 contract 不一致
+contamination_path: → train_freeze（schema 不匹配导致冻结对象消费错误）, test_evidence
 
 ### `REPRO_FAIL`
 定义：同一输入、同一代码、同一配置下，信号输出不一致或无法稳定复算。
 典型：多次运行结果不同 / 并发/排序导致非确定性 / 浮点聚合不稳定
+contamination_path: → train_freeze, test_evidence, backtest, holdout（不可复现的信号使冻结和证据不可审计）
 
 ### `SCOPE_FAIL`
 定义：当前信号层已经引入新的研究问题，超出原谱系边界。
 典型：在 `02` 层加入新的 regime gate / 把结构诊断字段升格为交易主信号 / 从双边线静默改成单边线
+contamination_path: → train_freeze, test_evidence, backtest, holdout（研究范围偏差导致全 pipeline 证据偏离原问题）
 
 ## Triage Sequence（五步标准操作）
 

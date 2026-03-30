@@ -34,26 +34,32 @@ description: >
 ### `PURITY_FAIL`
 定义：holdout 的独立性、隔离性或复现性被破坏，当前结果不具审计效力。
 典型：holdout 时间边界提前泄漏 / holdout 曾被用于挑参数、挑 sibling、挑执行器 / holdout 结果无法独立复现 / 上游冻结对象在进入 holdout 前被替换
+contamination_path: 终端阶段，无下游。但当前 holdout 结果不可信，promotion_decision 不可基于此结果
 
 ### `GENERALIZATION_FAIL`
 定义：前序阶段看起来有效，但在真正未参与研发的数据上无法泛化。
 典型：`05_backtest` 尚可但 holdout 断崖式下降 / gross / net 同时弱化 / 交易分布、收益结构、持仓行为与此前显著不同 / 不是成本略恶化而是整体边际消失
+contamination_path: 终端阶段。泛化失败意味着策略不可部署，需回退或停止
 
 ### `FRAGILITY_FAIL`
 定义：holdout 暴露策略依赖极窄参数点、极脆弱执行点或极偶然市场片段。
 典型：当前冻结参数稍微偏移即显著恶化 / 邻域参数与当前参数结果断崖差异 / 微调成本、持有期、阈值就崩 / sibling lineages 没有稳定平台只有孤峰
+contamination_path: 终端阶段。脆弱性暴露意味着参数不是稳定平台而是孤峰
 
 ### `SELECTION_BIAS_FAIL`
 定义：当前 holdout 结果暴露前序通过主要来自多次试错后的选择偏差。
 典型：当前赢家在 holdout 上集体失效 / 当前版本只是此前大量变体的幸存者 / 记录不清试过多少变体、筛过多少切片 / holdout 排名与此前最优排序严重不一致
+contamination_path: 终端阶段。选择偏差意味着前序"通过"是虚假的
 
 ### `THESIS_FAIL`
 定义：跨样本、跨阶段地看，主假设已不具备继续价值。
 典型：多轮修复后仍然无法泛化 / 需要大量补丁才能勉强存活 / 当前线在最终保留样本上已不具研究价值
+contamination_path: 终端阶段。主假设失效 = 当前 lineage 正式终止
 
 ### `SCOPE_FAIL`
 定义：若要让 holdout 成立，必须改变研究主问题、Universe、执行语义或策略身份。
 典型：把主策略降级成辅助信号 / 改变 Universe、持有期、side contract 才能过线 / 用 holdout 结果推动新线身份而不留痕
+contamination_path: 终端阶段。但 scope 变更意味着原 lineage 结论不可延用
 
 ## Triage Sequence（四步标准操作）
 

@@ -62,6 +62,7 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
+- [blocking] 上游 `01_mandate/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] dense 时间轴已生成，目标对象时间栅格一致
 - [blocking] 缺失、stale、outlier、坏价等语义被显式标记，而非静默修复
 - [blocking] 基准腿（如 BTC）覆盖审计通过
