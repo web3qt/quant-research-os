@@ -25,6 +25,9 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 - 必须先进行一轮显式 intake 访谈，再允许写 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`
 - 必须先写 `observation`，再写 hypothesis
 - 必须同时写 `primary hypothesis` 和 `counter-hypothesis`
+- 必须先判断并回显 `candidate_routes` 与 `recommended_route`
+- `candidate_routes` 第一版只允许 `time_series_signal` 与 `cross_sectional_factor`
+- `route_assessment` 必须写清 `why_recommended`、`why_not_other_routes`、`route_risks`
 - 必须写 machine-readable `qualification_scorecard.yaml`
 - 必须写 machine-readable `idea_gate_decision.yaml`
 - 不能直接宣布进入 train、backtest 或 shadow
@@ -50,6 +53,32 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 - `GO_TO_MANDATE`
 - `NEEDS_REFRAME`
 - `DROP`
+
+## Route Assessment
+
+`idea_intake` 除了要把问题问清楚，还必须判断这条 idea 更自然属于哪类研究路线。
+
+第一版只正式支持两类 route：
+
+- `time_series_signal`
+- `cross_sectional_factor`
+
+### 必须回显的 route 内容
+
+- `candidate_routes`
+- `recommended_route`
+- `why_recommended`
+- `why_not_other_routes`
+- `route_risks`
+- `route_decision_pending`
+
+### Route 判定关注点
+
+- 这个 edge 主要发生在同一时点的资产横截面，还是单个资产跨时间路径
+- 输出更适合排序、打分，还是事件触发后的条件反应
+- 研究对象更像独立 alpha，还是更像过滤器或辅助信号
+
+`idea_intake` 只负责推荐 route，不负责冻结最终 route。
 
 ## Counter-Hypothesis Validation
 
@@ -86,11 +115,12 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 1. 先问清并回显 `observation`
 2. 再问清并回显 `primary hypothesis` 与 `counter-hypothesis`；核查 counter_hypothesis 是否是机制层面对立（见上）
 3. 再问清并回显 `market`、`universe`、`target_task`
-4. 再问清并回显 `data_source`、`bar_size`
-5. 再问清并回显 `kill criteria`；核查 kill_criteria 是否可在 intake 阶段评估（见上）
-6. 在用户回答这些关键问题前，不得替用户静默填写完整 qualification 分数和 gate verdict
-7. 只有在 intake 信息足够后，才填写 `qualification_scorecard.yaml`
-8. 然后产出 `idea_gate_decision.yaml`
-9. 若 verdict = `NEEDS_REFRAME`，告知需完整重走步骤 2-8，不得静默升格
-10. 若 verdict = `DROP`，停止，不得静默进入 mandate
-11. 只有 `GO_TO_MANDATE` 且 `approved_scope` 非空时，才允许提示进入 mandate 确认流程
+4. 再问清并回显 `candidate_routes`、`recommended_route`、`route_risks`
+5. 再问清并回显 `data_source`、`bar_size`
+6. 再问清并回显 `kill criteria`；核查 kill_criteria 是否可在 intake 阶段评估（见上）
+7. 在用户回答这些关键问题前，不得替用户静默填写完整 qualification 分数和 gate verdict
+8. 只有在 intake 信息足够后，才填写 `qualification_scorecard.yaml`
+9. 然后产出 `idea_gate_decision.yaml`
+10. 若 verdict = `NEEDS_REFRAME`，告知需完整重走步骤 2-9，不得静默升格
+11. 若 verdict = `DROP`，停止，不得静默进入 mandate
+12. 只有 `GO_TO_MANDATE` 且 `approved_scope` 非空时，才允许提示进入 mandate 确认流程

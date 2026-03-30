@@ -97,6 +97,8 @@ def main() -> int:
 
     print(f"Lineage: {status.lineage_id}")
     print(f"Current stage: {status.current_stage}")
+    if status.current_route is not None:
+        print(f"Research route: {status.current_route}")
     print(f"Gate status: {status.gate_status}")
     if status.review_verdict is not None:
         print(f"Review verdict: {status.review_verdict}")

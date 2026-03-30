@@ -9,6 +9,17 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _route_assessment() -> dict:
+    return {
+        "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
+        "recommended_route": "cross_sectional_factor",
+        "why_recommended": ["Cross-asset sorting is the primary expression."],
+        "why_not_other_routes": {"time_series_signal": ["Single-asset direction is secondary."]},
+        "route_risks": ["Universe breadth may be limited."],
+        "route_decision_pending": True,
+    }
+
+
 def _write_stage_completion_certificate(
     path: Path,
     *,
@@ -61,6 +72,9 @@ def _freeze_draft(*, confirmed: bool) -> dict:
                     "research_question": "Does BTC lead ALTs?",
                     "primary_hypothesis": "BTC leads price discovery.",
                     "counter_hypothesis": "Shared beta only.",
+                    "research_route": "cross_sectional_factor",
+                    "excluded_routes": ["time_series_signal"],
+                    "route_rationale": ["Cross-asset ranking is the primary expression."],
                 },
             },
             "scope_contract": {
@@ -509,6 +523,7 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
+            "route_assessment": _route_assessment(),
             "approved_scope": {
                 "market": "binance perp",
                 "data_source": "binance um futures klines",
@@ -574,6 +589,66 @@ def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Pat
     assert (intake_dir / "idea_intake_transition_approval.yaml").exists()
 
 
+def test_run_research_session_requires_route_assessment_before_mandate_pending(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "approved_scope": {
+                "market": "binance perp",
+                "data_source": "binance um futures klines",
+                "bar_size": "5m",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
+    )
+    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: idea_intake" in result.stdout
+    assert "route_assessment" in result.stdout
+    assert "Research route:" not in result.stdout
+    assert not (lineage_root / "01_mandate" / "mandate.md").exists()
+
+
 def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
@@ -597,6 +672,7 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
+            "route_assessment": _route_assessment(),
             "approved_scope": {
                 "market": "binance perp",
                 "data_source": "binance um futures klines",
@@ -648,6 +724,7 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
 
     assert result.returncode == 0
     assert "Current stage: mandate_review" in result.stdout
+    assert "Research route: cross_sectional_factor" in result.stdout
     assert (lineage_root / "01_mandate" / "mandate.md").exists()
 
 
@@ -661,6 +738,7 @@ def test_run_research_session_reports_mandate_review_when_review_pending(tmp_pat
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -698,6 +776,7 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -738,6 +817,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -779,6 +859,7 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",

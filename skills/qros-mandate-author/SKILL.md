@@ -17,6 +17,7 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 - `research_question_set.md`
 - `scope_canvas.yaml`
 - `idea_gate_decision.yaml`
+- `route_assessment`
 
 ## Admission Rule
 
@@ -36,6 +37,7 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 - `time_split.json`
 - `parameter_grid.yaml`
 - `run_config.toml`
+- `research_route.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -53,6 +55,9 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 - 只能消费已经通过 qualification 的 intake artifacts
 - 必须冻结研究主问题、scope、时间切分、参数边界和实现栈
 - 必须先确认 `data_source` 与 `bar_size`，再冻结 mandate
+- 必须先确认 `route_assessment`，再冻结 `research_route`
+- `research_route` 第一版只允许 `time_series_signal` 与 `cross_sectional_factor`
+- 必须写清 `excluded_routes` 与 `route_rationale`
 - 必须写清 success / failure / budget / excluded scope
 - 每一组都要先回显 freeze draft，再确认该组
 - 四组全部确认后，才允许最终 `是否确认进入 mandate`
@@ -101,12 +106,13 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 1. 读取 `idea_gate_decision.yaml`
 2. 确认 verdict = `GO_TO_MANDATE`
 3. 先收敛并确认 `research_intent`
-4. 再收敛并确认 `scope_contract`；核查 universe 是显式列表或可执行规则（见上）
-5. 再收敛并确认 `data_contract`
-6. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写
-7. 输出一份 grouped freeze summary
-8. 只有用户最终批准后，才生成正式 mandate artifacts
-9. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
-10. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`
-11. 验证每个机器可读产物都有 companion field documentation（见上）
-12. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+4. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
+5. 再收敛并确认 `scope_contract`；核查 universe 是显式列表或可执行规则（见上）
+6. 再收敛并确认 `data_contract`
+7. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写
+8. 输出一份 grouped freeze summary
+9. 只有用户最终批准后，才生成正式 mandate artifacts
+10. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
+11. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`、`research_route.yaml`
+12. 验证每个机器可读产物都有 companion field documentation（见上）
+13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
