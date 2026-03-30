@@ -27,6 +27,12 @@
 3. 核对 `required_inputs / required_outputs / formal_gate / audit_only / verdict_rules / rollback_rules`；
 4. 先判断 formal gate，再记录 audit-only 发现，最后给出统一 verdict。
 
+### Repo 职责边界
+
+QROS 约束的是正式研究流程与 artifact 治理，而不是把本仓库当作具体策略研究代码的承载体。
+
+对于某条实际研究线，agent 应在当前研究仓中生成因子、检验、回测与验证实现；本规范只要求这些实现形成可审查、可复现、可追溯的正式产物，并通过对应 gate。空目录、占位文件或只有语义说明的文档，都不能被当作阶段完成。
+
 ---
 
 ## 1. 指导思想
