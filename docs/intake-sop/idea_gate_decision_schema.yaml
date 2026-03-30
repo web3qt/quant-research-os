@@ -13,6 +13,7 @@ required_fields:
   - idea_id
   - verdict
   - why
+  - route_assessment
   - approved_scope
   - required_reframe_actions
   - rollback_target
@@ -24,6 +25,8 @@ verdict_rules:
       - "approved_scope 非空"
       - "counter_hypothesis 已写明"
       - "kill_criteria 已写明"
+      - "route_assessment 非空"
+      - "route_assessment.candidate_routes 只包含 time_series_signal / cross_sectional_factor"
   NEEDS_REFRAME:
     meaning: "方向可研究，但当前边界或变量定义不足，需重写后再审"
     requires:
@@ -40,6 +43,19 @@ example:
     - "观察变量可定义"
     - "存在 plausible mechanism"
     - "可先做事件研究 baseline"
+  route_assessment:
+    candidate_routes:
+      - "time_series_signal"
+      - "cross_sectional_factor"
+    recommended_route: "time_series_signal"
+    why_recommended:
+      - "该假设更像单资产随时间的事件后路径变化"
+    why_not_other_routes:
+      cross_sectional_factor:
+        - "不是同一时点资产之间的排序问题"
+    route_risks:
+      - "若事件定义过宽，route 可能退化成噪声触发"
+    route_decision_pending: true
   approved_scope:
     market: "Binance perpetual"
     universe: "top liquidity alts"

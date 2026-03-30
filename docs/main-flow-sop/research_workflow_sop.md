@@ -43,6 +43,7 @@
 | **Companion field documentation** | 任何机器可读 artifact 必须同时有 `artifact_catalog.md` + `field_dictionary.md` |
 | **Multiple testing awareness** | 参数搜索是多重假设检验，Test Evidence 阶段必须做数据挖掘校正 |
 | **Regime stationarity awareness** | 跨窗口验证时须审计 regime 分布偏移，不把 regime 不匹配直接归因为策略失效 |
+| **Route before stage contract** | 先冻结 research route，再让 `signal_ready / train / test / backtest` 按 route 分流语义 |
 
 ---
 
@@ -82,7 +83,7 @@
 
 **核心问题**：这个想法是否成熟到值得开始冻结研究边界？
 
-**必须完成**：intake 访谈（observation / primary hypothesis / counter hypothesis / kill criteria）；6 维度 qualification 评分（observability / mechanism_plausibility / tradeability / data_feasibility / scoping_clarity / distinctiveness）；scope canvas；gate decision。
+**必须完成**：intake 访谈（observation / primary hypothesis / counter hypothesis / kill criteria）；6 维度 qualification 评分（observability / mechanism_plausibility / tradeability / data_feasibility / scoping_clarity / distinctiveness）；route assessment；scope canvas；gate decision。
 
 **禁止**：访谈期间查看任何真实数据结果；counter_hypothesis 只是 primary hypothesis 的弱化版；GO_TO_MANDATE 后不经交互式确认直接生成 mandate。
 
@@ -96,7 +97,7 @@
 
 **核心问题**：这条研究线研究什么，不研究什么。
 
-**必须冻结**：主问题、时间窗切分、Universe 口径、允许字段族（含层级和消费阶段说明）、信号机制与表达式模板（含符号说明、时间语义、无前视约定）、参数边界与字典、容量/拥挤审计口径、实现栈。
+**必须冻结**：主问题、研究路线、时间窗切分、Universe 口径、允许字段族（含层级和消费阶段说明）、信号机制与表达式模板（含符号说明、时间语义、无前视约定）、参数边界与字典、容量/拥挤审计口径、实现栈。
 
 **禁止**：一边抽数据一边改 Universe；先扫结果再回写研究边界；未冻结 time_split 就看 test/backtest。
 

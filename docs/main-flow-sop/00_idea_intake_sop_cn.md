@@ -135,10 +135,12 @@ Idea Intake 分为三个阶段：**访谈收敛 → Qualification 评分 → Gat
   1. 将访谈中的假设整理成结构化研究问题集合。
   2. 区分主问题（primary research question）和辅助问题（secondary questions）。
   3. 写清楚每个问题的"可证伪条件"：什么样的证据会否定这个问题？
+  4. 同步完成 `route_assessment`：判断这条研究线更适合 `time_series_signal` 还是 `cross_sectional_factor`，并写明为什么不是另一类。
 - **输出**：`research_question_set.md`。
 - **验证点**：
   - 主问题是否只有一个？
   - 每个问题是否都有可证伪条件？
+  - `route_assessment` 是否已给出 `candidate_routes`、`recommended_route` 和 `why_not_other_routes`？
 
 ## 步骤 4：填写 Scope Canvas
 
@@ -191,11 +193,13 @@ Idea Intake 分为三个阶段：**访谈收敛 → Qualification 评分 → Gat
      - `DROP`：不值得投入进一步研究预算。
   2. 填写 `idea_gate_decision.yaml`，覆盖所有 required fields：`idea_id`、`verdict`、`why`、`approved_scope`、`required_reframe_actions`、`rollback_target`。
   3. `GO_TO_MANDATE` 的 `approved_scope` 必须非空（至少包含 market、universe、bar_size、horizons、target_task、excluded_scope）。
+  4. `GO_TO_MANDATE` 时必须同时提供非空 `route_assessment`，其 `candidate_routes` 只允许 `time_series_signal` 或 `cross_sectional_factor`。
 - **输出**：`idea_gate_decision.yaml`（machine-readable，符合 schema）。
 - **验证点**：
   - verdict 是否是三个允许值之一？
   - `GO_TO_MANDATE` 时 `approved_scope` 是否非空？
   - `NEEDS_REFRAME` 时 `required_reframe_actions` 是否非空？
+  - `GO_TO_MANDATE` 时 `route_assessment` 是否非空？
 
 ## 步骤 7：生成 artifact_catalog
 
@@ -218,7 +222,7 @@ Idea Intake 分为三个阶段：**访谈收敛 → Qualification 评分 → Gat
 |----------|------|------|
 | `idea_brief.md` | 人类可读 | 访谈结论、原始想法、假设陈述 |
 | `observation_hypothesis_map.md` | 人类可读 | 观察与假设的对应关系 |
-| `research_question_set.md` | 人类可读 | 结构化研究问题集合与可证伪条件 |
+| `research_question_set.md` | 人类可读 | 结构化研究问题集合、route assessment 与可证伪条件 |
 | `scope_canvas.yaml` | 机器可读 | 粗口径 scope 定义（market/universe/bar_size/horizons） |
 | `qualification_scorecard.yaml` | 机器可读 | 6 维度评分结果 |
 | `idea_gate_decision.yaml` | 机器可读 | 正式 gate verdict 与 approved scope |
@@ -289,6 +293,25 @@ approved_scope:
     - "cross-exchange propagation"
 required_reframe_actions: []
 rollback_target: "00_idea_intake"
+```
+
+### route_assessment（最小示例）
+
+```yaml
+route_assessment:
+  candidate_routes:
+    - "cross_sectional_factor"
+    - "time_series_signal"
+  recommended_route: "cross_sectional_factor"
+  why_recommended:
+    - "同一时点的横截面排序更符合这个假设"
+    - "输出更像选强弱而不是单资产绝对方向"
+  why_not_other_routes:
+    time_series_signal:
+      - "核心问题不是单资产随时间的路径预测"
+  route_risks:
+    - "universe 太窄时横截面排序可能不稳定"
+  route_decision_pending: true
 ```
 
 ---
