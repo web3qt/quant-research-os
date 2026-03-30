@@ -1,0 +1,10 @@
+research_route: "cross_sectional_factor"
+excluded_routes:
+  - "time_series_signal"
+route_rationale:
+  - "问题本质是横截面排序，而不是单资产时间序列预测"
+  - "下游证据应该优先看 Rank IC 和分组收益"
+route_change_policy:
+  before_downstream_freeze: "rollback_to_mandate"
+  after_downstream_freeze: "child_lineage"
+route_contract_version: "v1"

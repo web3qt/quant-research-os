@@ -9,6 +9,26 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _route_assessment(
+    *,
+    candidate_routes: list[str] | None = None,
+    recommended_route: str = "cross_sectional_factor",
+    why_not_other_routes: dict[str, list[str]] | None = None,
+) -> dict:
+    candidate_routes = candidate_routes or ["cross_sectional_factor", "time_series_signal"]
+    why_not_other_routes = why_not_other_routes or {
+        "time_series_signal": ["Single-asset direction is secondary to the ranking thesis."]
+    }
+    return {
+        "candidate_routes": candidate_routes,
+        "recommended_route": recommended_route,
+        "why_recommended": ["Cross-asset ranking expresses the edge best."],
+        "why_not_other_routes": why_not_other_routes,
+        "route_risks": ["Universe breadth may still be tight."],
+        "route_decision_pending": True,
+    }
+
+
 def _mandate_freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -18,6 +38,11 @@ def _mandate_freeze_draft(*, confirmed: bool) -> dict:
                     "research_question": "Does BTC shock lead ALT follow-through?",
                     "primary_hypothesis": "BTC drives price discovery for high-liquidity ALTs.",
                     "counter_hypothesis": "Observed moves are only shared beta.",
+                    "research_route": "cross_sectional_factor",
+                    "excluded_routes": ["time_series_signal"],
+                    "route_rationale": [
+                        "The thesis is expressed as cross-asset ranking rather than single-asset direction."
+                    ],
                     "success_criteria": ["ALT response remains after cost and beta controls."],
                     "failure_criteria": ["Lead-lag disappears after beta normalization."],
                     "excluded_topics": ["Low liquidity tails"],
@@ -266,7 +291,8 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
         {
             "idea_id": "btc_alt_transmission_v1",
             "verdict": "GO_TO_MANDATE",
-            "why": ["variables are observable"],
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
             "approved_scope": {
                 "market": "Binance perpetual",
                 "data_source": "Binance UM futures klines",
@@ -317,8 +343,12 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert (mandate_dir / "time_split.json").exists()
     assert (mandate_dir / "parameter_grid.yaml").exists()
     assert (mandate_dir / "run_config.toml").exists()
+    assert (mandate_dir / "research_route.yaml").exists()
     assert (mandate_dir / "artifact_catalog.md").exists()
     assert (mandate_dir / "field_dictionary.md").exists()
+    route_payload = yaml.safe_load((mandate_dir / "research_route.yaml").read_text(encoding="utf-8"))
+    assert route_payload["research_route"] == "cross_sectional_factor"
+    assert route_payload["excluded_routes"] == ["time_series_signal"]
     assert "BTC drives price discovery for high-liquidity ALTs." in (mandate_dir / "mandate.md").read_text(
         encoding="utf-8"
     )
@@ -331,7 +361,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert "Built mandate artifacts" in result.stdout
 
 
-def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
+def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
@@ -346,7 +376,151 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
             "why": ["variables are observable"],
             "approved_scope": {
                 "market": "Binance perpetual",
-                "universe": "top liquidity alts",
+                "data_source": "Binance UM futures klines",
+                "bar_size": "5m",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "Binance perpetual",
+            "data_source": "Binance UM futures klines",
+            "bar_size": "5m",
+        },
+    )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "route_assessment" in result.stderr
+    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+
+
+def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_alt_transmission_v1",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["variables are observable"],
+            "route_assessment": _route_assessment(
+                candidate_routes=["cross_sectional_factor", "event_trigger"],
+                why_not_other_routes={"event_trigger": ["The thesis is not event-first."]},
+            ),
+            "approved_scope": {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "bar_size": "5m",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "Binance perpetual",
+            "data_source": "Binance UM futures klines",
+            "bar_size": "5m",
+        },
+    )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "unsupported route: event_trigger" in result.stderr
+    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+
+
+def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    freeze_draft = _mandate_freeze_draft(confirmed=True)
+    freeze_draft["groups"]["research_intent"]["draft"]["excluded_routes"] = ["cross_sectional_factor"]
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_alt_transmission_v1",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["variables are observable"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "bar_size": "5m",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "Binance perpetual",
+            "data_source": "Binance UM futures klines",
+            "bar_size": "5m",
+        },
+    )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", freeze_draft)
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "excluded_routes" in result.stderr
+    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+
+
+def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_alt_transmission_v1",
+                "verdict": "GO_TO_MANDATE",
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
+                "approved_scope": {
+                    "market": "Binance perpetual",
+                    "universe": "top liquidity alts",
                 "target_task": "event-driven relative return study",
                 "excluded_scope": ["low liquidity tails"],
             },
@@ -496,11 +670,12 @@ def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Pa
         intake_dir / "idea_gate_decision.yaml",
         {
             "idea_id": "btc_alt_transmission_v1",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["variables are observable"],
-            "approved_scope": {
-                "market": "Binance perpetual",
-                "data_source": "Binance UM futures klines",
+                "verdict": "GO_TO_MANDATE",
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
+                "approved_scope": {
+                    "market": "Binance perpetual",
+                    "data_source": "Binance UM futures klines",
                 "bar_size": "5m",
             },
             "required_reframe_actions": [],

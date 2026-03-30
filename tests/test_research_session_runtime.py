@@ -15,6 +15,17 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _route_assessment() -> dict:
+    return {
+        "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
+        "recommended_route": "cross_sectional_factor",
+        "why_recommended": ["Cross-asset sorting is the main expression."],
+        "why_not_other_routes": {"time_series_signal": ["Single-asset direction is secondary."]},
+        "route_risks": ["Universe breadth may be limited."],
+        "route_decision_pending": True,
+    }
+
+
 def _write_stage_completion_certificate(
     path: Path,
     *,
@@ -37,6 +48,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         "mandate": [
             "mandate.md",
             "research_scope.md",
+            "research_route.yaml",
             "time_split.json",
             "parameter_grid.yaml",
             "run_config.toml",
@@ -151,7 +163,15 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
-            "research_intent": {"confirmed": confirmed, "draft": {"research_question": "q"}},
+            "research_intent": {
+                "confirmed": confirmed,
+                "draft": {
+                    "research_question": "q",
+                    "research_route": "cross_sectional_factor",
+                    "excluded_routes": ["time_series_signal"],
+                    "route_rationale": ["Ranking across assets is the primary expression."],
+                },
+            },
             "scope_contract": {"confirmed": confirmed, "draft": {"market": "binance perp"}},
             "data_contract": {
                 "confirmed": confirmed,
@@ -593,6 +613,7 @@ def test_detect_session_stage_returns_pending_confirmation_when_admitted_but_not
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
+            "route_assessment": _route_assessment(),
             "approved_scope": {"market": "binance perp"},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
@@ -614,6 +635,7 @@ def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitl
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
+            "route_assessment": _route_assessment(),
             "approved_scope": {"market": "binance perp"},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
@@ -665,6 +687,7 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
             "idea_id": "btc_leads_alts",
             "verdict": "GO_TO_MANDATE",
             "why": ["qualified"],
+            "route_assessment": _route_assessment(),
             "approved_scope": {"market": "binance perp"},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
@@ -675,7 +698,44 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
     assert status.current_stage == "mandate_confirmation_pending"
+    assert status.current_route == "cross_sectional_factor"
     assert status.next_action == "Complete mandate freeze group: research_intent"
+
+
+def test_run_research_session_keeps_intake_open_when_route_assessment_is_missing(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "idea_intake"
+    assert status.current_route is None
+    assert status.gate_status == "IN_PROGRESS"
+    assert "route_assessment" in status.next_action
 
 
 def test_run_research_session_stops_at_intake_confirmation_pending_for_new_lineage(
@@ -697,6 +757,7 @@ def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exis
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -717,6 +778,7 @@ def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_ar
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -738,6 +800,7 @@ def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_revie
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -758,6 +821,7 @@ def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Pat
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -784,6 +848,7 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
     for name in [
         "mandate.md",
         "research_scope.md",
+        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "run_config.toml",
@@ -1565,6 +1630,7 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
         lineage_id="btc_leads_alts",
         lineage_root=lineage_root,
         current_stage="idea_intake",
+        current_route=None,
         artifacts_written=["00_idea_intake/idea_brief.md"],
         gate_status="NEEDS_REFRAME",
         next_action="Fill qualification inputs",

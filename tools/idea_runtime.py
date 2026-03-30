@@ -14,6 +14,10 @@ MANDATE_FREEZE_GROUP_ORDER = [
     "data_contract",
     "execution_contract",
 ]
+SUPPORTED_RESEARCH_ROUTES = {
+    "time_series_signal",
+    "cross_sectional_factor",
+}
 
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
@@ -29,6 +33,9 @@ def _blank_mandate_freeze_draft() -> dict[str, Any]:
                     "research_question": "",
                     "primary_hypothesis": "",
                     "counter_hypothesis": "",
+                    "research_route": "",
+                    "excluded_routes": [],
+                    "route_rationale": [],
                     "success_criteria": [],
                     "failure_criteria": [],
                     "excluded_topics": [],
@@ -142,6 +149,14 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
             "idea_id": lineage_root.name,
             "verdict": "NEEDS_REFRAME",
             "why": [],
+            "route_assessment": {
+                "candidate_routes": [],
+                "recommended_route": "",
+                "why_recommended": [],
+                "why_not_other_routes": {},
+                "route_risks": [],
+                "route_decision_pending": True,
+            },
             "approved_scope": {},
             "required_reframe_actions": [],
             "rollback_target": "00_idea_intake",
@@ -160,6 +175,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
 
     if gate_decision.get("verdict") != "GO_TO_MANDATE":
         raise ValueError("idea_gate_decision verdict must be GO_TO_MANDATE before mandate build")
+    route_assessment = _require_route_assessment(gate_decision)
 
     mandate_dir.mkdir(parents=True, exist_ok=True)
     freeze_groups = _require_confirmed_freeze_groups(intake_dir)
@@ -174,6 +190,10 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     research_question = _required_draft_value(research_intent, "research_question")
     primary_hypothesis = _required_draft_value(research_intent, "primary_hypothesis")
     counter_hypothesis = _required_draft_value(research_intent, "counter_hypothesis")
+    research_route = _require_supported_route(
+        _required_draft_value(research_intent, "research_route"),
+        field_name="confirmed mandate inputs research_route",
+    )
     market = _required_draft_value(scope_contract, "market")
     universe = _required_draft_value(scope_contract, "universe")
     target_task = _required_draft_value(scope_contract, "target_task")
@@ -185,9 +205,25 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     success_criteria = _string_list(research_intent.get("success_criteria", []))
     failure_criteria = _string_list(research_intent.get("failure_criteria", []))
     excluded_topics = _string_list(research_intent.get("excluded_topics", []))
+    excluded_routes = _require_supported_route_list(
+        _string_list(research_intent.get("excluded_routes", [])),
+        field_name="confirmed mandate inputs excluded_routes",
+    )
+    route_rationale = _string_list(research_intent.get("route_rationale", []))
     excluded_scope = _string_list(scope_contract.get("excluded_scope", []))
     timestamp_semantics = _required_draft_value(data_contract, "timestamp_semantics")
     no_lookahead_guardrail = _required_draft_value(data_contract, "no_lookahead_guardrail")
+    if not excluded_routes:
+        raise ValueError("confirmed mandate inputs missing: excluded_routes")
+    if not route_rationale:
+        raise ValueError("confirmed mandate inputs missing: route_rationale")
+    if research_route not in route_assessment["candidate_routes"]:
+        raise ValueError("confirmed mandate inputs research_route must be one of intake candidate_routes")
+    rejected_routes = {route for route in route_assessment["candidate_routes"] if route != research_route}
+    if set(excluded_routes) != rejected_routes:
+        raise ValueError("confirmed mandate inputs excluded_routes must match rejected intake candidate_routes")
+    if research_route in excluded_routes:
+        raise ValueError("confirmed mandate inputs excluded_routes cannot include research_route")
 
     (mandate_dir / "mandate.md").write_text(
         "\n".join(
@@ -205,7 +241,13 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 f"- Research question: {research_question}",
                 f"- Primary hypothesis: {primary_hypothesis}",
                 f"- Counter-hypothesis: {counter_hypothesis}",
+                f"- Research route: {research_route}",
+                f"- Excluded routes: {', '.join(excluded_routes)}",
                 f"- Excluded topics: {', '.join(excluded_topics)}",
+                "",
+                "## Route Rationale",
+                "",
+                *[f"- {item}" for item in route_rationale],
                 "",
                 "## Success Criteria",
                 "",
@@ -233,6 +275,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "## Gate Basis",
                 "",
                 "- idea_gate_decision.yaml verdict = GO_TO_MANDATE",
+                f"- Intake recommended route: {route_assessment['recommended_route']}",
             ]
         )
         + "\n",
@@ -256,6 +299,19 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         )
         + "\n",
         encoding="utf-8",
+    )
+    _dump_yaml(
+        mandate_dir / "research_route.yaml",
+        {
+            "research_route": research_route,
+            "excluded_routes": excluded_routes,
+            "route_rationale": route_rationale,
+            "route_change_policy": {
+                "before_downstream_freeze": "rollback_to_mandate",
+                "after_downstream_freeze": "child_lineage",
+            },
+            "route_contract_version": "v1",
+        },
     )
 
     (mandate_dir / "time_split.json").write_text(
@@ -298,7 +354,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     (mandate_dir / "artifact_catalog.md").write_text(
-        "# Artifact Catalog\n\n- mandate.md\n- research_scope.md\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
+        "# Artifact Catalog\n\n- mandate.md\n- research_scope.md\n- research_route.yaml\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
         encoding="utf-8",
     )
     (mandate_dir / "field_dictionary.md").write_text(
@@ -306,6 +362,8 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 "# Field Dictionary",
                 "",
+                f"- `research_route`: frozen route contract for this mandate, currently `{research_route}`.",
+                f"- `excluded_routes`: alternative routes rejected at mandate freeze, currently `{excluded_routes}`.",
                 f"- `data_source`: frozen upstream source for this mandate, currently `{data_source}`.",
                 f"- `bar_size`: frozen research cadence for this mandate, currently `{bar_size}`.",
                 f"- `holding_horizons`: frozen evaluation horizons, currently `{holding_horizons}`.",
@@ -362,3 +420,57 @@ def _string_list(raw_value: Any) -> list[str]:
     if not isinstance(raw_value, list):
         return []
     return [str(item) for item in raw_value if str(item).strip()]
+
+
+def _require_route_assessment(gate_decision: dict[str, Any]) -> dict[str, Any]:
+    route_assessment = gate_decision.get("route_assessment")
+    if not isinstance(route_assessment, dict):
+        raise ValueError("idea_gate_decision missing route_assessment for GO_TO_MANDATE")
+
+    recommended_route = _require_supported_route(
+        str(route_assessment.get("recommended_route", "")).strip(),
+        field_name="idea_gate_decision route_assessment recommended_route",
+    )
+    candidate_routes = _require_supported_route_list(
+        _string_list(route_assessment.get("candidate_routes", [])),
+        field_name="idea_gate_decision route_assessment candidate_routes",
+    )
+    why_recommended = _string_list(route_assessment.get("why_recommended", []))
+    why_not_other_routes = route_assessment.get("why_not_other_routes", {})
+
+    if not candidate_routes:
+        raise ValueError("idea_gate_decision route_assessment missing candidate_routes")
+    if len(candidate_routes) < 2:
+        raise ValueError("idea_gate_decision route_assessment candidate_routes must include at least two routes")
+    if recommended_route not in candidate_routes:
+        raise ValueError("idea_gate_decision route_assessment recommended_route must be in candidate_routes")
+    if not why_recommended:
+        raise ValueError("idea_gate_decision route_assessment missing why_recommended")
+    if not isinstance(why_not_other_routes, dict):
+        raise ValueError("idea_gate_decision route_assessment missing why_not_other_routes")
+    rejected_routes = {route for route in candidate_routes if route != recommended_route}
+    documented_rejections = {str(route).strip() for route in why_not_other_routes if str(route).strip()}
+    if rejected_routes - documented_rejections:
+        raise ValueError("idea_gate_decision route_assessment missing why_not_other_routes entries")
+    return route_assessment
+
+
+def _require_supported_route(route_value: str, *, field_name: str) -> str:
+    route_name = str(route_value).strip()
+    if not route_name:
+        raise ValueError(f"{field_name} missing")
+    if route_name not in SUPPORTED_RESEARCH_ROUTES:
+        raise ValueError(f"{field_name} unsupported route: {route_name}")
+    return route_name
+
+
+def _require_supported_route_list(route_values: list[str], *, field_name: str) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for raw_route in route_values:
+        route_name = _require_supported_route(raw_route, field_name=field_name)
+        if route_name in seen:
+            raise ValueError(f"{field_name} contains duplicate route: {route_name}")
+        normalized.append(route_name)
+        seen.add(route_name)
+    return normalized

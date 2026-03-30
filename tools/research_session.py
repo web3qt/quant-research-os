@@ -17,6 +17,8 @@ from tools.data_ready_runtime import (
 from tools.idea_runtime import (
     MANDATE_FREEZE_DRAFT_FILE,
     MANDATE_FREEZE_GROUP_ORDER,
+    SUPPORTED_RESEARCH_ROUTES,
+    _require_route_assessment,
     build_mandate_from_intake,
     scaffold_idea_intake,
 )
@@ -91,6 +93,7 @@ HoldoutValidationTransitionDecision = Literal["CONFIRM_HOLDOUT_VALIDATION", "HOL
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
     "research_scope.md",
+    "research_route.yaml",
     "time_split.json",
     "parameter_grid.yaml",
     "run_config.toml",
@@ -189,6 +192,7 @@ class SessionContext:
     lineage_id: str
     lineage_root: Path
     current_stage: SessionStage
+    current_route: str | None
     artifacts_written: list[str]
     gate_status: str
     next_action: str
@@ -295,6 +299,8 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
 
     gate_decision = _read_yaml(gate_path)
     if gate_decision.get("verdict") != "GO_TO_MANDATE":
+        return "idea_intake"
+    if _route_assessment_error(gate_decision) is not None:
         return "idea_intake"
 
     approval_decision = read_mandate_transition_decision(lineage_root)
@@ -753,6 +759,27 @@ def session_transition_summary(lineage_root: Path) -> tuple[list[str], list[str]
     return why_now, open_risks
 
 
+def current_research_route(lineage_root: Path) -> str | None:
+    mandate_route_path = lineage_root / "01_mandate" / "research_route.yaml"
+    if mandate_route_path.exists():
+        route_payload = _read_yaml(mandate_route_path)
+        route_value = str(route_payload.get("research_route", "")).strip()
+        if route_value in SUPPORTED_RESEARCH_ROUTES:
+            return route_value
+
+    gate_path = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
+    if gate_path.exists():
+        gate_payload = _read_yaml(gate_path)
+        if _route_assessment_error(gate_payload) is None:
+            route_assessment = gate_payload.get("route_assessment", {})
+            if isinstance(route_assessment, dict):
+                route_value = str(route_assessment.get("recommended_route", "")).strip()
+                if route_value in SUPPORTED_RESEARCH_ROUTES:
+                    return route_value
+
+    return None
+
+
 def next_mandate_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
     if not draft_path.exists():
@@ -849,6 +876,7 @@ def summarize_session_status(
     lineage_id: str,
     lineage_root: Path,
     current_stage: SessionStage,
+    current_route: str | None,
     artifacts_written: list[str],
     gate_status: str,
     next_action: str,
@@ -863,6 +891,7 @@ def summarize_session_status(
         lineage_id=lineage_id,
         lineage_root=lineage_root,
         current_stage=current_stage,
+        current_route=current_route,
         artifacts_written=artifacts_written,
         gate_status=gate_status,
         next_action=next_action,
@@ -994,10 +1023,12 @@ def run_research_session(
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
     why_now, open_risks = session_transition_summary(lineage_root)
+    current_route = current_research_route(lineage_root)
     return summarize_session_status(
         lineage_id=lineage_root.name,
         lineage_root=lineage_root,
         current_stage=current_stage,
+        current_route=current_route,
         artifacts_written=artifacts_written,
         gate_status=gate_status,
         next_action=next_action,
@@ -1143,8 +1174,12 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     intake_gate = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
     if current_stage == "idea_intake":
         if intake_gate.exists():
-            verdict = _read_yaml(intake_gate).get("verdict", "")
+            gate_payload = _read_yaml(intake_gate)
+            verdict = gate_payload.get("verdict", "")
             if verdict == "GO_TO_MANDATE":
+                route_issue = _route_assessment_error(gate_payload)
+                if route_issue is not None:
+                    return "IN_PROGRESS", f"Complete route_assessment before mandate: {route_issue}"
                 return "GO_TO_MANDATE_PENDING_CONFIRMATION", "Await explicit CONFIRM_MANDATE"
             if verdict == "DROP":
                 return "DROP", "Reframe or terminate the idea"
@@ -1274,6 +1309,14 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "REVIEW_PENDING", "Write review_findings.yaml and run holdout_validation review"
 
     return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
+
+
+def _route_assessment_error(gate_decision: dict) -> str | None:
+    try:
+        _require_route_assessment(gate_decision)
+    except ValueError as exc:
+        return str(exc)
+    return None
 
 
 def _read_yaml(path: Path) -> dict:
