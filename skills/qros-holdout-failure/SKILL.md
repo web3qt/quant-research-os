@@ -1,6 +1,11 @@
 ---
 name: qros-holdout-failure
-description: Use when failure_class is determined for holdout_validation stage. Runs the full holdout triage sequence, enforces FAIL-HARD/FAIL-SOFT/PASS_WITH_RESTRICTIONS classification, and produces stage-specific failure artifacts. NOTE: holdout default max 1 retry, only for PURITY_FAIL or artifact/repro issues.
+description: >
+  Use when failure_class is determined for holdout_validation stage. Runs the
+  full holdout triage sequence, enforces FAIL-HARD/FAIL-SOFT/
+  PASS_WITH_RESTRICTIONS classification, and produces stage-specific failure
+  artifacts. NOTE: holdout default max 1 retry, only for PURITY_FAIL or
+  artifact/repro issues.
 ---
 
 # QROS Holdout Failure Handler
