@@ -1,0 +1,23 @@
+research_idea: "BTC 期现基差与持仓量 — 市场情绪指标"
+mandate_snapshot:
+  research_question: "BTC 期货基差 + 未平仓合约变化是否构成独立情绪因子"
+  universe: "BTC spot + futures (CME, Binance)"
+  time_window: "2022-01-01 to 2024-12-31"
+  frequency: "daily"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_spot_close: ✓
+  - cme_basis: (futures_close - spot_close) / spot_close ✓
+  - cme_open_interest: daily ✓
+  - binance_funding_rate: 8h aggregated to daily ✓
+  - Data quality:
+    - CME basis: 15 days missing (US holidays — CME closed)
+    - CME OI: 15 days missing (same holidays)
+    - Binance funding: 0 days missing
+  - Treatment:
+    - CME missing days: linearly interpolated between adjacent trading days
+    - Rationale: "CME basis is smooth and interpolation should be accurate"
+lineage_context:
+  idea_intake_output_summary: "Market data for closed exchanges must not be imputed."
+  mandate_freeze_hash: "md5:o5p6q7r8"

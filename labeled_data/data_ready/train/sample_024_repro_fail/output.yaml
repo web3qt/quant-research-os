@@ -1,0 +1,16 @@
+correct_class: REPRO_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  The file hash varies between runs because API pagination returns data in
+  random order. While the researcher claims "minor differences are due to
+  floating point precision," the root cause is non-deterministic data ordering
+  from the API. Row count is consistent but ORDER matters — if deduplication
+  by timestamp keeps a different row in different runs, and the underlying
+  data has microsecond-level timestamp collisions, different runs produce
+  different datasets. The correct fix is to sort results by timestamp before
+  writing, ensuring deterministic output. FAIL-SOFT because the magnitude
+  of differences is small, but the principle violation is clear: same config
+  → same hash is required.
+reviewer_should_ask: "Can you sort the data by timestamp before writing? What is the exact set of rows that differ between runs?"
+should_not_confuse: [QUALITY_FAIL]
+confusion_note: "Non-deterministic ordering is not a quality issue — the data values are correct. The issue is reproducibility: different runs produce different output files."

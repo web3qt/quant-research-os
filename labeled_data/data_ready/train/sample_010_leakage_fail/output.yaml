@@ -1,0 +1,15 @@
+correct_class: LEAKAGE_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  CRITICAL: Returns are standardized using FULL-SAMPLE mean (0.0012) and std
+  (0.0387) computed over the entire 2018-2024 period, which includes the test
+  period (2023-2024). This is textbook look-ahead bias — the standardization
+  parameters incorporate information from the future test set. The GARCH model
+  is then fitted on these pre-contaminated standardized returns. This directly
+  violates the mandate's constraint "No information from test period may be
+  used in training." The correct approach is to compute mean and std from the
+  training set only (2018-2022) and apply those to the test set. FAIL-HARD
+  per the triage rule: "使用全样本统计量做局部标准化" → automatic LEAKAGE_FAIL.
+reviewer_should_ask: "What is the performance difference when using train-only vs full-sample standardization? This will reveal the magnitude of leakage."
+should_not_confuse: [DATA_MISALIGNMENT, QUALITY_FAIL]
+confusion_note: "Not DATA_MISALIGNMENT because the timestamps are correct. Not QUALITY_FAIL because the issue isn't about data degradation. This is pure temporal contamination."

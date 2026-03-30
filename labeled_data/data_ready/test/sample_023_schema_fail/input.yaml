@@ -1,0 +1,21 @@
+research_idea: "BTC 现货 ETF 资金流入与价格影响"
+mandate_snapshot:
+  research_question: "BTC 现货 ETF 的每日净流入量是否显著影响 BTC 价格"
+  universe: "BTC spot + BTC spot ETFs (IBIT, FBTC, ARKB, BITB, HODL)"
+  time_window: "2024-01-11 to 2024-12-31"
+  frequency: "daily"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_daily_close: ✓
+  - etf_net_flow: sum of daily net flows across 5 ETFs, in USD ✓
+  - etf_net_flow_btc: net flow converted to BTC equivalent ✓
+  - Field documentation:
+    - etf_net_flow: "daily total net inflow/outflow in USD millions"
+    - etf_net_flow_btc: "daily total net flow converted to BTC terms"
+  - Note: ETF flow data from Bloomberg. Bloomberg reports in USD.
+  - Conversion: btc_equivalent = usd_flow / btc_close_same_day
+  - Returns: btc_return = pct_change(btc_close)
+lineage_context:
+  idea_intake_output_summary: "etf_net_flow should be in USD, not percentage. etf_net_flow_btc is optional derived field."
+  mandate_freeze_hash: "md5:s9t0u1v2"

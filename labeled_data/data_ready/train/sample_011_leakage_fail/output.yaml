@@ -1,0 +1,16 @@
+correct_class: LEAKAGE_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  THREE leakage vectors identified:
+  1. Social sentiment min-max normalization uses full dataset min/max —
+     look-ahead bias. The 2024 test period may contain extreme sentiment
+     values that shift the normalization range.
+  2. TVL winsorization at 1st/99th percentile of full sample — the percentile
+     boundaries incorporate test period distribution information.
+  3. Active addresses full-sample z-score — same issue as sample_010.
+  Additionally, "back-fill for remaining NaNs" introduces forward information
+  when NaNs occur at the END of the training period (the back-fill would
+  use future training data to fill current NaNs). FAIL-HARD.
+reviewer_should_ask: "How many NaNs were back-filled? Were any at the train/test boundary?"
+should_not_confuse: [QUALITY_FAIL]
+confusion_note: "The back-fill is often mistaken for QUALITY_FAIL (data cleaning). But it introduces temporal contamination, making it LEAKAGE_FAIL."

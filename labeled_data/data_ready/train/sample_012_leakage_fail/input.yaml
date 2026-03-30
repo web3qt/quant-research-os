@@ -1,0 +1,22 @@
+research_idea: "BTC 矿工抛压与价格拐点"
+mandate_snapshot:
+  research_question: "矿工净流出峰值是否预示 BTC 局部顶部的形成"
+  universe: "BTC + miner address clusters"
+  time_window: "2020-01-01 to 2024-06-30"
+  frequency: "daily"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_daily_close: ✓
+  - miner_net_flow: daily net flow from Glassnode ✓
+  - miner_outflow_peaks: detected using z-score > 2.0 on 90-day rolling window
+  - Features:
+    - net_flow_z: miner_net_flow / rolling_std(90d)
+    - outflow_event: binary flag when net_flow_z > 2.0
+    - price_drawdown: max drawdown from recent 90-day high
+  - train: 2020-2022, test: 2023-2024-H1
+  - Universe filter: tokens with >= 2 years of data retained
+    (used full-period data availability to filter universe)
+lineage_context:
+  idea_intake_output_summary: "Universe filtering must not use future information."
+  mandate_freeze_hash: "md5:h8i9j0k1"

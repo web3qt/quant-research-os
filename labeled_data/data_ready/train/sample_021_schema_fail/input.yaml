@@ -1,0 +1,26 @@
+research_idea: "BTC-ETH 配对交易 — beta 中性策略"
+mandate_snapshot:
+  research_question: "BTC-ETH beta 中性组合是否能产生稳定的 alpha"
+  universe: "BTC + ETH"
+  time_window: "2020-01-01 to 2024-12-31"
+  frequency: "daily"
+  main_leg: "BTC"
+  required_fields:
+    - btc_close, eth_close (daily)
+    - beta_coeff: rolling 60d regression coefficient of ETH returns on BTC returns
+    - kappa: the regime-switching parameter from Markov-Switching model
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_close: daily ✓
+  - eth_close: daily ✓
+  - beta_coeff: rolling 60d OLS regression of eth_return ~ btc_return ✓
+  - kappa: rolling 60d Hidden Markov Model regime probability ✓
+  - residual_return: eth_return - beta * btc_return ✓
+
+  Field documentation:
+  - beta_coeff: "OLS slope coefficient, measures ETH's sensitivity to BTC"
+  - kappa: "probability of being in high-volatility regime from HMM"
+lineage_context:
+  idea_intake_output_summary: "Field 'kappa' refers to the regime-switching parameter from a Markov-Switching model. This is a specific technical term."
+  mandate_freeze_hash: "md5:q7r8s9t0"
+  mandate_field_doc: "kappa: Markov-Switching regime transition probability matrix parameter"

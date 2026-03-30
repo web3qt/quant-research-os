@@ -1,0 +1,19 @@
+research_idea: "链上活跃地址数与 BTC 价格的相关性"
+mandate_snapshot:
+  research_question: "BTC 活跃地址数的周变化率是否领先 BTC 周收益 1-4 周"
+  universe: "BTC on-chain metrics"
+  time_window: "2020-01-01 to 2024-12-31"
+  frequency: "weekly (Sunday 00:00 UTC close)"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_weekly_close: Sunday 00:00 UTC ✓
+  - active_addresses: weekly aggregate (sum of daily) ✓
+  - Note: On-chain data from Glassnode uses Monday 00:00 UTC as week boundary.
+  - Applied 1-day forward shift to align on-chain weekly data to Sunday close.
+
+  Week boundary for price: Sunday 00:00 UTC (Coinbase)
+  Week boundary for on-chain: Monday 00:00 UTC (Glassnode, shifted to Sunday)
+lineage_context:
+  idea_intake_output_summary: "All weekly data must use consistent week boundary."
+  mandate_freeze_hash: "md5:d4e5f6g7"

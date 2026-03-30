@@ -1,0 +1,23 @@
+sample_001_data_missing | DATA_MISSING | FAIL-HARD | MATIC数据完全缺失，AVAX仅18个月不足mandate最低2年覆盖要求，pair_stats矩阵不完整
+sample_002_data_missing | DATA_MISSING | FAIL-SOFT | mandate要求的defi_tvl_by_protocol字段因API不一致被完全省略，仅保留聚合TVL
+sample_003_data_missing | DATA_MISSING | FAIL-HARD | miner_address_count字段完全不可用，且miner_net_flow在2024-06-30截断，两个核心字段缺失
+sample_005_data_misalignment | DATA_MISALIGNMENT | FAIL-HARD | ALT使用close_time而非open_time作为主键，仅用-1min偏移近似对齐，违反禁止混用open_time/close_time的规定
+sample_006_data_misalignment | DATA_MISALIGNMENT | FAIL-SOFT | BTC使用00:00 UTC收盘而ETH使用23:59 UTC收盘，配对交易使用不同日bar定义产生跨交易所边界错位
+sample_007_data_misalignment | DATA_MISALIGNMENT | FAIL-SOFT | BTC 1h bar由1m合成而ALT使用交易所原生1h蜡烛，聚合方法不同导致OHLCV可能存在差异
+sample_008_data_misalignment | DATA_MISALIGNMENT | FAIL-HARD | 链上数据周边界为周一而价格周边界为周日，简单1天偏移不正确因为会改变底层数据组成，影响领先-滞后分析结论
+sample_010_leakage_fail | LEAKAGE_FAIL | FAIL-HARD | 收益标准化使用全样本均值和标准差(2018-2024)，包含test期间信息，构成典型的前视偏差
+sample_011_leakage_fail | LEAKAGE_FAIL | FAIL-HARD | 社交情绪min-max标准化、TVL缩尾处理和活跃地址z-score均使用全样本统计量，三个方向均存在泄漏，且back-fill在训练集末尾引入未来信息
+sample_012_leakage_fail | LEAKAGE_FAIL | FAIL-HARD | 使用全周期数据可用性过滤universe，tokens在test期间退市的信息被用于排除样本，构成幸存者偏差
+sample_013_leakage_fail | LEAKAGE_FAIL | FAIL-HARD | 使用跨链桥数据的最终修正值而非实时可用数据，桥修正信息在发布后才可获得，构成未来信息泄漏
+sample_014_leakage_fail | LEAKAGE_FAIL | FAIL-SOFT | 90天滚动统计使用研究窗口之前的完整历史FGI数据，前90天训练集可能因FGI方法论变化而受污染
+sample_016_quality_fail | QUALITY_FAIL | FAIL-SOFT | 47个缺失bar被前向填充而12个stale bar集中在COVID和���工禁令等关键高波动期间未被显式排除
+sample_017_quality_fail | QUALITY_FAIL | FAIL-SOFT | CRV缺失4.2%且有15个stale bar，SNX缺失3.4%且有12个stale bar，所有缺失和stale被前向填充
+sample_018_quality_fail | QUALITY_FAIL | FAIL-SOFT | 8天负流入值为物理不可能，被静默置零而非调查原因；3.1%零流入日被假设为真实低活动而未验证
+sample_020_schema_fail | SCHEMA_FAIL | FAIL-SOFT | mandate指定simple return为主要度量，但实际分析改用log_return为主，未经mandate修改擅自变更字段定义
+sample_021_schema_fail | SCHEMA_FAIL | FAIL-HARD | mandate定义kappa为Markov-Switching模型的状态转移概率矩阵参数，但实际产出为HMM高波动率体制概率，语义完全不同
+sample_022_schema_fail | SCHEMA_FAIL | FAIL-SOFT | mandate要求衍生特征使用百分比收益，但MACD和Bollinger Bands使用USD绝对值，违反单位规范
+sample_024_repro_fail | REPRO_FAIL | FAIL-SOFT | API分页返回随机排序导致文件hash在不同运行间变化，去重可能保留不同行，违反同配置同hash要求
+sample_025_repro_fail | REPRO_FAIL | FAIL-SOFT | random_state未全局设置导致不同运行产生不同训练/测试分割，且数据源在两次重跑间隐式更新
+sample_026_repro_fail | REPRO_FAIL | FAIL-SOFT | Dune Analytics查询因区块链重组在运行间产生0.01-0.5%差异，未固定区块高度或快照结果
+sample_028_scope_fail | SCOPE_FAIL | FAIL-HARD | 擅自添加5个非TOP20的ALT、引入liquidation和funding_rate额外数据源、将30d改为60d滚动成交量，三重违反mandate
+sample_029_scope_fail | SCOPE_FAIL | FAIL-SOFT | 擅自添加ETH作为对比资产，并引入miner_reserve和exchange_reserve等mandate明确排除的额外数据源

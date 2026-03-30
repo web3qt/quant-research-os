@@ -1,0 +1,17 @@
+correct_class: QUALITY_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  8 days show negative exchange inflow, which is physically impossible (inflow
+  is a non-negative volume measure). Setting them to 0 without investigating
+  the cause is problematic — the negative values could indicate data pipeline
+  bugs, API errors, or reporting methodology changes that affect OTHER days
+  too. If these 8 days are from a systematic API error period, other nearby
+  days' inflow values may also be inaccurate. Simply zeroing them masks the
+  underlying data integrity issue. Additionally, the 3.1% zero-inflow days
+  may also be data gaps rather than genuine low-activity — the researcher
+  "assumed" they were genuine without verification. FAIL-SOFT because the
+  data errors should be investigated and documented rather than silently
+  corrected.
+reviewer_should_ask: "Are the 8 negative inflow days clustered? What API/source produced them? Were there known data issues on those dates?"
+should_not_confuse: [SCHEMA_FAIL]
+confusion_note: "Negative inflow is not a schema issue (the field type is correct — it's a number). The issue is that the values are physically impossible, indicating data quality problems."

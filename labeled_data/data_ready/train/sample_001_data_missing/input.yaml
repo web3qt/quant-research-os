@@ -1,0 +1,28 @@
+research_idea: "BTC 领动高流动性 ALT — 冲击事件后 30 分钟收益预测"
+mandate_snapshot:
+  research_question: "BTC 大幅波动后，高流动性 ALT 是否在 30 分钟窗口内产生可预测的超额收益"
+  universe: "BTC + TOP20 ALT by 30d volume (CoinGecko ranking)"
+  time_window: "2022-01-01 to 2024-12-31"
+  frequency: "1m bars"
+  main_leg: "BTC"
+  required_fields:
+    - open, high, low, close, volume
+    - vwap (per bar)
+    - pair_stats (BTC-ALT correlation matrix)
+data_spec_attempt: |
+  ## Dataset Manifest
+  - BTC 1m bars: 2022-01-01 to 2024-12-31 ✓ (1,576,800 rows)
+  - ETH 1m bars: 2022-01-01 to 2024-12-31 ✓
+  - SOL 1m bars: 2022-01-01 to 2024-12-31 ✓
+  - AVAX 1m bars: 2023-06-01 to 2024-12-31 ⚠️ (partial history)
+  - MATIC 1m bars: MISSING — exchange API did not return data before rebrand
+  - pair_stats: BTC-ETH, BTC-SOL correlation computed ⚠️ (missing AVAX, MATIC)
+  - rolling_stats: 60m rolling mean/std for BTC, ETH, SOL
+  - vwap: computed for BTC, ETH, SOL only
+
+  Note: MATIC data unavailable from Binance API (symbol renamed to POL).
+  AVAX only has 18 months of data. Proceeding with available universe.
+lineage_context:
+  idea_intake_output_summary: "Universe: BTC + TOP20 ALT. Require full 3-year history for all symbols."
+  mandate_freeze_hash: "md5:a1b2c3d4"
+  mandate_universe_constraint: "All symbols must have >= 2 years of continuous data coverage"

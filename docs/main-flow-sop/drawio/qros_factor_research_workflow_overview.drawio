@@ -1,0 +1,182 @@
+<?xml version="1.0" ?>
+<mxfile host="app.diagrams.net" modified="2026-03-30T00:00:00.000Z" agent="Codex" version="26.2.2">
+  <diagram id="qros-factor-research-workflow-overview" name="QROS Factor Research Workflow Overview">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4600" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2" value="QROS 因子研究流程总览" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=22;" vertex="1" parent="1">
+          <mxGeometry x="1870" y="30" width="360" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="3" value="治理硬约束&#xa;- Freeze before build&#xa;- Review before advance&#xa;- No silent modification&#xa;- Evidence over claims" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="130" width="320" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="4" value="统一阶段节奏&#xa;1. 生成 freeze draft&#xa;2. 分组确认全部 group&#xa;3. build / author 正式产物&#xa;4. run_stage_review 写 closure&#xa;5. 只有 advancing verdict 才能进下一阶段" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=14;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="300" width="320" height="190" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="失败分流&#xa;review verdict = PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE&#xa;=> 停止正常推进&#xa;=> qros-stage-failure-handler&#xa;=> lineage change control / stage-specific failure SOP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=14;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="520" width="320" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="6" value="磁盘是真值&#xa;research_session 从 outputs/&lt;lineage_id&gt;/ 实际目录结构与 closure 状态检测当前阶段&#xa;不是靠聊天记忆推进" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=14;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="70" y="730" width="320" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="统一入口&#xa;qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="450" y="130" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="8" value="00_idea_intake&#xa;观察 / 假设 / counter-hypothesis / kill criteria / qualification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="700" y="120" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="显式确认&#xa;GO_TO_MANDATE&#xa;+ mandate confirmation pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="980" y="125" width="230" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="10" value="01_mandate&#xa;冻结研究边界、time split、universe、参数字典、route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="120" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="research_route&#xa;已冻结?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="1590" y="128" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="12" value="Mandate 额外冻结的路线身份&#xa;research_route&#xa;factor_role: standalone_alpha / regime_filter / combo_filter&#xa;factor_structure: single_factor / multi_factor_score&#xa;portfolio_expression: long_short_market_neutral / long_only_rank&#xa;neutralization_policy: none / market_beta_neutral / group_neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="260" width="440" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="02_data_ready&#xa;共享底层数据、对齐、QC、universe admission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1800" y="90" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" value="03_signal_ready&#xa;冻结 signal contract / param_id / 时间语义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2050" y="90" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="04_train_freeze&#xa;只定尺子: 阈值 / regime / rejects / ledger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2300" y="90" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" value="05_test_evidence&#xa;独立样本统计证据&#xa;multiple testing / admissibility" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2560" y="90" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="17" value="06_backtest&#xa;双引擎回测 + 容量 + 异常收益复核" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2820" y="90" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" value="07_holdout&#xa;最终未参与设计窗口&#xa;滚动 OOS / regime shift / decay" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="3080" y="90" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="02_csf_data_ready&#xa;date x asset 面板、membership、eligibility mask" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1800" y="330" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="20" value="03_csf_signal_ready&#xa;factor_panel / factor_id / direction / coverage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2070" y="330" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="04_csf_train_freeze&#xa;preprocess / neutralize / bucket / rebalance freeze" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2340" y="330" width="220" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="22" value="05_csf_test_evidence&#xa;Rank IC / bucket spread / gated vs ungated / full ledger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2620" y="330" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="23" value="06_csf_backtest_ready&#xa;组合表达、权重映射、净成本后经济性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2910" y="330" width="220" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="24" value="07_csf_holdout_validation&#xa;最终方案稳定性、breadth、regime 审计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="3190" y="330" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="25" value="07_promotion_decision&#xa;组织结论: GO / NO-GO / RETRY / CHILD LINEAGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="3440" y="200" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="26" value="08_shadow_admission&#xa;监控 / 降额 / 回滚条件冻结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="3740" y="200" width="220" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="27" value="09_canary_production&#xa;kill switch / owner / escalation / runbook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="4020" y="200" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="28" value="时序信号主线关注点&#xa;- 先把共享数据层和 signal schema 冻结&#xa;- Train 只定阈值和候选范围&#xa;- Test 只做独立样本结构证据&#xa;- Backtest 才验证双引擎交易可行性&#xa;- Holdout 只做最终未参与窗口确认" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="500" width="620" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="29" value="CSF 独立支线关注点&#xa;- mandate 已经先冻结 route 与因子身份&#xa;- data_ready 变成截面面板底座，而不是单资产时序表&#xa;- signal_ready 冻结 factor_panel / direction / score contract&#xa;- test 按 factor_role 切证据语义&#xa;- backtest 把因子映射为正式组合后再谈经济性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="2460" y="500" width="760" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="30" value="Review closure 真正决定能否晋级&#xa;closure artifacts: latest_review_pack.yaml / stage_gate_review.yaml / stage_completion_certificate.yaml&#xa;advancing statuses: PASS / CONDITIONAL PASS / GO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="740" width="840" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" edge="1" parent="1" source="7" target="8">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" edge="1" parent="1" source="8" target="9">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" edge="1" parent="1" source="9" target="10">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" edge="1" parent="1" source="10" target="11">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="35" value="time_series_signal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;fontSize=12;fontColor=#1D4ED8;" edge="1" parent="1" source="11" target="13">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="36" value="cross_sectional_factor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;fontSize=12;fontColor=#6D28D9;" edge="1" parent="1" source="11" target="19">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;" edge="1" parent="1" source="13" target="14">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;" edge="1" parent="1" source="14" target="15">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;" edge="1" parent="1" source="15" target="16">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;" edge="1" parent="1" source="16" target="17">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;" edge="1" parent="1" source="17" target="18">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" edge="1" parent="1" source="19" target="20">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" edge="1" parent="1" source="20" target="21">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" edge="1" parent="1" source="21" target="22">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" edge="1" parent="1" source="22" target="23">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" edge="1" parent="1" source="23" target="24">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" edge="1" parent="1" source="18" target="25">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" edge="1" parent="1" source="24" target="25">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" edge="1" parent="1" source="25" target="26">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" edge="1" parent="1" source="26" target="27">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="51" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="10" target="12">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="52" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="4" target="30">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="53" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="5" target="30">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="54" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="30" target="16">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="55" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="30" target="22">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="56" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="6" target="7">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="57" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="28" target="18">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="58" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="29" target="24">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,20 @@
+correct_class: LEAKAGE_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  The 90-day rolling mean/std for FGI z-score is computed using "complete
+  historical FGI data back to 2018." This means for the first 90 days of the
+  dataset (Jan-Mar 2018), the rolling window includes data from BEFORE the
+  research time window. While this data exists in the past, the claim
+  "ensures maximum data for stable estimates" reveals the researcher's intent
+  was to use as much history as possible without considering whether pre-window
+  data is appropriate. More critically, if the FGI computation methodology
+  changed over time (which it has — alternative.me periodically adjusts their
+  methodology), using pre-window data may introduce inconsistency. However,
+  this is borderline LEAKAGE_FAIL because using PAST data (before the window)
+  is generally acceptable as long as it doesn't introduce methodology drift.
+  FAIL-SOFT because the rolling window will quickly converge to use only
+  in-window data, but the first 90 days of the training set are contaminated
+  with potential methodology inconsistencies.
+reviewer_should_ask: "Has alternative.me's FGI methodology changed between 2015-2018? What is the impact on the first 90 days of the training set?"
+should_not_confuse: [DATA_MISALIGNMENT, QUALITY_FAIL]
+confusion_note: "This is a subtle case. Using historical data before the research window is NOT always leakage — it depends on whether that data is point-in-time consistent. If the FGI was computed differently in 2015 vs 2018, the pre-window data contaminates the rolling statistics with inconsistent methodology."

@@ -1,0 +1,31 @@
+research_idea: "BTC 稳定币流量与价格冲击"
+mandate_snapshot:
+  research_question: "USDT/USDC 铸造和赎回事件是否造成 BTC 短期价格冲击"
+  universe: "BTC + USDT + USDC on-chain"
+  time_window: "2022-01-01 to 2024-12-31"
+  frequency: "daily"
+  main_leg: "BTC"
+  required_constraints:
+    - Stablecoins: USDT and USDC only
+    - Events: mint and burn only
+    - No derivatives data
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_daily_close: ✓
+  - usdt_mint: daily USDT issuance ✓
+  - usdt_burn: daily USDT redemption ✓
+  - usdc_mint: daily USDC issuance ✓
+  - usdc_burn: daily USDC redemption ✓
+  - Added:
+    - dai_mint, dai_burn: "DAI is the third-largest stablecoin, provides
+      additional coverage"
+    - frax_mint, frax_burn: "FRAX is algorithmic, useful for understanding
+      different stablecoin dynamics"
+    - cex_deposit_withdrawal: "CEX inflow/outflow provides context for
+      stablecoin flow impact"
+  - Note: "Included CEX flow data to disambiguate stablecoin events —
+    a USDT mint paired with CEX deposit is more impactful than a mint
+    paired with DeFi deployment"
+lineage_context:
+  idea_intake_output_summary: "Stablecoins: USDT and USDC only. Events: mint and burn only. No derivatives data."
+  mandate_freeze_hash: "md5:z6a7b8c9"

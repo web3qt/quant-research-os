@@ -1,0 +1,20 @@
+research_idea: "BTC 永续合约资金费率与现货溢价"
+mandate_snapshot:
+  research_question: "永续合约资金费率是否预测未来 8-24 小时现货收益"
+  universe: "BTC perpetual + BTC spot"
+  time_window: "2022-01-01 to 2024-12-31"
+  frequency: "8h (funding rate settlement periods)"
+  main_leg: "BTC spot"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_spot_8h: aggregated from 1m, aligned to funding periods (00:00, 08:00, 16:00 UTC) ✓
+  - funding_rate: from Binance, settlement at 00:00, 08:00, 16:00 UTC ✓
+  - btc_spot_return: computed as close_8h[t] / close_8h[t-1] - 1
+
+  Note: Binance funding rate is actually the rate paid at the END of the
+  8h period (i.e., the 00:00 UTC rate covers the previous 8h window
+  ending at 00:00). The return is computed using spot close at the
+  START of the next period. This creates a slight timing offset.
+lineage_context:
+  idea_intake_output_summary: "Funding rate must align with the period it covers, not the period after."
+  mandate_freeze_hash: "md5:e5f6g7h8"

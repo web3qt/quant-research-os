@@ -1,0 +1,14 @@
+correct_class: LEAKAGE_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  The universe filter uses "full-period data availability" to determine which
+  tokens have >= 2 years of data. This means tokens that dropped below
+  the threshold during the test period (e.g., delisted in 2023) would have
+  been EXCLUDED based on the fact that they eventually delisted — information
+  that was not available at the start of the train period. This is survivorship
+  bias, which the triage explicitly flags: "是否存在幸存者偏差" → LEAKAGE_FAIL.
+  The correct approach is to determine universe membership at the start of
+  the train period based on criteria known at that time. FAIL-HARD.
+reviewer_should_ask: "How many tokens were filtered out? Were any removed because they delisted or stopped trading during the test period?"
+should_not_confuse: [DATA_MISSING, SCOPE_FAIL]
+confusion_note: "Not DATA_MISSING because data exists for these tokens — they were actively filtered OUT based on future knowledge. Not SCOPE_FAIL because the mandate's universe definition was followed, but the filtering criterion leaked future information."

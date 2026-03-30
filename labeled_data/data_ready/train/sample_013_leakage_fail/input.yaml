@@ -1,0 +1,23 @@
+research_idea: "跨链桥流量与 ETH 价格"
+mandate_snapshot:
+  research_question: "主要跨链桥的净流入 ETH 数量是否预测 ETH 短期价格走势"
+  universe: "ETH + cross-chain bridge flow data"
+  time_window: "2022-01-01 to 2024-12-31"
+  frequency: "daily"
+  main_leg: "ETH"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - eth_daily_close: ✓
+  - bridge_net_flow: aggregated from Stargate, Across, Wormhole, Hop ✓
+  - Preprocessing:
+    - Bridge flows aggregated at daily UTC midnight
+    - ETH price used is the 00:00 UTC close
+    - Label: ETH return over next 3 days (close[t+3] / close[t] - 1)
+  - Train/test: 2022-2023 train, 2024 test
+  - Feature: bridge_flow_zscore = (flow - rolling_mean_30d) / rolling_std_30d
+  - Note: Some bridge data has 24-48h reporting delay. Used the final
+    restated values when available (bridges sometimes correct flow data
+    days later). This provides more accurate data.
+lineage_context:
+  idea_intake_output_summary: "Data must represent information available at the time of prediction."
+  mandate_freeze_hash: "md5:i9j0k1l2"

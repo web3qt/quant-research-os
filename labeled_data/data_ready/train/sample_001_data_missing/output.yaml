@@ -1,0 +1,12 @@
+correct_class: DATA_MISSING
+severity: FAIL-HARD
+classification_rationale: |
+  MATIC data completely unavailable (missing symbol), AVAX only has 18 months
+  (below mandate's 2-year minimum). pair_stats matrix is incomplete — missing
+  correlation entries for MATIC and AVAX. The mandate explicitly requires
+  "All symbols must have >= 2 years of continuous data coverage", which is
+  violated by both MATIC and AVAX. This is DATA_MISSING, not SCOPE_FAIL,
+  because the universe was declared in mandate but the data was never obtained.
+reviewer_should_ask: "Was the POL/MATIC symbol rename handled in the data pipeline? Was a replacement symbol identified per mandate's universe rules?"
+should_not_confuse: [SCOPE_FAIL]
+confusion_note: "This is DATA_MISSING because the data was not obtained, not because the researcher deliberately changed the universe. SCOPE_FAIL would apply if they silently removed MATIC from the universe list in the mandate."

@@ -1,0 +1,15 @@
+correct_class: SCHEMA_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  The mandate explicitly specifies "simple return" as the primary return measure,
+  but the data spec uses log_return as primary analysis field with a note that
+  it's "more standard for GARCH." This is SCHEMA_FAIL because the field
+  definition changed without mandate amendment — simple return and log return
+  are different mathematical quantities (though close for small returns).
+  The mandate's choice of simple return may have been intentional (e.g., for
+  PnL calculation consistency). FAIL-SOFT because both fields are present and
+  the switch doesn't change the temporal structure, but the mandate contract
+  was violated.
+reviewer_should_ask: "Was the switch to log return intentional or inadvertent? Does it affect the research conclusion?"
+should_not_confuse: [SCOPE_FAIL]
+confusion_note: "This is SCHEMA_FAIL (field definition changed) not SCOPE_FAIL (research scope changed). The research question is the same — only the return definition was altered."

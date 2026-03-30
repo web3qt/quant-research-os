@@ -1,0 +1,24 @@
+research_idea: "BTC 跨所套利 — 微秒级数据"
+mandate_snapshot:
+  research_question: "BTC 在 Binance 和 Coinbase 之间的价格差异是否在亚秒级可套利"
+  universe: "BTC on Binance + Coinbase"
+  time_window: "2024-01-01 to 2024-06-30"
+  frequency: "100ms tick data"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_binance_tick: 100ms price snapshots ✓
+  - btc_coinbase_tick: 100ms price snapshots ✓
+  - Processing:
+    - Binance data collected via websocket (real-time subscription)
+    - Coinbase data collected via REST API polling (100ms interval)
+    - Both aligned to nearest 100ms boundary
+  - Reproducibility:
+    - "WebSocket data cannot be reproduced exactly — it depends on
+      network conditions at collection time"
+    - "REST polling times vary slightly between collection runs"
+    - File hash: different every run
+    - Note: "Used seed=42 for all random components in downstream analysis"
+lineage_context:
+  idea_intake_output_summary: "If data cannot be perfectly reproduced, alternative reproducibility mechanisms must be documented."
+  mandate_freeze_hash: "md5:w3x4y5z6"

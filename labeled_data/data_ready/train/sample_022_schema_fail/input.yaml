@@ -1,0 +1,29 @@
+research_idea: "BTC 价格预测 — 多时间框架特征"
+mandate_snapshot:
+  research_question: "多时间框架技术指标组合是否提升 BTC 方向预测准确率"
+  universe: "BTC"
+  time_window: "2021-01-01 to 2024-12-31"
+  frequency: "1h bars"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_1h_bars: OHLCV ✓
+  - Features:
+    - rsi_14: 14-period RSI on 1h
+    - macd: MACD(12,26,9) on 1h
+    - bb_upper, bb_lower: Bollinger Bands(20,2) on 1h
+    - ema_20, ema_50: Exponential Moving Averages
+    - volume_ratio_24h: current_volume / avg_volume_24h
+    - atr_14: Average True Range, 14 period
+  - Unit documentation:
+    - rsi_14: "0-100 range, oscillator"
+    - macd: "price difference in USD"
+    - bb_upper/bb_lower: "price in USD"
+    - volume_ratio: "dimensionless ratio"
+    - atr: "volatility in USD per bar"
+
+  Note: MACD and BB expressed in USD rather than percentage terms for
+  consistency with price features.
+lineage_context:
+  idea_intake_output_summary: "All derived features should use percentage returns where applicable, not absolute USD values, to avoid scale-dependent signals."
+  mandate_freeze_hash: "md5:r8s9t0u1"

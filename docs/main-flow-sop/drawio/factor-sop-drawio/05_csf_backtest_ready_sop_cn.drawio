@@ -1,0 +1,170 @@
+<?xml version="1.0" ?>
+<mxfile host="app.diagrams.net" modified="2026-03-30T00:00:00.000Z" agent="Codex" version="26.2.2">
+  <diagram id="05-csf-backtest-ready-sop-cn-map" name="05 CSF Backtest Ready SOP">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1800" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2" value="05 CSF Backtest Ready SOP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="868" width="220" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="3" value="文档定位" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="94" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="4" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="把冻结因子分数映射成正式组合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="54" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="6" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="3" target="5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="验证净成本后的经济可行性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="94" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="8" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="3" target="7">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="核心问题" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="304" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="10" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="9">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="组合表达 / 权重映射 / 成本容量口径是否冻结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="264" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="12" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="9" target="11">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="支持的组合表达" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="544" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="13">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="long_short_market_neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="504" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="13" target="15">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="17" value="long_only_rank" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="544" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="13" target="17">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="Formal Gate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="844" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="20" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="19">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="pass: 只消费 test frozen variants, 结果要 net after cost, 有换手 / 容量 / 参与率分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="804" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="22" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="19" target="21">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="23" value="fail: backtest 内重挑 variant, 只报 gross, 无 name concentration / 无容量分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="844" width="180" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="24" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="19" target="23">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="25" value="入口身份冻结约定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="94" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="26" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="25">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="27" value="只冻结组合表达与映射" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="34" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="28" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="25" target="27">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="29" value="不改变 factor_role / structure / portfolio_expression / neutralization_policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="74" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="30" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="25" target="29">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="31" value="必备输出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="394" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="32" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="31">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="33" value="portfolio_contract.yaml" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="334" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="34" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="33">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="35" value="portfolio_weight_panel.parquet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="374" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="36" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="35">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="37" value="rebalance_ledger.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="414" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="38" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="37">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="39" value="turnover_capacity_report.parquet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="454" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="40" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="39">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="41" value="engine_compare.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="494" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="42" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="41">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="43" value="portfolio_summary.parquet / name_level_metrics.parquet / drawdown_report.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="534" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="44" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="31" target="43">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="45" value="禁止事项" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="764" width="170" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="46" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#0F766E;" edge="1" parent="1" source="2" target="45">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="47" value="不在 backtest 重新定义因子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="704" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="48" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="45" target="47">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="49" value="不把组合表达当作 signal_ready 一部分" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="744" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="50" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="45" target="49">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="51" value="不在这里解释机制, 只能验证组合可行性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="784" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="52" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="45" target="51">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="53" value="不把未冻结组合规则带入净值计算" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="824" width="220" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="54" style="curved=1;strokeWidth=1.5;html=1;endArrow=none;strokeColor=#94A3B8;" edge="1" parent="1" source="45" target="53">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,23 @@
+research_idea: "BTC 微结构分析 — 订单簿不平衡"
+mandate_snapshot:
+  research_question: "BTC 订单簿买卖不平衡是否预测短期价格变动"
+  universe: "BTC"
+  time_window: "2023-01-01 to 2024-12-31"
+  frequency: "1m bars"
+  main_leg: "BTC"
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_1m_bars: from exchange REST API, paginated fetch ✓
+  - orderbook_imbalance: snapshot at each minute start ✓
+  - Processing:
+    - API pagination uses cursor-based approach with random ordering
+    - Data collected over 3 sessions (different dates) due to API limits
+    - Merged results and deduplicated by timestamp
+  - Reproducibility check:
+    - File hash: varies between runs (expected — API returns in random order)
+    - Row count: consistent (1,051,200 rows)
+    - Summary statistics: minor differences (<0.01%) between runs
+    - Note: "Minor statistical differences are due to floating point precision"
+lineage_context:
+  idea_intake_output_summary: "All data must be reproducible with the same hash given the same version config."
+  mandate_freeze_hash: "md5:t0u1v2w3"

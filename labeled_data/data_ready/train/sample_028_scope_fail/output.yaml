@@ -1,0 +1,18 @@
+correct_class: SCOPE_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  THREE mandate violations:
+  1. Added 5 ALTs not in the TOP20 mandate — universe was silently expanded
+  2. Added liquidation_data and funding_rate — mandate explicitly says
+     "No additional data sources beyond OHLCV"
+  3. Used 60d rolling volume instead of mandated 30d — universe definition
+     was changed
+  All three are SCOPE_FAIL because the researcher deliberately expanded the
+  data scope beyond what the mandate declared. The rationale ("improving
+  signal quality") does not override the frozen mandate contract. Per the
+  rollback routing table, SCOPE_FAIL maps to CHILD LINEAGE when the fix
+  requires changing universe or research scope. FAIL-HARD because three
+  independent scope violations occurred simultaneously.
+reviewer_should_ask: "Which of the three additions contributed most to signal quality? Should the mandate be formally amended (child lineage) or reverted?"
+should_not_confuse: [DATA_MISSING, SCHEMA_FAIL]
+confusion_note: "Adding 5 extra ALTs is not DATA_MISSING (data exists for mandated symbols). Using 60d instead of 30d is not SCHEMA_FAIL (the field definition is correct, just the computation window changed). The core issue is scope expansion."

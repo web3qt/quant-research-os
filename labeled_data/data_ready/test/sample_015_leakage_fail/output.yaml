@@ -1,0 +1,21 @@
+correct_class: LEAKAGE_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  TWO issues:
+  1. "Replaced 0-volume bars with volume from nearest non-zero bar" — the
+     review skill explicitly states "静默吞掉缺失或静默 forward-fill" as a
+     must-fail-none condition. Zero-volume bars are valid data points (no
+     trading activity) and replacing them masks genuine market information.
+     While this alone might be QUALITY_FAIL, the replacement uses "nearest
+     non-zero bar" which could be a FUTURE bar if the zero-volume period
+     spans multiple bars.
+  2. "Expanded backward for first 168h" — same pre-window data issue as
+     sample_014, but here the rolling window is used for z-score computation
+     that feeds directly into the spike detection signal. If pre-window data
+     has different exchange conditions (different liquidity, different market
+     structure), the z-score thresholds would be miscalibrated.
+  FAIL-HARD primarily due to issue 1 (silent data modification with potential
+  forward contamination).
+reviewer_should_ask: "How many 0-volume bars were replaced? Were any replaced with future non-zero bars? What percentage of spikes were detected in low-liquidity periods?"
+should_not_confuse: [QUALITY_FAIL]
+confusion_note: "The zero-volume replacement could be classified as QUALITY_FAIL (data quality), but the 'nearest non-zero bar' lookup direction introduces potential LEAKAGE_FAIL. When in doubt, the more severe classification should apply."

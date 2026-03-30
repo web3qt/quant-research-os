@@ -1,0 +1,16 @@
+correct_class: QUALITY_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  CME basis and OI data is missing on 15 US holidays. Linear interpolation
+  assumes basis changes smoothly between trading days, but the basis can
+  gap significantly over weekends and holidays (especially during volatile
+  periods). The researcher's claim that "interpolation should be accurate"
+  is an unverified assumption that contradicts the nature of futures markets
+  — weekends often see significant spot price movements while CME is closed,
+  creating real basis gaps. Interpolating these away eliminates the very
+  signal the research aims to capture (basis as a sentiment indicator). The
+  correct treatment is to either align all data to CME trading days only, or
+  mark CME-closed days as missing in the combined dataset. FAIL-SOFT.
+reviewer_should_ask: "What is the actual basis gap on weekends/holidays? Does interpolation bias the sentiment signal?"
+should_not_confuse: [DATA_MISALIGNMENT, DATA_MISSING]
+confusion_note: "Data exists but is interpolated — this is QUALITY_FAIL (degradation through imputation), not DATA_MISSING (complete absence). Not DATA_MISALIGNMENT because the timestamps are correct."

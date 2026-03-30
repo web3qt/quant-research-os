@@ -1,0 +1,25 @@
+research_idea: "BTC 减半效应 — 长周期分析"
+mandate_snapshot:
+  research_question: "BTC 减半后 180 天内的哈希率变化与价格走势关系"
+  universe: "BTC on-chain metrics"
+  time_window: "2016-01-01 to 2024-12-31 (covering 3 halving events)"
+  frequency: "daily"
+  main_leg: "BTC"
+  required_constraints:
+    - Must include all 3 halving events (2016, 2020, 2024)
+    - Focus on hash_rate and price only
+data_spec_attempt: |
+  ## Dataset Manifest
+  - btc_daily_close: 2016-2024 ✓
+  - hash_rate: 2016-2024 ✓
+  - Added for enrichment:
+    - miner_reserve: miner wallet balance from Glassnode
+    - exchange_reserve: total BTC on exchanges
+    - miner_hashrate_distribution: geographic hashrate breakdown by country
+  - Time window note: "Extended to 2012-01-01 to capture the first halving
+    event as well. This provides additional data points."
+  - Universe: "Added ETH for comparison — ETH also has a halving-like
+    mechanism via EIP-1559 burn"
+lineage_context:
+  idea_intake_output_summary: "Focus on BTC hash_rate and price only. Time window: 2016-2024. 3 halving events."
+  mandate_freeze_hash: "md5:y5z6a7b8"

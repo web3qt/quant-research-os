@@ -1,0 +1,12 @@
+correct_class: DATA_MISSING
+severity: FAIL-HARD
+classification_rationale: |
+  withdrawal_fee and deposit_fee are completely unavailable as time series —
+  only current fee schedule exists. These are required fields because the
+  research question is about cross-exchange arbitrage profitability, which
+  depends on fee-adjusted spreads. Additionally, OKX data has an 18-month
+  gap. Both are DATA_MISSING. FAIL-HARD because without fee data, the core
+  analysis (fee-adjusted spread profitability) cannot be conducted.
+reviewer_should_ask: "Can fee schedules be manually collected from exchange announcement history? Is OKX data gap acceptable for the research?"
+should_not_confuse: [QUALITY_FAIL]
+confusion_note: "Fee data absence is not a quality issue — the data literally does not exist as a time series."

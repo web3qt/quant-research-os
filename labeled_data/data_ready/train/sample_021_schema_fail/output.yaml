@@ -1,0 +1,18 @@
+correct_class: SCHEMA_FAIL
+severity: FAIL-HARD
+classification_rationale: |
+  The mandate defines 'kappa' as the "regime transition probability matrix
+  parameter from Markov-Switching model," but the data spec produces 'kappa'
+  as "probability of being in high-volatility regime from HMM." These are
+  fundamentally different quantities: the transition probability describes
+  how likely the regime is to CHANGE, while the regime probability describes
+  which regime the system is CURRENTLY in. Using regime probability when the
+  mandate calls for transition probability means the entire regime-switching
+  logic operates on the wrong variable. This would produce incorrect signals
+  — the strategy would react to current regime rather than regime transition
+  dynamics. FAIL-HARD because the semantic mismatch changes the research
+  conclusion. Per the failure handler: "文档写的是 kappa，实际产物是 beta"
+  → SCHEMA_FAIL.
+reviewer_should_ask: "Is this a naming error (wrong variable produced but labeled 'kappa') or a methodology change (decided to use HMM instead of Markov-Switching)?"
+should_not_confuse: [SCOPE_FAIL]
+confusion_note: "While using HMM instead of Markov-Switching could be SCOPE_FAIL (methodology change), the primary issue is that the produced field has a different semantic meaning than what the mandate specifies. The field is mislabeled."

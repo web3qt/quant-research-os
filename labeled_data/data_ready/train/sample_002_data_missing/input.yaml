@@ -1,0 +1,28 @@
+research_idea: "ETH/BTC 比率与 DeFi TVL 的领先-滞后关系"
+mandate_snapshot:
+  research_question: "DeFi TVL 变化是否领先 ETH/BTC 比率变化 1-7 天"
+  universe: "ETH/BTC pair + DeFi TVL aggregated"
+  time_window: "2021-01-01 to 2024-06-30"
+  frequency: "daily"
+  main_leg: "ETH/BTC ratio"
+  required_fields:
+    - eth_btc_close (daily)
+    - defi_tvl_total (daily)
+    - defi_tvl_by_protocol (top 20)
+data_spec_attempt: |
+  ## Dataset Manifest
+  - eth_btc_close: 2021-01-01 to 2024-06-30 ✓
+  - defi_tvl_total: 2021-01-01 to 2024-06-30 ✓
+  - defi_tvl_by_protocol: ERROR — DeFi Llama API returns inconsistent
+    protocol names across time. Top 20 protocol list changes as protocols
+    merge, rebrand, or become inactive. Attempted to align by protocol
+    slug but 3 protocols have duplicate entries with different slugs.
+    Omitting protocol-level breakdown for now.
+  - rolling_stats: 7d, 14d, 30d rolling TVL change for total only
+
+  Note: Protocol-level TVL alignment too complex. Using aggregate TVL only.
+  Research can proceed with total TVL.
+lineage_context:
+  idea_intake_output_summary: "Research requires top 20 DeFi protocol TVL to analyze protocol-specific leading signals."
+  mandate_freeze_hash: "md5:e5f6g7h8"
+  mandate_field_requirement: "defi_tvl_by_protocol required for protocol-specific signal decomposition"

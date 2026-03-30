@@ -1,0 +1,14 @@
+correct_class: SCHEMA_FAIL
+severity: FAIL-SOFT
+classification_rationale: |
+  The mandate's field documentation states features should use "percentage
+  returns where applicable." MACD and Bollinger Bands are produced in USD
+  rather than percentage terms, violating the mandate's unit specification.
+  MACD in USD and BB in USD are scale-dependent — their magnitude changes
+  as BTC price changes over time (from $10K to $70K), making them incomparable
+  across the research window. This is SCHEMA_FAIL because the unit/semantic
+  definition doesn't match the mandate contract. FAIL-SOFT because the values
+  can be converted to percentage terms without re-running the data pipeline.
+reviewer_should_ask: "What is the impact of using USD vs percentage MACD on the model's cross-temporal generalization?"
+should_not_confuse: [QUALITY_FAIL]
+confusion_note: "The data values themselves are correct (properly computed MACD/BB). The issue is the UNIT, not the quality. This is SCHEMA_FAIL, not QUALITY_FAIL."
