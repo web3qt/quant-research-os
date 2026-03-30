@@ -1063,16 +1063,20 @@ def read_holdout_validation_transition_decision(lineage_root: Path) -> str | Non
     return None
 
 
-def session_transition_summary(lineage_root: Path) -> tuple[list[str], list[str]]:
+def session_transition_summary(
+    lineage_root: Path, current_stage: SessionStage
+) -> tuple[list[str], list[str]]:
     gate_path = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
     if not gate_path.exists():
         return [], []
 
     gate_decision = _read_yaml(gate_path)
     why_now = [str(item) for item in gate_decision.get("why", []) if item]
-    open_risks = [str(item) for item in gate_decision.get("required_reframe_actions", []) if item]
-    if not open_risks and gate_decision.get("rollback_target"):
-        open_risks = [f"rollback_target remains {gate_decision['rollback_target']}"]
+    open_risks: list[str] = []
+    if current_stage in {"idea_intake", "idea_intake_confirmation_pending"}:
+        open_risks = [str(item) for item in gate_decision.get("required_reframe_actions", []) if item]
+        if not open_risks and gate_decision.get("rollback_target"):
+            open_risks = [f"rollback_target remains {gate_decision['rollback_target']}"]
     return why_now, open_risks
 
 
@@ -1492,7 +1496,7 @@ def run_research_session(
     if requires_failure_handling and failure_stage is not None:
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
-    why_now, open_risks = session_transition_summary(lineage_root)
+    why_now, open_risks = session_transition_summary(lineage_root, current_stage)
     current_route = current_research_route(lineage_root)
     route_contract = current_route_contract(lineage_root)
     return summarize_session_status(

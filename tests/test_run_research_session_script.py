@@ -772,6 +772,91 @@ def test_run_research_session_reports_mandate_review_when_review_pending(tmp_pat
     assert "Current stage: mandate_review" in result.stdout
 
 
+def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_activation(
+    tmp_path: Path,
+) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    intake_dir = lineage_root / "00_idea_intake"
+    mandate_dir = lineage_root / "01_mandate"
+    intake_dir.mkdir(parents=True)
+    mandate_dir.mkdir(parents=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "csf_case",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": {
+                "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
+                "recommended_route": "cross_sectional_factor",
+                "why_recommended": ["Cross-asset ranking is the primary expression."],
+                "why_not_other_routes": {
+                    "time_series_signal": ["Single-asset path prediction is secondary."]
+                },
+                "route_risks": ["Breadth may be limited."],
+                "route_decision_pending": False,
+            },
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "latest_review_pack.yaml",
+        "stage_gate_review.yaml",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+    _write_yaml(
+        mandate_dir / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "regime_filter",
+            "factor_structure": "multi_factor_score",
+            "portfolio_expression": "long_only_rank",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    _write_yaml(
+        mandate_dir / "stage_completion_certificate.yaml",
+        {
+            "stage_status": "PASS",
+            "final_verdict": "PASS",
+        },
+    )
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Current stage: csf_data_ready_confirmation_pending" in result.stdout
+    assert "Open risks:" not in result.stdout
+    assert "rollback_target remains 00_idea_intake" not in result.stdout
+
+
 def test_run_research_session_reports_mandate_review_complete_when_closure_exists(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
