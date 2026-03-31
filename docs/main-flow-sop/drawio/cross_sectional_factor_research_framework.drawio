@@ -1,0 +1,654 @@
+<mxfile host="65bd71144e">
+    <diagram id="cross-sectional-factor-mind-map" name="Mind Map">
+        <mxGraphModel dx="1533" dy="456" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3800" pageHeight="2400" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="mm_root" value="横截面因子研究框架" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=22;" parent="1" vertex="1">
+                    <mxGeometry x="1670" y="960" width="260" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm1" value="研究对象" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="140" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm1a" value="同一时点资产池内&#xa;谁更强谁更弱" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="96" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm1b" value="核心是 ranking power&#xa;不是单资产方向预测" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="150" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm1c" value="天然对应排序、打分、&#xa;相对收益预测与多空组合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="204" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm2" value="研究 Mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="340" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm2a" value="研究目标：预测未来 4h / 12h / 1d&#xa;相对收益并提升 IC / Sharpe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="274" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm2b" value="研究对象：Binance / Bybit 永续&#xa;流动性过滤、上市时间过滤" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="328" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm2c" value="频率与持有期：5m 更新 / 1h 调仓&#xa;持有 4h / 12h / 24h" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="382" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm2d" value="策略表达：market-neutral&#xa;long-short / top-bottom quantile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="436" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm3" value="Universe 与样本时点" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="610" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm3a" value="定义可交易资产池&#xa;交易状态、成交额、数据完整性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="540" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm3b" value="每个 rebalance time 生成统一截面&#xa;date x asset panel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="594" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm3c" value="历史真实 membership&#xa;避免生存者偏差" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="648" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm3d" value="保留 eligibility mask / listing age /&#xa;liquidity gate 作为研究合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="702" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm4" value="Label 设计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="850" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm4a" value="优先未来超额收益&#xa;r(i,t→t+h) - benchmark" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="780" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm4b" value="也可用 future rank / quantile label&#xa;服务分类或排序模型" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="834" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm4c" value="持有期与调仓频率匹配&#xa;避免 horizon 失真" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="888" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm4d" value="识别样本重叠与共性市场 beta&#xa;避免把系统性行情当 alpha" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="942" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5" value="候选因子族" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="1100" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5a" value="动量：1h / 4h / 24h return&#xa;relative strength vs BTC / market" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1010" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5b" value="反转：short-term reversal&#xa;residual z-score / deviation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1056" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5c" value="波动风险：realized vol / downside vol&#xa;range / jump intensity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1102" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5d" value="流动性：turnover / volume surge /&#xa;Amihud-like illiquidity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1148" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5e" value="资金结构：funding / OI change /&#xa;crowding proxy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1194" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm5f" value="相对关系：sector relative / lead-lag /&#xa;cross-asset deviation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1240" width="360" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm6" value="因子预处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="1390" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm6a" value="缺失值处理：删除 / 截面中位数填充 /&#xa;缺失状态特征" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1320" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm6b" value="极值处理：winsorize / p1-p99 /&#xa;MAD clipping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1374" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm6c" value="同一时点横截面标准化&#xa;z-score over universe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1428" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm6d" value="中性化：市值 / 流动性 / 板块 / BTC beta /&#xa;vol exposure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1482" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm7" value="单因子检验" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="1660" width="190" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm7a" value="Rank IC / ICIR / hit ratio&#xa;看排序信息是否稳定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1590" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm7b" value="Quantile split：Q1-Q10&#xa;看单调性与 top-bottom spread" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1644" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm7c" value="Long-short mock portfolio&#xa;先看原始 alpha 经济性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1698" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm7d" value="Regime split：bull / bear / sideways&#xa;high vol / low vol / liquidity bucket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1752" width="360" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm8" value="因子诊断与归因" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="200" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm8a" value="是否只是小市值 / 高 beta / 高波动&#xa;等风险暴露的变形" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="120" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm8b" value="是否仅由少数 meme 币&#xa;或少量时间段驱动" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="174" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm8c" value="去掉极端值后是否仍成立&#xa;是否被 tail observation 驱动" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="228" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm8d" value="窗口从 24 改 20 / 36 即失效？&#xa;检验参数敏感性与稳健性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="282" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm9" value="去重与家族管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="500" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm9a" value="横截面相关 / IC 相关 /&#xa;long-short return correlation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="430" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm9b" value="按动量 / 反转 / 拥挤 / 流动性&#xa;划分家族" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="484" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm9c" value="每个家族保留最稳、最可解释、&#xa;成本最友好的代表因子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="538" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm9d" value="避免把 10 个本质相同的因子&#xa;一起带入组合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="592" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm10" value="多因子组合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="800" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm10a" value="简单加权 score = Σ w_k z_k&#xa;先做等权，再看 ICIR 加权" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="730" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm10b" value="正交化后组合&#xa;先去共线再加总" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="784" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm10c" value="截面回归 / ridge / lasso /&#xa;tree-based ranker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="838" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm10d" value="关注稳定性提升、噪声抵消、&#xa;turnover 改善，而非样本内极致收益" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="892" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm11" value="组合构建与约束" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="1090" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm11a" value="Top-bottom 等权 / 按 score 加权 /&#xa;vol scaling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1000" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm11b" value="dollar neutral / beta neutral to BTC /&#xa;group neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1054" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm11c" value="单币权重、板块暴露、&#xa;流动性与杠杆上限" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1108" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm11d" value="turnover 约束是实盘可做性的核心&#xa;不能只看 paper alpha" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1162" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm12" value="成本 / 容量 / OOS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="1380" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm12a" value="maker / taker / slippage / funding&#xa;做成本敏感性分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1290" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm12b" value="容量与市场冲击&#xa;判断是否只能做小资金" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1344" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm12c" value="walk-forward / validation / test / holdout&#xa;检验设计后样本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1398" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm12d" value="失效分析：regime 变了、结构变了、&#xa;crowding 了，还是假 alpha" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1452" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm13" value="核心 Artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="1700" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm13a" value="mandate / data ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1630" width="260" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm13b" value="signal spec / label spec" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1676" width="260" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm13c" value="single-factor report / selection memo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1722" width="260" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm13d" value="portfolio mapping / backtest report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1768" width="260" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14" value="常见错误" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2080" y="1970" width="200" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14a" value="label 不是相对收益&#xa;把市场 beta 当作 alpha" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1890" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14b" value="universe 脏且 membership 漂移&#xa;导致样本污染" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1944" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14c" value="未做截面标准化 / 中性化&#xa;结果只是规模或 beta 暴露" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="1998" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14d" value="只看回测，不看 Rank IC、分层单调性&#xa;和 mock portfolio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="2052" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mm14e" value="忽略 turnover、成本与 regime split&#xa;导致纸面 alpha 不可做" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="2370" y="2106" width="420" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme1" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme2" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme3" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme4" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme5" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme6" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme7" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme8" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme9" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm9" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme10" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm10" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme11" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme12" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#7C3AED;" parent="1" source="mm_root" target="mm12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme13" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#16A34A;" parent="1" source="mm_root" target="mm13" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mme14" style="curved=1;strokeWidth=2;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm_root" target="mm14" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes1" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm1" target="mm1a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes2" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm1" target="mm1b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes3" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm1" target="mm1c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes4" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm2" target="mm2a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes5" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm2" target="mm2b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes6" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm2" target="mm2c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes7" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm2" target="mm2d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes8" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm3" target="mm3a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes9" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm3" target="mm3b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes10" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm3" target="mm3c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes11" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm3" target="mm3d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes12" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm4" target="mm4a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes13" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm4" target="mm4b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes14" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm4" target="mm4c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes15" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm4" target="mm4d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes16" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes17" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes18" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes19" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes20" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5e" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes21" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm5" target="mm5f" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes22" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm6" target="mm6a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes23" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm6" target="mm6b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes24" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm6" target="mm6c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes25" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm6" target="mm6d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes26" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm7" target="mm7a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes27" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm7" target="mm7b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes28" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm7" target="mm7c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes29" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm7" target="mm7d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes30" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm8" target="mm8a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes31" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm8" target="mm8b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes32" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm8" target="mm8c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes33" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm8" target="mm8d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes34" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm9" target="mm9a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes35" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm9" target="mm9b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes36" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm9" target="mm9c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes37" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm9" target="mm9d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes38" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm10" target="mm10a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes39" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm10" target="mm10b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes40" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm10" target="mm10c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes41" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm10" target="mm10d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes42" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm11" target="mm11a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes43" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm11" target="mm11b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes44" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm11" target="mm11c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes45" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm11" target="mm11d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes46" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm12" target="mm12a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes47" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm12" target="mm12b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes48" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm12" target="mm12c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes49" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#94A3B8;" parent="1" source="mm12" target="mm12d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes50" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#16A34A;" parent="1" source="mm13" target="mm13a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes51" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#16A34A;" parent="1" source="mm13" target="mm13b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes52" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#16A34A;" parent="1" source="mm13" target="mm13c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes53" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#16A34A;" parent="1" source="mm13" target="mm13d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes54" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm14" target="mm14a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes55" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm14" target="mm14b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes56" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm14" target="mm14c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes57" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm14" target="mm14d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mmes58" style="curved=1;strokeWidth=1.4;html=1;endArrow=none;strokeColor=#EA580C;" parent="1" source="mm14" target="mm14e" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="cross-sectional-factor-flow" name="Flow">
+        <mxGraphModel dx="2787" dy="735" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4600" pageHeight="2200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="fl_title" value="横截面因子研究流程: 正式阶段与阶段内方法步骤" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=22;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="24" width="700" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_meta" value="关键结论&#xa;上层是正式阶段；下层是各阶段里的研究动作。&#xa;10 多个动作不等于 10 多个正式阶段。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="40" width="520" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_gov" value="共享治理层&#xa;想法准入 / 研究立项 / 晋级决策 / 变更纪律 / 审查状态词汇&#xa;横截面因子路线只是在立项之后进入独立正式流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="3490" y="40" width="860" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_stage_band" value="上层: 正式阶段" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="120" y="180" width="4230" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_step_band" value="下层: 各阶段内的方法步骤 / 证据对象" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="120" y="500" width="4230" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_art_band" value="底层: 关键 Artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="120" y="1120" width="4230" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl1" value="立项阶段&#xa;冻结研究身份 / 排序目标 /&#xa;持有周期 / 主证据合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="260" width="240" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl2" value="数据就绪阶段&#xa;搭好截面研究底座" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="260" width="220" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl3" value="信号就绪阶段&#xa;冻结因子面板合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="260" width="220" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl4" value="训练冻结阶段&#xa;冻结截面尺子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1010" y="260" width="220" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl5" value="测试证据阶段&#xa;验证独立样本排序证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="260" width="240" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fld1" value="测试证据成立?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1605" y="255" width="180" height="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl6" value="回测就绪阶段&#xa;验证组合映射与扣成本后的经济性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1855" y="260" width="270" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fld2" value="回测后仍可做?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2195" y="255" width="190" height="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl7" value="留出验证阶段&#xa;最终未参与设计窗口验证" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="2455" y="260" width="260" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fld3" value="留出验证未翻向/塌陷?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="2785" y="255" width="200" height="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl8" value="候选策略池&#xa;进入上线候选评估" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="3065" y="260" width="230" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_note_right" value="这条上层主线就是你说的“大框架”。&#xa;其中“数据就绪 / 信号就绪 / 训练冻结 / 测试证据 / 回测就绪 / 留出验证”都是正式阶段，不是方法步骤列表。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="3400" y="250" width="950" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="flr1" value="返回上游重做&#xa;研究范围 / 标签定义 / 因子定义 / 资产池&#xa;必要时新开子分支" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="1530" y="395" width="300" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="flr2" value="不进留出验证&#xa;回退到组合映射 / 约束 / 成本假设&#xa;或淘汰该方案" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="2140" y="395" width="320" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="flr3" value="不进候选策略池&#xa;记录留出期失败 / 市场状态变化 / 衰减结论" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="2750" y="395" width="330" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls1" value="立项阶段内要做的事&#xa;- 冻结研究路线 / 因子角色 / 组合表达&#xa;- 写清排序目标与持有周期&#xa;- 冻结主证据合同与容量审计口径" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="590" width="300" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls2" value="数据就绪阶段内要做的事&#xa;- 构造“日期 x 资产”面板&#xa;- 冻结资产池成员与可交易掩码&#xa;- 检查覆盖率、缺失、分组口径与时间语义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="590" width="300" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls3" value="信号就绪阶段内要做的事&#xa;- 定义因子身份、版本和方向&#xa;- 生成因子面板与覆盖率合同&#xa;- 冻结缺失值处理和最终分数字段" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="780" y="590" width="300" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls4" value="训练冻结阶段内要做的事&#xa;- 预处理 / 去极值 / 标准化 / 中性化&#xa;- 分桶规则 / 分位规则 / 并列处理规则&#xa;- 调仓规则 / 信号滞后 / 重叠规则 / 可保留方案清单" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="1110" y="590" width="340" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls5" value="测试证据阶段内要做的事&#xa;- 排序相关性 / 稳定性 / 分层价差 / 单调性&#xa;- 广度 / 覆盖率 / 分时期稳定性&#xa;- 分市场状态检验 / 多重检验 / 方案台账" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="1490" y="590" width="360" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls6" value="回测就绪阶段内要做的事&#xa;- 分数映射成组合&#xa;- 中性约束 / 权重规则 / 换手 / 容量&#xa;- 扣成本前后对比 / 单币集中度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="1900" y="590" width="350" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls7" value="留出验证阶段内要做的事&#xa;- 只复用冻结方案，不重估尺子&#xa;- 比较留出期与测试期 / 回测期&#xa;- 识别翻向、塌陷、市场状态变化与信号衰减" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="2310" y="590" width="350" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls8" value="为什么你会觉得像 10 多个阶段&#xa;因为“定义资产池、构造因子、预处理、相关性检验、组合构建、成本分析”这些在研究方法上是独立动作，&#xa;但在这里它们被归入上面的正式阶段内部执行，而不是各自独立成门禁阶段。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="2890" y="590" width="620" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="fls9" value="经验法则&#xa;如果一个节点需要冻结合同、产出结论、通过审查才能推进，它是正式阶段。&#xa;如果它只是某个阶段里完成证据的动作，它就是阶段内方法步骤。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+                    <mxGeometry x="3540" y="590" width="810" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla1" value="立项合同 / 立项审查包" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="1210" width="260" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla2" value="面板清单 / 资产池成员 / 可交易掩码 / 覆盖率报告" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="1210" width="280" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla3" value="因子面板 / 因子清单 / 覆盖率报告" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="1210" width="280" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla4" value="训练冻结合同 / 方案台账 / 分桶诊断" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="1210" width="360" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla5" value="排序相关性汇总 / 分层收益 / 单调性报告 / 测试通过方案" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="1210" width="410" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla6" value="组合合同 / 换手与容量报告 / 成本报告 / 引擎对比" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1960" y="1210" width="400" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fla7" value="留出期对比 / 滚动稳定性 / 市场状态变化审计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="2410" y="1210" width="350" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="fl_bottom" value="最终判断顺序&#xa;先看正式 stage 有没有过 gate，再看 stage 内方法动作有没有做扎实。不要把方法动作数量误当成 stage 数量。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="1360" width="2520" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl1" target="fl2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl2" target="fl3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl3" target="fl4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl4" target="fl5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl5" target="fld1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle6" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontColor=#16A34A;fontStyle=1;" parent="1" source="fld1" target="fl6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle7" value="不通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#EA580C;fontColor=#EA580C;fontStyle=1;" parent="1" source="fld1" target="flr1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle8" style="dashed=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;strokeColor=#EA580C;" parent="1" source="flr1" target="fl3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl6" target="fld2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle10" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontColor=#16A34A;fontStyle=1;" parent="1" source="fld2" target="fl7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle11" value="不通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontColor=#DC2626;fontStyle=1;" parent="1" source="fld2" target="flr2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle12" style="dashed=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="flr2" target="fl6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="fl7" target="fld3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle14" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontColor=#16A34A;fontStyle=1;" parent="1" source="fld3" target="fl8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle15" value="不通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontColor=#DC2626;fontStyle=1;" parent="1" source="fld3" target="flr3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle16" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl1" target="fls1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle17" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl2" target="fls2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle18" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl3" target="fls3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle19" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl4" target="fls4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle20" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl5" target="fls5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle21" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl6" target="fls6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle22" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#94A3B8;" parent="1" source="fl7" target="fls7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle23" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl1" target="fla1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle24" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl2" target="fla2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle25" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl3" target="fla3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle26" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl4" target="fla4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle27" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl5" target="fla5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle28" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl6" target="fla6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="fle29" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#16A34A;" parent="1" source="fl7" target="fla7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
