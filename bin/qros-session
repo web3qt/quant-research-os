@@ -24,11 +24,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if git -C "$TARGET_CWD" rev-parse --show-toplevel >/dev/null 2>&1; then
-  PROJECT_ROOT="$(git -C "$TARGET_CWD" rev-parse --show-toplevel)"
-else
-  PROJECT_ROOT="$TARGET_CWD"
-fi
+PROJECT_ROOT="$(cd "$TARGET_CWD" && pwd)"
 
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"

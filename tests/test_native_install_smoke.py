@@ -28,7 +28,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     return stage_dir
 
 
-def test_qros_session_wrapper_writes_outputs_to_git_root(tmp_path: Path) -> None:
+def test_qros_session_wrapper_writes_outputs_to_current_working_dir(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     project_root = tmp_path / "project"
     project_root.mkdir()
@@ -46,8 +46,36 @@ def test_qros_session_wrapper_writes_outputs_to_git_root(tmp_path: Path) -> None
     )
 
     assert result.returncode == 0
-    assert (project_root / "outputs").exists()
-    assert not (nested_dir / "outputs").exists()
+    assert (nested_dir / "outputs").exists()
+    assert not (project_root / "outputs").exists()
+
+
+def test_qros_session_wrapper_honors_explicit_cwd_for_outputs_root(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    nested_dir = project_root / "research" / "notes"
+    nested_dir.mkdir(parents=True)
+
+    run(["git", "init"], cwd=project_root, check=True, capture_output=True, text=True)
+
+    result = run(
+        [
+            str(repo_root / "bin" / "qros-session"),
+            "--cwd",
+            str(nested_dir),
+            "--raw-idea",
+            "BTC leads high-liquidity alts",
+        ],
+        cwd=project_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert (nested_dir / "outputs").exists()
+    assert not (project_root / "outputs").exists()
 
 
 def test_qros_review_wrapper_runs_in_current_stage_dir(tmp_path: Path) -> None:
