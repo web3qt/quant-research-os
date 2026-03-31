@@ -205,24 +205,24 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         window_dir = results_dir / window_name
         window_dir.mkdir(exist_ok=True)
         (window_dir / "portfolio_summary.parquet").write_text(
-            f"placeholder portfolio summary for {window_name}\n",
+            f"{window_name} 的占位 portfolio summary\n",
             encoding="utf-8",
         )
         (window_dir / "trades.parquet").write_text(
-            f"placeholder trades artifact for {window_name}\n",
+            f"{window_name} 的占位 trades 产物\n",
             encoding="utf-8",
         )
         (window_dir / "portfolio_timeseries.parquet").write_text(
-            f"placeholder portfolio timeseries artifact for {window_name}\n",
+            f"{window_name} 的占位 portfolio timeseries 产物\n",
             encoding="utf-8",
         )
         (window_dir / "summary.txt").write_text(
             "\n".join(
                 [
-                    f"Window: {window_name}",
-                    f"Selected symbols: {', '.join(selected_symbols)}",
+                    f"窗口: {window_name}",
+                    f"已选 symbols: {', '.join(selected_symbols)}",
                     f"Best horizon: {best_h}",
-                    f"Sparse activity rule: {sparse_activity_rule}",
+                    f"稀疏活动规则: {sparse_activity_rule}",
                 ]
             )
             + "\n",
@@ -234,13 +234,13 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
             [
                 "# Holdout Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Holdout window source: {holdout_window_source}",
-                f"- No re-estimation rule: {no_reestimate_rule}",
-                f"- No whitelist change rule: {no_whitelist_change_rule}",
-                f"- Direction flip rule: {direction_flip_rule}",
-                f"- Child lineage trigger: {child_lineage_trigger}",
-                f"- Next consumer stage: {consumer_stage}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- Holdout 窗口来源: {holdout_window_source}",
+                f"- 禁止重估规则: {no_reestimate_rule}",
+                f"- 禁止 whitelist 变更规则: {no_whitelist_change_rule}",
+                f"- 方向翻转规则: {direction_flip_rule}",
+                f"- CHILD LINEAGE 触发条件: {child_lineage_trigger}",
+                f"- 下游消费阶段: {consumer_stage}",
             ]
         )
         + "\n",
@@ -250,7 +250,7 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     (holdout_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- holdout_run_manifest.json",
                 "- holdout_backtest_compare.csv",
@@ -266,18 +266,18 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     (holdout_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `holdout_window_source`: frozen source of holdout windows, currently `{holdout_window_source}`.",
-                f"- `selected_symbols`: backtest-frozen whitelist reused in holdout, currently {selected_symbols}.",
-                f"- `best_h`: frozen holding horizon reused in holdout, currently `{best_h}`.",
-                f"- `required_views`: required comparison cuts, currently {required_views}.",
-                f"- `retryable_conditions`: allowed controlled rerun conditions, currently {retryable_conditions}.",
-                f"- `no_go_conditions`: formal no-go conditions, currently {no_go_conditions}.",
-                f"- `rollback_boundary`: holdout rollback boundary, currently `{rollback_boundary}`.",
-                f"- `machine_artifacts`: formal machine outputs from this stage, currently {machine_artifacts}.",
-                f"- `field_doc_rule`: field documentation requirement, currently `{field_doc_rule}`.",
-                f"- `no_redefinition_guardrail`: guardrail against redefining holdout purpose, currently `{no_redefinition_guardrail}`.",
+                f"- `holdout_window_source`: holdout 窗口的冻结来源，当前为 `{holdout_window_source}`。",
+                f"- `selected_symbols`: 在 holdout 中复用的 backtest 冻结 whitelist，当前为 {selected_symbols}。",
+                f"- `best_h`: 在 holdout 中复用的冻结持有窗口，当前为 `{best_h}`。",
+                f"- `required_views`: 必需比较视角，当前为 {required_views}。",
+                f"- `retryable_conditions`: 允许受控重跑的条件，当前为 {retryable_conditions}。",
+                f"- `no_go_conditions`: formal no-go 条件，当前为 {no_go_conditions}。",
+                f"- `rollback_boundary`: holdout 的回滚边界，当前为 `{rollback_boundary}`。",
+                f"- `machine_artifacts`: 本阶段正式机器产物集合，当前为 {machine_artifacts}。",
+                f"- `field_doc_rule`: 字段文档要求，当前为 `{field_doc_rule}`。",
+                f"- `no_redefinition_guardrail`: 禁止重定义 holdout 目的的护栏，当前为 `{no_redefinition_guardrail}`。",
             ]
         )
         + "\n",

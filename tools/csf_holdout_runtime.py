@@ -165,7 +165,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         "holdout_test_compare.parquet",
         "holdout_portfolio_compare.parquet",
     ]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     for name in ["rolling_holdout_stability.json", "regime_shift_audit.json"]:
         (stage_dir / name).write_text("{}\n", encoding="utf-8")
     (stage_dir / "csf_holdout_gate_decision.md").write_text(
@@ -173,20 +173,20 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
             [
                 "# CSF Holdout Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review closure is written.",
-                f"- Holdout window source: {holdout_window_source}",
-                f"- Reuse rule: {reuse_rule}",
-                f"- Drift scope: {drift_scope}",
-                f"- Variant reuse rule: {variant_reuse_rule}",
-                f"- No re-estimate rule: {no_reestimate_rule}",
-                f"- Direction flip rule: {direction_flip_rule}",
-                f"- Coverage rule: {coverage_rule}",
-                f"- Regime shift rule: {regime_shift_rule}",
-                f"- Retryable conditions: {retryable_conditions}",
-                f"- Child lineage trigger: {child_lineage_trigger}",
-                f"- Rollback boundary: {rollback_boundary}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Field documentation rule: {field_doc_rule}",
+                "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- Holdout 窗口来源: {holdout_window_source}",
+                f"- 复用规则: {reuse_rule}",
+                f"- 漂移审计范围: {drift_scope}",
+                f"- Variant 复用规则: {variant_reuse_rule}",
+                f"- 禁止重估规则: {no_reestimate_rule}",
+                f"- 方向翻转规则: {direction_flip_rule}",
+                f"- 覆盖率规则: {coverage_rule}",
+                f"- Regime shift 规则: {regime_shift_rule}",
+                f"- 可重试条件: {retryable_conditions}",
+                f"- CHILD LINEAGE 触发条件: {child_lineage_trigger}",
+                f"- 回滚边界: {rollback_boundary}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 字段文档规则: {field_doc_rule}",
             ]
         )
         + "\n",
@@ -195,7 +195,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- csf_holdout_run_manifest.json",
                 "- holdout_factor_diagnostics.parquet",
@@ -213,11 +213,11 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `holdout_window_source`: {holdout_window_source}",
-                f"- `retryable_conditions`: {retryable_conditions}",
-                f"- `machine_artifacts`: {machine_artifacts}",
+                f"- `holdout_window_source`: holdout 窗口来源，当前为 {holdout_window_source}。",
+                f"- `retryable_conditions`: 可重试条件集合，当前为 {retryable_conditions}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

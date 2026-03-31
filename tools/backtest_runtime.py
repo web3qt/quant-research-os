@@ -228,11 +228,11 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
             [
                 "# Capacity Review",
                 "",
-                f"- Capital base: {capital_base}",
-                f"- Cost model note: {cost_model_note}",
-                f"- Capacity bottleneck note: {combo_scope_note}",
-                f"- Risk reservation note: {reservation_note}",
-                f"- Abnormal performance sanity check: {abnormal_performance_sanity_check}",
+                f"- 资本基数: {capital_base}",
+                f"- 成本模型说明: {cost_model_note}",
+                f"- 容量瓶颈说明: {combo_scope_note}",
+                f"- 风险保留项说明: {reservation_note}",
+                f"- 异常表现核查: {abnormal_performance_sanity_check}",
             ]
         )
         + "\n",
@@ -244,11 +244,11 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
             [
                 "# Backtest Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Selected symbols: {', '.join(selected_symbols)}",
-                f"- Frozen best_h: {best_h}",
-                f"- Engines required: {', '.join(required_engines)}",
-                f"- Next consumer stage: {consumer_stage}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 已选 symbols: {', '.join(selected_symbols)}",
+                f"- 已冻结 best_h: {best_h}",
+                f"- 必需引擎: {', '.join(required_engines)}",
+                f"- 下游消费阶段: {consumer_stage}",
             ]
         )
         + "\n",
@@ -258,7 +258,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     (backtest_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- backtest_frozen_config.json",
                 "- engine_compare.csv",
@@ -278,16 +278,16 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     (backtest_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `selected_symbols`: frozen whitelist consumed by backtest, currently {selected_symbols}.",
-                f"- `best_h`: frozen horizon from test_evidence, currently `{best_h}`.",
-                f"- `entry_rule`: execution entry rule, currently `{entry_rule}`.",
-                f"- `exit_rule`: execution exit rule, currently `{exit_rule}`.",
-                f"- `position_sizing_rule`: portfolio sizing rule, currently `{position_sizing_rule}`.",
-                f"- `risk_controls`: risk overlay controls, currently {risk_controls}.",
-                f"- `required_engines`: formal engines required for verification, currently {required_engines}.",
-                f"- `machine_artifacts`: formal machine outputs from this stage, currently {machine_artifacts}.",
+                f"- `selected_symbols`: backtest 消费的冻结 whitelist，当前为 {selected_symbols}。",
+                f"- `best_h`: 来自 test_evidence 的冻结持有窗口，当前为 `{best_h}`。",
+                f"- `entry_rule`: 执行入场规则，当前为 `{entry_rule}`。",
+                f"- `exit_rule`: 执行出场规则，当前为 `{exit_rule}`。",
+                f"- `position_sizing_rule`: 组合仓位规则，当前为 `{position_sizing_rule}`。",
+                f"- `risk_controls`: 风险覆盖控制，当前为 {risk_controls}。",
+                f"- `required_engines`: formal 验证要求的引擎集合，当前为 {required_engines}。",
+                f"- `machine_artifacts`: 本阶段正式机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

@@ -194,7 +194,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     (train_dir / "train_quality.parquet").write_text(
         "\n".join(
             [
-                "placeholder train-quality artifact for governance-first train_freeze stage",
+                "governance-first train_freeze 阶段的占位 train-quality 产物",
                 f"quality_metrics={','.join(quality_metrics)}",
                 f"filter_rule={filter_rule}",
                 f"symbol_param_admission_rule={symbol_param_admission_rule}",
@@ -224,13 +224,13 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             [
                 "# Train Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Train window source: {train_window_source}",
-                f"- Threshold rule: {threshold_rule}",
-                f"- Regime cut rule: {regime_cut_rule}",
-                f"- Selection rule: {selection_rule}",
-                f"- Next consumer stage: {consumer_stage}",
-                f"- Reuse constraints: {reuse_constraints}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- Train 窗口来源: {train_window_source}",
+                f"- 阈值规则: {threshold_rule}",
+                f"- Regime cut 规则: {regime_cut_rule}",
+                f"- 选择规则: {selection_rule}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 复用约束: {reuse_constraints}",
             ]
         )
         + "\n",
@@ -240,7 +240,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     (train_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- train_thresholds.json",
                 "- train_quality.parquet",
@@ -257,18 +257,18 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     (train_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `train_window_source`: upstream train split reference, currently `{train_window_source}`.",
-                f"- `threshold_targets`: fields or contracts governed by train freeze, currently {threshold_targets}.",
-                f"- `threshold_rule`: frozen threshold estimation rule, currently `{threshold_rule}`.",
-                f"- `regime_cut_rule`: frozen regime cut rule, currently `{regime_cut_rule}`.",
-                f"- `quality_metrics`: quality metrics reviewed in train freeze, currently {quality_metrics}.",
-                f"- `filter_rule`: frozen train quality filter logic, currently `{filter_rule}`.",
-                f"- `candidate_param_ids`: upstream parameter ids considered in train, currently {candidate_param_ids}.",
-                f"- `kept_param_ids`: parameter ids allowed to proceed, currently {kept_param_ids}.",
-                f"- `rejected_param_ids`: parameter ids rejected during train freeze, currently {rejected_param_ids}.",
-                f"- `machine_artifacts`: formal machine outputs from this stage, currently {machine_artifacts}.",
+                f"- `train_window_source`: 上游 train 切分引用，当前为 `{train_window_source}`。",
+                f"- `threshold_targets`: train freeze 负责治理的字段或合同，当前为 {threshold_targets}。",
+                f"- `threshold_rule`: 已冻结的阈值估计规则，当前为 `{threshold_rule}`。",
+                f"- `regime_cut_rule`: 已冻结的 regime cut 规则，当前为 `{regime_cut_rule}`。",
+                f"- `quality_metrics`: train freeze 审查的质量指标，当前为 {quality_metrics}。",
+                f"- `filter_rule`: 已冻结的 train 质量过滤逻辑，当前为 `{filter_rule}`。",
+                f"- `candidate_param_ids`: train 阶段纳入考虑的上游参数 ID，当前为 {candidate_param_ids}。",
+                f"- `kept_param_ids`: 允许继续向下游推进的参数 ID，当前为 {kept_param_ids}。",
+                f"- `rejected_param_ids`: 在 train freeze 中被拒绝的参数 ID，当前为 {rejected_param_ids}。",
+                f"- `machine_artifacts`: 本阶段正式机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

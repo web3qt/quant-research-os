@@ -139,7 +139,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     params_dir = signal_ready_dir / "params"
     params_dir.mkdir(exist_ok=True)
     (params_dir / f"{param_id}.parquet").write_text(
-        "placeholder signal timeseries artifact for baseline-only signal_ready skeleton\n",
+        "baseline-only signal_ready 骨架的占位信号时序产物\n",
         encoding="utf-8",
     )
 
@@ -156,10 +156,10 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "signal_coverage.md").write_text(
         "\n".join(
             [
-                "# Signal Coverage",
+                "# 信号覆盖",
                 "",
-                f"- Baseline param_id: {param_id}",
-                "- Coverage is placeholder-perfect in the first-wave skeleton.",
+                f"- 基线 param_id: {param_id}",
+                "- 第一版骨架中的覆盖率为占位完美值。",
             ]
         )
         + "\n",
@@ -168,11 +168,11 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "signal_coverage_summary.md").write_text(
         "\n".join(
             [
-                "# Signal Coverage Summary",
+                "# 信号覆盖摘要",
                 "",
-                f"- Baseline signal: {baseline_signal}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Quality fields: {', '.join(quality_fields)}",
+                f"- 基线信号: {baseline_signal}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 质量字段: {', '.join(quality_fields)}",
             ]
         )
         + "\n",
@@ -181,14 +181,14 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "signal_contract.md").write_text(
         "\n".join(
             [
-                "# Signal Contract",
+                "# 信号合同",
                 "",
-                f"- Baseline signal: {baseline_signal}",
+                f"- 基线信号: {baseline_signal}",
                 f"- Param ID: {param_id}",
-                f"- Upstream inputs: {', '.join(upstream_inputs)}",
-                f"- State fields: {', '.join(state_fields)}",
-                f"- Filter fields: {', '.join(filter_fields)}",
-                f"- Identity note: {identity_note}",
+                f"- 上游输入: {', '.join(upstream_inputs)}",
+                f"- 状态字段: {', '.join(state_fields)}",
+                f"- 过滤字段: {', '.join(filter_fields)}",
+                f"- 身份说明: {identity_note}",
             ]
         )
         + "\n",
@@ -197,13 +197,13 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "signal_fields_contract.md").write_text(
         "\n".join(
             [
-                "# Signal Fields Contract",
+                "# 信号字段合同",
                 "",
-                f"- Timeseries schema: {', '.join(timeseries_schema)}",
-                f"- Signal timestamp: {signal_timestamp}",
-                f"- Label alignment: {label_alignment}",
-                f"- No-lookahead guardrail: {no_lookahead_guardrail}",
-                f"- Schema note: {schema_note}",
+                f"- 时序 schema: {', '.join(timeseries_schema)}",
+                f"- 信号时间戳: {signal_timestamp}",
+                f"- 标签对齐: {label_alignment}",
+                f"- 无前视护栏: {no_lookahead_guardrail}",
+                f"- Schema 说明: {schema_note}",
             ]
         )
         + "\n",
@@ -214,9 +214,9 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             [
                 "# Signal Ready Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Baseline-only scope is frozen for param_id `{param_id}`.",
-                f"- Next consumer stage: {consumer_stage}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- baseline-only scope 已为 param_id `{param_id}` 冻结。",
+                f"- 下游消费阶段: {consumer_stage}",
             ]
         )
         + "\n",
@@ -225,7 +225,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- param_manifest.csv",
                 "- params/",
@@ -244,17 +244,17 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (signal_ready_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `baseline_signal`: frozen baseline signal expression, currently `{baseline_signal}`.",
-                f"- `param_id`: frozen baseline identifier, currently `{param_id}`.",
-                f"- `signal_timestamp`: signal time key, currently `{signal_timestamp}`.",
+                f"- `baseline_signal`: 已冻结的基线信号表达式，当前为 `{baseline_signal}`。",
+                f"- `param_id`: 已冻结的基线标识，当前为 `{param_id}`。",
+                f"- `signal_timestamp`: 信号时间键，当前为 `{signal_timestamp}`。",
                 f"- `label_alignment`: {label_alignment}",
                 f"- `no_lookahead_guardrail`: {no_lookahead_guardrail}",
                 f"- `timeseries_schema`: {timeseries_schema}",
-                f"- `quality_fields`: {quality_fields}",
-                f"- `machine_artifacts`: {machine_artifacts}",
-                f"- `doc_artifacts`: {doc_artifacts}",
+                f"- `quality_fields`: 质量字段集合，当前为 {quality_fields}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
+                f"- `doc_artifacts`: 本阶段文档产物集合，当前为 {doc_artifacts}。",
             ]
         )
         + "\n",

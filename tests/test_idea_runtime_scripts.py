@@ -363,7 +363,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert "BTC drives price discovery for high-liquidity ALTs." in (mandate_dir / "mandate.md").read_text(
         encoding="utf-8"
     )
-    assert "Data source: Binance UM futures klines" in (mandate_dir / "research_scope.md").read_text(
+    assert "数据来源: Binance UM futures klines" in (mandate_dir / "research_scope.md").read_text(
         encoding="utf-8"
     )
     assert 'data_source = "Binance UM futures klines"' in (mandate_dir / "run_config.toml").read_text(

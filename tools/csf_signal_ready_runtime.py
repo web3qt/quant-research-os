@@ -130,7 +130,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
 
-    (stage_dir / "factor_panel.parquet").write_text("placeholder factor panel payload\n", encoding="utf-8")
+    (stage_dir / "factor_panel.parquet").write_text("占位 factor panel 载荷\n", encoding="utf-8")
     _dump_yaml(
         stage_dir / "factor_manifest.yaml",
         {
@@ -152,22 +152,22 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         },
     )
     for name in ["factor_coverage_report.parquet", "factor_group_context.parquet"]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     (stage_dir / "factor_contract.md").write_text(
         "\n".join(
             [
-                "# Factor Contract",
+                "# 因子合同",
                 "",
-                f"- Factor ID: {factor_id}",
-                f"- Factor version: {factor_version}",
-                f"- Factor direction: {factor_direction}",
-                f"- Factor structure: {factor_structure}",
-                f"- As-of semantics: {as_of_semantics}",
-                f"- Coverage contract: {coverage_contract}",
-                f"- Missing value policy: {missing_value_policy}",
-                f"- Score combination formula: {score_combination_formula}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Frozen inputs note: {frozen_inputs_note}",
+                f"- 因子 ID: {factor_id}",
+                f"- 因子版本: {factor_version}",
+                f"- 因子方向: {factor_direction}",
+                f"- 因子结构: {factor_structure}",
+                f"- As-of 语义: {as_of_semantics}",
+                f"- 覆盖合同: {coverage_contract}",
+                f"- 缺失值策略: {missing_value_policy}",
+                f"- 分数组合公式: {score_combination_formula}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结输入说明: {frozen_inputs_note}",
             ]
         )
         + "\n",
@@ -176,13 +176,13 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (stage_dir / "factor_field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Factor Field Dictionary",
+                "# 因子字段字典",
                 "",
-                f"- `raw_factor_fields`: {raw_factor_fields}",
-                f"- `derived_factor_fields`: {derived_factor_fields}",
-                f"- `final_score_field`: {final_score_field}",
-                f"- `group_context_fields`: {group_context_fields}",
-                f"- `component_factor_ids`: {component_factor_ids}",
+                f"- `raw_factor_fields`: 原始因子字段集合，当前为 {raw_factor_fields}。",
+                f"- `derived_factor_fields`: 派生因子字段集合，当前为 {derived_factor_fields}。",
+                f"- `final_score_field`: 最终得分字段，当前为 {final_score_field}。",
+                f"- `group_context_fields`: 分组上下文字段，当前为 {group_context_fields}。",
+                f"- `component_factor_ids`: 组件因子 ID 集合，当前为 {component_factor_ids}。",
             ]
         )
         + "\n",
@@ -193,8 +193,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             [
                 "# CSF Signal Ready Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review closure is written.",
-                f"- Next consumer stage: {consumer_stage}",
+                "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 下游消费阶段: {consumer_stage}",
             ]
         )
         + "\n",
@@ -203,7 +203,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- factor_panel.parquet",
                 "- factor_manifest.yaml",
@@ -222,14 +222,14 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `factor_id`: {factor_id}",
-                f"- `factor_version`: {factor_version}",
-                f"- `factor_direction`: {factor_direction}",
-                f"- `factor_structure`: {factor_structure}",
-                f"- `panel_primary_key`: {panel_primary_key}",
-                f"- `machine_artifacts`: {machine_artifacts}",
+                f"- `factor_id`: 因子 ID，当前为 {factor_id}。",
+                f"- `factor_version`: 因子版本，当前为 {factor_version}。",
+                f"- `factor_direction`: 因子方向，当前为 {factor_direction}。",
+                f"- `factor_structure`: 因子结构，当前为 {factor_structure}。",
+                f"- `panel_primary_key`: 面板主键，当前为 {panel_primary_key}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

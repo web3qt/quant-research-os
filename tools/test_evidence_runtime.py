@@ -185,7 +185,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "report_by_h.parquet").write_text(
         "\n".join(
             [
-                "placeholder report_by_h artifact for governance-first test_evidence stage",
+                "governance-first test_evidence 阶段的占位 report_by_h 产物",
                 f"candidate_best_h={','.join(candidate_best_h)}",
                 f"best_h={best_h}",
                 f"formal_gate_note={formal_gate_note}",
@@ -199,7 +199,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "symbol_summary.parquet").write_text(
         "\n".join(
             [
-                "placeholder symbol_summary artifact for governance-first test_evidence stage",
+                "governance-first test_evidence 阶段的占位 symbol_summary 产物",
                 f"selected_symbols={','.join(selected_symbols)}",
                 f"summary_note={summary_note}",
                 f"admissibility_rule={admissibility_rule}",
@@ -212,7 +212,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "admissibility_report.parquet").write_text(
         "\n".join(
             [
-                "placeholder admissibility report for governance-first test_evidence stage",
+                "governance-first test_evidence 阶段的占位 admissibility 报告",
                 f"admissibility_rule={admissibility_rule}",
                 f"rejection_rule={rejection_rule}",
                 f"selected_symbols={','.join(selected_symbols)}",
@@ -234,11 +234,11 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
             [
                 "# Crowding Review",
                 "",
-                f"- Scope: {crowding_scope}",
-                f"- Formal vs audit boundary: {formal_vs_audit_boundary}",
-                f"- Condition analysis note: {condition_analysis_note}",
+                f"- 审计范围: {crowding_scope}",
+                f"- Formal 与 audit 边界: {formal_vs_audit_boundary}",
+                f"- 条件分析说明: {condition_analysis_note}",
                 "",
-                "## Audit Items",
+                "## 审计项",
                 "",
                 *[f"- {item}" for item in audit_items],
             ]
@@ -257,7 +257,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "selected_symbols_test.parquet").write_text(
         "\n".join(
             [
-                "placeholder selected symbols parquet mirror",
+                "selected symbols 的占位 parquet 镜像",
                 f"symbols={','.join(selected_symbols)}",
                 f"param_ids={','.join(selected_param_ids)}",
                 f"best_h={best_h}",
@@ -298,12 +298,12 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
             [
                 "# Test Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Test window source: {test_window_source}",
-                f"- Selected symbols: {', '.join(selected_symbols)}",
-                f"- Selected param_ids: {', '.join(selected_param_ids)}",
-                f"- Frozen best_h: {best_h}",
-                f"- Next consumer stage: {consumer_stage}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- Test 窗口来源: {test_window_source}",
+                f"- 已选 symbols: {', '.join(selected_symbols)}",
+                f"- 已选 param_ids: {', '.join(selected_param_ids)}",
+                f"- 已冻结 best_h: {best_h}",
+                f"- 下游消费阶段: {consumer_stage}",
             ]
         )
         + "\n",
@@ -313,7 +313,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- report_by_h.parquet",
                 "- symbol_summary.parquet",
@@ -334,15 +334,15 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (test_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `test_window_source`: upstream test split reference, currently `{test_window_source}`.",
-                f"- `selected_param_ids`: train-approved param ids admitted into test, currently {selected_param_ids}.",
-                f"- `selected_symbols`: frozen whitelist admitted into backtest consideration, currently {selected_symbols}.",
-                f"- `best_h`: frozen horizon selected for downstream consumers, currently `{best_h}`.",
-                f"- `formal_gate_note`: compact summary of formal test gate, currently `{formal_gate_note}`.",
-                f"- `audit_items`: audit-only evidence tracked in this stage, currently {audit_items}.",
-                f"- `machine_artifacts`: formal machine outputs from this stage, currently {machine_artifacts}.",
+                f"- `test_window_source`: 上游 test 切分引用，当前为 `{test_window_source}`。",
+                f"- `selected_param_ids`: 经 train 批准后进入 test 的参数 ID，当前为 {selected_param_ids}。",
+                f"- `selected_symbols`: 冻结后纳入 backtest 评估的 whitelist，当前为 {selected_symbols}。",
+                f"- `best_h`: 为下游消费者冻结的持有窗口，当前为 `{best_h}`。",
+                f"- `formal_gate_note`: formal test gate 的摘要说明，当前为 `{formal_gate_note}`。",
+                f"- `audit_items`: 本阶段跟踪的 audit-only 证据项，当前为 {audit_items}。",
+                f"- `machine_artifacts`: 本阶段正式机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

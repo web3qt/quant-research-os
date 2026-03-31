@@ -167,13 +167,13 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         "name_level_metrics.parquet",
         "target_strategy_compare.parquet",
     ]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     with (stage_dir / "rebalance_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["portfolio_expression", "selection_rule", "weight_mapping_rule"])
         writer.writerow([portfolio_expression, selection_rule, weight_mapping_rule])
     (stage_dir / "cost_assumption_report.md").write_text(
-        f"# Cost Assumption Report\n\n- {cost_model}\n- {capacity_model}\n",
+        f"# 成本假设报告\n\n- 成本模型: {cost_model}\n- 容量模型: {capacity_model}\n",
         encoding="utf-8",
     )
     (stage_dir / "drawdown_report.json").write_text("{}\n", encoding="utf-8")
@@ -186,21 +186,21 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
             [
                 "# CSF Backtest Contract",
                 "",
-                f"- Portfolio expression: {portfolio_expression}",
-                f"- Selection rule: {selection_rule}",
-                f"- Weight mapping rule: {weight_mapping_rule}",
-                f"- Gross exposure rule: {gross_exposure_rule}",
-                f"- Rebalance execution lag: {rebalance_execution_lag}",
-                f"- Turnover budget rule: {turnover_budget_rule}",
-                f"- Cost model: {cost_model}",
-                f"- Capacity model: {capacity_model}",
-                f"- Max name weight rule: {max_name_weight_rule}",
-                f"- Net exposure rule: {net_exposure_rule}",
-                f"- Group neutral overlay: {group_neutral_overlay}",
-                f"- Target strategy reference: {target_strategy_reference}",
-                f"- Required diagnostics: {required_diagnostics}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Frozen config note: {frozen_config_note}",
+                f"- 组合表达: {portfolio_expression}",
+                f"- 选择规则: {selection_rule}",
+                f"- 权重映射规则: {weight_mapping_rule}",
+                f"- 总敞口规则: {gross_exposure_rule}",
+                f"- 再平衡执行滞后: {rebalance_execution_lag}",
+                f"- 换手预算规则: {turnover_budget_rule}",
+                f"- 成本模型: {cost_model}",
+                f"- 容量模型: {capacity_model}",
+                f"- 单名称最大权重规则: {max_name_weight_rule}",
+                f"- 净敞口规则: {net_exposure_rule}",
+                f"- group neutral overlay: {group_neutral_overlay}",
+                f"- 目标策略引用: {target_strategy_reference}",
+                f"- 必需诊断项: {required_diagnostics}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结配置说明: {frozen_config_note}",
             ]
         )
         + "\n",
@@ -209,7 +209,7 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- portfolio_contract.yaml",
                 "- portfolio_weight_panel.parquet",
@@ -231,11 +231,11 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `portfolio_expression`: {portfolio_expression}",
-                f"- `required_diagnostics`: {required_diagnostics}",
-                f"- `machine_artifacts`: {machine_artifacts}",
+                f"- `portfolio_expression`: 组合表达，当前为 {portfolio_expression}。",
+                f"- `required_diagnostics`: 必需诊断项集合，当前为 {required_diagnostics}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

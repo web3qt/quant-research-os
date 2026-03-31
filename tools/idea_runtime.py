@@ -91,7 +91,7 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
     intake_dir.mkdir(parents=True, exist_ok=True)
 
     templates: dict[str, str] = {
-        "idea_brief.md": "# Idea Brief\n\n## Raw Idea\n\n- TODO\n\n## Source\n\n- TODO\n",
+        "idea_brief.md": "# Idea Brief\n\n## 原始想法\n\n- TODO\n\n## 来源\n\n- TODO\n",
         "intake_interview.md": (
             "# Intake Interview\n\n"
             "在填写 qualification 和 gate 之前，必须先和用户确认：\n\n"
@@ -104,13 +104,13 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
         ),
         "observation_hypothesis_map.md": (
             "# Observation Hypothesis Map\n\n"
-            "## Observation\n\n- TODO\n\n"
-            "## Primary Hypothesis\n\n- TODO\n\n"
-            "## Counter-Hypothesis\n\n- TODO\n"
+            "## 观察\n\n- TODO\n\n"
+            "## 主假设\n\n- TODO\n\n"
+            "## 对立假设\n\n- TODO\n"
         ),
         "research_question_set.md": "# Research Questions\n\n- TODO\n",
         "artifact_catalog.md": (
-            "# Artifact Catalog\n\n"
+            "# 产物清单\n\n"
             "- idea_brief.md\n"
             "- intake_interview.md\n"
             "- observation_hypothesis_map.md\n"
@@ -287,56 +287,56 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "",
                 f"Idea ID: {gate_decision.get('idea_id', lineage_root.name)}",
                 "",
-                "## Objective",
+                "## 目标",
                 "",
-                "- Convert qualified intake into a formal mandate.",
+                "- 将已通过 qualification 的 intake 冻结为正式 mandate。",
                 "",
-                "## Research Intent",
+                "## 研究意图",
                 "",
-                f"- Research question: {research_question}",
-                f"- Primary hypothesis: {primary_hypothesis}",
-                f"- Counter-hypothesis: {counter_hypothesis}",
-                f"- Research route: {research_route}",
-                f"- Factor role: {factor_role or 'n/a'}",
-                f"- Factor structure: {factor_structure or 'n/a'}",
-                f"- Portfolio expression: {portfolio_expression or 'n/a'}",
-                f"- Neutralization policy: {neutralization_policy or 'n/a'}",
-                f"- Target strategy reference: {target_strategy_reference or 'n/a'}",
-                f"- Group taxonomy reference: {group_taxonomy_reference or 'n/a'}",
-                f"- Excluded routes: {', '.join(excluded_routes)}",
-                f"- Excluded topics: {', '.join(excluded_topics)}",
+                f"- 研究问题: {research_question}",
+                f"- 主假设: {primary_hypothesis}",
+                f"- 对立假设: {counter_hypothesis}",
+                f"- 研究路线: {research_route}",
+                f"- 因子角色: {factor_role or 'n/a'}",
+                f"- 因子结构: {factor_structure or 'n/a'}",
+                f"- 组合表达: {portfolio_expression or 'n/a'}",
+                f"- 中性化策略: {neutralization_policy or 'n/a'}",
+                f"- 目标策略引用: {target_strategy_reference or 'n/a'}",
+                f"- 分组体系引用: {group_taxonomy_reference or 'n/a'}",
+                f"- 排除路线: {', '.join(excluded_routes)}",
+                f"- 排除主题: {', '.join(excluded_topics)}",
                 "",
-                "## Route Rationale",
+                "## 路线理由",
                 "",
                 *[f"- {item}" for item in route_rationale],
                 "",
-                "## Success Criteria",
+                "## 成功标准",
                 "",
                 *[f"- {item}" for item in success_criteria],
                 "",
-                "## Failure Criteria",
+                "## 失败标准",
                 "",
                 *[f"- {item}" for item in failure_criteria],
                 "",
-                "## Frozen Execution Inputs",
+                "## 已冻结执行输入",
                 "",
-                f"- Data source: {data_source}",
-                f"- Bar size: {bar_size}",
-                f"- Holding horizons: {', '.join(holding_horizons)}",
-                f"- Timestamp semantics: {timestamp_semantics}",
-                f"- No-lookahead guardrail: {no_lookahead_guardrail}",
+                f"- 数据来源: {data_source}",
+                f"- Bar 粒度: {bar_size}",
+                f"- 持有窗口: {', '.join(holding_horizons)}",
+                f"- 时间戳语义: {timestamp_semantics}",
+                f"- 无前视护栏: {no_lookahead_guardrail}",
                 "",
-                "## Execution Contract",
+                "## 执行合同",
                 "",
-                f"- Time split policy: {time_split_note}",
-                f"- Parameter boundary policy: {parameter_boundary_note}",
-                f"- Artifact contract: {artifact_contract_note}",
-                f"- Crowding/capacity note: {crowding_capacity_note}",
+                f"- 时间切分策略: {time_split_note}",
+                f"- 参数边界策略: {parameter_boundary_note}",
+                f"- 产物合同: {artifact_contract_note}",
+                f"- 拥挤度 / 容量说明: {crowding_capacity_note}",
                 "",
-                "## Gate Basis",
+                "## Gate 依据",
                 "",
                 "- idea_gate_decision.yaml verdict = GO_TO_MANDATE",
-                f"- Intake recommended route: {route_assessment['recommended_route']}",
+                f"- Intake 推荐路线: {route_assessment['recommended_route']}",
             ]
         )
         + "\n",
@@ -348,14 +348,14 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 "# Research Scope",
                 "",
-                f"- Market: {market}",
-                f"- Data source: {data_source}",
+                f"- 市场: {market}",
+                f"- 数据来源: {data_source}",
                 f"- Universe: {universe}",
-                f"- Bar size: {bar_size}",
-                f"- Target task: {target_task}",
-                f"- Excluded scope: {', '.join(excluded_scope)}",
-                f"- Budget days: {scope_contract.get('budget_days', 0)}",
-                f"- Max iterations: {scope_contract.get('max_iterations', 0)}",
+                f"- Bar 粒度: {bar_size}",
+                f"- 研究任务: {target_task}",
+                f"- 排除范围: {', '.join(excluded_scope)}",
+                f"- 预算天数: {scope_contract.get('budget_days', 0)}",
+                f"- 最大迭代次数: {scope_contract.get('max_iterations', 0)}",
             ]
         )
         + "\n",
@@ -402,7 +402,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         mandate_dir / "parameter_grid.yaml",
         {
             "parameters": [],
-            "note": "Fill formal parameter candidates after mandate qualification.",
+            "note": "在 mandate qualification 完成后补正式参数候选。",
         },
     )
     (mandate_dir / "run_config.toml").write_text(
@@ -421,25 +421,25 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     (mandate_dir / "artifact_catalog.md").write_text(
-        "# Artifact Catalog\n\n- mandate.md\n- research_scope.md\n- research_route.yaml\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
+        "# 产物清单\n\n- mandate.md\n- research_scope.md\n- research_route.yaml\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
         encoding="utf-8",
     )
     (mandate_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `research_route`: frozen route contract for this mandate, currently `{research_route}`.",
-                f"- `factor_role`: CSF factor role, currently `{factor_role or 'n/a'}`.",
-                f"- `factor_structure`: CSF factor structure, currently `{factor_structure or 'n/a'}`.",
-                f"- `portfolio_expression`: CSF portfolio expression, currently `{portfolio_expression or 'n/a'}`.",
-                f"- `neutralization_policy`: CSF neutralization policy, currently `{neutralization_policy or 'n/a'}`.",
-                f"- `target_strategy_reference`: CSF target strategy reference, currently `{target_strategy_reference or 'n/a'}`.",
-                f"- `group_taxonomy_reference`: CSF group taxonomy reference, currently `{group_taxonomy_reference or 'n/a'}`.",
-                f"- `excluded_routes`: alternative routes rejected at mandate freeze, currently `{excluded_routes}`.",
-                f"- `data_source`: frozen upstream source for this mandate, currently `{data_source}`.",
-                f"- `bar_size`: frozen research cadence for this mandate, currently `{bar_size}`.",
-                f"- `holding_horizons`: frozen evaluation horizons, currently `{holding_horizons}`.",
+                f"- `research_route`: 本 mandate 冻结的研究路线，当前为 `{research_route}`。",
+                f"- `factor_role`: CSF 因子角色，当前为 `{factor_role or 'n/a'}`。",
+                f"- `factor_structure`: CSF 因子结构，当前为 `{factor_structure or 'n/a'}`。",
+                f"- `portfolio_expression`: CSF 组合表达，当前为 `{portfolio_expression or 'n/a'}`。",
+                f"- `neutralization_policy`: CSF 中性化策略，当前为 `{neutralization_policy or 'n/a'}`。",
+                f"- `target_strategy_reference`: CSF 目标策略引用，当前为 `{target_strategy_reference or 'n/a'}`。",
+                f"- `group_taxonomy_reference`: CSF 分组体系引用，当前为 `{group_taxonomy_reference or 'n/a'}`。",
+                f"- `excluded_routes`: mandate 冻结时排除的备选路线，当前为 `{excluded_routes}`。",
+                f"- `data_source`: 本 mandate 冻结的上游数据来源，当前为 `{data_source}`。",
+                f"- `bar_size`: 本 mandate 冻结的研究粒度，当前为 `{bar_size}`。",
+                f"- `holding_horizons`: 本 mandate 冻结的持有窗口，当前为 `{holding_horizons}`。",
                 f"- `artifact_contract`: {artifact_contract_note}",
                 f"- `no_lookahead_guardrail`: {no_lookahead_guardrail}",
                 "",

@@ -146,7 +146,7 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         "filter_condition_panel.parquet",
         "target_strategy_condition_compare.parquet",
     ]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     (stage_dir / "rank_ic_summary.json").write_text(
         json.dumps({"factor_role": declared_factor_role, "selected_variant_ids": selected_variant_ids}, indent=2)
         + "\n",
@@ -173,19 +173,19 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
             [
                 "# CSF Test Contract",
                 "",
-                f"- Test window source: {test_window_source}",
-                f"- Train reuse note: {train_reuse_note}",
-                f"- Subperiod rule: {subperiod_rule}",
-                f"- Selection rule: {selection_rule}",
-                f"- Multiple testing note: {multiple_testing_note}",
-                f"- Primary evidence contract: {primary_evidence_contract}",
-                f"- Factor role: {declared_factor_role}",
-                f"- Role specific note: {role_specific_note}",
-                f"- Breadth rule: {breadth_rule}",
-                f"- Flip rule: {flip_rule}",
-                f"- Coverage note: {coverage_note}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Frozen spec note: {frozen_spec_note}",
+                f"- Test 窗口来源: {test_window_source}",
+                f"- Train 复用说明: {train_reuse_note}",
+                f"- 子区间规则: {subperiod_rule}",
+                f"- 选择规则: {selection_rule}",
+                f"- 多重检验说明: {multiple_testing_note}",
+                f"- 主证据合同: {primary_evidence_contract}",
+                f"- 因子角色: {declared_factor_role}",
+                f"- 角色特定说明: {role_specific_note}",
+                f"- Breadth 规则: {breadth_rule}",
+                f"- 翻转规则: {flip_rule}",
+                f"- 覆盖说明: {coverage_note}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结规格说明: {frozen_spec_note}",
             ]
         )
         + "\n",
@@ -194,7 +194,7 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- rank_ic_timeseries.parquet",
                 "- rank_ic_summary.json",
@@ -217,12 +217,12 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `selected_variant_ids`: {selected_variant_ids}",
-                f"- `primary_evidence_contract`: {primary_evidence_contract}",
-                f"- `factor_role`: {declared_factor_role}",
-                f"- `machine_artifacts`: {machine_artifacts}",
+                f"- `selected_variant_ids`: 已选 variant ID 集合，当前为 {selected_variant_ids}。",
+                f"- `primary_evidence_contract`: 主证据合同，当前为 {primary_evidence_contract}。",
+                f"- `factor_role`: 因子角色，当前为 {declared_factor_role}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

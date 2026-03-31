@@ -197,7 +197,7 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         "train_bucket_diagnostics.parquet",
         "train_neutralization_diagnostics.parquet",
     ]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     with (stage_dir / "train_variant_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["variant_id", "status", "selection_rule"])
@@ -214,24 +214,24 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             [
                 "# CSF Train Contract",
                 "",
-                f"- Winsorize policy: {winsorize_policy}",
-                f"- Standardize policy: {standardize_policy}",
-                f"- Missing fill policy: {missing_fill_policy}",
-                f"- Coverage floor rule: {coverage_floor_rule}",
-                f"- Neutralization policy: {neutralization_policy}",
-                f"- Beta estimation window: {beta_estimation_window}",
-                f"- Group taxonomy reference: {group_taxonomy_reference}",
-                f"- Residualization formula: {residualization_formula}",
-                f"- Ranking scope: {ranking_scope}",
-                f"- Bucket schema: {bucket_schema}",
-                f"- Quantile count: {quantile_count}",
-                f"- Min names per bucket: {min_names_per_bucket}",
-                f"- Rebalance frequency: {rebalance_frequency}",
-                f"- Signal lag rule: {signal_lag_rule}",
-                f"- Holding period rule: {holding_period_rule}",
-                f"- Overlap policy: {overlap_policy}",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Reuse constraints: {reuse_constraints}",
+                f"- Winsorize 策略: {winsorize_policy}",
+                f"- Standardize 策略: {standardize_policy}",
+                f"- 缺失填补策略: {missing_fill_policy}",
+                f"- 覆盖率下限规则: {coverage_floor_rule}",
+                f"- 中性化策略: {neutralization_policy}",
+                f"- Beta 估计窗口: {beta_estimation_window}",
+                f"- 分组体系引用: {group_taxonomy_reference}",
+                f"- 残差化公式: {residualization_formula}",
+                f"- 排名范围: {ranking_scope}",
+                f"- 分桶 schema: {bucket_schema}",
+                f"- 分位数数量: {quantile_count}",
+                f"- 每桶最少名称数: {min_names_per_bucket}",
+                f"- 再平衡频率: {rebalance_frequency}",
+                f"- 信号滞后规则: {signal_lag_rule}",
+                f"- 持有期规则: {holding_period_rule}",
+                f"- 重叠策略: {overlap_policy}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 复用约束: {reuse_constraints}",
             ]
         )
         + "\n",
@@ -240,7 +240,7 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- csf_train_freeze.yaml",
                 "- train_factor_quality.parquet",
@@ -258,13 +258,13 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `candidate_variant_ids`: {candidate_variant_ids}",
-                f"- `kept_variant_ids`: {kept_variant_ids}",
-                f"- `rejected_variant_ids`: {rejected_variant_ids}",
-                f"- `selection_rule`: {selection_rule}",
-                f"- `machine_artifacts`: {machine_artifacts}",
+                f"- `candidate_variant_ids`: 候选 variant ID 集合，当前为 {candidate_variant_ids}。",
+                f"- `kept_variant_ids`: 保留的 variant ID 集合，当前为 {kept_variant_ids}。",
+                f"- `rejected_variant_ids`: 拒绝的 variant ID 集合，当前为 {rejected_variant_ids}。",
+                f"- `selection_rule`: 选择规则，当前为 {selection_rule}。",
+                f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
         + "\n",

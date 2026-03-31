@@ -156,7 +156,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         "cross_section_coverage.parquet",
         "eligibility_base_mask.parquet",
     ]:
-        (stage_dir / name).write_text("placeholder parquet payload\n", encoding="utf-8")
+        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     (stage_dir / "shared_feature_base").mkdir(exist_ok=True)
     if group_taxonomy_reference:
         (stage_dir / "asset_taxonomy_snapshot.parquet").write_text(
@@ -166,19 +166,19 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     (stage_dir / "csf_data_contract.md").write_text(
         "\n".join(
             [
-                "# CSF Data Contract",
+                "# CSF 数据合同",
                 "",
-                f"- Panel primary key: {panel_primary_key}",
-                f"- Cross-section time key: {cross_section_time_key}",
-                f"- Asset key: {asset_key}",
-                f"- Universe membership rule: {universe_membership_rule}",
-                f"- Eligibility base rule: {eligibility_base_rule}",
-                f"- Coverage floor rule: {coverage_floor_rule}",
-                f"- Shared feature outputs: {', '.join(shared_feature_outputs)}",
-                f"- Shared feature note: {shared_feature_note}",
-                f"- Group taxonomy reference: {group_taxonomy_reference}",
-                f"- Group mapping rule: {group_mapping_rule}",
-                f"- Taxonomy note: {taxonomy_note}",
+                f"- 面板主键: {panel_primary_key}",
+                f"- 截面时间键: {cross_section_time_key}",
+                f"- 资产键: {asset_key}",
+                f"- Universe membership 规则: {universe_membership_rule}",
+                f"- Eligibility base 规则: {eligibility_base_rule}",
+                f"- 覆盖率下限规则: {coverage_floor_rule}",
+                f"- 共享特征输出: {', '.join(shared_feature_outputs)}",
+                f"- 共享特征说明: {shared_feature_note}",
+                f"- 分组体系引用: {group_taxonomy_reference}",
+                f"- 分组映射规则: {group_mapping_rule}",
+                f"- Taxonomy 说明: {taxonomy_note}",
             ]
         )
         + "\n",
@@ -189,9 +189,9 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
             [
                 "# CSF Data Ready Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review closure is written.",
-                f"- Consumer stage: {consumer_stage}",
-                f"- Frozen inputs note: {frozen_inputs_note}",
+                "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结输入说明: {frozen_inputs_note}",
             ]
         )
         + "\n",
@@ -200,7 +200,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     (stage_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- panel_manifest.json",
                 "- asset_universe_membership.parquet",
@@ -219,16 +219,16 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     (stage_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `panel_primary_key`: {panel_primary_key}",
-                f"- `cross_section_time_key`: {cross_section_time_key}",
-                f"- `asset_key`: {asset_key}",
+                f"- `panel_primary_key`: 面板主键，当前为 {panel_primary_key}。",
+                f"- `cross_section_time_key`: 截面时间键，当前为 {cross_section_time_key}。",
+                f"- `asset_key`: 资产键，当前为 {asset_key}。",
                 f"- `eligibility_base_rule`: {eligibility_base_rule}",
                 f"- `coverage_floor_rule`: {coverage_floor_rule}",
                 f"- `mask_audit_note`: {mask_audit_note}",
-                f"- `shared_feature_outputs`: {shared_feature_outputs}",
-                f"- `group_taxonomy_reference`: {group_taxonomy_reference}",
+                f"- `shared_feature_outputs`: 共享特征输出集合，当前为 {shared_feature_outputs}。",
+                f"- `group_taxonomy_reference`: 分组体系引用，当前为 {group_taxonomy_reference}。",
             ]
         )
         + "\n",

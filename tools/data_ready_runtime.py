@@ -145,7 +145,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         (data_ready_dir / name).mkdir(exist_ok=True)
 
     (data_ready_dir / "qc_report.parquet").write_text(
-        "placeholder qc artifact for first-wave data_ready skeleton\n",
+        "first-wave data_ready 骨架的占位 qc 产物\n",
         encoding="utf-8",
     )
     (data_ready_dir / "dataset_manifest.json").write_text(
@@ -170,19 +170,19 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     (data_ready_dir / "validation_report.md").write_text(
         "\n".join(
             [
-                "# Validation Report",
+                "# 验证报告",
                 "",
-                "- This first-wave output formalizes the data_ready contract and stage skeleton.",
-                f"- Benchmark coverage is anchored on `{benchmark_symbol}`.",
-                f"- Coverage floor: {coverage_floor}",
-                f"- Admission rule: {admission_rule}",
+                "- 第一版产物先冻结 data_ready 合同与阶段骨架。",
+                f"- 基准覆盖锚定在 `{benchmark_symbol}`。",
+                f"- 覆盖率下限: {coverage_floor}",
+                f"- 准入规则: {admission_rule}",
                 "",
-                "## Quality Semantics",
+                "## 质量语义",
                 "",
-                f"- Missing: {missing_policy}",
+                f"- 缺失: {missing_policy}",
                 f"- Stale: {stale_policy}",
-                f"- Bad price: {bad_price_policy}",
-                f"- Outlier: {outlier_policy}",
+                f"- 坏价: {bad_price_policy}",
+                f"- 异常值: {outlier_policy}",
             ]
         )
         + "\n",
@@ -191,33 +191,33 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     (data_ready_dir / "data_contract.md").write_text(
         "\n".join(
             [
-                "# Data Contract",
+                "# 数据合同",
                 "",
-                f"- Data source: {data_source}",
-                f"- Time boundary: {time_boundary}",
-                f"- Primary time key: {primary_time_key}",
-                f"- Bar size: {bar_size}",
-                f"- Benchmark symbol: {benchmark_symbol}",
-                f"- Shared derived outputs: {', '.join(shared_outputs)}",
-                f"- Layer boundary: {layer_boundary_note}",
+                f"- 数据来源: {data_source}",
+                f"- 时间边界: {time_boundary}",
+                f"- 主时间键: {primary_time_key}",
+                f"- Bar 粒度: {bar_size}",
+                f"- 基准符号: {benchmark_symbol}",
+                f"- 共享派生输出: {', '.join(shared_outputs)}",
+                f"- 分层边界: {layer_boundary_note}",
             ]
         )
         + "\n",
         encoding="utf-8",
     )
     (data_ready_dir / "dedupe_rule.md").write_text(
-        f"# Dedupe Rule\n\n- {dedupe_rule}\n",
+        f"# 去重规则\n\n- {dedupe_rule}\n",
         encoding="utf-8",
     )
     (data_ready_dir / "universe_summary.md").write_text(
         "\n".join(
             [
-                "# Universe Summary",
+                "# Universe 摘要",
                 "",
-                f"- Benchmark symbol: {benchmark_symbol}",
-                f"- Coverage floor: {coverage_floor}",
-                f"- Admission rule: {admission_rule}",
-                f"- Exclusion reporting: {exclusion_reporting}",
+                f"- 基准符号: {benchmark_symbol}",
+                f"- 覆盖率下限: {coverage_floor}",
+                f"- 准入规则: {admission_rule}",
+                f"- 排除项记录规则: {exclusion_reporting}",
             ]
         )
         + "\n",
@@ -230,10 +230,10 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     (data_ready_dir / "universe_exclusions.md").write_text(
         "\n".join(
             [
-                "# Universe Exclusions",
+                "# Universe 排除项",
                 "",
-                "- No exclusions have been recorded in the first-wave skeleton yet.",
-                f"- Reporting rule: {exclusion_reporting}",
+                "- 第一版骨架暂未记录具体排除项。",
+                f"- 记录规则: {exclusion_reporting}",
             ]
         )
         + "\n",
@@ -244,9 +244,9 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
             [
                 "# Data Ready Gate Decision",
                 "",
-                "- Formal gate decision remains pending until review findings and review closure are written.",
-                f"- Next consumer stage: {consumer_stage}",
-                f"- Frozen inputs note: {frozen_inputs_note}",
+                "- 在 review findings 和 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结输入说明: {frozen_inputs_note}",
             ]
         )
         + "\n",
@@ -255,7 +255,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     (data_ready_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
-                "# Artifact Catalog",
+                "# 产物清单",
                 "",
                 "- aligned_bars/",
                 "- rolling_stats/",
@@ -280,17 +280,17 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     (data_ready_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
-                "# Field Dictionary",
+                "# 字段字典",
                 "",
-                f"- `data_source`: frozen upstream source, currently `{data_source}`.",
-                f"- `primary_time_key`: frozen dense grid key, currently `{primary_time_key}`.",
-                f"- `bar_size`: frozen cadence inherited into data_ready, currently `{bar_size}`.",
+                f"- `data_source`: 冻结到 data_ready 的上游数据来源，当前为 `{data_source}`。",
+                f"- `primary_time_key`: 冻结的主时间键，当前为 `{primary_time_key}`。",
+                f"- `bar_size`: 继承到 data_ready 的固定粒度，当前为 `{bar_size}`。",
                 f"- `missing_policy`: {missing_policy}",
                 f"- `stale_policy`: {stale_policy}",
                 f"- `bad_price_policy`: {bad_price_policy}",
                 f"- `outlier_policy`: {outlier_policy}",
-                f"- `benchmark_symbol`: {benchmark_symbol}",
-                f"- `shared_outputs`: {shared_outputs}",
+                f"- `benchmark_symbol`: 基准符号，当前为 `{benchmark_symbol}`。",
+                f"- `shared_outputs`: 共享派生输出集合，当前为 `{shared_outputs}`。",
                 f"- `frozen_inputs_note`: {frozen_inputs_note}",
             ]
         )
