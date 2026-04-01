@@ -18,6 +18,7 @@
 `factor_role`、`factor_structure`、`portfolio_expression`、`neutralization_policy` 是 `mandate` 冻结的研究身份字段，不在本阶段重新定义。  
 若 `factor_role != standalone_alpha`，必须已经在 `mandate` 中冻结 `target_strategy_reference`；若 `neutralization_policy = group_neutral`，必须已经在 `mandate` 中冻结 `group_taxonomy_reference`。  
 本阶段只冻结 train 尺子与 admissible variants，不改变研究身份和路线归属。
+一旦 `02_csf_signal_ready` 已经冻结 `factor expression`，`fragility_score_transform`、`raw_factor_fields`、`derived_factor_fields`、`score_combination_formula` 就不再属于 train 可调轴；若想改变这些内容，必须回到 `02_csf_signal_ready` 重开信号合同。
 
 ---
 
@@ -41,7 +42,8 @@
 3. 冻结 `ranking_scope`、`bucket_schema`、`quantile_count`、`tie_break_rule`、`min_names_per_bucket`。
 4. 冻结 `rebalance_frequency`、`signal_lag_rule`、`holding_period_rule`、`overlap_policy`。
 5. 冻结 `min_cross_section_size`、`min_effective_coverage`、`asset_drop_rule`、`date_drop_rule`。
-6. 记账所有 admissible variants 和 reject variants。
+6. 明确写清 `frozen_signal_contract_reference`、`train_governable_axes`、`non_governable_axes_after_signal` 和 `non_governable_axis_reject_rule`。
+7. 记账所有 admissible variants 和 reject variants。
 
 ---
 
@@ -66,6 +68,7 @@
 必须全部满足：
 
 - preprocess、standardize、neutralize、bucket、rebalance、eligibility 全部冻结
+- signal-ready 已冻结的表达轴不再被当作 train 可调轴
 - 所有 train variant 都有身份记录
 - reject 不是静默丢弃，而是显式记账
 - downstream test 只能复用 frozen train rules
@@ -76,6 +79,7 @@
 - 根据 test/backtest 结果回写 train 口径
 - 只有保留者，没有 reject ledger
 - quantile / bucket 规则未冻结
+- 已冻结的 signal expression 轴被重新当作 train 搜索轴
 - neutralization 存在但没有独立合同
 - rebalance / lag / overlap 口径未冻结
 - 在 train 内直接用收益最大化选 final winner

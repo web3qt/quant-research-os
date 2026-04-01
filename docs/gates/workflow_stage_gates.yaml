@@ -488,6 +488,7 @@ stages:
     formal_gate:
       pass_all_of:
         - preprocess、standardize、neutralize、bucket、rebalance、eligibility 全部冻结
+        - signal-ready 已冻结的表达轴不再被当作 train 搜索轴
         - 所有 train variant 都有身份记录
         - reject 不是静默丢弃，而是显式记账
         - downstream test 只能复用 frozen train rules
@@ -496,6 +497,7 @@ stages:
         - 根据 test/backtest 结果回写 train 口径
         - 只有保留者，没有 reject ledger
         - quantile / bucket 规则未冻结
+        - 已冻结的 signal expression 轴被重新当作 train 搜索轴
         - neutralization 存在但没有独立合同
         - rebalance / lag / overlap 口径未冻结
         - 在 train 内直接用收益最大化选 final winner

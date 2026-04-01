@@ -426,6 +426,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_train_freez
 - `ranking_bucket_contract` 这一组冻结什么？
 - `rebalance_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- `csf_signal_ready` 冻结后，哪些轴不再允许作为 train variants 继续搜索？
 - 当前 research repo 里将真实生成哪些 train rules、quality artifacts、variant ledgers？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 csf_train_freeze？`

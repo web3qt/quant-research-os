@@ -59,6 +59,20 @@ def _csf_train_freeze_draft(*, confirmed: bool) -> dict:
                     "kept_variant_ids": ["baseline_v1"],
                     "rejected_variant_ids": [],
                     "selection_rule": "baseline-only first wave",
+                    "frozen_signal_contract_reference": "btc_shock_alt_fragility:v1",
+                    "train_governable_axes": [
+                        "btc_shock_return_bps",
+                        "beta_lookback_bars",
+                        "short_bucket_pct",
+                        "holding_minutes",
+                    ],
+                    "non_governable_axes_after_signal": [
+                        "fragility_score_transform",
+                        "raw_factor_fields",
+                        "derived_factor_fields",
+                        "score_combination_formula",
+                    ],
+                    "non_governable_axis_reject_rule": "variants that change signal-expression axes after csf_signal_ready must reopen csf_signal_ready instead of entering train_freeze",
                 },
                 "missing_items": [],
             },
@@ -130,3 +144,23 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
     assert (stage_dir / "csf_train_contract.md").exists()
     assert (stage_dir / "artifact_catalog.md").exists()
     assert (stage_dir / "field_dictionary.md").exists()
+
+    freeze_payload = yaml.safe_load((stage_dir / "csf_train_freeze.yaml").read_text(encoding="utf-8"))
+    search_governance = freeze_payload["search_governance_contract"]
+    assert search_governance["frozen_signal_contract_reference"] == "btc_shock_alt_fragility:v1"
+    assert search_governance["train_governable_axes"] == [
+        "btc_shock_return_bps",
+        "beta_lookback_bars",
+        "short_bucket_pct",
+        "holding_minutes",
+    ]
+    assert search_governance["non_governable_axes_after_signal"] == [
+        "fragility_score_transform",
+        "raw_factor_fields",
+        "derived_factor_fields",
+        "score_combination_formula",
+    ]
+    assert (
+        search_governance["non_governable_axis_reject_rule"]
+        == "variants that change signal-expression axes after csf_signal_ready must reopen csf_signal_ready instead of entering train_freeze"
+    )

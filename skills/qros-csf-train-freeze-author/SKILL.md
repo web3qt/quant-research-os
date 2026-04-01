@@ -46,6 +46,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 只能消费已经通过 review closure 的 csf_signal_ready 产物
 - 当前阶段只冻结 train 尺子，不替因子宣布赢家
 - 必须在当前 research repo 里真实生成训练窗估计得到的预处理、中性化和分组尺子
+- `csf_signal_ready` 已冻结的 factor expression / transform 轴不得在本阶段重新作为候选搜索轴；若变更这些轴，必须回到 `csf_signal_ready`
 - 不得产出任何时序主线措辞、best_h、预测 horizon 或单资产命中率语义
 - 空目录、placeholder `parquet/csv/json/md`、只有说明文档都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
@@ -62,6 +63,15 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ### 参数台账必须完整
 `train_variant_ledger.csv` 中的所有候选组合都必须有可追溯身份，拒绝项也必须保留原因。
+
+### Signal 轴治理必须显式
+`csf_train_freeze.yaml` 必须显式写清：
+- `frozen_signal_contract_reference`
+- `train_governable_axes`
+- `non_governable_axes_after_signal`
+- `non_governable_axis_reject_rule`
+
+如果某个 inherited variant 想改变 `fragility_score_transform`、`raw_factor_fields`、`derived_factor_fields` 或 `score_combination_formula`，不得继续伪装成 train 变体，必须进 reject ledger，并说明这需要重开 `csf_signal_ready`。
 
 ### 阈值语义分离
 `csf_train_freeze.yaml` 必须明确区分：

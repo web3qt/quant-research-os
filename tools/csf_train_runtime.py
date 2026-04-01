@@ -73,6 +73,10 @@ def _blank_csf_train_freeze_draft() -> dict[str, Any]:
                     "kept_variant_ids": [],
                     "rejected_variant_ids": [],
                     "selection_rule": "",
+                    "frozen_signal_contract_reference": "",
+                    "train_governable_axes": [],
+                    "non_governable_axes_after_signal": [],
+                    "non_governable_axis_reject_rule": "",
                 },
                 "missing_items": [],
             },
@@ -153,6 +157,16 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     kept_variant_ids = _string_list(search_governance_contract.get("kept_variant_ids", []))
     rejected_variant_ids = _string_list(search_governance_contract.get("rejected_variant_ids", []))
     selection_rule = _required_draft_value(search_governance_contract, "selection_rule")
+    frozen_signal_contract_reference = _required_draft_value(
+        search_governance_contract, "frozen_signal_contract_reference"
+    )
+    train_governable_axes = _string_list(search_governance_contract.get("train_governable_axes", []))
+    non_governable_axes_after_signal = _string_list(
+        search_governance_contract.get("non_governable_axes_after_signal", [])
+    )
+    non_governable_axis_reject_rule = _required_draft_value(
+        search_governance_contract, "non_governable_axis_reject_rule"
+    )
     machine_artifacts = _string_list(delivery_contract.get("machine_artifacts", []))
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     reuse_constraints = _required_draft_value(delivery_contract, "reuse_constraints")
@@ -189,6 +203,10 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 "kept_variant_ids": kept_variant_ids,
                 "rejected_variant_ids": rejected_variant_ids,
                 "selection_rule": selection_rule,
+                "frozen_signal_contract_reference": frozen_signal_contract_reference,
+                "train_governable_axes": train_governable_axes,
+                "non_governable_axes_after_signal": non_governable_axes_after_signal,
+                "non_governable_axis_reject_rule": non_governable_axis_reject_rule,
             },
         },
     )
@@ -230,6 +248,10 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 f"- 信号滞后规则: {signal_lag_rule}",
                 f"- 持有期规则: {holding_period_rule}",
                 f"- 重叠策略: {overlap_policy}",
+                f"- Frozen signal contract reference: {frozen_signal_contract_reference}",
+                f"- Train-governable axes: {', '.join(train_governable_axes)}",
+                f"- Non-governable axes after signal: {', '.join(non_governable_axes_after_signal)}",
+                f"- Non-governable-axis reject rule: {non_governable_axis_reject_rule}",
                 f"- 下游消费阶段: {consumer_stage}",
                 f"- 复用约束: {reuse_constraints}",
             ]
@@ -250,6 +272,7 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 "- train_neutralization_diagnostics.parquet",
                 "- csf_train_contract.md",
                 "- field_dictionary.md",
+                "- frozen signal axes are explicitly excluded from train governance",
             ]
         )
         + "\n",
@@ -264,6 +287,10 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 f"- `kept_variant_ids`: 保留的 variant ID 集合，当前为 {kept_variant_ids}。",
                 f"- `rejected_variant_ids`: 拒绝的 variant ID 集合，当前为 {rejected_variant_ids}。",
                 f"- `selection_rule`: 选择规则，当前为 {selection_rule}。",
+                f"- `frozen_signal_contract_reference`: 上游 signal contract 引用，当前为 {frozen_signal_contract_reference}。",
+                f"- `train_governable_axes`: signal_ready 之后仍允许在 train 调整的轴，当前为 {train_governable_axes}。",
+                f"- `non_governable_axes_after_signal`: 改动后必须重开 csf_signal_ready 的轴，当前为 {non_governable_axes_after_signal}。",
+                f"- `non_governable_axis_reject_rule`: 这些轴的拒绝规则，当前为 {non_governable_axis_reject_rule}。",
                 f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )

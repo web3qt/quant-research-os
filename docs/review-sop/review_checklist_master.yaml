@@ -292,10 +292,11 @@ stages:
           - "csf_train_contract.md"
       - id: "CSF-TRAIN-005"
         severity: "blocking"
-        check: "train variant ledger 与 reject ledger 均已保存，且可解释拒绝原因"
+        check: "train variant ledger 与 reject ledger 均已保存，且可解释拒绝原因；若 inherited variant 试图改变已冻结的 signal axis，reject ledger 必须显式说明应重开 csf_signal_ready"
         evidence:
           - "train_variant_ledger.csv"
           - "train_variant_rejects.csv"
+          - "csf_train_freeze.yaml"
       - id: "CSF-TRAIN-006"
         severity: "blocking"
         check: "未根据 test/backtest 结果回写 train freeze"
@@ -303,6 +304,12 @@ stages:
           - "csf_train_freeze.yaml"
           - "review notes"
       - id: "CSF-TRAIN-007"
+        severity: "blocking"
+        check: "frozen_signal_contract_reference、train_governable_axes、non_governable_axes_after_signal 与非可调轴拒绝规则已冻结"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "csf_train_contract.md"
+      - id: "CSF-TRAIN-008"
         severity: "reservation"
         check: "search governance 只用于排除荒谬区间或不可研究 variant，不得以收益最大化方式选胜者"
         evidence:
