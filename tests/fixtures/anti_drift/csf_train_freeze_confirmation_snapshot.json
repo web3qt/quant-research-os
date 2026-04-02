@@ -25,7 +25,7 @@
   ],
   "lineage_transition": "Complete csf_train_freeze group: preprocess_contract",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::csf_train_freeze_confirmation"
+    "tools/anti_drift_scenarios_csf.py::csf_train_freeze_confirmation"
   ],
   "failure_class": null,
   "severity": null

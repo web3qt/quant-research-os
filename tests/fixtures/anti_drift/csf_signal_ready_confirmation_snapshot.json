@@ -24,7 +24,7 @@
   ],
   "lineage_transition": "Complete csf_signal_ready freeze group: factor_identity",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::csf_signal_ready_confirmation"
+    "tools/anti_drift_scenarios_csf.py::csf_signal_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null

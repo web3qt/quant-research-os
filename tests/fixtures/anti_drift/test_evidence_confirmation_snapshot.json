@@ -28,7 +28,7 @@
   ],
   "lineage_transition": "Complete test_evidence group: window_contract",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::test_evidence_confirmation"
+    "tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation"
   ],
   "failure_class": null,
   "severity": null

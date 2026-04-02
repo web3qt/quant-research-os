@@ -27,7 +27,7 @@
   ],
   "lineage_transition": "Complete signal_ready freeze group: signal_expression",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::signal_ready_confirmation"
+    "tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null

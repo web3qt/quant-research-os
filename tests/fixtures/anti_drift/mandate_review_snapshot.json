@@ -25,7 +25,7 @@
   ],
   "lineage_transition": "Write review_findings.yaml and run mandate review",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::mandate_review"
+    "tools/anti_drift_scenarios_mainline.py::mandate_review"
   ],
   "failure_class": null,
   "severity": null

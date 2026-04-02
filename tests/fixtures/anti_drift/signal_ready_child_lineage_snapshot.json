@@ -27,7 +27,7 @@
   ],
   "lineage_transition": "Enter failure handling for signal_ready_review via qros-stage-failure-handler",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::signal_ready_child_lineage"
+    "tools/anti_drift_scenarios_failure.py::signal_ready_child_lineage"
   ],
   "failure_class": null,
   "severity": null

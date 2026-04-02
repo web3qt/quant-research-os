@@ -21,7 +21,7 @@
   "blocking_reasons": [],
   "lineage_transition": "Stop here until promotion_decision orchestration exists",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::holdout_validation_review_complete"
+    "tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete"
   ],
   "failure_class": null,
   "severity": null

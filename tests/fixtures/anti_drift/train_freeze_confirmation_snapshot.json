@@ -24,7 +24,7 @@
   ],
   "lineage_transition": "Complete train_freeze group: window_contract",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::train_freeze_confirmation"
+    "tools/anti_drift_scenarios_mainline.py::train_freeze_confirmation"
   ],
   "failure_class": null,
   "severity": null

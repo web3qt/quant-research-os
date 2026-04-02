@@ -25,7 +25,7 @@
   ],
   "lineage_transition": "Run with --confirm-intake or reply CONFIRM_IDEA_INTAKE <lineage_id> after finishing the intake interview",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::idea_intake_confirmation"
+    "tools/anti_drift_scenarios_mainline.py::idea_intake_confirmation"
   ],
   "failure_class": null,
   "severity": null

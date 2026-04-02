@@ -25,7 +25,7 @@
   ],
   "lineage_transition": "Enter failure handling for backtest_ready_review via qros-stage-failure-handler",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::backtest_ready_no_go"
+    "tools/anti_drift_scenarios_failure.py::backtest_ready_no_go"
   ],
   "failure_class": null,
   "severity": null

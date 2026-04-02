@@ -22,7 +22,7 @@
   ],
   "lineage_transition": "Complete csf_test_evidence group: window_contract",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::csf_test_evidence_confirmation"
+    "tools/anti_drift_scenarios_csf.py::csf_test_evidence_confirmation"
   ],
   "failure_class": null,
   "severity": null

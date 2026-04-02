@@ -30,7 +30,7 @@
   ],
   "lineage_transition": "Complete csf_backtest_ready group: portfolio_contract",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::csf_backtest_ready_confirmation"
+    "tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null

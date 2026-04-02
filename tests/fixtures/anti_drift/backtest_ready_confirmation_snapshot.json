@@ -25,7 +25,7 @@
   ],
   "lineage_transition": "Complete backtest_ready group: execution_policy",
   "evidence_refs": [
-    "tools/anti_drift_scenarios.py::backtest_ready_confirmation"
+    "tools/anti_drift_scenarios_mainline.py::backtest_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null
