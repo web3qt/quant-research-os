@@ -1,0 +1,29 @@
+{
+  "fixture_id": "csf-test-evidence-confirmation",
+  "input_digest": "a7690717ec732619ea5568ac319b8b7253ebda5af9555595858b19587c8f2b6f",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-csf-test-evidence-author",
+  "stage_id": "csf_test_evidence",
+  "session_stage": "csf_test_evidence_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "csf_test_gate_table.csv",
+    "csf_selected_variants_test.csv",
+    "csf_test_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_backtest_ready"
+  ],
+  "blocking_reasons": [
+    "csf_test_evidence freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete csf_test_evidence group: window_contract",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_test_evidence_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

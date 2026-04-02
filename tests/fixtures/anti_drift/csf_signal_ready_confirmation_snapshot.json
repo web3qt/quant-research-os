@@ -1,0 +1,31 @@
+{
+  "fixture_id": "csf-signal-ready-confirmation",
+  "input_digest": "1ebe7c4ddedf1f68450439ca51678b405c730f3d83eb38c0031e5d02c53ca52b",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-csf-signal-ready-author",
+  "stage_id": "csf_signal_ready",
+  "session_stage": "csf_signal_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "factor_panel.parquet",
+    "factor_manifest.yaml",
+    "factor_field_dictionary.md",
+    "factor_coverage_report.parquet",
+    "factor_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_train_freeze"
+  ],
+  "blocking_reasons": [
+    "csf_signal_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete csf_signal_ready freeze group: factor_identity",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_signal_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

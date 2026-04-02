@@ -1,0 +1,39 @@
+{
+  "fixture_id": "data-ready-child-lineage",
+  "input_digest": "9a662786ecc586154c6a617500ade8f3a8cf40187f847d4b75264b883c47b4af",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "data_ready",
+  "session_stage": "data_ready_review",
+  "formal_decision": "CHILD LINEAGE",
+  "required_artifacts": [
+    "aligned_bars/",
+    "rolling_stats/",
+    "qc_report.parquet",
+    "dataset_manifest.json",
+    "validation_report.md",
+    "data_contract.md",
+    "dedupe_rule.md",
+    "universe_summary.md",
+    "universe_exclusions.csv",
+    "universe_exclusions.md",
+    "data_ready_gate_decision.md",
+    "run_manifest.json",
+    "rebuild_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "signal_ready"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict CHILD LINEAGE."
+  ],
+  "lineage_transition": "Enter failure handling for data_ready_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::data_ready_child_lineage"
+  ],
+  "failure_class": null,
+  "severity": null
+}

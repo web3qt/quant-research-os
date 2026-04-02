@@ -1,0 +1,31 @@
+{
+  "fixture_id": "train-freeze-confirmation",
+  "input_digest": "1ea2c11d58efbb2733cc79b02e812a1859feef447989cf66dbd7aac792cbfcda",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-train-freeze-author",
+  "stage_id": "train_calibration",
+  "session_stage": "train_freeze_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "train_thresholds.json",
+    "train_quality.parquet",
+    "train_param_ledger.csv",
+    "train_rejects.csv",
+    "train_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "test_evidence"
+  ],
+  "blocking_reasons": [
+    "train_freeze freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete train_freeze group: window_contract",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::train_freeze_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

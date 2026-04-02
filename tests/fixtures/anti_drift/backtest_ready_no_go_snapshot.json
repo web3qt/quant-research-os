@@ -1,0 +1,32 @@
+{
+  "fixture_id": "backtest-ready-no-go",
+  "input_digest": "97a80b19b6a96d736f4357783070b04f7e5b682ab6ced1730210b7d742f62ea0",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "backtest_ready",
+  "session_stage": "backtest_ready_confirmation_pending",
+  "formal_decision": "NO-GO",
+  "required_artifacts": [
+    "engine_compare.csv",
+    "vectorbt/",
+    "backtrader/",
+    "strategy_combo_ledger.csv",
+    "capacity_review.md",
+    "backtest_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "holdout_validation"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict NO-GO."
+  ],
+  "lineage_transition": "Enter failure handling for backtest_ready_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::backtest_ready_no_go"
+  ],
+  "failure_class": null,
+  "severity": null
+}

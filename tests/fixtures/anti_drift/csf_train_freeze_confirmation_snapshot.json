@@ -1,0 +1,32 @@
+{
+  "fixture_id": "csf-train-freeze-confirmation",
+  "input_digest": "6fad68dcc80baadd14d89b81cf9976bf41c719805dbddb00b4056b5c7c1bda5a",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-csf-train-freeze-author",
+  "stage_id": "csf_train_freeze",
+  "session_stage": "csf_train_freeze_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "csf_train_freeze.yaml",
+    "train_factor_quality.parquet",
+    "train_variant_ledger.csv",
+    "train_variant_rejects.csv",
+    "train_bucket_diagnostics.parquet",
+    "csf_train_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_test_evidence"
+  ],
+  "blocking_reasons": [
+    "csf_train_freeze freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete csf_train_freeze group: preprocess_contract",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_train_freeze_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

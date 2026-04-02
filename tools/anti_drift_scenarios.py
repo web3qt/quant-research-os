@@ -8,7 +8,18 @@ from typing import Callable
 import yaml
 
 from tools.anti_drift import CanonicalDecisionSnapshot, canonical_snapshot_from_session_context
+from tools.backtest_runtime import BACKTEST_READY_DRAFT_FILE
+from tools.csf_data_ready_runtime import CSF_DATA_READY_FREEZE_DRAFT_FILE
+from tools.csf_signal_ready_runtime import CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+from tools.csf_backtest_runtime import CSF_BACKTEST_READY_DRAFT_FILE
+from tools.csf_holdout_runtime import CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+from tools.csf_test_evidence_runtime import CSF_TEST_EVIDENCE_DRAFT_FILE
+from tools.csf_train_runtime import CSF_TRAIN_FREEZE_DRAFT_FILE
 from tools.research_session import run_research_session
+from tools.holdout_runtime import HOLDOUT_VALIDATION_DRAFT_FILE
+from tools.signal_ready_runtime import SIGNAL_READY_FREEZE_DRAFT_FILE
+from tools.test_evidence_runtime import TEST_EVIDENCE_DRAFT_FILE
+from tools.train_runtime import TRAIN_FREEZE_DRAFT_FILE
 
 
 def write_yaml(path: Path, payload: dict) -> None:
@@ -61,11 +72,133 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "artifact_catalog.md",
             "field_dictionary.md",
         ],
+        "signal_ready": [
+            "param_manifest.csv",
+            "params",
+            "signal_coverage.csv",
+            "signal_coverage.md",
+            "signal_coverage_summary.md",
+            "signal_contract.md",
+            "signal_fields_contract.md",
+            "signal_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "train_freeze": [
+            "train_thresholds.json",
+            "train_quality.parquet",
+            "train_param_ledger.csv",
+            "train_rejects.csv",
+            "train_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "backtest_ready": [
+            "engine_compare.csv",
+            "vectorbt",
+            "backtrader",
+            "strategy_combo_ledger.csv",
+            "capacity_review.md",
+            "backtest_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "holdout_validation": [
+            "holdout_run_manifest.json",
+            "holdout_backtest_compare.csv",
+            "window_results",
+            "holdout_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_data_ready": [
+            "panel_manifest.json",
+            "asset_universe_membership.parquet",
+            "cross_section_coverage.parquet",
+            "eligibility_base_mask.parquet",
+            "shared_feature_base",
+            "asset_taxonomy_snapshot.parquet",
+            "csf_data_contract.md",
+            "csf_data_ready_gate_decision.md",
+            "run_manifest.json",
+            "rebuild_csf_data_ready.py",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_signal_ready": [
+            "factor_panel.parquet",
+            "factor_manifest.yaml",
+            "component_factor_manifest.yaml",
+            "factor_coverage_report.parquet",
+            "factor_group_context.parquet",
+            "factor_contract.md",
+            "factor_field_dictionary.md",
+            "csf_signal_ready_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_train_freeze": [
+            "csf_train_freeze.yaml",
+            "train_factor_quality.parquet",
+            "train_variant_ledger.csv",
+            "train_variant_rejects.csv",
+            "train_bucket_diagnostics.parquet",
+            "train_neutralization_diagnostics.parquet",
+            "csf_train_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_test_evidence": [
+            "rank_ic_timeseries.parquet",
+            "rank_ic_summary.json",
+            "bucket_returns.parquet",
+            "monotonicity_report.json",
+            "breadth_coverage_report.parquet",
+            "subperiod_stability_report.json",
+            "filter_condition_panel.parquet",
+            "target_strategy_condition_compare.parquet",
+            "gated_vs_ungated_summary.json",
+            "csf_test_gate_table.csv",
+            "csf_selected_variants_test.csv",
+            "csf_test_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_backtest_ready": [
+            "portfolio_contract.yaml",
+            "portfolio_weight_panel.parquet",
+            "rebalance_ledger.csv",
+            "turnover_capacity_report.parquet",
+            "cost_assumption_report.md",
+            "portfolio_summary.parquet",
+            "name_level_metrics.parquet",
+            "drawdown_report.json",
+            "target_strategy_compare.parquet",
+            "csf_backtest_gate_table.csv",
+            "csf_backtest_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_holdout_validation": [
+            "csf_holdout_run_manifest.json",
+            "holdout_factor_diagnostics.parquet",
+            "holdout_test_compare.parquet",
+            "holdout_portfolio_compare.parquet",
+            "rolling_holdout_stability.json",
+            "regime_shift_audit.json",
+            "csf_holdout_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
     }
 
     stage_dir.mkdir(parents=True, exist_ok=True)
     for name in file_outputs[stage]:
-        (stage_dir / name).write_text("placeholder\n", encoding="utf-8")
+        target = stage_dir / name
+        if "." not in target.name:
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.write_text("placeholder\n", encoding="utf-8")
 
 
 def write_stage_completion_certificate(
@@ -81,6 +214,10 @@ def write_stage_completion_certificate(
             "final_verdict": final_verdict or stage_status,
         },
     )
+
+
+def write_placeholder_draft(path: Path) -> None:
+    write_yaml(path, {"groups": {}})
 
 
 def prepare_csf_mandate_review_complete(lineage_root: Path) -> None:
@@ -101,6 +238,57 @@ def prepare_csf_mandate_review_complete(lineage_root: Path) -> None:
     write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
     write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "02_csf_data_ready" / CSF_DATA_READY_FREEZE_DRAFT_FILE)
+
+
+def prepare_csf_data_ready_review_complete(lineage_root: Path) -> None:
+    prepare_csf_mandate_review_complete(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    write_minimal_stage_outputs(stage_dir, stage="csf_data_ready")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "03_csf_signal_ready" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE)
+
+
+def prepare_csf_signal_ready_review_complete(lineage_root: Path) -> None:
+    prepare_csf_data_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "03_csf_signal_ready"
+    write_minimal_stage_outputs(stage_dir, stage="csf_signal_ready")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "04_csf_train_freeze" / CSF_TRAIN_FREEZE_DRAFT_FILE)
+
+
+def prepare_csf_train_freeze_review_complete(lineage_root: Path) -> None:
+    prepare_csf_signal_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "04_csf_train_freeze"
+    write_minimal_stage_outputs(stage_dir, stage="csf_train_freeze")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "05_csf_test_evidence" / CSF_TEST_EVIDENCE_DRAFT_FILE)
+
+
+def prepare_csf_test_evidence_review_complete(lineage_root: Path) -> None:
+    prepare_csf_train_freeze_review_complete(lineage_root)
+    stage_dir = lineage_root / "05_csf_test_evidence"
+    write_minimal_stage_outputs(stage_dir, stage="csf_test_evidence")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "06_csf_backtest_ready" / CSF_BACKTEST_READY_DRAFT_FILE)
+
+
+def prepare_csf_backtest_ready_review_complete(lineage_root: Path) -> None:
+    prepare_csf_test_evidence_review_complete(lineage_root)
+    stage_dir = lineage_root / "06_csf_backtest_ready"
+    write_minimal_stage_outputs(stage_dir, stage="csf_backtest_ready")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "07_csf_holdout_validation" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE)
 
 
 def prepare_mainline_mandate_review_complete(lineage_root: Path) -> None:
@@ -130,6 +318,47 @@ def prepare_mainline_data_ready_review_complete(lineage_root: Path) -> None:
     write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
     write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "03_signal_ready" / SIGNAL_READY_FREEZE_DRAFT_FILE)
+
+
+def prepare_mainline_signal_ready_review_complete(lineage_root: Path) -> None:
+    prepare_mainline_data_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "03_signal_ready"
+    write_minimal_stage_outputs(stage_dir, stage="signal_ready")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "04_train_freeze" / TRAIN_FREEZE_DRAFT_FILE)
+
+
+def prepare_mainline_train_freeze_review_complete(lineage_root: Path) -> None:
+    prepare_mainline_signal_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "04_train_freeze"
+    write_minimal_stage_outputs(stage_dir, stage="train_freeze")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "05_test_evidence" / TEST_EVIDENCE_DRAFT_FILE)
+
+
+def prepare_mainline_test_evidence_review_complete(lineage_root: Path) -> None:
+    prepare_mainline_train_freeze_review_complete(lineage_root)
+    stage_dir = lineage_root / "05_test_evidence"
+    write_minimal_stage_outputs(stage_dir, stage="test_evidence")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "06_backtest" / BACKTEST_READY_DRAFT_FILE)
+
+
+def prepare_mainline_backtest_ready_review_complete(lineage_root: Path) -> None:
+    prepare_mainline_test_evidence_review_complete(lineage_root)
+    stage_dir = lineage_root / "06_backtest"
+    write_minimal_stage_outputs(stage_dir, stage="backtest_ready")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_placeholder_draft(lineage_root / "07_holdout" / HOLDOUT_VALIDATION_DRAFT_FILE)
 
 
 def snapshot_idea_intake_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
@@ -169,6 +398,51 @@ def snapshot_test_evidence_retry(outputs_root: Path) -> CanonicalDecisionSnapsho
     )
 
 
+def snapshot_train_freeze_pass_for_retry(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "train_retry_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_mainline_signal_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "04_train_freeze"
+    write_minimal_stage_outputs(stage_dir, stage="train_freeze")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS FOR RETRY")
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="train-freeze-pass-for-retry",
+        evidence_refs=("tools/anti_drift_scenarios.py::train_freeze_pass_for_retry",),
+    )
+
+
+def snapshot_backtest_ready_no_go(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "backtest_no_go_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_mainline_test_evidence_review_complete(lineage_root)
+    stage_dir = lineage_root / "06_backtest"
+    write_minimal_stage_outputs(stage_dir, stage="backtest_ready")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="NO-GO")
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="backtest-ready-no-go",
+        evidence_refs=("tools/anti_drift_scenarios.py::backtest_ready_no_go",),
+    )
+
+
+def snapshot_data_ready_child_lineage(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "data_ready_child_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_mainline_mandate_review_complete(lineage_root)
+    stage_dir = lineage_root / "02_data_ready"
+    write_minimal_stage_outputs(stage_dir, stage="data_ready")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="CHILD LINEAGE")
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="data-ready-child-lineage",
+        evidence_refs=("tools/anti_drift_scenarios.py::data_ready_child_lineage",),
+    )
+
+
 def snapshot_csf_data_ready_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
     lineage_id = "csf_case"
     prepare_csf_mandate_review_complete(outputs_root / lineage_id)
@@ -177,6 +451,66 @@ def snapshot_csf_data_ready_confirmation(outputs_root: Path) -> CanonicalDecisio
         status,
         fixture_id="csf-data-ready-confirmation",
         evidence_refs=("tools/anti_drift_scenarios.py::csf_data_ready_confirmation",),
+    )
+
+
+def snapshot_csf_signal_ready_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "csf_signal_case"
+    prepare_csf_data_ready_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-signal-ready-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_signal_ready_confirmation",),
+    )
+
+
+def snapshot_csf_train_freeze_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "csf_train_case"
+    prepare_csf_signal_ready_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-train-freeze-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_train_freeze_confirmation",),
+    )
+
+
+def snapshot_csf_test_evidence_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "csf_test_case"
+    prepare_csf_train_freeze_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-test-evidence-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_test_evidence_confirmation",),
+    )
+
+
+def snapshot_csf_backtest_ready_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "csf_backtest_case"
+    prepare_csf_test_evidence_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-backtest-ready-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_backtest_ready_confirmation",),
+    )
+
+
+def snapshot_csf_holdout_validation_review_complete(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "csf_holdout_complete_case"
+    prepare_csf_backtest_ready_review_complete(outputs_root / lineage_id)
+    stage_dir = outputs_root / lineage_id / "07_csf_holdout_validation"
+    write_minimal_stage_outputs(stage_dir, stage="csf_holdout_validation")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-holdout-validation-review-complete",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_holdout_validation_review_complete",),
     )
 
 
@@ -202,13 +536,74 @@ def snapshot_signal_ready_confirmation(outputs_root: Path) -> CanonicalDecisionS
     )
 
 
+def snapshot_train_freeze_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "train_freeze_case"
+    prepare_mainline_signal_ready_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="train-freeze-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::train_freeze_confirmation",),
+    )
+
+
+def snapshot_test_evidence_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "test_evidence_case"
+    prepare_mainline_train_freeze_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="test-evidence-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::test_evidence_confirmation",),
+    )
+
+
+def snapshot_backtest_ready_confirmation(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "backtest_ready_case"
+    prepare_mainline_test_evidence_review_complete(outputs_root / lineage_id)
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="backtest-ready-confirmation",
+        evidence_refs=("tools/anti_drift_scenarios.py::backtest_ready_confirmation",),
+    )
+
+
+def snapshot_holdout_validation_review_complete(outputs_root: Path) -> CanonicalDecisionSnapshot:
+    lineage_id = "holdout_complete_case"
+    prepare_mainline_backtest_ready_review_complete(outputs_root / lineage_id)
+    stage_dir = outputs_root / lineage_id / "07_holdout"
+    write_minimal_stage_outputs(stage_dir, stage="holdout_validation")
+    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
+    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    return canonical_snapshot_from_session_context(
+        status,
+        fixture_id="holdout-validation-review-complete",
+        evidence_refs=("tools/anti_drift_scenarios.py::holdout_validation_review_complete",),
+    )
+
+
 SCENARIOS: dict[str, Callable[[Path], CanonicalDecisionSnapshot]] = {
     "idea_intake_confirmation_snapshot.json": snapshot_idea_intake_confirmation,
     "mandate_review_snapshot.json": snapshot_mandate_review,
     "test_evidence_retry_snapshot.json": snapshot_test_evidence_retry,
+    "train_freeze_pass_for_retry_snapshot.json": snapshot_train_freeze_pass_for_retry,
+    "backtest_ready_no_go_snapshot.json": snapshot_backtest_ready_no_go,
+    "data_ready_child_lineage_snapshot.json": snapshot_data_ready_child_lineage,
     "csf_data_ready_confirmation_snapshot.json": snapshot_csf_data_ready_confirmation,
+    "csf_signal_ready_confirmation_snapshot.json": snapshot_csf_signal_ready_confirmation,
+    "csf_train_freeze_confirmation_snapshot.json": snapshot_csf_train_freeze_confirmation,
+    "csf_test_evidence_confirmation_snapshot.json": snapshot_csf_test_evidence_confirmation,
+    "csf_backtest_ready_confirmation_snapshot.json": snapshot_csf_backtest_ready_confirmation,
+    "csf_holdout_validation_review_complete_snapshot.json": snapshot_csf_holdout_validation_review_complete,
     "data_ready_confirmation_snapshot.json": snapshot_data_ready_confirmation,
     "signal_ready_confirmation_snapshot.json": snapshot_signal_ready_confirmation,
+    "train_freeze_confirmation_snapshot.json": snapshot_train_freeze_confirmation,
+    "test_evidence_confirmation_snapshot.json": snapshot_test_evidence_confirmation,
+    "backtest_ready_confirmation_snapshot.json": snapshot_backtest_ready_confirmation,
+    "holdout_validation_review_complete_snapshot.json": snapshot_holdout_validation_review_complete,
 }
 
 

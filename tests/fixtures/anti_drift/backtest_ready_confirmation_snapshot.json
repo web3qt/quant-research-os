@@ -1,0 +1,32 @@
+{
+  "fixture_id": "backtest-ready-confirmation",
+  "input_digest": "88b6f5c122a21e855af8003140754d0e48ed8b21239d46d0f07cbd10acb80411",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-backtest-ready-author",
+  "stage_id": "backtest_ready",
+  "session_stage": "backtest_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "engine_compare.csv",
+    "vectorbt/",
+    "backtrader/",
+    "strategy_combo_ledger.csv",
+    "capacity_review.md",
+    "backtest_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "holdout_validation"
+  ],
+  "blocking_reasons": [
+    "backtest_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete backtest_ready group: execution_policy",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::backtest_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

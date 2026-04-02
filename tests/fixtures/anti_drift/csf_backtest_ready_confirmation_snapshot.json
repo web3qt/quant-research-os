@@ -1,0 +1,37 @@
+{
+  "fixture_id": "csf-backtest-ready-confirmation",
+  "input_digest": "a53bcf8e6ca29f4ed907a65b9be75c1cf2af26b7300686eb915a7482dbc966fe",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-csf-backtest-ready-author",
+  "stage_id": "csf_backtest_ready",
+  "session_stage": "csf_backtest_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "portfolio_contract.yaml",
+    "portfolio_weight_panel.parquet",
+    "rebalance_ledger.csv",
+    "turnover_capacity_report.parquet",
+    "cost_assumption_report.md",
+    "engine_compare.csv",
+    "portfolio_summary.parquet",
+    "name_level_metrics.parquet",
+    "drawdown_report.json",
+    "csf_backtest_gate_table.csv",
+    "csf_backtest_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_holdout_validation"
+  ],
+  "blocking_reasons": [
+    "csf_backtest_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete csf_backtest_ready group: portfolio_contract",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_backtest_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

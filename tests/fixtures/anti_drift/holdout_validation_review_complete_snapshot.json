@@ -1,0 +1,28 @@
+{
+  "fixture_id": "holdout-validation-review-complete",
+  "input_digest": "11465f3fe7267a6ca2395043e09cca2c4a7e8be9c8a048b3cbd0721fea24dc73",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-research-session",
+  "stage_id": "holdout_validation",
+  "session_stage": "holdout_validation_review_complete",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "holdout_run_manifest.json",
+    "holdout_backtest_compare.csv",
+    "holdout_gate_decision.md",
+    "holdout window result files",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "promotion_decision"
+  ],
+  "blocking_reasons": [],
+  "lineage_transition": "Stop here until promotion_decision orchestration exists",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::holdout_validation_review_complete"
+  ],
+  "failure_class": null,
+  "severity": null
+}

@@ -153,3 +153,11 @@ def diff_snapshot(
         for key in all_keys
         if expected_normalized.get(key) != actual_normalized.get(key)
     }
+
+
+def semantic_projection(
+    snapshot: CanonicalDecisionSnapshot | Mapping[str, Any],
+) -> dict[str, Any]:
+    payload = snapshot.to_dict() if isinstance(snapshot, CanonicalDecisionSnapshot) else dict(snapshot)
+    ignored = {"fixture_id", "input_digest", "snapshot_version", "schema_version", "evidence_refs"}
+    return {key: payload[key] for key in sorted(payload) if key not in ignored}

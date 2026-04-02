@@ -1,0 +1,31 @@
+{
+  "fixture_id": "csf-holdout-validation-review-complete",
+  "input_digest": "49881498cfec9bcfc8d0acfb0173057d89190d59ef2dfa073ebf87d2f91d20ea",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-research-session",
+  "stage_id": "csf_holdout_validation",
+  "session_stage": "csf_holdout_validation_review_complete",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "csf_holdout_run_manifest.json",
+    "holdout_factor_diagnostics.parquet",
+    "holdout_test_compare.parquet",
+    "holdout_portfolio_compare.parquet",
+    "rolling_holdout_stability.json",
+    "regime_shift_audit.json",
+    "csf_holdout_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "promotion_decision"
+  ],
+  "blocking_reasons": [],
+  "lineage_transition": "Stop here until promotion_decision orchestration exists",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_holdout_validation_review_complete"
+  ],
+  "failure_class": null,
+  "severity": null
+}
