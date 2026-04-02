@@ -298,6 +298,8 @@ stages:
       - eligibility_base_mask.parquet
       - shared_feature_base/
       - csf_data_contract.md
+      - run_manifest.json
+      - rebuild_csf_data_ready.py
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
@@ -305,6 +307,8 @@ stages:
       - asset_universe_membership.parquet
       - cross_section_coverage.parquet
       - eligibility_base_mask.parquet
+      - run_manifest.json
+      - rebuild_csf_data_ready.py
     human_artifacts:
       - csf_data_contract.md
       - artifact_catalog.md
@@ -317,12 +321,14 @@ stages:
         - eligibility mask 作为独立底座存在
         - 共享字段具备时间语义和缺失语义
         - 如允许 group_neutral，taxonomy 已冻结或显式版本化
+        - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
       fail_any_of:
         - 只有资产时序表，没有显式截面面板合同
         - universe membership 无法按日期重建
         - eligibility 规则混在下游因子代码里
         - 覆盖率波动显著却没有报告
         - 分组中性化需要的 taxonomy 在下游临时补
+        - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
     audit_only:
       - 面板字段命名是否清楚
       - 共享字段说明是否便于 reviewer 追踪
@@ -831,6 +837,8 @@ stages:
       - universe_exclusions.csv
       - universe_exclusions.md
       - data_ready_gate_decision.md
+      - run_manifest.json
+      - rebuild_data_ready.py
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
@@ -839,6 +847,8 @@ stages:
       - qc_report.parquet
       - dataset_manifest.json
       - universe_exclusions.csv
+      - run_manifest.json
+      - rebuild_data_ready.py
     human_artifacts:
       - validation_report.md
       - data_contract.md
@@ -856,11 +866,13 @@ stages:
         - qc_report 与 dataset_manifest 已生成
         - 排除项和准入结果已显式记录
         - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+        - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
       fail_any_of:
         - 没有统一时间栅格
         - 混用 open_time 和 close_time 作为主键
         - 静默吞掉缺失或静默 forward-fill
         - 基准腿覆盖或 universe 审计无法解释
+        - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
     audit_only:
       - 个别对象质量偏弱但未触发正式排除
       - rolling cache 选择是否足够经济

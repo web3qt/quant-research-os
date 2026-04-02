@@ -170,14 +170,14 @@ Depends On:
 | **输出** | rolling_stats/（缓存目录） |
 | **验证点** | rolling statistics 的计算窗口与 time_split.json 中 train 窗口一致；不存在使用 test / backtest / holdout 数据估算的情况；缓存文件有 field_dictionary 对应条目 |
 
-## 步骤 10：数据合同与元数据生成
+## 步骤 10：数据合同、元数据与重放程序生成
 
 | 项 | 内容 |
 |----|------|
 | **输入** | 以上所有步骤的产出 |
-| **动作** | 撰写 data_contract.md（定义下游可消费的字段、语义、质量承诺）；生成 dataset_manifest.json（数据集元数据：版本、时间范围、行数、列数、hash） |
-| **输出** | data_contract.md、dataset_manifest.json |
-| **验证点** | data_contract.md 中列出的字段与 aligned_bars/ 实际列名一一对应；dataset_manifest.json 中的 row_count 与实际文件行数一致；hash 可复现 |
+| **动作** | 撰写 data_contract.md（定义下游可消费的字段、语义、质量承诺）；生成 dataset_manifest.json（数据集元数据：版本、时间范围、行数、列数、hash）；生成 run_manifest.json（记录 runtime 版本、输入根目录、program_artifacts、replay_command）；保存 stage-local rebuild 程序（如 `rebuild_data_ready.py`） |
+| **输出** | data_contract.md、dataset_manifest.json、run_manifest.json、`rebuild_data_ready.py` 或等价程序快照 |
+| **验证点** | data_contract.md 中列出的字段与 aligned_bars/ 实际列名一一对应；dataset_manifest.json 中的 row_count 与实际文件行数一致；hash 可复现；run_manifest.json 可追到 runtime 版本和 replay_command；rebuild 程序可以在冻结输入上重放 |
 
 ## 步骤 11：artifact_catalog 和 field_dictionary 生成
 
@@ -210,6 +210,8 @@ Depends On:
 | `qc_report.parquet` | machine | parquet | 全局和逐标的质量指标汇总 |
 | `dataset_manifest.json` | machine | json | 数据集元数据（版本、范围、hash） |
 | `universe_exclusions.csv` | machine | csv | 被排除标的列表及排除原因 |
+| `run_manifest.json` | machine | json | 运行账本，记录 runtime 版本、输入根目录、program_artifacts、replay_command |
+| `rebuild_data_ready.py` | machine | python | stage-local 重放程序；若使用别的语言，需提供等价程序快照 |
 | `validation_report.md` | human | markdown | 数据质量验证报告 |
 | `data_contract.md` | human | markdown | 下游字段与语义合同 |
 | `dedupe_rule.md` | human | markdown | 去重规则说明 |

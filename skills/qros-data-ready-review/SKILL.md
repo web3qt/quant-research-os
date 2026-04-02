@@ -38,6 +38,8 @@ Required outputs:
 - universe_exclusions.csv
 - universe_exclusions.md
 - data_ready_gate_decision.md
+- run_manifest.json
+- rebuild_data_ready.py or equivalent program snapshot
 - artifact_catalog.md
 - field_dictionary.md
 
@@ -53,6 +55,7 @@ Must pass all of:
 - qc_report 与 dataset_manifest 已生成
 - 排除项和准入结果已显式记录
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+- run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
 Must fail none of:
 - 没有统一时间栅格
 - 混用 open_time 和 close_time 作为主键
@@ -69,6 +72,7 @@ Stage checklist:
 - [blocking] dataset_manifest.json 已冻结当前数据版本、Universe 版本和产物路径
 - [blocking] 去重规则与时间主键口径明确，未混用 open_time / close_time
 - [blocking] Universe 排除项已显式记录，并给出原因
+- [blocking] run_manifest.json 已记录 program_artifacts 与 replay_command，且 stage-local rebuild 程序存在
 - [reservation] rolling_stats 或等价可复用 rolling 缓存已生成
 
 ## Audit-Only Items

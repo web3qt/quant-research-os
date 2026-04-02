@@ -30,11 +30,14 @@ Required inputs:
 Required outputs:
 - `panel_manifest.json`
 - `asset_universe_membership.parquet`
+- `cross_section_coverage.parquet`
 - `eligibility_base_mask.parquet`
-- `coverage_report.parquet`
 - `shared_feature_base/`
+- `asset_taxonomy_snapshot.parquet`（若 mandate 允许 `group_neutral`）
 - `csf_data_contract.md`
-- `data_ready_gate_decision.md`
+- `csf_data_ready_gate_decision.md`
+- `run_manifest.json`
+- `rebuild_csf_data_ready.py` or equivalent program snapshot
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -47,9 +50,10 @@ Must pass all of:
 - 面板主键、覆盖规则和准入语义已显式冻结
 - date x asset 面板已生成，正式对象的面板时间轴一致
 - 缺失、坏值、stale 和 outlier 语义已显式保留
-- coverage_report 与 panel_manifest 已生成
+- cross_section_coverage 与 panel_manifest 已生成
 - 排除项和准入结果已显式记录
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+- run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
 Must fail none of:
 - 没有统一面板栅格
 - 把面板当成隐式时序表
@@ -65,6 +69,7 @@ Stage checklist:
 - [blocking] panel_manifest 已冻结当前数据版本、Universe 版本和产物路径
 - [blocking] 面板主键与覆盖口径明确，未混用时序语义
 - [blocking] Universe 排除项已显式记录，并给出原因
+- [blocking] run_manifest.json 已记录 program_artifacts 与 replay_command，且 stage-local rebuild 程序存在
 - [reservation] shared_feature_base 或等价可复用共享层已生成
 
 ## Audit-Only Items

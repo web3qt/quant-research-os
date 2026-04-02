@@ -202,12 +202,18 @@ stages:
         evidence:
           - "artifact_catalog.md"
           - "field_dictionary.md"
+      - id: "CSF-DATA-006A"
+        severity: "blocking"
+        check: "run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结"
+        evidence:
+          - "run_manifest.json"
+          - "rebuild_csf_data_ready.py"
       - id: "CSF-DATA-007"
         severity: "reservation"
         check: "覆盖率波动、边缘样本或 taxonomy 版本切换均已明确记录在审查材料中"
         evidence:
           - "cross_section_coverage.parquet"
-          - "csf_data_gate_decision.md"
+          - "csf_data_ready_gate_decision.md"
 
   csf_signal_ready:
     stage_name: "CSF Signal Ready"
@@ -500,6 +506,12 @@ stages:
         evidence:
           - "universe_exclusions.*"
           - "universe_summary.md"
+      - id: "DATA-006A"
+        severity: "blocking"
+        check: "run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结"
+        evidence:
+          - "run_manifest.json"
+          - "rebuild_data_ready.py"
       - id: "DATA-007"
         severity: "reservation"
         check: "rolling_stats 或等价可复用 rolling 缓存已生成"

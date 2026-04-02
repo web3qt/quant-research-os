@@ -37,6 +37,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - `universe_exclusions.csv`
 - `universe_exclusions.md`
 - `data_ready_gate_decision.md`
+- `run_manifest.json`
+- `rebuild_data_ready.py` or equivalent program snapshot
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -56,6 +58,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 可以冻结共享研究底座与共享派生层
 - 不得产出 thesis-specific signal 或收益结论
 - 必须在当前研究仓真实生成可供下游消费的 `aligned_bars/`、共享缓存和相关证据
+- 必须把本阶段真实使用的数据处理程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 data_ready？`
@@ -90,5 +93,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 8. 输出一份 grouped data_ready summary
 9. 只有用户最终批准后，才生成正式 `02_data_ready` artifacts
 10. 验证 `validation_report.md` 中所有覆盖异常已有解释
-11. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-12. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 data_ready 完成
+11. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
+12. 保存 `rebuild_data_ready.py` 或等价 stage-local 程序快照；若使用自定义程序，不得只引用 notebook 名称
+13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+14. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 data_ready 完成

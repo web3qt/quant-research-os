@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
+import textwrap
 from typing import Any
 
 import yaml
 
 
 DATA_READY_FREEZE_DRAFT_FILE = "data_ready_freeze_draft.yaml"
+DATA_READY_REBUILD_SCRIPT = "rebuild_data_ready.py"
 DATA_READY_FREEZE_GROUP_ORDER = [
     "extraction_contract",
     "quality_semantics",
@@ -19,6 +22,116 @@ DATA_READY_FREEZE_GROUP_ORDER = [
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _runtime_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _git_revision(repo_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
+
+
+def _render_rebuild_script(
+    *,
+    stage_label: str,
+    module_relpath: str,
+    function_name: str,
+    runtime_root_hint: str,
+) -> str:
+    return textwrap.dedent(
+        """\
+        #!/usr/bin/env python3
+        from __future__ import annotations
+
+        import argparse
+        import importlib.util
+        import os
+        from pathlib import Path
+        import sys
+
+
+        STAGE_LABEL = {stage_label}
+        MODULE_REL_PATH = {module_relpath}
+        FUNCTION_NAME = {function_name}
+        RUNTIME_ROOT_HINT = {runtime_root_hint}
+
+
+        def _candidate_runtime_roots(explicit_runtime_root: str | None) -> list[Path]:
+            stage_dir = Path(__file__).resolve().parent
+            lineage_root = stage_dir.parent
+            project_root = lineage_root.parent.parent
+            raw_candidates = [
+                explicit_runtime_root,
+                os.environ.get("QROS_RUNTIME_ROOT"),
+                str(project_root / ".qros"),
+                str(Path.home() / ".qros"),
+                str(Path.home() / ".codex" / "qros"),
+                RUNTIME_ROOT_HINT,
+            ]
+            candidates: list[Path] = []
+            for raw in raw_candidates:
+                if not raw:
+                    continue
+                candidate = Path(raw).expanduser()
+                if candidate not in candidates:
+                    candidates.append(candidate)
+            return candidates
+
+
+        def _resolve_module_path(explicit_runtime_root: str | None) -> Path:
+            for runtime_root in _candidate_runtime_roots(explicit_runtime_root):
+                module_path = runtime_root / MODULE_REL_PATH
+                if module_path.exists():
+                    return module_path
+            raise SystemExit(
+                "Unable to locate QROS runtime module for "
+                + STAGE_LABEL
+                + ". Pass --runtime-root or set QROS_RUNTIME_ROOT."
+            )
+
+
+        def _load_build_function(module_path: Path):
+            spec = importlib.util.spec_from_file_location("_qros_stage_runtime", module_path)
+            if spec is None or spec.loader is None:
+                raise SystemExit("Unable to load runtime module: " + str(module_path))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return getattr(module, FUNCTION_NAME)
+
+
+        def main() -> int:
+            parser = argparse.ArgumentParser(
+                description="Rebuild frozen " + STAGE_LABEL + " artifacts using the recorded QROS runtime."
+            )
+            parser.add_argument("--lineage-root", type=Path, default=Path(__file__).resolve().parent.parent)
+            parser.add_argument("--runtime-root", type=Path, default=None)
+            args = parser.parse_args()
+
+            module_path = _resolve_module_path(str(args.runtime_root) if args.runtime_root else None)
+            build_fn = _load_build_function(module_path)
+            build_fn(args.lineage_root.resolve())
+            return 0
+
+
+        if __name__ == "__main__":
+            raise SystemExit(main())
+        """
+    ).format(
+        stage_label=repr(stage_label),
+        module_relpath=repr(module_relpath),
+        function_name=repr(function_name),
+        runtime_root_hint=repr(runtime_root_hint),
+    )
 
 
 def _blank_data_ready_freeze_draft() -> dict[str, Any]:
@@ -134,6 +247,8 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     shared_outputs = _string_list(shared_derived_layer.get("shared_outputs", []))
     machine_artifacts = _string_list(delivery_contract.get("machine_artifacts", []))
     layer_boundary_note = _required_draft_value(shared_derived_layer, "layer_boundary_note")
+    runtime_root = _runtime_root()
+    runtime_git_revision = _git_revision(runtime_root)
 
     for name in [
         "aligned_bars",
@@ -252,6 +367,47 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    rebuild_script_path = data_ready_dir / DATA_READY_REBUILD_SCRIPT
+    rebuild_script_path.write_text(
+        _render_rebuild_script(
+            stage_label="data_ready",
+            module_relpath="tools/data_ready_runtime.py",
+            function_name="build_data_ready_from_mandate",
+            runtime_root_hint=str(runtime_root),
+        ),
+        encoding="utf-8",
+    )
+    rebuild_script_path.chmod(0o755)
+    (data_ready_dir / "run_manifest.json").write_text(
+        json.dumps(
+            {
+                "stage": "data_ready",
+                "lineage_id": lineage_root.name,
+                "source_stage": "mandate",
+                "data_source": data_source,
+                "time_boundary": time_boundary,
+                "primary_time_key": primary_time_key,
+                "bar_size": bar_size,
+                "benchmark_symbol": benchmark_symbol,
+                "coverage_floor": coverage_floor,
+                "machine_artifacts": machine_artifacts,
+                "shared_outputs": shared_outputs,
+                "consumer_stage": consumer_stage,
+                "frozen_inputs_note": frozen_inputs_note,
+                "runtime_root_hint": str(runtime_root),
+                "runtime_module": "tools/data_ready_runtime.py",
+                "runtime_function": "build_data_ready_from_mandate",
+                "source_git_revision": runtime_git_revision,
+                "program_artifacts": [DATA_READY_REBUILD_SCRIPT],
+                "replay_working_directory": data_ready_dir.name,
+                "replay_command": f"python3 {DATA_READY_REBUILD_SCRIPT}",
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (data_ready_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
@@ -271,6 +427,8 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
                 "- universe_exclusions.csv",
                 "- universe_exclusions.md",
                 "- data_ready_gate_decision.md",
+                "- run_manifest.json",
+                f"- {DATA_READY_REBUILD_SCRIPT}",
                 "- field_dictionary.md",
             ]
         )
@@ -292,6 +450,11 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
                 f"- `benchmark_symbol`: 基准符号，当前为 `{benchmark_symbol}`。",
                 f"- `shared_outputs`: 共享派生输出集合，当前为 `{shared_outputs}`。",
                 f"- `frozen_inputs_note`: {frozen_inputs_note}",
+                "- `runtime_root_hint`: `run_manifest.json` 中记录的 runtime 根目录提示。",
+                "- `runtime_module`: `run_manifest.json` 中记录的正式构建模块路径。",
+                "- `runtime_function`: `run_manifest.json` 中记录的正式构建函数名。",
+                "- `program_artifacts`: `run_manifest.json` 中登记的 stage-local 程序快照。",
+                "- `replay_command`: `run_manifest.json` 中登记的重放命令。",
             ]
         )
         + "\n",

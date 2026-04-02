@@ -179,6 +179,7 @@
 - 输入 artifact 路径可追溯
 - 参数身份可追溯
 - 关键执行命令或入口已记录
+- stage-local rebuild 程序或等价 program snapshot 已登记到 `program_artifacts`
 - 关键输出可重跑
 - 重跑后关键汇总值与 gate verdict 一致
 

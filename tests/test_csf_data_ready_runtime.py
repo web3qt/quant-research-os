@@ -130,5 +130,7 @@ def test_build_csf_data_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert (stage_dir / "asset_taxonomy_snapshot.parquet").exists()
     assert (stage_dir / "csf_data_contract.md").exists()
     assert (stage_dir / "csf_data_ready_gate_decision.md").exists()
+    assert (stage_dir / "run_manifest.json").exists()
+    assert (stage_dir / "rebuild_csf_data_ready.py").exists()
     assert (stage_dir / "artifact_catalog.md").exists()
     assert (stage_dir / "field_dictionary.md").exists()

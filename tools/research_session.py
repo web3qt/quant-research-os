@@ -175,6 +175,8 @@ DATA_READY_REQUIRED_OUTPUTS = [
     "universe_exclusions.csv",
     "universe_exclusions.md",
     "data_ready_gate_decision.md",
+    "run_manifest.json",
+    "rebuild_data_ready.py",
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
@@ -187,6 +189,8 @@ CSF_DATA_READY_REQUIRED_OUTPUTS = [
     "asset_taxonomy_snapshot.parquet",
     "csf_data_contract.md",
     "csf_data_ready_gate_decision.md",
+    "run_manifest.json",
+    "rebuild_csf_data_ready.py",
     "artifact_catalog.md",
     "field_dictionary.md",
 ]

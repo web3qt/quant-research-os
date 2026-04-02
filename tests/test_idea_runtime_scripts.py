@@ -614,6 +614,8 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
     assert (data_ready_dir / "topic_basket_state").exists()
     assert (data_ready_dir / "dataset_manifest.json").exists()
     assert (data_ready_dir / "data_contract.md").exists()
+    assert (data_ready_dir / "run_manifest.json").exists()
+    assert (data_ready_dir / "rebuild_data_ready.py").exists()
     assert (data_ready_dir / "artifact_catalog.md").exists()
     assert "Built data_ready artifacts" in result.stdout
 
