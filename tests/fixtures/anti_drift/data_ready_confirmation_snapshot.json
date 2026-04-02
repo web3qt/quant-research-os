@@ -32,7 +32,7 @@
   ],
   "lineage_transition": "Complete data_ready freeze group: extraction_contract",
   "evidence_refs": [
-    "tests/test_anti_drift_replay.py::data_ready_confirmation"
+    "tools/anti_drift_scenarios.py::data_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null

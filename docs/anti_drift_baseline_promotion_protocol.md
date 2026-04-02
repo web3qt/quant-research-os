@@ -81,6 +81,7 @@ This writes a `baseline_manifest.json` alongside the promoted payloads.
 - Nightly regression compares current payloads against blessed baselines.
 - Nightly regression should also emit a machine-readable gate artifact via `scripts/build_anti_drift_gate_summary.py`.
 - Release assembly should consume the nightly gate artifact via `scripts/build_anti_drift_release_artifact.py`.
+- The repository CI entrypoint for this flow is `.github/workflows/anti-drift.yml`.
 - Release is blocked if:
   - current payloads differ from blessed baselines without explicit promotion
   - promotion manifest is missing for newly blessed payloads

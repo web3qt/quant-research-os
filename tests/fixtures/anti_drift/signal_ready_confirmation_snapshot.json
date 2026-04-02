@@ -1,0 +1,34 @@
+{
+  "fixture_id": "signal-ready-confirmation",
+  "input_digest": "c7a1f8a226f7e6d89610d72aaa641e9fb87bf0c4a5f284915b76df3af5fed8a8",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-signal-ready-author",
+  "stage_id": "signal_ready",
+  "session_stage": "signal_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "param_manifest.csv",
+    "params/",
+    "signal_coverage.csv",
+    "signal_coverage.md",
+    "signal_coverage_summary.md",
+    "signal_contract.md",
+    "signal_fields_contract.md",
+    "signal_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "train_calibration"
+  ],
+  "blocking_reasons": [
+    "signal_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete signal_ready freeze group: signal_expression",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::signal_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}
