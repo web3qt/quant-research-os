@@ -515,6 +515,9 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
     lineage_root = outputs_root / "btc_leads_high_liquidity_alts_after_shock_events"
     assert (lineage_root / "00_idea_intake").exists()
     assert "Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "Orchestrator: qros-research-session" in result.stdout
+    assert "Current active skill: qros-idea-intake-author" in result.stdout
+    assert "🧭" not in result.stdout
 
 
 def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
@@ -628,9 +631,9 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     assert result.returncode == 0
     assert "Current stage: idea_intake_confirmation_pending" in result.stdout
     assert "CONFIRM_IDEA_INTAKE" in result.stdout
-    assert "🧠 Why now:" in result.stdout
+    assert "Why now:" in result.stdout
     assert "- qualified" in result.stdout
-    assert "⚠ Open risks:" in result.stdout
+    assert "Open risks:" in result.stdout
     assert "- rollback_target remains 00_idea_intake" in result.stdout
     assert not (lineage_root / "01_mandate" / "mandate.md").exists()
 
@@ -661,6 +664,58 @@ def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Pat
 
     assert result.returncode == 0
     assert (intake_dir / "idea_intake_transition_approval.yaml").exists()
+    assert "Confirmation recorded: CONFIRM_IDEA_INTAKE" in result.stdout
+    assert "Confirmation did not advance the workflow because intake gate requirements are still incomplete." in result.stdout
+
+
+def test_run_research_session_confirm_intake_advances_to_mandate_confirmation_when_gate_ready(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {
+                "market": "binance perp",
+                "data_source": "binance um futures klines",
+                "bar_size": "5m",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
+    )
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-intake",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    assert "Confirmation recorded: CONFIRM_IDEA_INTAKE" in result.stdout
+    assert "Confirmation advanced the workflow." in result.stdout
+    assert "Current stage: mandate_confirmation_pending" in result.stdout
 
 
 def test_run_research_session_requires_route_assessment_before_mandate_pending(tmp_path: Path) -> None:
@@ -1002,15 +1057,12 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     )
 
     assert result.returncode == 0
-    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
+    assert "Orchestrator: qros-research-session" in result.stdout
     assert "Current stage: data_ready_confirmation_pending" in result.stdout
-    assert "🔨 Current active skill: qros-data-ready-author" in result.stdout
-    assert (
-        "⛔ Blocking reason: data_ready freeze confirmation is still incomplete."
-        in result.stdout
-    )
-    assert "▶ Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
-    assert "🔁 Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts" in result.stdout
+    assert "Current active skill: qros-data-ready-author" in result.stdout
+    assert "Blocking reason: data_ready freeze confirmation is still incomplete." in result.stdout
+    assert "Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
+    assert "Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts" in result.stdout
 
 
 def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1536,14 +1588,11 @@ def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp
     )
 
     assert result.returncode == 0
-    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
+    assert "Orchestrator: qros-research-session" in result.stdout
     assert "Current stage: test_evidence_review" in result.stdout
-    assert "🔨 Current active skill: qros-stage-failure-handler" in result.stdout
-    assert (
-        "💡 Why this skill: Review verdict RETRY blocks normal progression, so failure handling is now the active workflow."
-        in result.stdout
-    )
-    assert "⛔ Blocking reason: Normal progression is blocked by review verdict RETRY." in result.stdout
+    assert "Current active skill: qros-stage-failure-handler" in result.stdout
+    assert "Why this skill: Review verdict RETRY blocks normal progression, so failure handling is now the active workflow." in result.stdout
+    assert "Blocking reason: Normal progression is blocked by review verdict RETRY." in result.stdout
     assert "Review verdict: RETRY" in result.stdout
     assert "Requires failure handling: True" in result.stdout
     assert "Failure stage: test_evidence_review" in result.stdout

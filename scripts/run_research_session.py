@@ -89,6 +89,40 @@ def _snapshot_payload(status, *, fixture_id: str | None) -> dict[str, object]:
     return snapshot.to_dict()
 
 
+def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
+    lines: list[str] = []
+    confirmation_label = None
+    if args.confirm_intake:
+        confirmation_label = "CONFIRM_IDEA_INTAKE"
+    elif args.confirm_mandate:
+        confirmation_label = "CONFIRM_MANDATE"
+    elif args.confirm_data_ready:
+        confirmation_label = "CONFIRM_DATA_READY"
+    elif args.confirm_signal_ready:
+        confirmation_label = "CONFIRM_SIGNAL_READY"
+    elif args.confirm_train_freeze:
+        confirmation_label = "CONFIRM_TRAIN_FREEZE"
+    elif args.confirm_test_evidence:
+        confirmation_label = "CONFIRM_TEST_EVIDENCE"
+    elif args.confirm_backtest_ready:
+        confirmation_label = "CONFIRM_BACKTEST_READY"
+    elif args.confirm_holdout_validation:
+        confirmation_label = "CONFIRM_HOLDOUT_VALIDATION"
+
+    if confirmation_label is None:
+        return lines
+
+    lines.append(f"Confirmation recorded: {confirmation_label}")
+    if args.confirm_intake:
+        if status.current_stage == "mandate_confirmation_pending":
+            lines.append("Confirmation advanced the workflow.")
+        else:
+            lines.append(
+                "Confirmation did not advance the workflow because intake gate requirements are still incomplete."
+            )
+    return lines
+
+
 def main() -> int:
     args = _parse_args()
 
@@ -131,11 +165,13 @@ def main() -> int:
         print(json.dumps(_status_payload(status), ensure_ascii=False, indent=2))
         return 0
 
+    for line in _confirmation_feedback(args, status):
+        print(line)
     print(f"Lineage: {status.lineage_id}")
-    print(f"🧭 Current orchestrator: {status.current_orchestrator}")
-    print(f"📍 Current stage: {status.current_stage}")
-    print(f"🔨 Current active skill: {status.current_skill}")
-    print(f"💡 Why this skill: {status.why_this_skill}")
+    print(f"Orchestrator: {status.current_orchestrator}")
+    print(f"Current stage: {status.current_stage}")
+    print(f"Current active skill: {status.current_skill}")
+    print(f"Why this skill: {status.why_this_skill}")
     if status.current_route is not None:
         print(f"Research route: {status.current_route}")
     if status.factor_role is not None:
@@ -147,23 +183,24 @@ def main() -> int:
     if status.neutralization_policy is not None:
         print(f"Neutralization policy: {status.neutralization_policy}")
     print(f"Gate status: {status.gate_status}")
+    print(f"Terminal state: {status.current_stage.endswith('_review_complete')}")
     if status.review_verdict is not None:
         print(f"Review verdict: {status.review_verdict}")
     print(f"Requires failure handling: {status.requires_failure_handling}")
     if status.failure_stage is not None:
-        print(f"🧱 Failure stage: {status.failure_stage}")
+        print(f"Failure stage: {status.failure_stage}")
     if status.failure_reason_summary is not None:
-        print(f"📝 Failure reason: {status.failure_reason_summary}")
+        print(f"Failure reason: {status.failure_reason_summary}")
     if status.blocking_reason is not None:
-        print(f"⛔ Blocking reason: {status.blocking_reason}")
-    print(f"▶ Next action: {status.next_action}")
-    print(f"🔁 Resume hint: {status.resume_hint}")
+        print(f"Blocking reason: {status.blocking_reason}")
+    print(f"Next action: {status.next_action}")
+    print(f"Resume hint: {status.resume_hint}")
     if status.why_now:
-        print("🧠 Why now:")
+        print("Why now:")
         for item in status.why_now:
             print(f"- {item}")
     if status.open_risks:
-        print("⚠ Open risks:")
+        print("Open risks:")
         for item in status.open_risks:
             print(f"- {item}")
     if status.artifacts_written:
