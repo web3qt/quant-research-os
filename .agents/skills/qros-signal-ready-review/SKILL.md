@@ -1,6 +1,6 @@
 ---
 name: qros-signal-ready-review
-description: Use when signal_ready artifacts have been authored and must pass formal gate review before advancing to train_freeze stage.
+description: Codex review skill for Signal Ready stage verification.
 ---
 
 # Signal Ready Review
@@ -58,7 +58,6 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `02_data_ready/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] 信号字段合同已生成，字段 schema 固定
 - [blocking] param_id 身份已显式落地，并存在 param manifest
 - [blocking] timeseries 已落盘，且下游无需临时重算同名信号
@@ -104,6 +103,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 

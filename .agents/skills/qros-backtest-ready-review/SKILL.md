@@ -1,6 +1,6 @@
 ---
 name: qros-backtest-ready-review
-description: Use when backtest_ready artifacts have been authored and must pass formal gate review before advancing to holdout_validation stage.
+description: Codex review skill for Backtest Ready stage verification.
 ---
 
 # Backtest Ready Review
@@ -58,7 +58,6 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `05_test_evidence/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] 输入白名单和交易规则来自上游冻结文件
 - [blocking] vectorbt 与 backtrader 两套正式回测均已完成
 - [blocking] 双引擎关键结果一致，semantic_gap = false
@@ -106,6 +105,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 

@@ -1,0 +1,32 @@
+{
+  "fixture_id": "mandate-review-replay",
+  "input_digest": "9e002cdb6302fca9354b663d6709f3adf341e1f0b8c24a2e25008be11c7556c5",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-mandate-review",
+  "stage_id": "mandate",
+  "session_stage": "mandate_review",
+  "formal_decision": "REVIEW_PENDING",
+  "required_artifacts": [
+    "mandate.md",
+    "research_scope.md",
+    "time_split.json",
+    "parameter_grid.yaml",
+    "run_config.toml",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "data_ready",
+    "csf_data_ready"
+  ],
+  "blocking_reasons": [
+    "mandate review closure is still incomplete."
+  ],
+  "lineage_transition": "Write review_findings.yaml and run mandate review",
+  "evidence_refs": [
+    "tests/test_anti_drift_replay.py::mandate_review"
+  ],
+  "failure_class": null,
+  "severity": null
+}

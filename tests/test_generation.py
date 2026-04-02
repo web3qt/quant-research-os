@@ -2,6 +2,8 @@ from pathlib import Path
 from subprocess import run
 import sys
 
+from scripts.gen_codex_stage_review_skills import CHECKLIST_SCHEMA_PATH, GATE_SCHEMA_PATH
+
 
 def test_generator_writes_first_wave_skills(tmp_path: Path) -> None:
     output_root = tmp_path / "generated"
@@ -38,3 +40,8 @@ def test_generator_runs_outside_repo_root() -> None:
     assert "FRESH: qros-test-evidence-review" in result.stdout
     assert "FRESH: qros-backtest-ready-review" in result.stdout
     assert "FRESH: qros-holdout-validation-review" in result.stdout
+
+
+def test_generator_source_schema_paths_exist() -> None:
+    assert GATE_SCHEMA_PATH.exists()
+    assert CHECKLIST_SCHEMA_PATH.exists()

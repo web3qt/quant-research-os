@@ -1,6 +1,6 @@
 ---
 name: qros-data-ready-review
-description: Use when data_ready artifacts have been authored and must pass formal gate review before advancing to signal_ready stage.
+description: Codex review skill for Data Ready stage verification.
 ---
 
 # Data Ready Review
@@ -38,6 +38,8 @@ Required outputs:
 - universe_exclusions.csv
 - universe_exclusions.md
 - data_ready_gate_decision.md
+- run_manifest.json
+- rebuild_data_ready.py
 - artifact_catalog.md
 - field_dictionary.md
 
@@ -53,22 +55,24 @@ Must pass all of:
 - qc_report 与 dataset_manifest 已生成
 - 排除项和准入结果已显式记录
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+- run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
 Must fail none of:
 - 没有统一时间栅格
 - 混用 open_time 和 close_time 作为主键
 - 静默吞掉缺失或静默 forward-fill
 - 基准腿覆盖或 universe 审计无法解释
+- 只保存产物，没有 stage-local rebuild 程序或 replay 账本
 
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `01_mandate/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] dense 时间轴已生成，目标对象时间栅格一致
 - [blocking] 缺失、stale、outlier、坏价等语义被显式标记，而非静默修复
 - [blocking] 基准腿（如 BTC）覆盖审计通过
 - [blocking] dataset_manifest.json 已冻结当前数据版本、Universe 版本和产物路径
 - [blocking] 去重规则与时间主键口径明确，未混用 open_time / close_time
 - [blocking] Universe 排除项已显式记录，并给出原因
+- [blocking] run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结
 - [reservation] rolling_stats 或等价可复用 rolling 缓存已生成
 
 ## Audit-Only Items
@@ -108,6 +112,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 

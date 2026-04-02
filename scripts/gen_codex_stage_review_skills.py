@@ -13,6 +13,8 @@ from tools.review_skillgen.render import render_stage_skill
 
 
 DRY_RUN = "--dry-run" in sys.argv[1:]
+GATE_SCHEMA_PATH = ROOT / "docs" / "gates" / "workflow_stage_gates.yaml"
+CHECKLIST_SCHEMA_PATH = ROOT / "docs" / "review-sop" / "review_checklist_master.yaml"
 FIRST_WAVE_SKILLS = {
     "mandate": "qros-mandate-review",
     "data_ready": "qros-data-ready-review",
@@ -22,6 +24,12 @@ FIRST_WAVE_SKILLS = {
     "backtest_ready": "qros-backtest-ready-review",
     "holdout_validation": "qros-holdout-validation-review",
 }
+
+
+def _require_existing_file(path: Path, *, label: str) -> Path:
+    if not path.exists():
+        raise FileNotFoundError(f"{label} not found: {path}")
+    return path
 
 
 def _parse_output_root(argv: list[str]) -> Path:
@@ -79,8 +87,8 @@ def _is_fresh(outputs: dict[Path, str]) -> bool:
 
 def main() -> int:
     output_root = _parse_output_root(sys.argv[1:])
-    gates = load_gate_schema(ROOT / "docs" / "gates" / "workflow_stage_gates.yaml")
-    checklist = load_checklist_schema(ROOT / "docs" / "check-sop" / "review_checklist_master.yaml")
+    gates = load_gate_schema(_require_existing_file(GATE_SCHEMA_PATH, label="gate schema"))
+    checklist = load_checklist_schema(_require_existing_file(CHECKLIST_SCHEMA_PATH, label="checklist schema"))
 
     any_stale = False
     for stage_key, skill_name in FIRST_WAVE_SKILLS.items():

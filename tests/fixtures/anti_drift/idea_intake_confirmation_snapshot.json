@@ -1,0 +1,32 @@
+{
+  "fixture_id": "idea-intake-confirmation",
+  "input_digest": "899dac20d2eb15e23a52f08ce9a337ca5143f37707ed1077151bc4110681133f",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-idea-intake-author",
+  "stage_id": "idea_intake",
+  "session_stage": "idea_intake_confirmation_pending",
+  "formal_decision": "IDEA_INTAKE_PENDING_CONFIRMATION",
+  "required_artifacts": [
+    "idea_brief.md",
+    "observation_hypothesis_map.md",
+    "research_question_set.md",
+    "scope_canvas.yaml",
+    "qualification_scorecard.yaml",
+    "idea_gate_decision.yaml",
+    "artifact_catalog.md"
+  ],
+  "downstream_permissions": [
+    "mandate"
+  ],
+  "blocking_reasons": [
+    "Explicit idea intake confirmation is still incomplete.",
+    "rollback_target remains 00_idea_intake"
+  ],
+  "lineage_transition": "Run with --confirm-intake or reply CONFIRM_IDEA_INTAKE <lineage_id> after finishing the intake interview",
+  "evidence_refs": [
+    "tests/test_anti_drift_replay.py::idea_intake_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

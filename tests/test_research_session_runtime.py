@@ -1712,11 +1712,36 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
 
     assert status.lineage_id == "btc_leads_alts"
     assert status.lineage_root == lineage_root
+    assert status.current_orchestrator == "qros-research-session"
     assert status.current_stage == "idea_intake"
     assert status.artifacts_written == ["00_idea_intake/idea_brief.md"]
     assert status.gate_status == "NEEDS_REFRAME"
     assert status.next_action == "Fill qualification inputs"
+    assert status.current_skill == "qros-idea-intake-author"
+    assert "idea_intake" in status.why_this_skill
+    assert status.blocking_reason == "Idea intake inputs or admission evidence are still incomplete."
+    assert "qros-session --lineage-id btc_leads_alts" in status.resume_hint
     assert status.review_verdict is None
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
+
+
+def test_run_research_session_exposes_visibility_fields_for_failure_handling(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "05_test_evidence"
+
+    _write_minimal_stage_outputs(stage_dir, stage="test_evidence")
+    _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="RETRY")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_orchestrator == "qros-research-session"
+    assert status.current_stage == "test_evidence_review"
+    assert status.current_skill == "qros-stage-failure-handler"
+    assert status.why_this_skill == (
+        "Review verdict RETRY blocks normal progression, so failure handling is now the active workflow."
+    )
+    assert status.blocking_reason == "Normal progression is blocked by review verdict RETRY."
+    assert "qros-stage-failure-handler" in status.resume_hint

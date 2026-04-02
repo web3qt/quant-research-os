@@ -1,6 +1,6 @@
 ---
 name: qros-test-evidence-review
-description: Use when test_evidence artifacts have been authored and must pass formal gate review before advancing to backtest_ready stage.
+description: Codex review skill for Test Evidence stage verification.
 ---
 
 # Test Evidence Review
@@ -69,7 +69,6 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `04_train_freeze/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] Test 使用的阈值完全来自 Train 冻结对象
 - [blocking] formal gate 与 audit-only 已分开记录
 - [blocking] 统计证据在独立样本上计算，未在 test 重估训练尺子
@@ -85,7 +84,6 @@ Stage checklist:
 - [reservation] 若做了多重共线性诊断，已说明 VIF、condition number 或同类方法的适用边界与结论
 - [reservation] 若做了结构突变或参数稳定性审计，已区分 regime mismatch、样本问题与机制失效
 - [reservation] 若做了单位根、协整或防虚假回归诊断，已说明 ADF、Phillips-Perron、KPSS、Engle-Granger、Johansen 或同类方法的适用边界与结论
-- [reservation] 若仅给出原始 OLS 显著性而无异方差/自相关稳健性说明，不得升级为 formal pass 证据
 
 ## Audit-Only Items
 
@@ -100,21 +98,6 @@ Audit-only items:
 - 条件分层分析
 - crowding overlap 与 factor distinctiveness 审计
 - 高低波与下跌切片
-
-## Reviewer Guidance
-
-- 当 formal gate 直接引用时间序列回归、残差回归、因子收益回归或任何 `t`/`p` 显著性时，优先检查是否说明 `HAC / Newey-West` 等稳健口径。
-- 当 formal gate 进一步依赖残差独立性或原始 `OLS` 误差设定时，检查是否说明 `Breusch-Godfrey LM`、`Durbin-Watson`、`Ljung-Box` 或同类 serial-correlation diagnostic，或写清免做理由。
-- 当 formal gate 进一步依赖多变量回归里单个系数的符号、显著性或“控制后仍显著”的增量解释时，检查是否说明 `VIF`、`condition number` 或同类 multicollinearity diagnostic，或写清免做理由。
-- 当 formal gate 声称 lead-lag、beta、threshold 机制或回归系数在 Train/Test 间稳定延续时，检查是否说明 `Chow`、`Bai-Perron`、`CUSUM` 或 rolling coefficient stability 等结构突变 protocol，或写清免做理由。
-- 当 formal gate 依赖价格水平、OI、TVL、累计资金费率等可能非平稳 level series 的回归、长期均衡关系或 spread mean-reversion 结构时，检查是否说明 `ADF`、`Phillips-Perron`、`KPSS`、`Engle-Granger`、`Johansen` 或同类防虚假回归 protocol，或写清免做理由。
-- 当主要风险在于方差不稳定而不是搜索噪声时，检查是否记录 `White` / `Breusch-Pagan` 诊断，或把 `WLS` / `GLS` / `ARCH` / `GARCH` 写入修正建议或 residual risks。
-- `Breusch-Godfrey LM` 通常比 `Durbin-Watson` 更适合作为正式回归审计依据；`Durbin-Watson` 可以作为快速一阶检查，`Ljung-Box` 更适合作为补充审计。
-- 高 `VIF` 不自动等于模型失效，但会削弱单个系数解释；pairwise correlation matrix 只能快速筛查，不能自动替代 `VIF` 或整体矩阵诊断。
-- 不要把显著 break 机械等同于 `NO-GO`；先区分它更像 regime mismatch、样本过短，还是机制本身断裂。
-- 不要把 regime stationarity audit、结构突变检验和单位根/协整问题混为一谈；它们分别对应窗口分布偏移、参数稳定性和 level-series 非平稳风险。
-- 如果 series 非平稳且没有 cointegration 证据，level-series 的 `t` 值或高 `R^2` 不能直接支撑 formal `PASS`。
-- 不要把具体统计库名当作要求；skill 只要求方法口径清楚、结论边界清楚。
 
 ## Closure Artifacts
 
@@ -147,6 +130,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 

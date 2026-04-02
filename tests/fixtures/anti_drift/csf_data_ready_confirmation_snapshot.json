@@ -1,0 +1,34 @@
+{
+  "fixture_id": "csf-data-ready-confirmation",
+  "input_digest": "36aafc5791c58f4fcc1018055e8f2892a2dc6f9b50c4020f0ddb454d4bdb700f",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-csf-data-ready-author",
+  "stage_id": "csf_data_ready",
+  "session_stage": "csf_data_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "panel_manifest.json",
+    "asset_universe_membership.parquet",
+    "cross_section_coverage.parquet",
+    "eligibility_base_mask.parquet",
+    "shared_feature_base/",
+    "csf_data_contract.md",
+    "run_manifest.json",
+    "rebuild_csf_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_signal_ready"
+  ],
+  "blocking_reasons": [
+    "csf_data_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete csf_data_ready freeze group: panel_contract",
+  "evidence_refs": [
+    "tests/test_anti_drift_replay.py::csf_data_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+from dataclasses import asdict
 from pathlib import Path
 import sys
 
@@ -11,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools.research_session import run_research_session
+from tools.anti_drift import canonical_snapshot_from_session_context
 
 
 def _parse_args() -> argparse.Namespace:
@@ -58,7 +61,32 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write an explicit approval artifact so the next session run may build holdout_validation outputs.",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the session status as machine-readable JSON instead of the formatted text panel.",
+    )
+    parser.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="Print the canonical anti-drift decision snapshot as JSON.",
+    )
     return parser.parse_args()
+
+
+def _status_payload(status) -> dict[str, object]:
+    payload = asdict(status)
+    payload["lineage_root"] = str(status.lineage_root)
+    return payload
+
+
+def _snapshot_payload(status, *, fixture_id: str | None) -> dict[str, object]:
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id=fixture_id or status.lineage_id,
+        evidence_refs=("scripts/run_research_session.py",),
+    )
+    return snapshot.to_dict()
 
 
 def main() -> int:
@@ -95,8 +123,19 @@ def main() -> int:
         ),
     )
 
+    if args.snapshot:
+        print(json.dumps(_snapshot_payload(status, fixture_id=args.lineage_id), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.json:
+        print(json.dumps(_status_payload(status), ensure_ascii=False, indent=2))
+        return 0
+
     print(f"Lineage: {status.lineage_id}")
-    print(f"Current stage: {status.current_stage}")
+    print(f"🧭 Current orchestrator: {status.current_orchestrator}")
+    print(f"📍 Current stage: {status.current_stage}")
+    print(f"🔨 Current active skill: {status.current_skill}")
+    print(f"💡 Why this skill: {status.why_this_skill}")
     if status.current_route is not None:
         print(f"Research route: {status.current_route}")
     if status.factor_role is not None:
@@ -112,16 +151,19 @@ def main() -> int:
         print(f"Review verdict: {status.review_verdict}")
     print(f"Requires failure handling: {status.requires_failure_handling}")
     if status.failure_stage is not None:
-        print(f"Failure stage: {status.failure_stage}")
+        print(f"🧱 Failure stage: {status.failure_stage}")
     if status.failure_reason_summary is not None:
-        print(f"Failure reason: {status.failure_reason_summary}")
-    print(f"Next action: {status.next_action}")
+        print(f"📝 Failure reason: {status.failure_reason_summary}")
+    if status.blocking_reason is not None:
+        print(f"⛔ Blocking reason: {status.blocking_reason}")
+    print(f"▶ Next action: {status.next_action}")
+    print(f"🔁 Resume hint: {status.resume_hint}")
     if status.why_now:
-        print("Why now:")
+        print("🧠 Why now:")
         for item in status.why_now:
             print(f"- {item}")
     if status.open_risks:
-        print("Open risks:")
+        print("⚠ Open risks:")
         for item in status.open_risks:
             print(f"- {item}")
     if status.artifacts_written:

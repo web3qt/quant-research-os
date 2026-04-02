@@ -56,6 +56,41 @@ deterministic backend 的入口在克隆下来的仓库里：
 ~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
 ```
 
+如果你想先看当前状态而不是直接从对话里猜，可以直接运行 `qros-session`。默认会打印一块面向人的状态面板：
+
+```text
+Lineage: btc_leads_alts
+🧭 Current orchestrator: qros-research-session
+📍 Current stage: data_ready_confirmation_pending
+🔨 Current active skill: qros-data-ready-author
+💡 Why this skill: Current stage data_ready_confirmation_pending is in the authoring/freeze flow, so qros-data-ready-author is the active author skill.
+⛔ Blocking reason: data_ready freeze confirmation is still incomplete.
+▶ Next action: Complete data_ready freeze group: extraction_contract
+🔁 Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts after completing the next required step.
+🧠 Why now:
+- qualified
+⚠ Open risks:
+- rollback_target remains 00_idea_intake
+```
+
+这里要区分三层语义：
+
+- `Current orchestrator`：统一总控入口，始终是 `qros-research-session`
+- `Current stage`：当前 lineage 真实所处的阶段
+- `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
+
+如果你要让脚本输出机读状态而不是文本面板，可以加 `--json`：
+
+```bash
+~/.qros/bin/qros-session --lineage-id <lineage_id> --json
+```
+
+这适合：
+
+- shell 脚本轮询当前 session 状态
+- 后续 HUD 或自动化集成
+- 想稳定读取 `current_stage / current_skill / next_action / resume_hint` 这些字段的场景
+
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 intake interview approval：
 
 ```bash

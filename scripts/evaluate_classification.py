@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Baseline classification evaluation for QROS data_ready failure classes."""
 
-import yaml
-import os
 import json
+import hashlib
 from pathlib import Path
+import sys
+from typing import Any
+
+import yaml
 
 DATA_DIR = Path(__file__).parent.parent / "labeled_data" / "data_ready"
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
@@ -18,6 +21,10 @@ FAILURE_CLASSES = [
     "REPRO_FAIL",
     "SCOPE_FAIL",
 ]
+
+
+def _sample_key(sample: dict[str, Any]) -> str:
+    return str(sample["id"])
 
 def load_skill_rules():
     """Load the data_ready failure handler skill rules."""
@@ -51,6 +58,7 @@ def load_samples(split="train"):
                 "rationale": out.get("classification_rationale", ""),
             })
     return samples
+
 
 def build_classification_prompt(sample, review_rules, failure_rules):
     """Build a prompt for classification."""
@@ -88,10 +96,105 @@ Lineage 上下文:
 请输出 JSON 格式:
 {{"predicted_class": "<CLASS_NAME>", "severity": "FAIL-HARD|FAIL-SOFT|PASS_WITH_RESTRICTIONS", "rationale": "<简短理由>"}}"""
 
-def main():
-    review_rules, failure_rules = load_skill_rules()
 
-    for split in ["train", "test"]:
+def build_split_report(split: str) -> dict[str, Any]:
+    review_rules, failure_rules = load_skill_rules()
+    samples = load_samples(split)
+    prompts = []
+    class_counts = {failure_class: 0 for failure_class in FAILURE_CLASSES}
+
+    for sample in samples:
+        prompt = build_classification_prompt(sample, review_rules, failure_rules)
+        class_counts[sample["ground_truth"]] += 1
+        prompts.append(
+            {
+                "id": sample["id"],
+                "ground_truth": sample["ground_truth"],
+                "severity": sample["severity"],
+                "rationale": sample["rationale"],
+                "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+                "prompt": prompt,
+            }
+        )
+
+    return {
+        "split": split,
+        "sample_count": len(samples),
+        "class_counts": class_counts,
+        "samples": prompts,
+    }
+
+
+def compare_split_reports(
+    baseline: dict[str, Any],
+    current: dict[str, Any],
+) -> dict[str, Any]:
+    baseline_samples = {_sample_key(sample): sample for sample in baseline.get("samples", [])}
+    current_samples = {_sample_key(sample): sample for sample in current.get("samples", [])}
+
+    missing_ids = sorted(set(baseline_samples) - set(current_samples))
+    added_ids = sorted(set(current_samples) - set(baseline_samples))
+    changed_samples: dict[str, dict[str, Any]] = {}
+
+    for sample_id in sorted(set(baseline_samples) & set(current_samples)):
+        changed_fields = {
+            key: {
+                "baseline": baseline_samples[sample_id].get(key),
+                "current": current_samples[sample_id].get(key),
+            }
+            for key in sorted(set(baseline_samples[sample_id]) | set(current_samples[sample_id]))
+            if baseline_samples[sample_id].get(key) != current_samples[sample_id].get(key)
+        }
+        if changed_fields:
+            changed_samples[sample_id] = changed_fields
+
+    return {
+        "split": current.get("split", baseline.get("split")),
+        "matches": not (missing_ids or added_ids or changed_samples),
+        "missing_ids": missing_ids,
+        "added_ids": added_ids,
+        "changed_samples": changed_samples,
+        "class_counts_changed": baseline.get("class_counts") != current.get("class_counts"),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    json_mode = "--json" in argv
+    baseline_path = None
+    split_arg = None
+    if "--split" in argv:
+        idx = argv.index("--split")
+        if idx + 1 >= len(argv):
+            raise SystemExit("--split requires a value")
+        split_arg = argv[idx + 1]
+    if "--baseline" in argv:
+        idx = argv.index("--baseline")
+        if idx + 1 >= len(argv):
+            raise SystemExit("--baseline requires a path")
+        baseline_path = Path(argv[idx + 1])
+
+    splits = [split_arg] if split_arg else ["train", "test"]
+
+    if json_mode:
+        payload = {split: build_split_report(split) for split in splits}
+        if baseline_path is not None:
+            baseline_payload = json.loads(baseline_path.read_text(encoding="utf-8"))
+            payload = {
+                split: {
+                    "current": payload[split],
+                    "baseline": baseline_payload[split],
+                    "diff": compare_split_reports(baseline_payload[split], payload[split]),
+                }
+                for split in splits
+            }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        if baseline_path is not None:
+            return 1 if any(not payload[split]["diff"]["matches"] for split in splits) else 0
+        return 0
+
+    review_rules, failure_rules = load_skill_rules()
+    for split in splits:
         samples = load_samples(split)
         if not samples:
             print(f"\n=== {split.upper()} === No samples found")
@@ -107,6 +210,7 @@ def main():
             print(prompt)
             print(f"PROMPT_END")
             print()
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,6 +1,7 @@
 from pathlib import Path
 from subprocess import run
 import sys
+import json
 
 import yaml
 
@@ -516,6 +517,69 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
     assert "Current stage: idea_intake_confirmation_pending" in result.stdout
 
 
+def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--raw-idea",
+            "BTC leads high-liquidity alts after shock events",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["current_orchestrator"] == "qros-research-session"
+    assert payload["current_stage"] == "idea_intake_confirmation_pending"
+    assert payload["current_skill"] == "qros-idea-intake-author"
+    assert payload["lineage_root"].endswith("btc_leads_high_liquidity_alts_after_shock_events")
+    assert "🧭" not in result.stdout
+
+
+def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--raw-idea",
+            "BTC leads high-liquidity alts after shock events",
+            "--snapshot",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["fixture_id"] == "btc_leads_high_liquidity_alts_after_shock_events"
+    assert payload["route_skill"] == "qros-idea-intake-author"
+    assert payload["stage_id"] == "idea_intake"
+    assert payload["session_stage"] == "idea_intake_confirmation_pending"
+    assert payload["formal_decision"] == "IDEA_INTAKE_PENDING_CONFIRMATION"
+    assert "artifact_catalog.md" in payload["required_artifacts"]
+    assert "scripts/run_research_session.py" in payload["evidence_refs"]
+    assert "🧭" not in result.stdout
+
+
 def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_research_session.py"
@@ -564,6 +628,10 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     assert result.returncode == 0
     assert "Current stage: idea_intake_confirmation_pending" in result.stdout
     assert "CONFIRM_IDEA_INTAKE" in result.stdout
+    assert "🧠 Why now:" in result.stdout
+    assert "- qualified" in result.stdout
+    assert "⚠ Open risks:" in result.stdout
+    assert "- rollback_target remains 00_idea_intake" in result.stdout
     assert not (lineage_root / "01_mandate" / "mandate.md").exists()
 
 
@@ -853,7 +921,7 @@ def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_acti
 
     assert result.returncode == 0
     assert "Current stage: csf_data_ready_confirmation_pending" in result.stdout
-    assert "Open risks:" not in result.stdout
+    assert "⚠ Open risks:" not in result.stdout
     assert "rollback_target remains 00_idea_intake" not in result.stdout
 
 
@@ -934,8 +1002,15 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     )
 
     assert result.returncode == 0
+    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
     assert "Current stage: data_ready_confirmation_pending" in result.stdout
-    assert "Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
+    assert "🔨 Current active skill: qros-data-ready-author" in result.stdout
+    assert (
+        "⛔ Blocking reason: data_ready freeze confirmation is still incomplete."
+        in result.stdout
+    )
+    assert "▶ Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
+    assert "🔁 Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts" in result.stdout
 
 
 def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1461,7 +1536,14 @@ def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp
     )
 
     assert result.returncode == 0
+    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
     assert "Current stage: test_evidence_review" in result.stdout
+    assert "🔨 Current active skill: qros-stage-failure-handler" in result.stdout
+    assert (
+        "💡 Why this skill: Review verdict RETRY blocks normal progression, so failure handling is now the active workflow."
+        in result.stdout
+    )
+    assert "⛔ Blocking reason: Normal progression is blocked by review verdict RETRY." in result.stdout
     assert "Review verdict: RETRY" in result.stdout
     assert "Requires failure handling: True" in result.stdout
     assert "Failure stage: test_evidence_review" in result.stdout

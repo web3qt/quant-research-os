@@ -1,0 +1,35 @@
+{
+  "fixture_id": "test-evidence-retry-replay",
+  "input_digest": "36abffa568cc6c6187ccd8823908196bbf75018b8087276bf49515c18272afb4",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "test_evidence",
+  "session_stage": "test_evidence_review",
+  "formal_decision": "RETRY",
+  "required_artifacts": [
+    "report_by_h.parquet",
+    "symbol_summary.parquet",
+    "admissibility_report.parquet",
+    "test_gate_table.csv",
+    "crowding_review.md",
+    "selected_symbols_test.csv",
+    "selected_symbols_test.parquet",
+    "frozen_spec.json",
+    "test_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "backtest_ready"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict RETRY."
+  ],
+  "lineage_transition": "Enter failure handling for test_evidence_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tests/test_anti_drift_replay.py::test_evidence_retry"
+  ],
+  "failure_class": null,
+  "severity": null
+}

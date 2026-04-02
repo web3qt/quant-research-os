@@ -1,0 +1,39 @@
+{
+  "fixture_id": "data-ready-confirmation",
+  "input_digest": "74415f7cd7705cbda626849bf1fdef431a64f233d8df26b995842345feee5590",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-data-ready-author",
+  "stage_id": "data_ready",
+  "session_stage": "data_ready_confirmation_pending",
+  "formal_decision": "PASS",
+  "required_artifacts": [
+    "aligned_bars/",
+    "rolling_stats/",
+    "qc_report.parquet",
+    "dataset_manifest.json",
+    "validation_report.md",
+    "data_contract.md",
+    "dedupe_rule.md",
+    "universe_summary.md",
+    "universe_exclusions.csv",
+    "universe_exclusions.md",
+    "data_ready_gate_decision.md",
+    "run_manifest.json",
+    "rebuild_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "signal_ready"
+  ],
+  "blocking_reasons": [
+    "data_ready freeze confirmation is still incomplete."
+  ],
+  "lineage_transition": "Complete data_ready freeze group: extraction_contract",
+  "evidence_refs": [
+    "tests/test_anti_drift_replay.py::data_ready_confirmation"
+  ],
+  "failure_class": null,
+  "severity": null
+}

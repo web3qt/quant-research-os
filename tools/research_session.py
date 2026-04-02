@@ -327,8 +327,13 @@ HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_app
 class SessionContext:
     lineage_id: str
     lineage_root: Path
+    current_orchestrator: str
     current_stage: SessionStage
     current_route: str | None
+    current_skill: str
+    why_this_skill: str
+    blocking_reason: str | None
+    resume_hint: str
     artifacts_written: list[str]
     gate_status: str
     next_action: str
@@ -342,6 +347,53 @@ class SessionContext:
     requires_failure_handling: bool = False
     failure_stage: str | None = None
     failure_reason_summary: str | None = None
+
+
+STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
+    "idea_intake": "qros-idea-intake-author",
+    "idea_intake_confirmation_pending": "qros-idea-intake-author",
+    "mandate_confirmation_pending": "qros-mandate-author",
+    "mandate_author": "qros-mandate-author",
+    "mandate_review": "qros-mandate-review",
+    "csf_data_ready_confirmation_pending": "qros-csf-data-ready-author",
+    "csf_data_ready_author": "qros-csf-data-ready-author",
+    "csf_data_ready_review": "qros-csf-data-ready-review",
+    "csf_signal_ready_confirmation_pending": "qros-csf-signal-ready-author",
+    "csf_signal_ready_author": "qros-csf-signal-ready-author",
+    "csf_signal_ready_review": "qros-csf-signal-ready-review",
+    "csf_train_freeze_confirmation_pending": "qros-csf-train-freeze-author",
+    "csf_train_freeze_author": "qros-csf-train-freeze-author",
+    "csf_train_freeze_review": "qros-csf-train-freeze-review",
+    "csf_test_evidence_confirmation_pending": "qros-csf-test-evidence-author",
+    "csf_test_evidence_author": "qros-csf-test-evidence-author",
+    "csf_test_evidence_review": "qros-csf-test-evidence-review",
+    "csf_backtest_ready_confirmation_pending": "qros-csf-backtest-ready-author",
+    "csf_backtest_ready_author": "qros-csf-backtest-ready-author",
+    "csf_backtest_ready_review": "qros-csf-backtest-ready-review",
+    "csf_holdout_validation_confirmation_pending": "qros-csf-holdout-validation-author",
+    "csf_holdout_validation_author": "qros-csf-holdout-validation-author",
+    "csf_holdout_validation_review": "qros-csf-holdout-validation-review",
+    "csf_holdout_validation_review_complete": "qros-research-session",
+    "data_ready_confirmation_pending": "qros-data-ready-author",
+    "data_ready_author": "qros-data-ready-author",
+    "data_ready_review": "qros-data-ready-review",
+    "signal_ready_confirmation_pending": "qros-signal-ready-author",
+    "signal_ready_author": "qros-signal-ready-author",
+    "signal_ready_review": "qros-signal-ready-review",
+    "train_freeze_confirmation_pending": "qros-train-freeze-author",
+    "train_freeze_author": "qros-train-freeze-author",
+    "train_freeze_review": "qros-train-freeze-review",
+    "test_evidence_confirmation_pending": "qros-test-evidence-author",
+    "test_evidence_author": "qros-test-evidence-author",
+    "test_evidence_review": "qros-test-evidence-review",
+    "backtest_ready_confirmation_pending": "qros-backtest-ready-author",
+    "backtest_ready_author": "qros-backtest-ready-author",
+    "backtest_ready_review": "qros-backtest-ready-review",
+    "holdout_validation_confirmation_pending": "qros-holdout-validation-author",
+    "holdout_validation_author": "qros-holdout-validation-author",
+    "holdout_validation_review": "qros-holdout-validation-review",
+    "holdout_validation_review_complete": "qros-research-session",
+}
 
 
 def slugify_idea(raw_idea: str) -> str:
@@ -1308,16 +1360,50 @@ def summarize_session_status(
     factor_structure: str | None = None,
     portfolio_expression: str | None = None,
     neutralization_policy: str | None = None,
+    current_skill: str | None = None,
+    why_this_skill: str | None = None,
+    blocking_reason: str | None = None,
+    resume_hint: str | None = None,
     review_verdict: str | None = None,
     requires_failure_handling: bool = False,
     failure_stage: str | None = None,
     failure_reason_summary: str | None = None,
 ) -> SessionContext:
+    resolved_current_skill = current_skill or _current_skill_for_stage(
+        current_stage=current_stage,
+        requires_failure_handling=requires_failure_handling,
+    )
+    resolved_why_this_skill = why_this_skill or _why_this_skill(
+        current_stage=current_stage,
+        current_skill=resolved_current_skill,
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+    )
+    resolved_blocking_reason = (
+        blocking_reason
+        if blocking_reason is not None
+        else _blocking_reason(
+            current_stage=current_stage,
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+        )
+    )
+    resolved_resume_hint = resume_hint or _resume_hint(
+        lineage_id=lineage_id,
+        current_stage=current_stage,
+        current_skill=resolved_current_skill,
+        requires_failure_handling=requires_failure_handling,
+    )
     return SessionContext(
         lineage_id=lineage_id,
         lineage_root=lineage_root,
+        current_orchestrator="qros-research-session",
         current_stage=current_stage,
         current_route=current_route,
+        current_skill=resolved_current_skill,
+        why_this_skill=resolved_why_this_skill,
+        blocking_reason=resolved_blocking_reason,
+        resume_hint=resolved_resume_hint,
         artifacts_written=artifacts_written,
         gate_status=gate_status,
         next_action=next_action,
@@ -1332,6 +1418,89 @@ def summarize_session_status(
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
     )
+
+
+def _current_skill_for_stage(
+    *,
+    current_stage: SessionStage,
+    requires_failure_handling: bool,
+) -> str:
+    if requires_failure_handling:
+        return "qros-stage-failure-handler"
+    return STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
+
+
+def _why_this_skill(
+    *,
+    current_stage: SessionStage,
+    current_skill: str,
+    review_verdict: str | None,
+    requires_failure_handling: bool,
+) -> str:
+    if requires_failure_handling:
+        verdict = review_verdict or "a failure-class review result"
+        return (
+            f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
+        )
+    if current_stage.endswith("_review_complete"):
+        return "The covered workflow has reached a terminal review-complete state, so qros-research-session is reporting completion status."
+    if current_stage.endswith("_review"):
+        return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
+    return f"Current stage {current_stage} is in the authoring/freeze flow, so {current_skill} is the active author skill."
+
+
+def _blocking_reason(
+    *,
+    current_stage: SessionStage,
+    review_verdict: str | None,
+    requires_failure_handling: bool,
+) -> str | None:
+    if requires_failure_handling:
+        verdict = review_verdict or "a failure-class review result"
+        return f"Normal progression is blocked by review verdict {verdict}."
+    if current_stage == "idea_intake":
+        return "Idea intake inputs or admission evidence are still incomplete."
+    if current_stage.endswith("_confirmation_pending"):
+        if current_stage == "idea_intake_confirmation_pending":
+            return "Explicit idea intake confirmation is still incomplete."
+        return f"{_stage_base_name(current_stage)} freeze confirmation is still incomplete."
+    if current_stage.endswith("_review"):
+        return f"{_stage_base_name(current_stage)} review closure is still incomplete."
+    if current_stage.endswith("_author"):
+        return f"{_stage_base_name(current_stage)} authoring outputs are still incomplete."
+    return None
+
+
+def _resume_hint(
+    *,
+    lineage_id: str,
+    current_stage: SessionStage,
+    current_skill: str,
+    requires_failure_handling: bool,
+) -> str:
+    if requires_failure_handling:
+        return (
+            f"Invoke {current_skill} for lineage {lineage_id} in the same research repo, "
+            f"then rerun qros-session --lineage-id {lineage_id}."
+        )
+    if current_stage.endswith("_review"):
+        return (
+            f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
+            "to inspect updated status."
+        )
+    if current_stage.endswith("_review_complete"):
+        return f"Rerun qros-session --lineage-id {lineage_id} if new downstream work is introduced."
+    return (
+        f"Continue in the same research repo and rerun qros-session --lineage-id {lineage_id} "
+        "after completing the next required step."
+    )
+
+
+def _stage_base_name(current_stage: SessionStage) -> str:
+    for suffix in ("_confirmation_pending", "_author", "_review_complete", "_review"):
+        if current_stage.endswith(suffix):
+            return current_stage[: -len(suffix)]
+    return current_stage
 
 
 def run_research_session(
