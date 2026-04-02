@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .[dev]
+          python -m pip install PyYAML pytest
       - name: Deterministic anti-drift test gate
         run: |
           python -m pytest \
@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .[dev]
+          python -m pip install PyYAML pytest
       - name: Anti-drift nightly pipeline
         run: |
           python scripts/gen_codex_stage_review_skills.py --dry-run
