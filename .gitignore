@@ -1,5 +1,6 @@
 .qoder/
 .worktrees/
+.omx/
 __pycache__/
 *.pyc
 .venv/
