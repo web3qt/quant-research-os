@@ -1,0 +1,37 @@
+{
+  "fixture_id": "csf-backtest-ready-no-go",
+  "input_digest": "6a9bd491fb59df93ee3e816f43267f829a7c7b224c215e9b3206a55fad8034e7",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "csf_backtest_ready",
+  "session_stage": "csf_backtest_ready_review",
+  "formal_decision": "NO-GO",
+  "required_artifacts": [
+    "portfolio_contract.yaml",
+    "portfolio_weight_panel.parquet",
+    "rebalance_ledger.csv",
+    "turnover_capacity_report.parquet",
+    "cost_assumption_report.md",
+    "engine_compare.csv",
+    "portfolio_summary.parquet",
+    "name_level_metrics.parquet",
+    "drawdown_report.json",
+    "csf_backtest_gate_table.csv",
+    "csf_backtest_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_holdout_validation"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict NO-GO."
+  ],
+  "lineage_transition": "Enter failure handling for csf_backtest_ready_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_backtest_ready_no_go"
+  ],
+  "failure_class": null,
+  "severity": null
+}

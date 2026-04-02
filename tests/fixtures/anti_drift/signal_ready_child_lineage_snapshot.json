@@ -1,0 +1,34 @@
+{
+  "fixture_id": "signal-ready-child-lineage",
+  "input_digest": "8a338c9717e4ebcbfa87d72df250e2146602c0cf47ed04b4d31b2348496eec52",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "signal_ready",
+  "session_stage": "signal_ready_review",
+  "formal_decision": "CHILD LINEAGE",
+  "required_artifacts": [
+    "param_manifest.csv",
+    "params/",
+    "signal_coverage.csv",
+    "signal_coverage.md",
+    "signal_coverage_summary.md",
+    "signal_contract.md",
+    "signal_fields_contract.md",
+    "signal_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "train_calibration"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict CHILD LINEAGE."
+  ],
+  "lineage_transition": "Enter failure handling for signal_ready_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::signal_ready_child_lineage"
+  ],
+  "failure_class": null,
+  "severity": null
+}

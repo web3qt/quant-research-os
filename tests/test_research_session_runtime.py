@@ -118,6 +118,82 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "artifact_catalog.md",
             "field_dictionary.md",
         ],
+        "csf_data_ready": [
+            "panel_manifest.json",
+            "cross_section_coverage.parquet",
+            "eligibility_base_mask.parquet",
+            "asset_taxonomy_snapshot.parquet",
+            "csf_data_contract.md",
+            "csf_data_ready_gate_decision.md",
+            "run_manifest.json",
+            "rebuild_csf_data_ready.py",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_signal_ready": [
+            "factor_panel.parquet",
+            "factor_manifest.yaml",
+            "component_factor_manifest.yaml",
+            "factor_coverage_report.parquet",
+            "factor_group_context.parquet",
+            "factor_contract.md",
+            "factor_field_dictionary.md",
+            "csf_signal_ready_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_train_freeze": [
+            "csf_train_freeze.yaml",
+            "train_factor_quality.parquet",
+            "train_variant_ledger.csv",
+            "train_variant_rejects.csv",
+            "train_bucket_diagnostics.parquet",
+            "train_neutralization_diagnostics.parquet",
+            "csf_train_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_test_evidence": [
+            "rank_ic_timeseries.parquet",
+            "rank_ic_summary.json",
+            "bucket_returns.parquet",
+            "monotonicity_report.json",
+            "breadth_coverage_report.parquet",
+            "subperiod_stability_report.json",
+            "filter_condition_panel.parquet",
+            "target_strategy_condition_compare.parquet",
+            "gated_vs_ungated_summary.json",
+            "csf_test_gate_table.csv",
+            "csf_selected_variants_test.csv",
+            "csf_test_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_backtest_ready": [
+            "portfolio_contract.yaml",
+            "rebalance_ledger.csv",
+            "turnover_capacity_report.parquet",
+            "cost_assumption_report.md",
+            "portfolio_summary.parquet",
+            "name_level_metrics.parquet",
+            "drawdown_report.json",
+            "target_strategy_compare.parquet",
+            "csf_backtest_gate_table.csv",
+            "csf_backtest_contract.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
+        "csf_holdout_validation": [
+            "csf_holdout_run_manifest.json",
+            "holdout_factor_diagnostics.parquet",
+            "holdout_test_compare.parquet",
+            "holdout_portfolio_compare.parquet",
+            "rolling_holdout_stability.json",
+            "regime_shift_audit.json",
+            "csf_holdout_gate_decision.md",
+            "artifact_catalog.md",
+            "field_dictionary.md",
+        ],
     }
     dir_outputs: dict[str, list[str]] = {
         "mandate": [],
@@ -133,6 +209,12 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         "test_evidence": [],
         "backtest_ready": ["vectorbt", "backtrader"],
         "holdout_validation": ["window_results"],
+        "csf_data_ready": ["asset_universe_membership.parquet", "shared_feature_base"],
+        "csf_signal_ready": [],
+        "csf_train_freeze": [],
+        "csf_test_evidence": [],
+        "csf_backtest_ready": ["portfolio_weight_panel.parquet"],
+        "csf_holdout_validation": [],
     }
 
     for name in file_outputs[stage]:
@@ -1581,6 +1663,62 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_review_
 
     for lineage_id, verdict, stage, stage_dir_name, expected_stage in cases:
         lineage_root = outputs_root / lineage_id
+        stage_dir = lineage_root / stage_dir_name
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status=verdict)
+
+        status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+
+        assert status.current_stage == expected_stage
+        assert status.review_verdict == verdict
+        assert status.requires_failure_handling is True
+        assert status.failure_stage == expected_stage
+        assert "failure" in status.next_action.lower()
+        assert status.failure_reason_summary == f"{expected_stage} requires failure handling because review verdict is {verdict}."
+
+
+def test_run_research_session_requires_failure_handling_on_non_advancing_csf_review_verdicts(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    cases = [
+        (
+            "csf_signal_child_lineage",
+            "CHILD LINEAGE",
+            "csf_signal_ready",
+            "03_csf_signal_ready",
+            "csf_signal_ready_review",
+        ),
+        (
+            "csf_train_pass_for_retry",
+            "PASS FOR RETRY",
+            "csf_train_freeze",
+            "04_csf_train_freeze",
+            "csf_train_freeze_review",
+        ),
+        (
+            "csf_backtest_no_go",
+            "NO-GO",
+            "csf_backtest_ready",
+            "06_csf_backtest_ready",
+            "csf_backtest_ready_review",
+        ),
+    ]
+
+    for lineage_id, verdict, stage, stage_dir_name, expected_stage in cases:
+        lineage_root = outputs_root / lineage_id
+        mandate_dir = lineage_root / "01_mandate"
+        mandate_dir.mkdir(parents=True, exist_ok=True)
+        _write_yaml(
+            mandate_dir / "research_route.yaml",
+            {
+                "research_route": "cross_sectional_factor",
+                "factor_role": "standalone_alpha",
+                "factor_structure": "single_factor",
+                "portfolio_expression": "long_short_market_neutral",
+                "neutralization_policy": "group_neutral",
+            },
+        )
         stage_dir = lineage_root / stage_dir_name
         _write_minimal_stage_outputs(stage_dir, stage=stage)
         _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status=verdict)

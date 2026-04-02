@@ -1,0 +1,32 @@
+{
+  "fixture_id": "csf-train-freeze-pass-for-retry",
+  "input_digest": "63a2831fbdfa57816a309ef7e56a8708d7752278d1aef6f83abe52523d762671",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "csf_train_freeze",
+  "session_stage": "csf_train_freeze_review",
+  "formal_decision": "PASS FOR RETRY",
+  "required_artifacts": [
+    "csf_train_freeze.yaml",
+    "train_factor_quality.parquet",
+    "train_variant_ledger.csv",
+    "train_variant_rejects.csv",
+    "train_bucket_diagnostics.parquet",
+    "csf_train_contract.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_test_evidence"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict PASS FOR RETRY."
+  ],
+  "lineage_transition": "Enter failure handling for csf_train_freeze_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_train_freeze_pass_for_retry"
+  ],
+  "failure_class": null,
+  "severity": null
+}

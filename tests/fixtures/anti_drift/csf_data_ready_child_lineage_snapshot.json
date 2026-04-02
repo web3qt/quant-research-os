@@ -1,0 +1,34 @@
+{
+  "fixture_id": "csf-data-ready-child-lineage",
+  "input_digest": "857e034835e217c2246b3756a402646005fbdb1a0b4e59b1ea174b025a67ae9a",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "csf_data_ready",
+  "session_stage": "csf_data_ready_review",
+  "formal_decision": "CHILD LINEAGE",
+  "required_artifacts": [
+    "panel_manifest.json",
+    "asset_universe_membership.parquet",
+    "cross_section_coverage.parquet",
+    "eligibility_base_mask.parquet",
+    "shared_feature_base/",
+    "csf_data_contract.md",
+    "run_manifest.json",
+    "rebuild_csf_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "csf_signal_ready"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict CHILD LINEAGE."
+  ],
+  "lineage_transition": "Enter failure handling for csf_data_ready_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_data_ready_child_lineage"
+  ],
+  "failure_class": null,
+  "severity": null
+}

@@ -1,0 +1,33 @@
+{
+  "fixture_id": "csf-holdout-validation-no-go",
+  "input_digest": "ddc8de8eb220e7128311d5364e201a4275a666c5594b764e8039fe2653da3a3a",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "csf_holdout_validation",
+  "session_stage": "csf_holdout_validation_review",
+  "formal_decision": "NO-GO",
+  "required_artifacts": [
+    "csf_holdout_run_manifest.json",
+    "holdout_factor_diagnostics.parquet",
+    "holdout_test_compare.parquet",
+    "holdout_portfolio_compare.parquet",
+    "rolling_holdout_stability.json",
+    "regime_shift_audit.json",
+    "csf_holdout_gate_decision.md",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "promotion_decision"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict NO-GO."
+  ],
+  "lineage_transition": "Enter failure handling for csf_holdout_validation_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::csf_holdout_validation_no_go"
+  ],
+  "failure_class": null,
+  "severity": null
+}

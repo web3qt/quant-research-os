@@ -116,6 +116,120 @@ def test_run_research_session_snapshot_matches_data_ready_child_lineage_golden(t
     assert diff_snapshot(_load_golden("data_ready_child_lineage_snapshot.json"), snapshot) == {}
 
 
+def test_run_research_session_snapshot_matches_signal_ready_child_lineage_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "signal_child_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_mainline_data_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "03_signal_ready"
+    write_minimal_stage_outputs(stage_dir, stage="signal_ready")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="CHILD LINEAGE")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="signal-ready-child-lineage",
+        evidence_refs=("tools/anti_drift_scenarios.py::signal_ready_child_lineage",),
+    )
+
+    assert diff_snapshot(_load_golden("signal_ready_child_lineage_snapshot.json"), snapshot) == {}
+
+
+def test_run_research_session_snapshot_matches_csf_train_freeze_pass_for_retry_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "csf_train_retry_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_csf_signal_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "04_csf_train_freeze"
+    write_minimal_stage_outputs(stage_dir, stage="csf_train_freeze")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS FOR RETRY")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-train-freeze-pass-for-retry",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_train_freeze_pass_for_retry",),
+    )
+
+    assert diff_snapshot(_load_golden("csf_train_freeze_pass_for_retry_snapshot.json"), snapshot) == {}
+
+
+def test_run_research_session_snapshot_matches_csf_backtest_ready_no_go_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "csf_backtest_no_go_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_csf_test_evidence_review_complete(lineage_root)
+    stage_dir = lineage_root / "06_csf_backtest_ready"
+    write_minimal_stage_outputs(stage_dir, stage="csf_backtest_ready")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="NO-GO")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-backtest-ready-no-go",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_backtest_ready_no_go",),
+    )
+
+    assert diff_snapshot(_load_golden("csf_backtest_ready_no_go_snapshot.json"), snapshot) == {}
+
+
+def test_run_research_session_snapshot_matches_csf_data_ready_child_lineage_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "csf_data_child_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_csf_mandate_review_complete(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    write_minimal_stage_outputs(stage_dir, stage="csf_data_ready")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="CHILD LINEAGE")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-data-ready-child-lineage",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_data_ready_child_lineage",),
+    )
+
+    assert diff_snapshot(_load_golden("csf_data_ready_child_lineage_snapshot.json"), snapshot) == {}
+
+
+def test_run_research_session_snapshot_matches_holdout_validation_no_go_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "holdout_no_go_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_mainline_backtest_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "07_holdout"
+    write_minimal_stage_outputs(stage_dir, stage="holdout_validation")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="NO-GO")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="holdout-validation-no-go",
+        evidence_refs=("tools/anti_drift_scenarios.py::holdout_validation_no_go",),
+    )
+
+    assert diff_snapshot(_load_golden("holdout_validation_no_go_snapshot.json"), snapshot) == {}
+
+
+def test_run_research_session_snapshot_matches_csf_holdout_validation_no_go_golden(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_id = "csf_holdout_no_go_case"
+    lineage_root = outputs_root / lineage_id
+    prepare_csf_backtest_ready_review_complete(lineage_root)
+    stage_dir = lineage_root / "07_csf_holdout_validation"
+    write_minimal_stage_outputs(stage_dir, stage="csf_holdout_validation")
+    write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="NO-GO")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
+    snapshot = canonical_snapshot_from_session_context(
+        status,
+        fixture_id="csf-holdout-validation-no-go",
+        evidence_refs=("tools/anti_drift_scenarios.py::csf_holdout_validation_no_go",),
+    )
+
+    assert diff_snapshot(_load_golden("csf_holdout_validation_no_go_snapshot.json"), snapshot) == {}
+
+
 def test_run_research_session_snapshot_matches_csf_confirmation_golden(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_id = "csf_case"

@@ -1,0 +1,30 @@
+{
+  "fixture_id": "holdout-validation-no-go",
+  "input_digest": "da70a8fb3fb5d8b40c4abadcc2fe1f2da8fa59ff7aa968987a1f6f6802f385c0",
+  "snapshot_version": "v1",
+  "schema_version": "workflow_stage_gates@v1",
+  "route_skill": "qros-stage-failure-handler",
+  "stage_id": "holdout_validation",
+  "session_stage": "holdout_validation_review",
+  "formal_decision": "NO-GO",
+  "required_artifacts": [
+    "holdout_run_manifest.json",
+    "holdout_backtest_compare.csv",
+    "holdout_gate_decision.md",
+    "holdout window result files",
+    "artifact_catalog.md",
+    "field_dictionary.md"
+  ],
+  "downstream_permissions": [
+    "promotion_decision"
+  ],
+  "blocking_reasons": [
+    "Normal progression is blocked by review verdict NO-GO."
+  ],
+  "lineage_transition": "Enter failure handling for holdout_validation_review via qros-stage-failure-handler",
+  "evidence_refs": [
+    "tools/anti_drift_scenarios.py::holdout_validation_no_go"
+  ],
+  "failure_class": null,
+  "severity": null
+}
