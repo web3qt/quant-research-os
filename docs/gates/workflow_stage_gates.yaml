@@ -57,6 +57,91 @@ global_rules:
     description: 任何 PASS FOR RETRY 或 RETRY 都必须写清 rollback_stage 和 allowed_modifications
   - id: child_lineage_for_material_change
     description: 若研究主问题、机制定义、正式 universe 或正式时间切分发生实质变化，必须开 child lineage
+  - id: lineage_local_program_required_for_executable_stages
+    description: 从 mandate 开始，所有可执行阶段只有在存在匹配 lineage_program_contract.stage_program_keys 的 lineage-local stage program、对应 provenance 和有效 outputs 时，才可视为正式完成
+  - id: no_shared_builder_completion_path
+    description: framework-side shared builder 只能作为库复用，不能替代 lineage-local stage program 直接完成阶段
+
+lineage_program_contract:
+  invariant: freeze approval -> lineage-local program -> artifact build -> review closure
+  required_stage_program_files:
+    - stage_program.yaml
+    - README.md
+    - entrypoint referenced by stage_program.yaml
+  generated_provenance_file: <stage_artifact_dir>/program_execution_manifest.json
+  shared_helper_root: outputs/<lineage_id>/program/common/
+  stage_program_keys:
+    mandate:
+      route: route_neutral
+      program_dir: outputs/<lineage_id>/program/mandate/
+      provenance_target: outputs/<lineage_id>/01_mandate/program_execution_manifest.json
+    data_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/data_ready/
+      provenance_target: outputs/<lineage_id>/02_data_ready/program_execution_manifest.json
+    signal_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/signal_ready/
+      provenance_target: outputs/<lineage_id>/03_signal_ready/program_execution_manifest.json
+    train_calibration:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/train_freeze/
+      provenance_target: outputs/<lineage_id>/04_train_freeze/program_execution_manifest.json
+    test_evidence:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/test_evidence/
+      provenance_target: outputs/<lineage_id>/05_test_evidence/program_execution_manifest.json
+    backtest_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/backtest_ready/
+      provenance_target: outputs/<lineage_id>/06_backtest/program_execution_manifest.json
+    holdout_validation:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series/holdout_validation/
+      provenance_target: outputs/<lineage_id>/07_holdout/program_execution_manifest.json
+    csf_data_ready:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/data_ready/
+      provenance_target: outputs/<lineage_id>/02_csf_data_ready/program_execution_manifest.json
+    csf_signal_ready:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/signal_ready/
+      provenance_target: outputs/<lineage_id>/03_csf_signal_ready/program_execution_manifest.json
+    csf_train_freeze:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/train_freeze/
+      provenance_target: outputs/<lineage_id>/04_csf_train_freeze/program_execution_manifest.json
+    csf_test_evidence:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/test_evidence/
+      provenance_target: outputs/<lineage_id>/05_csf_test_evidence/program_execution_manifest.json
+    csf_backtest_ready:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/backtest_ready/
+      provenance_target: outputs/<lineage_id>/06_csf_backtest_ready/program_execution_manifest.json
+    csf_holdout_validation:
+      route: cross_sectional_factor
+      program_dir: outputs/<lineage_id>/program/cross_sectional_factor/holdout_validation/
+      provenance_target: outputs/<lineage_id>/07_csf_holdout_validation/program_execution_manifest.json
+  status_contract:
+    stage_status:
+      - awaiting_freeze_approval
+      - awaiting_stage_program
+      - awaiting_program_validation
+      - awaiting_program_execution
+      - awaiting_review_closure
+      - blocked_requires_failure_handling
+      - review_complete
+    blocking_reason_code:
+      - NONE
+      - FREEZE_APPROVAL_MISSING
+      - STAGE_PROGRAM_MISSING
+      - STAGE_PROGRAM_INVALID
+      - PROGRAM_EXECUTION_FAILED
+      - PROVENANCE_MISSING
+      - OUTPUTS_INVALID
+      - REVIEW_PENDING
+      - FAILURE_HANDLER_REQUIRED
 
 review_sequence:
   - identify_current_stage

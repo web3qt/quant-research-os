@@ -4,6 +4,8 @@ English | [中文](README.md)
 
 QROS is a stage-gated research workflow for AI coding agents. It turns raw trading ideas into reviewable, reproducible, and auditable research lineages through interactive mandate freezing, formal artifacts, and workflow gates.
 
+With the lineage-local stage-program hard gate, every executable stage must also keep a route-aware stage program under `outputs/<lineage_id>/program/` in the active research repo, including `stage_program.yaml`, `README.md`, and the manifest-referenced entrypoint. The corresponding stage artifact directory must also contain `program_execution_manifest.json`. QROS runtime now governs freeze/review gates, validates and invokes the local program, verifies outputs, and records provenance; framework-side shared builders no longer count as a completion path.
+
 ## Quick Start
 
 ### Claude Code
