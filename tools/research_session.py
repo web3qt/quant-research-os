@@ -58,6 +58,13 @@ from tools.lineage_program_runtime import (
     load_provenance_manifest,
     stage_outputs_complete,
 )
+from tools.review_skillgen.adversarial_review_contract import (
+    ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    FIX_REQUIRED_OUTCOME,
+    ensure_adversarial_review_request,
+    load_adversarial_review_result,
+)
 from tools.review_skillgen.review_engine import run_stage_review
 from tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_DRAFT_FILE,
@@ -1482,12 +1489,14 @@ def summarize_session_status(
     resolved_current_skill = current_skill or _current_skill_for_stage(
         current_stage=current_stage,
         requires_failure_handling=requires_failure_handling,
+        runtime_stage_status=stage_status,
     )
     resolved_why_this_skill = why_this_skill or _why_this_skill(
         current_stage=current_stage,
         current_skill=resolved_current_skill,
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
+        runtime_stage_status=stage_status,
     )
     resolved_blocking_reason = (
         blocking_reason
@@ -1499,6 +1508,7 @@ def summarize_session_status(
         current_stage=current_stage,
         current_skill=resolved_current_skill,
         requires_failure_handling=requires_failure_handling,
+        runtime_stage_status=stage_status,
     )
     return SessionContext(
         lineage_id=lineage_id,
@@ -1540,9 +1550,12 @@ def _current_skill_for_stage(
     *,
     current_stage: SessionStage,
     requires_failure_handling: bool,
+    runtime_stage_status: str | None = None,
 ) -> str:
     if requires_failure_handling:
         return "qros-stage-failure-handler"
+    if runtime_stage_status == "awaiting_author_fix" and current_stage.endswith("_review"):
+        return STAGE_ACTIVE_SKILLS.get(f"{_stage_base_name(current_stage)}_author", "qros-research-session")
     return STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
 
 
@@ -1552,6 +1565,7 @@ def _why_this_skill(
     current_skill: str,
     review_verdict: str | None,
     requires_failure_handling: bool,
+    runtime_stage_status: str | None = None,
 ) -> str:
     if requires_failure_handling:
         verdict = review_verdict or "a failure-class review result"
@@ -1561,6 +1575,8 @@ def _why_this_skill(
     if current_stage.endswith("_review_complete"):
         return "The covered workflow has reached a terminal review-complete state, so qros-research-session is reporting completion status."
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return f"Current stage {current_stage} has fixable adversarial findings, so {current_skill} is the active author-fix skill."
         return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
     return f"Current stage {current_stage} is in the authoring/freeze flow, so {current_skill} is the active author skill."
 
@@ -1593,6 +1609,7 @@ def _resume_hint(
     current_stage: SessionStage,
     current_skill: str,
     requires_failure_handling: bool,
+    runtime_stage_status: str | None = None,
 ) -> str:
     if requires_failure_handling:
         return (
@@ -1600,6 +1617,11 @@ def _resume_hint(
             f"then rerun qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return (
+                f"Run {current_skill} to address fix-required findings, then rerun the review workflow and "
+                f"qros-session --lineage-id {lineage_id}."
+            )
         return (
             f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
             "to inspect updated status."
@@ -1623,6 +1645,56 @@ def _program_spec_for_session_stage(current_stage: SessionStage) -> StageProgram
     return SESSION_STAGE_PROGRAM_SPECS.get(_stage_base_name(current_stage))
 
 
+def _stage_dir_for_session_stage(lineage_root: Path, current_stage: SessionStage) -> Path | None:
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None:
+        return None
+    return lineage_root / spec.stage_dir_name
+
+
+def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
+    result_path = stage_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
+    if not result_path.exists():
+        return None
+    return load_adversarial_review_result(result_path)
+
+
+def _ensure_review_request_for_stage(lineage_root: Path, current_stage: SessionStage) -> None:
+    if not current_stage.endswith("_review"):
+        return
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None:
+        return
+    inspection = inspect_stage_program(lineage_root, spec.stage_id, spec.route)
+    if inspection.error_code is not None or inspection.required_program_entrypoint is None:
+        return
+    stage_dir = lineage_root / spec.stage_dir_name
+    provenance = load_provenance_manifest(stage_dir)
+    if provenance is None:
+        return
+    if not all((stage_dir / output_name).exists() for output_name in spec.required_outputs):
+        return
+    author_identity = provenance.get("authored_by_agent_id")
+    author_session_id = provenance.get("authoring_session_id")
+    if not isinstance(author_identity, str) or not author_identity.strip():
+        return
+    if not isinstance(author_session_id, str) or not author_session_id.strip():
+        return
+    ensure_adversarial_review_request(
+        stage_dir,
+        lineage_id=lineage_root.name,
+        stage=spec.stage_id,
+        author_identity=author_identity.strip(),
+        author_session_id=author_session_id.strip(),
+        required_program_dir=inspection.required_program_dir,
+        required_program_entrypoint=inspection.required_program_entrypoint,
+        required_artifact_paths=list(spec.required_outputs),
+        required_provenance_paths=["program_execution_manifest.json"],
+        program_hash=provenance.get("program_hash") if isinstance(provenance.get("program_hash"), str) else None,
+        stage_invoked_at=provenance.get("invoked_at") if isinstance(provenance.get("invoked_at"), str) else None,
+    )
+
+
 def _invoke_program_stage(lineage_root: Path, current_stage: SessionStage) -> list[str]:
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
@@ -1635,6 +1707,46 @@ def _invoke_program_stage(lineage_root: Path, current_stage: SessionStage) -> li
     for ref in result.output_refs:
         written.add(ref)
     return sorted(written)
+
+
+def _review_substate(
+    *,
+    stage_dir: Path,
+    current_stage: SessionStage,
+    lineage_root: Path,
+) -> tuple[str, str, str, str]:
+    request_path = stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    review_result = _load_adversarial_review_result_if_present(stage_dir)
+    stage_base = _stage_base_name(current_stage)
+    author_skill = STAGE_ACTIVE_SKILLS.get(f"{stage_base}_author", "qros-research-session")
+    review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
+    if not request_path.exists():
+        return (
+            "awaiting_adversarial_review",
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
+            f"Rerun qros-session --lineage-id {lineage_root.name} to issue the review request, then run {review_skill}.",
+        )
+    if review_result is None:
+        return (
+            "awaiting_adversarial_review",
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"{stage_base} is waiting for an independent adversarial reviewer to inspect artifacts and source code.",
+            f"Run {review_skill} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+        )
+    if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
+        return (
+            "awaiting_author_fix",
+            "AUTHOR_FIX_REQUIRED",
+            f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
+            f"Run {author_skill} to address findings, then rerun {review_skill}.",
+        )
+    return (
+        "awaiting_review_closure",
+        "REVIEW_CLOSURE_PENDING",
+        f"{stage_base} has a closure-ready adversarial review result and is waiting for deterministic closure artifacts.",
+        f"Run {review_skill} to validate findings and write closure artifacts.",
+    )
 
 
 def _program_runtime_status(
@@ -1701,15 +1813,21 @@ def _program_runtime_status(
             "No further action required.",
         )
     if current_stage.endswith("_review"):
+        review_stage_dir = lineage_root / spec.stage_dir_name
+        review_state, review_reason_code, review_blocking_reason, review_next_action = _review_substate(
+            stage_dir=review_stage_dir,
+            current_stage=current_stage,
+            lineage_root=lineage_root,
+        )
         return (
-            "awaiting_review_closure",
-            "REVIEW_PENDING",
+            review_state,
+            review_reason_code,
             inspection.required_program_dir,
             inspection.required_program_entrypoint,
             inspection.program_contract_status,
             provenance_status,
-            f"{_stage_base_name(current_stage)} review closure is still incomplete.",
-            f"Run {STAGE_ACTIVE_SKILLS[current_stage]} to close the review gate.",
+            review_blocking_reason,
+            review_next_action,
         )
     if current_stage.endswith("_confirmation_pending"):
         next_action = _gate_status_and_next_action(lineage_root, current_stage)[1]
@@ -1944,6 +2062,7 @@ def run_research_session(
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
+    _ensure_review_request_for_stage(lineage_root, current_stage)
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)
@@ -2175,6 +2294,28 @@ def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
     return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
+def _review_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
+    stage_dir = _stage_dir_for_session_stage(lineage_root, current_stage)
+    if stage_dir is None:
+        return "REVIEW_PENDING", "Complete the review workflow."
+    request_exists = (stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME).exists()
+    review_result = _load_adversarial_review_result_if_present(stage_dir)
+    if not request_exists or review_result is None:
+        return (
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"Produce {ADVERSARIAL_REVIEW_RESULT_FILENAME} via independent adversarial review.",
+        )
+    if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
+        return (
+            "AUTHOR_FIX_REQUIRED",
+            "Address adversarial review findings in the author lane, then resubmit for review.",
+        )
+    return (
+        "REVIEW_CLOSURE_PENDING",
+        "Run deterministic review closure after the adversarial reviewer outcome is closure-ready.",
+    )
+
+
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     intake_gate = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
     if current_stage == "idea_intake":
@@ -2215,7 +2356,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_MANDATE_CONFIRMED", "Freeze mandate artifacts"
 
     if current_stage == "mandate_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run mandate review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_data_ready_confirmation_pending":
         next_group = next_csf_data_ready_freeze_group(lineage_root)
@@ -2230,7 +2371,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_DATA_READY_CONFIRMED", "Freeze csf_data_ready artifacts"
 
     if current_stage == "csf_data_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_data_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "data_ready_confirmation_pending":
         next_group = next_data_ready_freeze_group(lineage_root)
@@ -2245,7 +2386,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_DATA_READY_CONFIRMED", "Freeze data_ready artifacts"
 
     if current_stage == "data_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run data_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "signal_ready_confirmation_pending":
         next_group = next_signal_ready_freeze_group(lineage_root)
@@ -2260,7 +2401,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_SIGNAL_READY_CONFIRMED", "Freeze signal_ready artifacts"
 
     if current_stage == "signal_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run signal_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_signal_ready_confirmation_pending":
         next_group = next_csf_signal_ready_freeze_group(lineage_root)
@@ -2275,7 +2416,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_SIGNAL_READY_CONFIRMED", "Freeze csf_signal_ready artifacts"
 
     if current_stage == "csf_signal_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_signal_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "train_freeze_confirmation_pending":
         next_group = next_train_freeze_group(lineage_root)
@@ -2290,7 +2431,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_TRAIN_FREEZE_CONFIRMED", "Freeze train_freeze artifacts"
 
     if current_stage == "train_freeze_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run train_freeze review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_train_freeze_confirmation_pending":
         next_group = next_csf_train_freeze_group(lineage_root)
@@ -2305,7 +2446,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_TRAIN_FREEZE_CONFIRMED", "Freeze csf_train_freeze artifacts"
 
     if current_stage == "csf_train_freeze_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_train_freeze review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "test_evidence_confirmation_pending":
         next_group = next_test_evidence_group(lineage_root)
@@ -2320,7 +2461,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_TEST_EVIDENCE_CONFIRMED", "Freeze test_evidence artifacts"
 
     if current_stage == "test_evidence_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run test_evidence review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_test_evidence_confirmation_pending":
         next_group = next_csf_test_evidence_group(lineage_root)
@@ -2335,7 +2476,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_TEST_EVIDENCE_CONFIRMED", "Freeze csf_test_evidence artifacts"
 
     if current_stage == "csf_test_evidence_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_test_evidence review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "backtest_ready_confirmation_pending":
         next_group = next_backtest_ready_group(lineage_root)
@@ -2350,7 +2491,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_BACKTEST_READY_CONFIRMED", "Freeze backtest_ready artifacts"
 
     if current_stage == "backtest_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run backtest_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_backtest_ready_confirmation_pending":
         next_group = next_csf_backtest_ready_group(lineage_root)
@@ -2365,7 +2506,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_BACKTEST_READY_CONFIRMED", "Freeze csf_backtest_ready artifacts"
 
     if current_stage == "csf_backtest_ready_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_backtest_ready review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "holdout_validation_confirmation_pending":
         next_group = next_holdout_validation_group(lineage_root)
@@ -2386,7 +2527,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_HOLDOUT_VALIDATION_CONFIRMED", "Freeze holdout_validation artifacts"
 
     if current_stage == "holdout_validation_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run holdout_validation review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_holdout_validation_confirmation_pending":
         next_group = next_csf_holdout_validation_group(lineage_root)
@@ -2407,7 +2548,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_CSF_HOLDOUT_VALIDATION_CONFIRMED", "Freeze csf_holdout_validation artifacts"
 
     if current_stage == "csf_holdout_validation_review":
-        return "REVIEW_PENDING", "Write review_findings.yaml and run csf_holdout_validation review"
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
 
     return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
 
