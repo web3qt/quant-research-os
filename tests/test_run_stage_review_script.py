@@ -105,6 +105,7 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
     assert (stage_dir / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "governance_signal.json").exists()
 
 
 def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) -> None:

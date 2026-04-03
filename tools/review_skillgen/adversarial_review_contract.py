@@ -239,6 +239,10 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
     summary = payload.get("review_summary")
     if isinstance(summary, str) and summary.strip():
         data["review_summary"] = summary.strip()
+    for timestamp_key in ("review_started_at", "review_completed_at"):
+        value = payload.get(timestamp_key)
+        if isinstance(value, str) and value.strip():
+            data[timestamp_key] = value.strip()
     return data
 
 

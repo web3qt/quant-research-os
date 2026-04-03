@@ -104,6 +104,8 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert payload["review_loop_outcome"] == "CLOSURE_READY_PASS"
     assert payload["blocking_findings"] == []
     assert (stage_dir / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "governance_signal.json").exists()
+    assert payload["governance"]["appended_entries"]
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:
@@ -186,3 +188,5 @@ def test_run_stage_review_fix_required_skips_closure_artifacts(tmp_path: Path) -
     assert payload["review_loop_outcome"] == "FIX_REQUIRED"
     assert payload["final_verdict"] is None
     assert not (stage_dir / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "governance_signal.json").exists()
+    assert payload["governance"]["appended_entries"]

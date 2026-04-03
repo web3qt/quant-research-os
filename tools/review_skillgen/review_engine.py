@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 import os
 from typing import Any
 
+from tools.review_governance_runtime import record_review_governance
 from tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
@@ -217,6 +219,7 @@ def run_stage_review(
     downstream_permissions = review_result.get("downstream_permissions") or reviewer_findings.get("downstream_permissions") or list(
         stage_contract.get("downstream_permissions", {}).get("may_advance_to", [])
     )
+    review_timestamp_utc = datetime.now(timezone.utc).isoformat()
 
     common_payload = {
         "lineage_id": lineage_id,
@@ -227,6 +230,7 @@ def run_stage_review(
         "reservation_findings": reservation_findings,
         "info_findings": info_findings,
         "residual_risks": residual_risks,
+        "review_timestamp_utc": review_timestamp_utc,
         "reviewer_identity": review_result["reviewer_identity"],
         "reviewer_role": review_result["reviewer_role"],
         "reviewer_session_id": review_result["reviewer_session_id"],
@@ -260,6 +264,30 @@ def run_stage_review(
         },
     }
 
+    governance_result = record_review_governance(
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+        stage=stage,
+        request_payload=request_payload,
+        review_result=review_result,
+        review_loop_outcome=review_loop_outcome,
+        final_verdict=final_verdict,
+        blocking_findings=blocking_findings,
+        reservation_findings=reservation_findings,
+        info_findings=info_findings,
+    )
+    common_payload["governance_signal_path"] = "governance_signal.json"
+    common_payload["governance_candidate_summary"] = {
+        "ledger_entries_written": governance_result["ledger_entries_written"],
+        "candidates_updated": governance_result["candidates_updated"],
+        "post_rollout": governance_result["bundle"]["post_rollout_only"],
+    }
+    common_payload["governance"] = {
+        "appended_entries": governance_result["ledger_entries_written"],
+        "candidates_updated": governance_result["candidates_updated"],
+        "post_rollout": governance_result["bundle"]["post_rollout_only"],
+    }
+
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
         return {
             **common_payload,
@@ -275,6 +303,7 @@ def run_stage_review(
         reservation_findings=reservation_findings,
         info_findings=info_findings,
         residual_risks=residual_risks,
+        review_timestamp_utc=review_timestamp_utc,
         reviewer_identity=review_result["reviewer_identity"],
         reviewer_role=review_result["reviewer_role"],
         reviewer_session_id=review_result["reviewer_session_id"],
@@ -292,6 +321,9 @@ def run_stage_review(
         checklist_source=common_payload["checklist_source"],
         required_outputs_checked=common_payload["required_outputs_checked"],
         evidence_summary=common_payload["evidence_summary"],
+        governance_signal_path=common_payload["governance_signal_path"],
+        governance_candidate_summary=common_payload["governance_candidate_summary"],
+        governance=common_payload["governance"],
     )
 
     write_closure_artifacts(

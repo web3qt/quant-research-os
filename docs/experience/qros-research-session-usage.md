@@ -222,6 +222,17 @@ session runtime 会按下面这个顺序检查磁盘状态：
 
 如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
 
+## Governance-candidate lane
+
+从 adversarial review + deterministic closure 往上，再加一层 conservative governance lane：
+
+- post-rollout review cycle 会写 `governance_signal.json`
+- 重复 finding 会进入 `governance/review_findings_ledger.jsonl`
+- 达到阈值后会打开 `governance/candidates/*.yaml`
+- 但 runtime 仍然不能自动改 active gate / template / regression test
+
+是否真的把 candidate 变成制度，必须经过单独的人类治理确认；即使确认通过，真正生效仍要走正常 repo 变更。
+
 ## Expected User Experience
 
 用户从一个 skill 开始：
@@ -390,3 +401,5 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closure 写正式 closure artifacts
 
 也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。
+
+在这层 review 闭环之上，QROS 还会为 **future-only** 的 institutional learning 写出治理候选信号；具体 contract 见上面的 `Governance-candidate lane` 小节。

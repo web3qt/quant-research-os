@@ -91,6 +91,14 @@ qros-mandate-review
 - 只有 `CLOSURE_READY_*` 结果才能继续运行 `~/.qros/bin/qros-review` 写 closure artifacts
 - `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`
 
+从当前版本开始，review 闭环之上还新增了一层 **governance-candidate lane**：
+
+- runtime 会把 post-rollout review findings 归一化成 `governance_signal.json`
+- 重复 pattern 会进入 `governance/review_findings_ledger.jsonl` 与 `governance/candidates/*.yaml`
+- 候选优先级固定为：`hard_gate -> template_constraint -> regression_test`
+- 这条 lane **只影响未来** 的 review cycle / lineage
+- human governance decision 也**不会直接激活 policy**；真正生效仍要走正常 repo 变更
+
 ## 安装后更新
 
 **Claude Code:**
