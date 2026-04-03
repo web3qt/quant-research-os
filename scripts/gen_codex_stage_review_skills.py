@@ -15,14 +15,20 @@ from tools.review_skillgen.render import render_stage_skill
 DRY_RUN = "--dry-run" in sys.argv[1:]
 GATE_SCHEMA_PATH = ROOT / "docs" / "gates" / "workflow_stage_gates.yaml"
 CHECKLIST_SCHEMA_PATH = ROOT / "docs" / "review-sop" / "review_checklist_master.yaml"
-FIRST_WAVE_SKILLS = {
+REVIEW_SKILLS = {
     "mandate": "qros-mandate-review",
     "data_ready": "qros-data-ready-review",
+    "csf_data_ready": "qros-csf-data-ready-review",
     "signal_ready": "qros-signal-ready-review",
+    "csf_signal_ready": "qros-csf-signal-ready-review",
     "train_calibration": "qros-train-freeze-review",
+    "csf_train_freeze": "qros-csf-train-freeze-review",
     "test_evidence": "qros-test-evidence-review",
+    "csf_test_evidence": "qros-csf-test-evidence-review",
     "backtest_ready": "qros-backtest-ready-review",
+    "csf_backtest_ready": "qros-csf-backtest-ready-review",
     "holdout_validation": "qros-holdout-validation-review",
+    "csf_holdout_validation": "qros-csf-holdout-validation-review",
 }
 
 
@@ -62,6 +68,7 @@ def _render_skill_outputs(
     return {
         skill_dir / "SKILL.md": skill_md,
         skill_dir / "agents" / "openai.yaml": openai_yaml,
+        output_root / "skills" / skill_name / "SKILL.md": skill_md,
     }
 
 
@@ -91,7 +98,7 @@ def main() -> int:
     checklist = load_checklist_schema(_require_existing_file(CHECKLIST_SCHEMA_PATH, label="checklist schema"))
 
     any_stale = False
-    for stage_key, skill_name in FIRST_WAVE_SKILLS.items():
+    for stage_key, skill_name in REVIEW_SKILLS.items():
         outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, output_root)
         if DRY_RUN:
             if _is_fresh(outputs):

@@ -1,6 +1,6 @@
 ---
 name: qros-data-ready-review
-description: Use when data_ready artifacts have been authored and must pass formal gate review before advancing to signal_ready stage.
+description: Codex review skill for Data Ready stage verification.
 ---
 
 # Data Ready Review
@@ -12,7 +12,7 @@ description: Use when data_ready artifacts have been authored and must pass form
 ## Shared Inputs
 
 - `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `docs/review-sop/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
@@ -39,7 +39,7 @@ Required outputs:
 - universe_exclusions.md
 - data_ready_gate_decision.md
 - run_manifest.json
-- rebuild_data_ready.py or equivalent program snapshot
+- rebuild_data_ready.py
 - artifact_catalog.md
 - field_dictionary.md
 
@@ -61,18 +61,18 @@ Must fail none of:
 - 混用 open_time 和 close_time 作为主键
 - 静默吞掉缺失或静默 forward-fill
 - 基准腿覆盖或 universe 审计无法解释
+- 只保存产物，没有 stage-local rebuild 程序或 replay 账本
 
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `01_mandate/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] dense 时间轴已生成，目标对象时间栅格一致
 - [blocking] 缺失、stale、outlier、坏价等语义被显式标记，而非静默修复
 - [blocking] 基准腿（如 BTC）覆盖审计通过
 - [blocking] dataset_manifest.json 已冻结当前数据版本、Universe 版本和产物路径
 - [blocking] 去重规则与时间主键口径明确，未混用 open_time / close_time
 - [blocking] Universe 排除项已显式记录，并给出原因
-- [blocking] run_manifest.json 已记录 program_artifacts 与 replay_command，且 stage-local rebuild 程序存在
+- [blocking] run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结
 - [reservation] rolling_stats 或等价可复用 rolling 缓存已生成
 
 ## Audit-Only Items
@@ -87,9 +87,56 @@ Audit-only items:
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Reviewer Findings File
+## Mandatory Adversarial Review Inputs
 
-Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+- `adversarial_review_request.yaml`
+- lineage-local stage program source under the runtime-declared `required_program_dir`
+- stage provenance in `program_execution_manifest.json`
+
+## Mandatory Adversarial Reviewer Contract
+
+You are the adversarial reviewer lane, not the original author.
+
+Before any closure artifacts can exist:
+
+1. Inspect `adversarial_review_request.yaml`
+2. Verify your reviewer identity differs from `author_identity`
+3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+4. Inspect the required artifacts and provenance named in the request
+5. Write `adversarial_review_result.yaml`
+
+`adversarial_review_result.yaml` must include at least:
+
+- `review_cycle_id`
+- `reviewer_identity`
+- `reviewer_role`
+- `reviewer_session_id`
+- `reviewer_mode: adversarial`
+- `review_loop_outcome`
+- `reviewed_program_dir`
+- `reviewed_program_entrypoint`
+- `reviewed_artifact_paths`
+- `reviewed_provenance_paths`
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+
+Allowed `review_loop_outcome` values:
+
+- `FIX_REQUIRED`
+- `CLOSURE_READY_PASS`
+- `CLOSURE_READY_CONDITIONAL_PASS`
+- `CLOSURE_READY_PASS_FOR_RETRY`
+- `CLOSURE_READY_RETRY`
+- `CLOSURE_READY_NO_GO`
+- `CLOSURE_READY_CHILD_LINEAGE`
+
+`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+## Optional Reviewer Findings File
+
+You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
 
 Minimum expected fields:
 
@@ -112,6 +159,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 
@@ -141,7 +191,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 3. Load the stage checklist
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
-6. Record audit-only findings after that
-7. Save `review_findings.yaml`
-8. Run `~/.qros/bin/qros-review`
-9. Review the generated closure artifacts
+6. Inspect the lineage-local source code for this stage
+7. Record audit-only findings after that
+8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
+9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
+10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
+11. Review the generated closure artifacts

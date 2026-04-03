@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from subprocess import run
 import sys
 
@@ -25,7 +26,58 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     ]:
         (stage_dir / name).write_text("ok\n", encoding="utf-8")
 
-    _write_yaml(stage_dir / "review_findings.yaml", {"reviewer_identity": "codex"})
+    _write_yaml(
+        stage_dir / "adversarial_review_request.yaml",
+        {
+            "review_cycle_id": "cycle-1",
+            "lineage_id": "topic_a",
+            "stage": "mandate",
+            "author_identity": "author-agent",
+            "author_session_id": "author-session",
+            "required_program_dir": "program/mandate",
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": [
+                "mandate.md",
+                "research_scope.md",
+                "time_split.json",
+                "parameter_grid.yaml",
+                "run_config.toml",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_reviewer_mode": "adversarial",
+        },
+    )
+    _write_yaml(
+        stage_dir / "adversarial_review_result.yaml",
+        {
+            "review_cycle_id": "cycle-1",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_role": "reviewer",
+            "reviewer_session_id": "review-session",
+            "reviewer_mode": "adversarial",
+            "review_loop_outcome": "CLOSURE_READY_PASS",
+            "reviewed_program_dir": "program/mandate",
+            "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_artifact_paths": [
+                "mandate.md",
+                "research_scope.md",
+                "time_split.json",
+                "parameter_grid.yaml",
+                "run_config.toml",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "downstream_permissions": [],
+        },
+    )
     return stage_dir
 
 
@@ -40,9 +92,17 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
         check=False,
         capture_output=True,
         text=True,
+        env={
+            **os.environ,
+            "QROS_REVIEWER_ID": "reviewer-agent",
+            "QROS_REVIEWER_ROLE": "reviewer",
+            "QROS_REVIEWER_SESSION_ID": "review-session",
+            "QROS_REVIEWER_MODE": "adversarial",
+        },
     )
 
     assert result.returncode == 0
+    assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
     assert (stage_dir / "stage_completion_certificate.yaml").exists()
 
@@ -60,6 +120,14 @@ def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) 
             str(stage_dir),
             "--lineage-root",
             str(stage_dir.parent),
+            "--reviewer-id",
+            "reviewer-agent",
+            "--reviewer-role",
+            "reviewer",
+            "--reviewer-session-id",
+            "review-session",
+            "--reviewer-mode",
+            "adversarial",
         ],
         cwd=tmp_path,
         check=False,

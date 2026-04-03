@@ -1,6 +1,6 @@
 ---
 name: qros-mandate-review
-description: Use when mandate artifacts have been authored and must pass formal gate review before advancing to data_ready stage.
+description: Codex review skill for Mandate stage verification.
 ---
 
 # Mandate Review
@@ -12,7 +12,7 @@ description: Use when mandate artifacts have been authored and must pass formal 
 ## Shared Inputs
 
 - `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `docs/review-sop/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
@@ -29,7 +29,6 @@ Required inputs:
 Required outputs:
 - mandate.md
 - research_scope.md
-- research_route.yaml
 - time_split.json
 - parameter_grid.yaml
 - run_config.toml
@@ -43,7 +42,6 @@ Stage: Mandate
 Formal gate summary:
 Must pass all of:
 - 研究主问题与明确禁止事项已冻结
-- `research_route`、`excluded_routes`、`route_rationale` 与 route change policy 已冻结
 - 正式时间窗、切分方式、time label 和 no-lookahead 约定已冻结
 - 正式 universe、准入口径和字段分层已冻结
 - 参数字典、公式模板、实现栈、parallelization_plan 和 non_rust_exceptions 已写清
@@ -59,7 +57,6 @@ Must fail none of:
 
 Stage checklist:
 - [blocking] 研究主问题已冻结，且明确写清不研究什么
-- [blocking] `research_route` 已唯一冻结，`excluded_routes` 与 `route_rationale` 已写清
 - [blocking] 正式时间窗与 Train/Test/Backtest/Holdout 切分已冻结
 - [blocking] Universe、准入口径、主副腿角色已冻结
 - [blocking] 字段分层已写清，且关键字段具有人类可读解释
@@ -67,6 +64,7 @@ Stage checklist:
 - [blocking] 参数字典、参数候选集、参数约束已写清
 - [reservation] 实现栈、并行计划、非 Rust 例外说明已记录
 - [blocking] 若关键字段或参数仅列名称未解释，则不得通过
+- [blocking] 若 research_route = cross_sectional_factor，则 factor_role、factor_structure、portfolio_expression、neutralization_policy 已冻结；且 non-standalone 需要 target_strategy_reference，group_neutral 需要 group_taxonomy_reference
 
 ## Audit-Only Items
 
@@ -80,9 +78,56 @@ Audit-only items:
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Reviewer Findings File
+## Mandatory Adversarial Review Inputs
 
-Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+- `adversarial_review_request.yaml`
+- lineage-local stage program source under the runtime-declared `required_program_dir`
+- stage provenance in `program_execution_manifest.json`
+
+## Mandatory Adversarial Reviewer Contract
+
+You are the adversarial reviewer lane, not the original author.
+
+Before any closure artifacts can exist:
+
+1. Inspect `adversarial_review_request.yaml`
+2. Verify your reviewer identity differs from `author_identity`
+3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+4. Inspect the required artifacts and provenance named in the request
+5. Write `adversarial_review_result.yaml`
+
+`adversarial_review_result.yaml` must include at least:
+
+- `review_cycle_id`
+- `reviewer_identity`
+- `reviewer_role`
+- `reviewer_session_id`
+- `reviewer_mode: adversarial`
+- `review_loop_outcome`
+- `reviewed_program_dir`
+- `reviewed_program_entrypoint`
+- `reviewed_artifact_paths`
+- `reviewed_provenance_paths`
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+
+Allowed `review_loop_outcome` values:
+
+- `FIX_REQUIRED`
+- `CLOSURE_READY_PASS`
+- `CLOSURE_READY_CONDITIONAL_PASS`
+- `CLOSURE_READY_PASS_FOR_RETRY`
+- `CLOSURE_READY_RETRY`
+- `CLOSURE_READY_NO_GO`
+- `CLOSURE_READY_CHILD_LINEAGE`
+
+`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+## Optional Reviewer Findings File
+
+You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
 
 Minimum expected fields:
 
@@ -105,6 +150,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 
@@ -120,6 +168,7 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 ## Downstream Permissions
 
 - May advance to: data_ready
+- May advance to: csf_data_ready
 - Frozen output consumable by next stage: time_split.json
 - Frozen output consumable by next stage: parameter_grid.yaml
 - Frozen output consumable by next stage: run_config.toml
@@ -134,7 +183,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 3. Load the stage checklist
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
-6. Record audit-only findings after that
-7. Save `review_findings.yaml`
-8. Run `~/.qros/bin/qros-review`
-9. Review the generated closure artifacts
+6. Inspect the lineage-local source code for this stage
+7. Record audit-only findings after that
+8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
+9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
+10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
+11. Review the generated closure artifacts

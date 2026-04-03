@@ -1,6 +1,6 @@
 ---
 name: qros-holdout-validation-review
-description: Use when holdout_validation artifacts have been authored and must pass final formal gate review before research lineage completion.
+description: Codex review skill for Holdout Validation stage verification.
 ---
 
 # Holdout Validation Review
@@ -12,7 +12,7 @@ description: Use when holdout_validation artifacts have been authored and must p
 ## Shared Inputs
 
 - `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `docs/review-sop/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
@@ -54,7 +54,6 @@ Must fail none of:
 ## Checklist
 
 Stage checklist:
-- [blocking] 上游 `06_backtest/stage_completion_certificate.yaml` 存在且 verdict 非 NO-GO / CHILD LINEAGE
 - [blocking] Holdout 使用的规则未再修改，且完全来自 Backtest 冻结方案
 - [blocking] 单窗口和合并窗口结果均已落地
 - [blocking] 未用 holdout 调任何参数、白名单或规则
@@ -70,21 +69,62 @@ Audit-only items:
 - 细颗粒度漂移解释
 - 结构突变与参数稳定性审计（例如 Chow、Bai-Perron、CUSUM、rolling coefficient stability）
 
-## Reviewer Guidance
-
-- 当 reviewer 想用“结构仍连续”或“只是 regime 不匹配而非机制断裂”来支持 `PASS` / `CONDITIONAL PASS` 时，先检查是否写明结构突变检验 protocol，或给出合理免做理由。
-- `Chow` 适合已知断点，`Bai-Perron` 适合未知或多断点，`CUSUM` 与 rolling coefficient stability 适合作为持续漂移的辅助证据。
-- 不要把显著 break 机械等同于 `NO-GO`；但若 break 无法解释，且伴随方向翻转或核心结构崩塌，就不能支持 formal `PASS`。
-
 ## Closure Artifacts
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Reviewer Findings File
+## Mandatory Adversarial Review Inputs
 
-Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+- `adversarial_review_request.yaml`
+- lineage-local stage program source under the runtime-declared `required_program_dir`
+- stage provenance in `program_execution_manifest.json`
+
+## Mandatory Adversarial Reviewer Contract
+
+You are the adversarial reviewer lane, not the original author.
+
+Before any closure artifacts can exist:
+
+1. Inspect `adversarial_review_request.yaml`
+2. Verify your reviewer identity differs from `author_identity`
+3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+4. Inspect the required artifacts and provenance named in the request
+5. Write `adversarial_review_result.yaml`
+
+`adversarial_review_result.yaml` must include at least:
+
+- `review_cycle_id`
+- `reviewer_identity`
+- `reviewer_role`
+- `reviewer_session_id`
+- `reviewer_mode: adversarial`
+- `review_loop_outcome`
+- `reviewed_program_dir`
+- `reviewed_program_entrypoint`
+- `reviewed_artifact_paths`
+- `reviewed_provenance_paths`
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+
+Allowed `review_loop_outcome` values:
+
+- `FIX_REQUIRED`
+- `CLOSURE_READY_PASS`
+- `CLOSURE_READY_CONDITIONAL_PASS`
+- `CLOSURE_READY_PASS_FOR_RETRY`
+- `CLOSURE_READY_RETRY`
+- `CLOSURE_READY_NO_GO`
+- `CLOSURE_READY_CHILD_LINEAGE`
+
+`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+## Optional Reviewer Findings File
+
+You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
 
 Minimum expected fields:
 
@@ -107,6 +147,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 
@@ -131,7 +174,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 3. Load the stage checklist
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
-6. Record audit-only findings after that
-7. Save `review_findings.yaml`
-8. Run `~/.qros/bin/qros-review`
-9. Review the generated closure artifacts
+6. Inspect the lineage-local source code for this stage
+7. Record audit-only findings after that
+8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
+9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
+10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
+11. Review the generated closure artifacts

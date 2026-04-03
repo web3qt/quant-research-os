@@ -42,6 +42,61 @@ def _write_stage_completion_certificate(
     )
 
 
+def _write_adversarial_review_request(
+    stage_dir: Path,
+    *,
+    stage: str,
+    program_dir: str,
+    author_identity: str = "test-agent",
+    author_session_id: str = "test-session",
+) -> None:
+    _write_yaml(
+        stage_dir / "adversarial_review_request.yaml",
+        {
+            "review_cycle_id": f"{stage}-cycle-1",
+            "lineage_id": stage_dir.parent.name,
+            "stage": stage,
+            "author_identity": author_identity,
+            "author_session_id": author_session_id,
+            "required_program_dir": program_dir,
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": [],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_reviewer_mode": "adversarial",
+        },
+    )
+
+
+def _write_adversarial_review_result(
+    stage_dir: Path,
+    *,
+    stage: str,
+    program_dir: str,
+    outcome: str,
+) -> None:
+    _write_yaml(
+        stage_dir / "adversarial_review_result.yaml",
+        {
+            "review_cycle_id": f"{stage}-cycle-1",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_role": "reviewer",
+            "reviewer_session_id": "review-session",
+            "reviewer_mode": "adversarial",
+            "review_loop_outcome": outcome,
+            "reviewed_program_dir": program_dir,
+            "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_artifact_paths": [],
+            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "downstream_permissions": [],
+        },
+    )
+
+
 def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
     stage_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1859,8 +1914,60 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
-    assert status.gate_status == "REVIEW_PENDING"
-    assert status.next_action == "Write review_findings.yaml and run mandate review"
+    assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
+    assert status.next_action == "Produce adversarial_review_result.yaml via independent adversarial review."
+
+
+def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_adversarial_review_result(
+        stage_dir,
+        stage="mandate",
+        program_dir="program/mandate",
+        outcome="FIX_REQUIRED",
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review"
+    assert status.stage_status == "awaiting_author_fix"
+    assert status.blocking_reason_code == "AUTHOR_FIX_REQUIRED"
+    assert status.current_skill == "qros-mandate-author"
+    assert status.gate_status == "AUTHOR_FIX_REQUIRED"
+    assert "author-fix skill" in status.why_this_skill
+    assert "author lane" in status.next_action
+
+
+def test_run_research_session_exposes_review_closure_substate_after_closure_ready_result(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_adversarial_review_result(
+        stage_dir,
+        stage="mandate",
+        program_dir="program/mandate",
+        outcome="CLOSURE_READY_PASS",
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review"
+    assert status.stage_status == "awaiting_review_closure"
+    assert status.blocking_reason_code == "REVIEW_CLOSURE_PENDING"
+    assert status.gate_status == "REVIEW_CLOSURE_PENDING"
+    assert status.current_skill == "qros-mandate-review"
 
 
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:

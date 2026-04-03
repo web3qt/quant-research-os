@@ -17,6 +17,10 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the first-wave stage review engine.")
     parser.add_argument("--stage-dir", type=Path, default=None)
     parser.add_argument("--lineage-root", type=Path, default=None)
+    parser.add_argument("--reviewer-id", default=None)
+    parser.add_argument("--reviewer-role", default=None)
+    parser.add_argument("--reviewer-session-id", default=None)
+    parser.add_argument("--reviewer-mode", default=None)
     return parser.parse_args()
 
 
@@ -32,7 +36,15 @@ def main() -> int:
             "lineage_root": args.lineage_root.resolve(),
         }
 
-    payload = run_stage_review(cwd=Path.cwd(), explicit_context=explicit_context)
+    payload = run_stage_review(
+        cwd=Path.cwd(),
+        explicit_context=explicit_context,
+        reviewer_identity=args.reviewer_id,
+        reviewer_role=args.reviewer_role,
+        reviewer_session_id=args.reviewer_session_id,
+        reviewer_mode=args.reviewer_mode,
+    )
+    print(f"Review loop outcome: {payload['review_loop_outcome']}")
     print(f"Final verdict: {payload['final_verdict']}")
     print(f"Stage: {payload['stage']}")
     print(f"Lineage: {payload['lineage_id']}")

@@ -5,7 +5,7 @@ import sys
 from scripts.gen_codex_stage_review_skills import CHECKLIST_SCHEMA_PATH, GATE_SCHEMA_PATH
 
 
-def test_generator_writes_first_wave_skills(tmp_path: Path) -> None:
+def test_generator_writes_review_skills_with_csf_parity(tmp_path: Path) -> None:
     output_root = tmp_path / "generated"
     result = run(
         [sys.executable, "scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
@@ -16,12 +16,19 @@ def test_generator_writes_first_wave_skills(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert (output_root / ".agents/skills/qros-mandate-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-data-ready-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-data-ready-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-signal-ready-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-signal-ready-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-train-freeze-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-train-freeze-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-test-evidence-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-test-evidence-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-backtest-ready-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-backtest-ready-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-holdout-validation-review/SKILL.md").exists()
+    assert (output_root / ".agents/skills/qros-csf-holdout-validation-review/SKILL.md").exists()
     assert (output_root / ".agents/skills/qros-mandate-review/agents/openai.yaml").exists()
+    assert (output_root / "skills/qros-csf-data-ready-review/SKILL.md").exists()
 
 
 def test_generator_runs_outside_repo_root() -> None:
@@ -36,10 +43,15 @@ def test_generator_runs_outside_repo_root() -> None:
     )
     assert result.returncode == 0
     assert "FRESH: qros-mandate-review" in result.stdout
+    assert "FRESH: qros-csf-data-ready-review" in result.stdout
     assert "FRESH: qros-train-freeze-review" in result.stdout
+    assert "FRESH: qros-csf-train-freeze-review" in result.stdout
     assert "FRESH: qros-test-evidence-review" in result.stdout
+    assert "FRESH: qros-csf-test-evidence-review" in result.stdout
     assert "FRESH: qros-backtest-ready-review" in result.stdout
+    assert "FRESH: qros-csf-backtest-ready-review" in result.stdout
     assert "FRESH: qros-holdout-validation-review" in result.stdout
+    assert "FRESH: qros-csf-holdout-validation-review" in result.stdout
 
 
 def test_generator_source_schema_paths_exist() -> None:
