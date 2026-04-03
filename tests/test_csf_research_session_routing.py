@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 
+from tests.lineage_program_support import write_fake_stage_provenance
 from tools.research_session import detect_session_stage, run_research_session
 
 
@@ -42,6 +43,7 @@ def _prepare_mandate_review_complete(lineage_root: Path) -> None:
         },
     )
     _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml")
+    write_fake_stage_provenance(lineage_root, "mandate")
 
 
 def test_detect_session_stage_routes_csf_lineage_into_csf_data_ready(tmp_path: Path) -> None:

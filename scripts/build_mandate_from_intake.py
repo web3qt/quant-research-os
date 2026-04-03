@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.idea_runtime import build_mandate_from_intake
+from tools.lineage_program_runtime import StageProgramRuntimeError, StageProgramSpec, invoke_stage_if_admitted
 
 
 def main() -> int:
@@ -19,12 +19,29 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        mandate_dir = build_mandate_from_intake(args.lineage_root)
-    except ValueError as exc:
+        result = invoke_stage_if_admitted(
+            args.lineage_root.resolve(),
+            StageProgramSpec(
+                stage_id="mandate",
+                route="route_neutral",
+                stage_dir_name="01_mandate",
+                required_outputs=(
+                    "mandate.md",
+                    "research_scope.md",
+                    "research_route.yaml",
+                    "time_split.json",
+                    "parameter_grid.yaml",
+                    "run_config.toml",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ),
+            ),
+        )
+    except StageProgramRuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
-    print(f"Built mandate artifacts at {mandate_dir}")
+    print(f"Built mandate artifacts at {result.stage_dir}")
     return 0
 
 

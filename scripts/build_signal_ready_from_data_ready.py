@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.signal_ready_runtime import build_signal_ready_from_data_ready
+from tools.lineage_program_runtime import StageProgramRuntimeError, StageProgramSpec, invoke_stage_if_admitted
 
 
 def _parse_args() -> argparse.Namespace:
@@ -23,8 +23,31 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    signal_ready_dir = build_signal_ready_from_data_ready(args.lineage_root.resolve())
-    print(f"Built signal_ready artifacts in {signal_ready_dir}")
+    try:
+        result = invoke_stage_if_admitted(
+            args.lineage_root.resolve(),
+            StageProgramSpec(
+                stage_id="signal_ready",
+                route="time_series_signal",
+                stage_dir_name="03_signal_ready",
+                required_outputs=(
+                    "param_manifest.csv",
+                    "params",
+                    "signal_coverage.csv",
+                    "signal_coverage.md",
+                    "signal_coverage_summary.md",
+                    "signal_contract.md",
+                    "signal_fields_contract.md",
+                    "signal_gate_decision.md",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ),
+            ),
+        )
+    except StageProgramRuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"Built signal_ready artifacts in {result.stage_dir}")
     return 0
 
 

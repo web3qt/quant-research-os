@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import yaml
@@ -20,6 +21,39 @@ from tools.train_runtime import TRAIN_FREEZE_DRAFT_FILE
 def write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+
+def write_program_execution_manifest(stage_dir: Path, *, stage: str) -> None:
+    route = "cross_sectional_factor" if stage.startswith("csf_") else "time_series_signal"
+    stage_id = stage.removeprefix("csf_")
+    program_dir = (
+        Path("program/mandate")
+        if stage == "mandate"
+        else Path("program") / ("cross_sectional_factor" if stage.startswith("csf_") else "time_series") / stage_id
+    )
+    payload = {
+        "stage_id": "mandate" if stage == "mandate" else stage_id,
+        "route": "route_neutral" if stage == "mandate" else route,
+        "lineage_id": stage_dir.parent.name,
+        "stage_status": "awaiting_review_closure",
+        "program_dir": str(program_dir),
+        "stage_program_manifest_path": str(program_dir / "stage_program.yaml"),
+        "entrypoint": "run_stage.py",
+        "entry_type": "python",
+        "program_hash": "fixture-hash",
+        "framework_revision": "fixture-revision",
+        "invoked_at": "2026-04-03T00:00:00+00:00",
+        "input_refs": [],
+        "output_refs": [],
+        "authored_by_agent_id": "fixture-agent",
+        "authored_by_agent_role": "executor",
+        "authoring_session_id": "fixture-session",
+        "status": "success",
+    }
+    (stage_dir / "program_execution_manifest.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
@@ -194,6 +228,7 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             target.mkdir(parents=True, exist_ok=True)
         else:
             target.write_text("placeholder\n", encoding="utf-8")
+    write_program_execution_manifest(stage_dir, stage=stage)
 
 
 def write_stage_completion_certificate(

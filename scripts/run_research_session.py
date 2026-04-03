@@ -15,6 +15,18 @@ if str(ROOT) not in sys.path:
 from tools.research_session import run_research_session
 from tools.anti_drift import canonical_snapshot_from_session_context
 
+EXIT_CODES = {
+    "NONE": 0,
+    "FREEZE_APPROVAL_MISSING": 2,
+    "STAGE_PROGRAM_MISSING": 3,
+    "STAGE_PROGRAM_INVALID": 4,
+    "PROGRAM_EXECUTION_FAILED": 5,
+    "PROVENANCE_MISSING": 5,
+    "OUTPUTS_INVALID": 6,
+    "REVIEW_PENDING": 7,
+    "FAILURE_HANDLER_REQUIRED": 8,
+}
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the QROS orchestrated research session.")
@@ -89,6 +101,10 @@ def _snapshot_payload(status, *, fixture_id: str | None) -> dict[str, object]:
     return snapshot.to_dict()
 
 
+def _exit_code(status) -> int:
+    return EXIT_CODES.get(status.blocking_reason_code, 0)
+
+
 def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
     lines: list[str] = []
     confirmation_label = None
@@ -159,11 +175,11 @@ def main() -> int:
 
     if args.snapshot:
         print(json.dumps(_snapshot_payload(status, fixture_id=args.lineage_id), ensure_ascii=False, indent=2))
-        return 0
+        return _exit_code(status)
 
     if args.json:
         print(json.dumps(_status_payload(status), ensure_ascii=False, indent=2))
-        return 0
+        return _exit_code(status)
 
     for line in _confirmation_feedback(args, status):
         print(line)
@@ -174,6 +190,14 @@ def main() -> int:
     print(f"Why this skill: {status.why_this_skill}")
     if status.current_route is not None:
         print(f"Research route: {status.current_route}")
+    print(f"Stage status: {status.stage_status}")
+    print(f"Blocking reason code: {status.blocking_reason_code}")
+    if status.required_program_dir is not None:
+        print(f"Required program dir: {status.required_program_dir}")
+    if status.required_program_entrypoint is not None:
+        print(f"Required program entrypoint: {status.required_program_entrypoint}")
+    print(f"Program contract status: {status.program_contract_status}")
+    print(f"Provenance status: {status.provenance_status}")
     if status.factor_role is not None:
         print(f"Factor role: {status.factor_role}")
     if status.factor_structure is not None:
@@ -207,7 +231,7 @@ def main() -> int:
         print("Artifacts written:")
         for item in status.artifacts_written:
             print(f"- {item}")
-    return 0
+    return _exit_code(status)
 
 
 if __name__ == "__main__":

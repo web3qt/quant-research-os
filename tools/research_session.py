@@ -11,43 +11,36 @@ import yaml
 from tools.data_ready_runtime import (
     DATA_READY_FREEZE_DRAFT_FILE,
     DATA_READY_FREEZE_GROUP_ORDER,
-    build_data_ready_from_mandate,
     scaffold_data_ready,
 )
 from tools.csf_backtest_runtime import (
     CSF_BACKTEST_READY_DRAFT_FILE,
     CSF_BACKTEST_READY_GROUP_ORDER,
-    build_csf_backtest_ready_from_test_evidence,
     scaffold_csf_backtest_ready,
 )
 from tools.csf_data_ready_runtime import (
     CSF_DATA_READY_FREEZE_DRAFT_FILE,
     CSF_DATA_READY_FREEZE_GROUP_ORDER,
-    build_csf_data_ready_from_mandate,
     scaffold_csf_data_ready,
 )
 from tools.csf_holdout_runtime import (
     CSF_HOLDOUT_VALIDATION_DRAFT_FILE,
     CSF_HOLDOUT_VALIDATION_GROUP_ORDER,
-    build_csf_holdout_validation_from_backtest,
     scaffold_csf_holdout_validation,
 )
 from tools.csf_signal_ready_runtime import (
     CSF_SIGNAL_READY_FREEZE_DRAFT_FILE,
     CSF_SIGNAL_READY_FREEZE_GROUP_ORDER,
-    build_csf_signal_ready_from_data_ready,
     scaffold_csf_signal_ready,
 )
 from tools.csf_test_evidence_runtime import (
     CSF_TEST_EVIDENCE_DRAFT_FILE,
     CSF_TEST_EVIDENCE_GROUP_ORDER,
-    build_csf_test_evidence_from_train_freeze,
     scaffold_csf_test_evidence,
 )
 from tools.csf_train_runtime import (
     CSF_TRAIN_FREEZE_DRAFT_FILE,
     CSF_TRAIN_FREEZE_GROUP_ORDER,
-    build_csf_train_freeze_from_signal_ready,
     scaffold_csf_train_freeze,
 )
 from tools.idea_runtime import (
@@ -55,39 +48,41 @@ from tools.idea_runtime import (
     MANDATE_FREEZE_GROUP_ORDER,
     SUPPORTED_RESEARCH_ROUTES,
     _require_route_assessment,
-    build_mandate_from_intake,
     scaffold_idea_intake,
+)
+from tools.lineage_program_runtime import (
+    StageProgramRuntimeError,
+    StageProgramSpec,
+    inspect_stage_program,
+    invoke_stage_if_admitted,
+    load_provenance_manifest,
+    stage_outputs_complete,
 )
 from tools.review_skillgen.review_engine import run_stage_review
 from tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_DRAFT_FILE,
     SIGNAL_READY_FREEZE_GROUP_ORDER,
-    build_signal_ready_from_data_ready,
     scaffold_signal_ready,
 )
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
     BACKTEST_READY_GROUP_ORDER,
     backtest_ready_real_outputs_complete,
-    build_backtest_ready_from_test_evidence,
     scaffold_backtest_ready,
 )
 from tools.holdout_runtime import (
     HOLDOUT_VALIDATION_DRAFT_FILE,
     HOLDOUT_VALIDATION_GROUP_ORDER,
-    build_holdout_validation_from_backtest,
     scaffold_holdout_validation,
 )
 from tools.test_evidence_runtime import (
     TEST_EVIDENCE_DRAFT_FILE,
     TEST_EVIDENCE_GROUP_ORDER,
-    build_test_evidence_from_train_freeze,
     scaffold_test_evidence,
 )
 from tools.train_runtime import (
     TRAIN_FREEZE_DRAFT_FILE,
     TRAIN_FREEZE_GROUP_ORDER,
-    build_train_freeze_from_signal_ready,
     scaffold_train_freeze,
 )
 
@@ -330,8 +325,14 @@ class SessionContext:
     current_orchestrator: str
     current_stage: SessionStage
     current_route: str | None
+    stage_status: str
+    blocking_reason_code: str
     current_skill: str
     why_this_skill: str
+    required_program_dir: str | None
+    required_program_entrypoint: str | None
+    program_contract_status: str
+    provenance_status: str
     blocking_reason: str | None
     resume_hint: str
     artifacts_written: list[str]
@@ -393,6 +394,87 @@ STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "holdout_validation_author": "qros-holdout-validation-author",
     "holdout_validation_review": "qros-holdout-validation-review",
     "holdout_validation_review_complete": "qros-research-session",
+}
+
+SESSION_STAGE_PROGRAM_SPECS: dict[str, StageProgramSpec] = {
+    "mandate": StageProgramSpec(
+        stage_id="mandate",
+        route="route_neutral",
+        stage_dir_name="01_mandate",
+        required_outputs=tuple(MANDATE_REQUIRED_OUTPUTS),
+    ),
+    "data_ready": StageProgramSpec(
+        stage_id="data_ready",
+        route="time_series_signal",
+        stage_dir_name="02_data_ready",
+        required_outputs=tuple(DATA_READY_REQUIRED_OUTPUTS),
+    ),
+    "signal_ready": StageProgramSpec(
+        stage_id="signal_ready",
+        route="time_series_signal",
+        stage_dir_name="03_signal_ready",
+        required_outputs=tuple(SIGNAL_READY_REQUIRED_OUTPUTS),
+    ),
+    "train_freeze": StageProgramSpec(
+        stage_id="train_freeze",
+        route="time_series_signal",
+        stage_dir_name="04_train_freeze",
+        required_outputs=tuple(TRAIN_FREEZE_REQUIRED_OUTPUTS),
+    ),
+    "test_evidence": StageProgramSpec(
+        stage_id="test_evidence",
+        route="time_series_signal",
+        stage_dir_name="05_test_evidence",
+        required_outputs=tuple(TEST_EVIDENCE_REQUIRED_OUTPUTS),
+    ),
+    "backtest_ready": StageProgramSpec(
+        stage_id="backtest_ready",
+        route="time_series_signal",
+        stage_dir_name="06_backtest",
+        required_outputs=tuple(BACKTEST_READY_REQUIRED_OUTPUTS),
+    ),
+    "holdout_validation": StageProgramSpec(
+        stage_id="holdout_validation",
+        route="time_series_signal",
+        stage_dir_name="07_holdout",
+        required_outputs=tuple(HOLDOUT_VALIDATION_REQUIRED_OUTPUTS),
+    ),
+    "csf_data_ready": StageProgramSpec(
+        stage_id="data_ready",
+        route="cross_sectional_factor",
+        stage_dir_name="02_csf_data_ready",
+        required_outputs=tuple(CSF_DATA_READY_REQUIRED_OUTPUTS),
+    ),
+    "csf_signal_ready": StageProgramSpec(
+        stage_id="signal_ready",
+        route="cross_sectional_factor",
+        stage_dir_name="03_csf_signal_ready",
+        required_outputs=tuple(CSF_SIGNAL_READY_REQUIRED_OUTPUTS),
+    ),
+    "csf_train_freeze": StageProgramSpec(
+        stage_id="train_freeze",
+        route="cross_sectional_factor",
+        stage_dir_name="04_csf_train_freeze",
+        required_outputs=tuple(CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS),
+    ),
+    "csf_test_evidence": StageProgramSpec(
+        stage_id="test_evidence",
+        route="cross_sectional_factor",
+        stage_dir_name="05_csf_test_evidence",
+        required_outputs=tuple(CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS),
+    ),
+    "csf_backtest_ready": StageProgramSpec(
+        stage_id="backtest_ready",
+        route="cross_sectional_factor",
+        stage_dir_name="06_csf_backtest_ready",
+        required_outputs=tuple(CSF_BACKTEST_READY_REQUIRED_OUTPUTS),
+    ),
+    "csf_holdout_validation": StageProgramSpec(
+        stage_id="holdout_validation",
+        route="cross_sectional_factor",
+        stage_dir_name="07_csf_holdout_validation",
+        required_outputs=tuple(CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS),
+    ),
 }
 
 
@@ -595,9 +677,10 @@ def ensure_intake_scaffold(lineage_root: Path) -> list[str]:
 def build_mandate_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "mandate_author":
         return []
-
-    mandate_dir = build_mandate_from_intake(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in mandate_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "mandate_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_data_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -612,9 +695,10 @@ def ensure_data_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "data_ready_author":
         return []
-
-    data_ready_dir = build_data_ready_from_mandate(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in data_ready_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "data_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -629,9 +713,10 @@ def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_data_ready_author":
         return []
-
-    stage_dir = build_csf_data_ready_from_mandate(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_data_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -646,9 +731,10 @@ def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "signal_ready_author":
         return []
-
-    signal_ready_dir = build_signal_ready_from_data_ready(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in signal_ready_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "signal_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -663,9 +749,10 @@ def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_signal_ready_author":
         return []
-
-    stage_dir = build_csf_signal_ready_from_data_ready(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_signal_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -680,9 +767,10 @@ def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
 def build_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "train_freeze_author":
         return []
-
-    train_dir = build_train_freeze_from_signal_ready(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in train_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "train_freeze_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -697,9 +785,10 @@ def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_train_freeze_author":
         return []
-
-    stage_dir = build_csf_train_freeze_from_signal_ready(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_train_freeze_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
@@ -714,9 +803,10 @@ def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
 def build_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "test_evidence_author":
         return []
-
-    test_dir = build_test_evidence_from_train_freeze(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in test_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "test_evidence_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
@@ -731,9 +821,10 @@ def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_test_evidence_author":
         return []
-
-    stage_dir = build_csf_test_evidence_from_train_freeze(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_test_evidence_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -748,9 +839,10 @@ def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "backtest_ready_author":
         return []
-
-    backtest_dir = build_backtest_ready_from_test_evidence(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in backtest_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "backtest_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -765,9 +857,10 @@ def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_backtest_ready_author":
         return []
-
-    stage_dir = build_csf_backtest_ready_from_test_evidence(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_backtest_ready_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
@@ -782,9 +875,10 @@ def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
 def build_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "holdout_validation_author":
         return []
-
-    holdout_dir = build_holdout_validation_from_backtest(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in holdout_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "holdout_validation_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
@@ -799,9 +893,10 @@ def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_holdout_validation_author":
         return []
-
-    stage_dir = build_csf_holdout_validation_from_backtest(lineage_root)
-    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+    try:
+        return _invoke_program_stage(lineage_root, "csf_holdout_validation_author")
+    except StageProgramRuntimeError:
+        return []
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -1369,6 +1464,21 @@ def summarize_session_status(
     failure_stage: str | None = None,
     failure_reason_summary: str | None = None,
 ) -> SessionContext:
+    (
+        stage_status,
+        blocking_reason_code,
+        required_program_dir,
+        required_program_entrypoint,
+        program_contract_status,
+        provenance_status,
+        runtime_blocking_reason,
+        runtime_next_action,
+    ) = _program_runtime_status(
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+    )
     resolved_current_skill = current_skill or _current_skill_for_stage(
         current_stage=current_stage,
         requires_failure_handling=requires_failure_handling,
@@ -1382,11 +1492,7 @@ def summarize_session_status(
     resolved_blocking_reason = (
         blocking_reason
         if blocking_reason is not None
-        else _blocking_reason(
-            current_stage=current_stage,
-            review_verdict=review_verdict,
-            requires_failure_handling=requires_failure_handling,
-        )
+        else runtime_blocking_reason
     )
     resolved_resume_hint = resume_hint or _resume_hint(
         lineage_id=lineage_id,
@@ -1400,13 +1506,23 @@ def summarize_session_status(
         current_orchestrator="qros-research-session",
         current_stage=current_stage,
         current_route=current_route,
+        stage_status=stage_status,
+        blocking_reason_code=blocking_reason_code,
         current_skill=resolved_current_skill,
         why_this_skill=resolved_why_this_skill,
+        required_program_dir=required_program_dir,
+        required_program_entrypoint=required_program_entrypoint,
+        program_contract_status=program_contract_status,
+        provenance_status=provenance_status,
         blocking_reason=resolved_blocking_reason,
         resume_hint=resolved_resume_hint,
         artifacts_written=artifacts_written,
         gate_status=gate_status,
-        next_action=next_action,
+        next_action=(
+            runtime_next_action
+            if requires_failure_handling or current_stage.endswith("_author") or current_stage.endswith("_review_complete")
+            else next_action
+        ),
         why_now=why_now or [],
         open_risks=open_risks or [],
         factor_role=factor_role,
@@ -1501,6 +1617,172 @@ def _stage_base_name(current_stage: SessionStage) -> str:
         if current_stage.endswith(suffix):
             return current_stage[: -len(suffix)]
     return current_stage
+
+
+def _program_spec_for_session_stage(current_stage: SessionStage) -> StageProgramSpec | None:
+    return SESSION_STAGE_PROGRAM_SPECS.get(_stage_base_name(current_stage))
+
+
+def _invoke_program_stage(lineage_root: Path, current_stage: SessionStage) -> list[str]:
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None:
+        return []
+    result = invoke_stage_if_admitted(lineage_root, spec)
+    written = {
+        str(result.provenance_path.relative_to(lineage_root)),
+        str(result.manifest_path.relative_to(lineage_root)),
+    }
+    for ref in result.output_refs:
+        written.add(ref)
+    return sorted(written)
+
+
+def _program_runtime_status(
+    *,
+    lineage_root: Path,
+    current_stage: SessionStage,
+    review_verdict: str | None,
+    requires_failure_handling: bool,
+) -> tuple[str, str, str | None, str | None, str, str, str | None, str]:
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None:
+        if requires_failure_handling:
+            return (
+                "blocked_requires_failure_handling",
+                "FAILURE_HANDLER_REQUIRED",
+                None,
+                None,
+                "n/a",
+                "n/a",
+                f"Normal progression is blocked by review verdict {review_verdict or 'a failure-class review result'}.",
+                f"Enter failure handling for {_stage_base_name(current_stage)} via qros-stage-failure-handler",
+            )
+        if current_stage.endswith("_review_complete"):
+            return ("review_complete", "NONE", None, None, "n/a", "n/a", None, "No further action required.")
+        return (
+            "awaiting_freeze_approval",
+            "FREEZE_APPROVAL_MISSING",
+            None,
+            None,
+            "n/a",
+            "missing",
+            _blocking_reason(
+                current_stage=current_stage,
+                review_verdict=review_verdict,
+                requires_failure_handling=requires_failure_handling,
+            ),
+            "",
+        )
+
+    inspection = inspect_stage_program(lineage_root, spec.stage_id, spec.route)
+    provenance = load_provenance_manifest(lineage_root / spec.stage_dir_name)
+    provenance_status = "recorded" if provenance is not None else "missing"
+
+    if requires_failure_handling:
+        return (
+            "blocked_requires_failure_handling",
+            "FAILURE_HANDLER_REQUIRED",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            f"Normal progression is blocked by review verdict {review_verdict or 'a failure-class review result'}.",
+            f"Enter failure handling for {_stage_base_name(current_stage)} via qros-stage-failure-handler",
+        )
+    if current_stage.endswith("_review_complete"):
+        return (
+            "review_complete",
+            "NONE",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            None,
+            "No further action required.",
+        )
+    if current_stage.endswith("_review"):
+        return (
+            "awaiting_review_closure",
+            "REVIEW_PENDING",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            f"{_stage_base_name(current_stage)} review closure is still incomplete.",
+            f"Run {STAGE_ACTIVE_SKILLS[current_stage]} to close the review gate.",
+        )
+    if current_stage.endswith("_confirmation_pending"):
+        next_action = _gate_status_and_next_action(lineage_root, current_stage)[1]
+        return (
+            "awaiting_freeze_approval",
+            "FREEZE_APPROVAL_MISSING",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            _blocking_reason(
+                current_stage=current_stage,
+                review_verdict=review_verdict,
+                requires_failure_handling=requires_failure_handling,
+            ),
+            next_action,
+        )
+    if inspection.error_code == "STAGE_PROGRAM_MISSING":
+        return (
+            "awaiting_stage_program",
+            "STAGE_PROGRAM_MISSING",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            inspection.error_message,
+            f"Author the lineage-local stage program under {inspection.required_program_dir}.",
+        )
+    if inspection.error_code is not None:
+        return (
+            "awaiting_program_validation",
+            "STAGE_PROGRAM_INVALID",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            inspection.error_message,
+            f"Fix {inspection.required_program_dir}/stage_program.yaml and its entrypoint contract.",
+        )
+    stage_dir = lineage_root / spec.stage_dir_name
+    missing_outputs = [name for name in spec.required_outputs if not (stage_dir / name).exists()]
+    if provenance is None and not missing_outputs:
+        return (
+            "awaiting_program_execution",
+            "PROVENANCE_MISSING",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            f"{_stage_base_name(current_stage)} outputs cannot advance without program_execution_manifest.json provenance.",
+            f"Run the lineage-local entrypoint {inspection.required_program_entrypoint} from {inspection.required_program_dir}.",
+        )
+    if missing_outputs:
+        return (
+            "awaiting_program_execution",
+            "OUTPUTS_INVALID",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            "Stage program has not produced all required outputs: " + ", ".join(missing_outputs),
+            f"Run or fix the lineage-local entrypoint {inspection.required_program_entrypoint} in {inspection.required_program_dir}.",
+        )
+    return (
+        "awaiting_program_execution",
+        "PROGRAM_EXECUTION_FAILED",
+        inspection.required_program_dir,
+        inspection.required_program_entrypoint,
+        inspection.program_contract_status,
+        provenance_status,
+        f"{_stage_base_name(current_stage)} authoring outputs are still incomplete.",
+        f"Run the lineage-local entrypoint {inspection.required_program_entrypoint} from {inspection.required_program_dir}.",
+    )
 
 
 def run_research_session(
@@ -1694,57 +1976,57 @@ def run_research_session(
 
 
 def _mandate_outputs_complete(mandate_dir: Path) -> bool:
-    return all((mandate_dir / name).exists() for name in MANDATE_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(mandate_dir, MANDATE_REQUIRED_OUTPUTS)
 
 
 def _data_ready_outputs_complete(data_ready_dir: Path) -> bool:
-    return all((data_ready_dir / name).exists() for name in DATA_READY_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(data_ready_dir, DATA_READY_REQUIRED_OUTPUTS)
 
 
 def _csf_data_ready_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_DATA_READY_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_DATA_READY_REQUIRED_OUTPUTS)
 
 
 def _signal_ready_outputs_complete(signal_ready_dir: Path) -> bool:
-    return all((signal_ready_dir / name).exists() for name in SIGNAL_READY_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(signal_ready_dir, SIGNAL_READY_REQUIRED_OUTPUTS)
 
 
 def _csf_signal_ready_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_SIGNAL_READY_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_SIGNAL_READY_REQUIRED_OUTPUTS)
 
 
 def _train_freeze_outputs_complete(train_dir: Path) -> bool:
-    return all((train_dir / name).exists() for name in TRAIN_FREEZE_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(train_dir, TRAIN_FREEZE_REQUIRED_OUTPUTS)
 
 
 def _csf_train_freeze_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS)
 
 
 def _test_evidence_outputs_complete(test_dir: Path) -> bool:
-    return all((test_dir / name).exists() for name in TEST_EVIDENCE_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(test_dir, TEST_EVIDENCE_REQUIRED_OUTPUTS)
 
 
 def _csf_test_evidence_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS)
 
 
 def _backtest_ready_outputs_complete(backtest_dir: Path) -> bool:
-    return all((backtest_dir / name).exists() for name in BACKTEST_READY_REQUIRED_OUTPUTS) and backtest_ready_real_outputs_complete(
+    return stage_outputs_complete(backtest_dir, BACKTEST_READY_REQUIRED_OUTPUTS) and backtest_ready_real_outputs_complete(
         backtest_dir
     )
 
 
 def _csf_backtest_ready_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_BACKTEST_READY_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_BACKTEST_READY_REQUIRED_OUTPUTS)
 
 
 def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:
-    return all((holdout_dir / name).exists() for name in HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(holdout_dir, HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
 
 
 def _csf_holdout_validation_outputs_complete(stage_dir: Path) -> bool:
-    return all((stage_dir / name).exists() for name in CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
+    return stage_outputs_complete(stage_dir, CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
 
 
 def _completion_certificate_allows_progress(stage_dir: Path) -> bool:

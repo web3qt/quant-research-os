@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.data_ready_runtime import build_data_ready_from_mandate
+from tools.lineage_program_runtime import StageProgramRuntimeError, StageProgramSpec, invoke_stage_if_admitted
 
 
 def _parse_args() -> argparse.Namespace:
@@ -23,8 +23,39 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    data_ready_dir = build_data_ready_from_mandate(args.lineage_root.resolve())
-    print(f"Built data_ready artifacts in {data_ready_dir}")
+    try:
+        result = invoke_stage_if_admitted(
+            args.lineage_root.resolve(),
+            StageProgramSpec(
+                stage_id="data_ready",
+                route="time_series_signal",
+                stage_dir_name="02_data_ready",
+                required_outputs=(
+                    "aligned_bars",
+                    "rolling_stats",
+                    "pair_stats",
+                    "benchmark_residual",
+                    "topic_basket_state",
+                    "qc_report.parquet",
+                    "dataset_manifest.json",
+                    "validation_report.md",
+                    "data_contract.md",
+                    "dedupe_rule.md",
+                    "universe_summary.md",
+                    "universe_exclusions.csv",
+                    "universe_exclusions.md",
+                    "data_ready_gate_decision.md",
+                    "run_manifest.json",
+                    "rebuild_data_ready.py",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ),
+            ),
+        )
+    except StageProgramRuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"Built data_ready artifacts in {result.stage_dir}")
     return 0
 
 

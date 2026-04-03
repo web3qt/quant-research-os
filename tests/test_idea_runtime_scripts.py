@@ -4,6 +4,7 @@ import sys
 
 import yaml
 
+from tests.lineage_program_support import ensure_stage_program
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
@@ -271,6 +272,7 @@ def test_build_mandate_from_intake_requires_go_to_mandate(tmp_path: Path) -> Non
         },
     )
     _write_yaml(intake_dir / "scope_canvas.yaml", {})
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -333,6 +335,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     )
     (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: btc_alt_transmission_v1\n", encoding="utf-8")
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -403,6 +406,7 @@ def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(t
         },
     )
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -452,6 +456,7 @@ def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_pat
         },
     )
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -501,6 +506,7 @@ def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Pa
         },
     )
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", freeze_draft)
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -562,6 +568,7 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
     draft_payload["groups"]["data_contract"]["draft"]["data_source"] = ""
     draft_payload["groups"]["data_contract"]["draft"]["bar_size"] = ""
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft_payload)
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -597,6 +604,7 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
         (mandate_dir / name).write_text(content, encoding="utf-8")
 
     _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "data_ready")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -653,6 +661,7 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
         (data_ready_dir / name).mkdir()
 
     _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "signal_ready")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -705,6 +714,7 @@ def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Pa
     )
     _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=False))
     (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+    ensure_stage_program(lineage_root, "mandate")
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
