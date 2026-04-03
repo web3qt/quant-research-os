@@ -3,6 +3,7 @@ from pathlib import Path
 import yaml
 
 from tests.lineage_program_support import ensure_stage_program
+from tests.test_idea_runtime_scripts import _mandate_freeze_draft, _route_assessment
 from tools.lineage_program_runtime import (
     StageProgramSpec,
     inspect_stage_program,
@@ -149,3 +150,83 @@ def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_p
     assert provenance["status"] == "success"
     assert (result.stage_dir / "dataset_manifest.json").exists()
     assert (result.stage_dir / "program_execution_manifest.json").exists()
+def test_invoke_stage_if_admitted_supports_route_neutral_mandate_programs(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "case_mandate"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True, exist_ok=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "case_mandate",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["variables are observable"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "universe": "top liquidity alts",
+                "bar_size": "5m",
+                "horizons": ["15m", "30m", "60m"],
+                "target_task": "event-driven relative return study",
+                "excluded_scope": ["low liquidity tails"],
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "Binance perpetual",
+            "data_source": "Binance UM futures klines",
+            "instrument_type": "perpetual",
+            "universe": "top liquidity alts",
+            "bar_size": "5m",
+            "holding_horizons": ["15m", "30m", "60m"],
+            "target_task": "event-driven relative return study",
+            "excluded_scope": ["low liquidity tails"],
+            "budget_days": 10,
+            "max_iterations": 3,
+        },
+    )
+    (intake_dir / "research_question_set.md").write_text(
+        "# Research Questions\n\n- Does BTC shock lead ALT follow-through?\n",
+        encoding="utf-8",
+    )
+    (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: case_mandate\n", encoding="utf-8")
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "mandate")
+
+    inspection = inspect_stage_program(lineage_root, "mandate", "route_neutral")
+    assert inspection.program_contract_status == "valid"
+    assert inspection.required_program_dir == "program/mandate"
+    assert inspection.required_program_entrypoint == "run_stage.py"
+
+    result = invoke_stage_if_admitted(
+        lineage_root,
+        StageProgramSpec(
+            stage_id="mandate",
+            route="route_neutral",
+            stage_dir_name="01_mandate",
+            required_outputs=(
+                "mandate.md",
+                "research_scope.md",
+                "research_route.yaml",
+                "time_split.json",
+                "parameter_grid.yaml",
+                "run_config.toml",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ),
+        ),
+    )
+
+    provenance = load_provenance_manifest(result.stage_dir)
+    assert provenance is not None
+    assert provenance["stage_id"] == "mandate"
+    assert provenance["route"] == "route_neutral"
+    assert provenance["program_dir"] == "program/mandate"
+    assert provenance["stage_program_manifest_path"] == "program/mandate/stage_program.yaml"
+    assert provenance["status"] == "success"
+    assert (lineage_root / "01_mandate" / "mandate.md").exists()

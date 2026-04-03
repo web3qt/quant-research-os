@@ -681,6 +681,88 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
     assert "Built signal_ready artifacts" in result.stdout
 
 
+def test_build_data_ready_from_mandate_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    mandate_dir = lineage_root / "01_mandate"
+    data_ready_dir = lineage_root / "02_data_ready"
+    mandate_dir.mkdir(parents=True)
+    data_ready_dir.mkdir(parents=True)
+
+    for name, content in {
+        "mandate.md": "# Mandate\n",
+        "research_scope.md": "# Research Scope\n- Data source: Binance UM futures klines\n- Bar size: 5m\n",
+        "time_split.json": "{}\n",
+        "parameter_grid.yaml": "parameters: []\n",
+        "run_config.toml": 'stage = "mandate"\nlineage_id = "btc_alt_transmission_v1"\n',
+        "artifact_catalog.md": "# Artifact Catalog\n",
+        "field_dictionary.md": "# Field Dictionary\n",
+    }.items():
+        (mandate_dir / name).write_text(content, encoding="utf-8")
+
+    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=False))
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "data_ready_freeze_draft.yaml has unconfirmed groups" in result.stderr
+    assert "extraction_contract" in result.stderr
+
+
+def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
+    lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
+    data_ready_dir = lineage_root / "02_data_ready"
+    signal_ready_dir = lineage_root / "03_signal_ready"
+    data_ready_dir.mkdir(parents=True)
+    signal_ready_dir.mkdir(parents=True)
+
+    for name in [
+        "qc_report.parquet",
+        "dataset_manifest.json",
+        "validation_report.md",
+        "data_contract.md",
+        "dedupe_rule.md",
+        "universe_summary.md",
+        "universe_exclusions.csv",
+        "universe_exclusions.md",
+        "data_ready_gate_decision.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+    for name in [
+        "aligned_bars",
+        "rolling_stats",
+        "pair_stats",
+        "benchmark_residual",
+        "topic_basket_state",
+    ]:
+        (data_ready_dir / name).mkdir()
+
+    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=False))
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "signal_ready_freeze_draft.yaml has unconfirmed groups" in result.stderr
+    assert "signal_expression" in result.stderr
+
+
 def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "build_mandate_from_intake.py"

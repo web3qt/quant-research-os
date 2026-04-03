@@ -1893,6 +1893,24 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
     assert status.failure_reason_summary is None
 
 
+def test_summarize_session_status_review_complete_clears_blocking_reason(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+
+    status = summarize_session_status(
+        lineage_id="btc_leads_alts",
+        lineage_root=lineage_root,
+        current_stage="holdout_validation_review_complete",
+        current_route="time_series_signal",
+        artifacts_written=[],
+        gate_status="REVIEW_COMPLETE",
+        next_action="Archive lineage and stop.",
+    )
+
+    assert status.current_skill == "qros-research-session"
+    assert status.blocking_reason is None
+    assert "terminal review-complete state" in status.why_this_skill
+
+
 def test_run_research_session_exposes_visibility_fields_for_failure_handling(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
