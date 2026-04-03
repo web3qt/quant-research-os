@@ -19,11 +19,17 @@ def test_generator_dry_run_reports_fresh_outputs() -> None:
     assert "FRESH:" in result.stdout
     assert "qros-mandate-review" in result.stdout
     assert "qros-data-ready-review" in result.stdout
+    assert "qros-csf-data-ready-review" in result.stdout
     assert "qros-signal-ready-review" in result.stdout
+    assert "qros-csf-signal-ready-review" in result.stdout
     assert "qros-train-freeze-review" in result.stdout
+    assert "qros-csf-train-freeze-review" in result.stdout
     assert "qros-test-evidence-review" in result.stdout
+    assert "qros-csf-test-evidence-review" in result.stdout
     assert "qros-backtest-ready-review" in result.stdout
+    assert "qros-csf-backtest-ready-review" in result.stdout
     assert "qros-holdout-validation-review" in result.stdout
+    assert "qros-csf-holdout-validation-review" in result.stdout
     assert "STALE:" not in result.stdout
 
 
@@ -32,6 +38,7 @@ def test_generator_dry_run_reports_stale_outputs_when_generated_file_drifts(tmp_
     temp_root = tmp_path / "output-root"
     try:
         shutil.copytree(repo_root / ".agents", temp_root / ".agents")
+        shutil.copytree(repo_root / "skills", temp_root / "skills")
         skill_path = temp_root / ".agents" / "skills" / "qros-mandate-review" / "SKILL.md"
         original = skill_path.read_text(encoding="utf-8")
         skill_path.write_text(original + "\n<!-- drift -->\n", encoding="utf-8")

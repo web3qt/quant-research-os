@@ -382,3 +382,11 @@ session runtime 会按下面这个顺序检查磁盘状态：
 这个设计的目标，是把内部脚本隐藏在一个一致的 skill 流程后面。
 
 这些脚本仍然重要，因为它们是 deterministic runtime；但从用户视角，主要应该通过 `qros-research-session` 交互。
+
+在 review 阶段，session 现在会显式区分三类状态：
+
+- `awaiting_adversarial_review`：runtime 已发出 `adversarial_review_request.yaml`，等待独立 reviewer
+- `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须回到 author lane 修复
+- `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closure 写正式 closure artifacts
+
+也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。

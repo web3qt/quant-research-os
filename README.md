@@ -83,6 +83,14 @@ qros-mandate-review
 ~/.qros/bin/qros-review
 ```
 
+从当前版本开始，所有 `*_review` 阶段都要求**独立的 adversarial reviewer**：
+
+- runtime 会先写入 `adversarial_review_request.yaml`
+- reviewer 必须检查 stage artifact、provenance，以及 lineage-local `program/<stage>/` 源码
+- reviewer 先写 `adversarial_review_result.yaml`
+- 只有 `CLOSURE_READY_*` 结果才能继续运行 `~/.qros/bin/qros-review` 写 closure artifacts
+- `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`
+
 ## 安装后更新
 
 **Claude Code:**

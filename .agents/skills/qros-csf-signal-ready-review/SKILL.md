@@ -1,18 +1,18 @@
 ---
 name: qros-csf-signal-ready-review
-description: Use when csf_signal_ready artifacts have been authored and must pass formal gate review before advancing to csf_train_freeze stage.
+description: Codex review skill for CSF Signal Ready stage verification.
 ---
 
 # CSF Signal Ready Review
 
 ## Purpose
 
-验证 `csf_signal_ready` 是否真的冻结了可复现的 cross-sectional factor 定义、角色和表达合同。
+将已冻结的截面研究语义实例化为可比较、可复现的因子面板合同
 
 ## Shared Inputs
 
 - `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `docs/review-sop/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
@@ -20,21 +20,20 @@ description: Use when csf_signal_ready artifacts have been authored and must pas
 ## Required Inputs
 
 Required inputs:
-- csf_data_ready frozen outputs
-- `research_route.yaml`
-- 面板底座与基础准入语义
+- 已冻结的 csf_data_ready 输出
+- 因子表达式或多因子组合草案
+- 因子方向与时间语义提案
 
 ## Required Outputs
 
 Required outputs:
-- `factor_panel.parquet`
-- `factor_manifest.yaml`
-- `factor_coverage.parquet`
-- `factor_contract.md`
-- `factor_field_dictionary.md`
-- `signal_gate_decision.md`
-- `artifact_catalog.md`
-- `field_dictionary.md`
+- factor_panel.parquet
+- factor_manifest.yaml
+- factor_field_dictionary.md
+- factor_coverage_report.parquet
+- factor_contract.md
+- artifact_catalog.md
+- field_dictionary.md
 
 ## Formal Gate
 
@@ -42,32 +41,37 @@ Stage: CSF Signal Ready
 
 Formal gate summary:
 Must pass all of:
-- `factor_role`、`factor_structure`、`portfolio_expression` 与 `neutralization_policy` 已显式冻结
-- factor panel 已生成，正式对象可复现且可比较
-- 缺失、覆盖、方向与组合公式语义已显式保留
-- factor_manifest 与 factor_coverage 已生成
-- required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+- factor_id / factor_version / factor_direction 已冻结
+- factor_panel 可唯一表示同一时点不同资产的因子值
+- 所有输入字段都来自 csf_data_ready
+- 多因子组合公式是确定性的
+- 缺失值、coverage、eligibility 传递规则已写清
+- 因子方向明确，不允许到 test/backtest 再解释
 Must fail none of:
-- 因子定义回写到 data_ready
-- 把面板当成时序单信号
-- 多因子组合权重在本阶段依赖训练结果临时学习
-- 因子方向或组合表达无法解释
+- 因子定义依赖 train/test/backtest 结果回写
+- factor_panel 无法稳定重建
+- 多因子组合权重在后续阶段才学习
+- factor_direction 不清楚
+- eligibility 与 factor computation 混成一团
+- test 才知道的 quantile / cutoff 被偷写回 signal
 
 ## Checklist
 
 Stage checklist:
-- [blocking] factor_role 已冻结，且与研究路线一致
-- [blocking] factor_structure 已冻结，且单因子/多因子语义明确
-- [blocking] portfolio_expression 已冻结，且与后续组合表达一致
-- [blocking] neutralization_policy 已冻结，group taxonomy 若启用已版本化
-- [blocking] factor panel 可复现
-- [reservation] 如有 skipped factor 或依赖关系，已显式记录
+- [blocking] factor_role、factor_structure、portfolio_expression、neutralization_policy 均来自 mandate 冻结；non-standalone 具备 target_strategy_reference，group_neutral 具备 group_taxonomy_reference
+- [blocking] factor_id、factor_version、factor_direction 已冻结
+- [blocking] factor_panel 以统一面板主键唯一表示同一时点不同资产的因子值
+- [blocking] raw_factor_fields、derived_factor_fields 和 final_score_field 已写清
+- [blocking] 多因子组合公式是确定性的，不依赖 train-learned weights
+- [blocking] 缺失值策略、coverage contract 和 eligibility 传递规则已冻结
+- [blocking] 若需要组内排序或组中性化，factor group context 已冻结
+- [blocking] 不得把过滤器语义伪装成独立 alpha 语义
 
 ## Audit-Only Items
 
 Audit-only items:
-- 个别因子覆盖偏弱但未触发正式失败
-- 组合公式是否足够经济
+- 因子命名是否足够可读
+- 多因子组合描述是否清楚
 
 ## Closure Artifacts
 
@@ -75,9 +79,56 @@ Audit-only items:
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Reviewer Findings File
+## Mandatory Adversarial Review Inputs
 
-Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+- `adversarial_review_request.yaml`
+- lineage-local stage program source under the runtime-declared `required_program_dir`
+- stage provenance in `program_execution_manifest.json`
+
+## Mandatory Adversarial Reviewer Contract
+
+You are the adversarial reviewer lane, not the original author.
+
+Before any closure artifacts can exist:
+
+1. Inspect `adversarial_review_request.yaml`
+2. Verify your reviewer identity differs from `author_identity`
+3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+4. Inspect the required artifacts and provenance named in the request
+5. Write `adversarial_review_result.yaml`
+
+`adversarial_review_result.yaml` must include at least:
+
+- `review_cycle_id`
+- `reviewer_identity`
+- `reviewer_role`
+- `reviewer_session_id`
+- `reviewer_mode: adversarial`
+- `review_loop_outcome`
+- `reviewed_program_dir`
+- `reviewed_program_entrypoint`
+- `reviewed_artifact_paths`
+- `reviewed_provenance_paths`
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+
+Allowed `review_loop_outcome` values:
+
+- `FIX_REQUIRED`
+- `CLOSURE_READY_PASS`
+- `CLOSURE_READY_CONDITIONAL_PASS`
+- `CLOSURE_READY_PASS_FOR_RETRY`
+- `CLOSURE_READY_RETRY`
+- `CLOSURE_READY_NO_GO`
+- `CLOSURE_READY_CHILD_LINEAGE`
+
+`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+## Optional Reviewer Findings File
+
+You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
 
 Minimum expected fields:
 
@@ -100,25 +151,26 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 
 - Default rollback stage: csf_signal_ready
-- Allowed modification: 因子身份
-- Allowed modification: 因子结构
-- Allowed modification: 组合表达
-- Allowed modification: 中性化策略
-- Must open child lineage when: 想改变研究路线或角色定义
+- Allowed modification: 澄清文档表述
+- Allowed modification: 补全缺失 artifact
+- Allowed modification: 修正因子方向与组合公式
+- Must open child lineage when: 因子结构从截面改为时序
+- Must open child lineage when: 因子角色发生实质变化
 
 ## Downstream Permissions
 
 - May advance to: csf_train_freeze
-- Frozen output consumable by next stage: `factor_panel.parquet`
-- Frozen output consumable by next stage: `factor_manifest.yaml`
-- Frozen output consumable by next stage: `factor_coverage.parquet`
-- Frozen output consumable by next stage: `factor_contract.md`
-- Next stage must not consume/re-estimate: 面板准入语义
-- Next stage must not consume/re-estimate: 因子身份
+- Frozen output consumable by next stage: factor_panel.parquet
+- Frozen output consumable by next stage: factor_manifest.yaml
+- Frozen output consumable by next stage: factor_coverage_report.parquet
+- Next stage must not consume/re-estimate: 未冻结的 train 尺子
 
 ## Verdict Flow
 
@@ -127,7 +179,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 3. Load the stage checklist
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
-6. Record audit-only findings after that
-7. Save `review_findings.yaml`
-8. Run `~/.qros/bin/qros-review`
-9. Review the generated closure artifacts
+6. Inspect the lineage-local source code for this stage
+7. Record audit-only findings after that
+8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
+9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
+10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
+11. Review the generated closure artifacts

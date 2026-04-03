@@ -1,18 +1,18 @@
 ---
 name: qros-csf-test-evidence-review
-description: Use when csf_test_evidence artifacts have been authored and must pass formal gate review before advancing to csf_backtest_ready stage.
+description: Codex review skill for CSF Test Evidence stage verification.
 ---
 
 # CSF Test Evidence Review
 
 ## Purpose
 
-验证 `csf_test_evidence` 是否真的把 cross-sectional factor 的证据层与候选冻结清楚。
+在独立样本里验证截面因子排序能力或 filter / combo 条件改善能力
 
 ## Shared Inputs
 
 - `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `docs/review-sop/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
@@ -20,23 +20,18 @@ description: Use when csf_test_evidence artifacts have been authored and must pa
 ## Required Inputs
 
 Required inputs:
-- csf_train_freeze frozen outputs
-- `selected_factor_spec.json`
-- 面板底座与训练窗冻结尺子
+- 已冻结的 csf_train_freeze 输出
+- 独立测试窗
+- factor_role / target_strategy_reference
 
 ## Required Outputs
 
 Required outputs:
-- `rank_ic_timeseries.parquet`
-- `bucket_returns.parquet`
-- `admissibility_report.parquet`
-- `factor_selection.csv`
-- `factor_selection.parquet`
-- `selected_factor_spec.json`
-- `test_gate_table.csv`
-- `test_gate_decision.md`
-- `artifact_catalog.md`
-- `field_dictionary.md`
+- csf_test_gate_table.csv
+- csf_selected_variants_test.csv
+- csf_test_contract.md
+- artifact_catalog.md
+- field_dictionary.md
 
 ## Formal Gate
 
@@ -44,30 +39,34 @@ Stage: CSF Test Evidence
 
 Formal gate summary:
 Must pass all of:
-- standalone_alpha 与 filter/combo 的证据语义已分开
-- 独立样本统计证据已生成
-- selected_factor_spec 已冻结，且下游可直接消费
-- required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
+- 只复用 csf_train_freeze 的 frozen rules
+- `standalone_alpha` 使用 Rank IC / ICIR / bucket spread / monotonicity / breadth / stability
+- `regime_filter / combo_filter` 使用 gated vs ungated 改善证据
+- 全量 test ledger 保留
+- selected / rejected variants 有显式记账
 Must fail none of:
-- 用 test 结果回写 train 尺子
-- 只保留赢家而不保留可追溯的选择过程
-- 把 filter/combo 当成 standalone alpha 去审
-- 证据层不完整却宣布进入 backtest
+- test 内重估 train 尺子
+- 新增未冻结 variant
+- 看 backtest 后回写 selected_variants_test
+- 只保留通过者，不保留全量 ledger
+- 搜索量较大却不做 multiple testing 校正
 
 ## Checklist
 
 Stage checklist:
-- [blocking] standalone_alpha / filter-combo 证据已分流
-- [blocking] rank IC、bucket returns 或 gated compare 已生成
-- [blocking] admissibility 结果已生成
-- [blocking] selected_factor_spec 已冻结
-- [reservation] 若存在弱覆盖或 skipped variant，已显式记录
+- [blocking] standalone_alpha 场景下，Rank IC、ICIR、分组收益、单调性、breadth 和子窗口稳定性均已检查
+- [blocking] regime_filter / combo_filter 场景下，target strategy reference 和 gated vs ungated 对比已冻结
+- [blocking] test 使用的 preprocess、neutralization、bucket 和 rebalance 规则全部来自 train freeze
+- [blocking] selected variants 和 rejected variants 都已保留，并可追溯决策理由
+- [blocking] 未在 test 重估 train 尺子，也未新增未冻结的 variant
+- [blocking] 若使用 filter 语义，check 结果体现条件改善而不是独立赚钱
+- [reservation] 若存在多重测试或多个候选 variant，已保留完整 ledger 而非只保留通过项
 
 ## Audit-Only Items
 
 Audit-only items:
-- 个别子窗口稳定性偏弱但不构成阻断
-- factor 选择是否还能进一步收敛
+- 证据表述是否足以让 reviewer 读懂角色差异
+- 样本覆盖是否解释充分
 
 ## Closure Artifacts
 
@@ -75,9 +74,56 @@ Audit-only items:
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Reviewer Findings File
+## Mandatory Adversarial Review Inputs
 
-Before writing closure artifacts, create `review_findings.yaml` in the current `stage_dir`.
+- `adversarial_review_request.yaml`
+- lineage-local stage program source under the runtime-declared `required_program_dir`
+- stage provenance in `program_execution_manifest.json`
+
+## Mandatory Adversarial Reviewer Contract
+
+You are the adversarial reviewer lane, not the original author.
+
+Before any closure artifacts can exist:
+
+1. Inspect `adversarial_review_request.yaml`
+2. Verify your reviewer identity differs from `author_identity`
+3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+4. Inspect the required artifacts and provenance named in the request
+5. Write `adversarial_review_result.yaml`
+
+`adversarial_review_result.yaml` must include at least:
+
+- `review_cycle_id`
+- `reviewer_identity`
+- `reviewer_role`
+- `reviewer_session_id`
+- `reviewer_mode: adversarial`
+- `review_loop_outcome`
+- `reviewed_program_dir`
+- `reviewed_program_entrypoint`
+- `reviewed_artifact_paths`
+- `reviewed_provenance_paths`
+- `blocking_findings`
+- `reservation_findings`
+- `info_findings`
+- `residual_risks`
+
+Allowed `review_loop_outcome` values:
+
+- `FIX_REQUIRED`
+- `CLOSURE_READY_PASS`
+- `CLOSURE_READY_CONDITIONAL_PASS`
+- `CLOSURE_READY_PASS_FOR_RETRY`
+- `CLOSURE_READY_RETRY`
+- `CLOSURE_READY_NO_GO`
+- `CLOSURE_READY_CHILD_LINEAGE`
+
+`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+## Optional Reviewer Findings File
+
+You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
 
 Minimum expected fields:
 
@@ -100,23 +146,25 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NO-GO`: 组织上不支持继续推进当前方案
 - `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
+- `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
+- `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
+- `DROP`: 不值得投入进一步研究预算，终止该想法
 
 ## Rollback Rules
 
 - Default rollback stage: csf_test_evidence
-- Allowed modification: 证据呈现
-- Allowed modification: 候选冻结说明
-- Allowed modification: admissibility 审计
-- Must open child lineage when: 想修改 train 尺子或因子定义
+- Allowed modification: 澄清文档表述
+- Allowed modification: 补全缺失 artifact
+- Allowed modification: 修正证据表述
+- Must open child lineage when: factor_role 变化导致证据语义改变
+- Must open child lineage when: 证据本体从截面排序改为别的任务
 
 ## Downstream Permissions
 
 - May advance to: csf_backtest_ready
-- Frozen output consumable by next stage: `selected_factor_spec.json`
-- Frozen output consumable by next stage: `factor_selection.csv`
-- Frozen output consumable by next stage: `factor_selection.parquet`
-- Next stage must not consume/re-estimate: train 尺子
-- Next stage must not consume/re-estimate: 因子角色与组合表达
+- Frozen output consumable by next stage: csf_selected_variants_test.csv
+- Frozen output consumable by next stage: csf_test_contract.md
+- Next stage must not consume/re-estimate: 未冻结的 test 搜索轨迹
 
 ## Verdict Flow
 
@@ -125,7 +173,9 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 3. Load the stage checklist
 4. Check required inputs and outputs
 5. Evaluate the formal gate first
-6. Record audit-only findings after that
-7. Save `review_findings.yaml`
-8. Run `~/.qros/bin/qros-review`
-9. Review the generated closure artifacts
+6. Inspect the lineage-local source code for this stage
+7. Record audit-only findings after that
+8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
+9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
+10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
+11. Review the generated closure artifacts
