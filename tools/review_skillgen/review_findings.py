@@ -18,7 +18,8 @@ def _normalize_list(data: dict[str, Any], key: str) -> list[str]:
 
 
 def load_review_findings(path: str | Path) -> dict[str, Any]:
-    with Path(path).open("r", encoding="utf-8") as fh:
+    findings_path = Path(path)
+    with findings_path.open("r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
 
     if data is None:
@@ -41,3 +42,20 @@ def load_review_findings(path: str | Path) -> dict[str, Any]:
         "downstream_permissions": _normalize_list(data, "downstream_permissions"),
         "rollback_stage": data.get("rollback_stage"),
     }
+
+
+def load_review_findings_if_present(path: str | Path) -> dict[str, Any]:
+    findings_path = Path(path)
+    if not findings_path.exists():
+        return {
+            "reviewer_identity": "",
+            "recommended_verdict": None,
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "downstream_permissions": [],
+            "rollback_stage": None,
+        }
+    return load_review_findings(findings_path)
