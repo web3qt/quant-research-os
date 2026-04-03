@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 from typing import Any
 
+from tools.review_skillgen.adversarial_review_contract import (
+    ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    FIX_REQUIRED_OUTCOME,
+    ReviewerRuntimeIdentity,
+    assign_runtime_reviewer_to_request,
+    load_adversarial_review_request,
+    load_adversarial_review_result,
+    resolve_closure_verdict,
+    validate_result_against_request,
+)
 from tools.review_skillgen.closure_models import build_review_payload
 from tools.review_skillgen.closure_writer import write_closure_artifacts
 from tools.review_skillgen.context_inference import infer_review_context
 from tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
-from tools.review_skillgen.review_findings import load_review_findings
+from tools.review_skillgen.review_findings import load_review_findings_if_present
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -83,30 +95,59 @@ def _check_stage_evidence(stage_dir: Path, checks: list[dict[str, Any]]) -> tupl
 
 
 def _resolve_verdict(
+    review_result: dict[str, Any],
     reviewer_findings: dict[str, Any],
     blocking_findings: list[str],
     reservation_findings: list[str],
-) -> str:
+) -> tuple[str | None, str]:
+    review_loop_outcome = review_result["review_loop_outcome"]
     recommended = reviewer_findings.get("recommended_verdict")
+    final_verdict = resolve_closure_verdict(review_loop_outcome)
+    if review_loop_outcome == FIX_REQUIRED_OUTCOME:
+        return None, FIX_REQUIRED_OUTCOME
+
     if recommended:
         if blocking_findings and recommended in {"PASS", "CONDITIONAL PASS"}:
-            return "RETRY"
+            return "RETRY", "CLOSURE_READY_RETRY"
         if recommended in {"PASS FOR RETRY", "RETRY"}:
             if not reviewer_findings.get("rollback_stage") or not reviewer_findings.get("allowed_modifications"):
                 raise ValueError(f"{recommended} requires rollback_stage and allowed_modifications")
-        return recommended
+        return recommended, review_loop_outcome
 
     if blocking_findings:
-        return "RETRY"
+        return "RETRY", review_loop_outcome
     if reservation_findings:
-        return "CONDITIONAL PASS"
-    return "PASS"
+        return final_verdict or "CONDITIONAL PASS", review_loop_outcome
+    return final_verdict or "PASS", review_loop_outcome
+
+
+def _runtime_identity(
+    *,
+    reviewer_identity: str | None,
+    reviewer_role: str | None,
+    reviewer_session_id: str | None,
+    reviewer_mode: str | None,
+) -> ReviewerRuntimeIdentity:
+    resolved_identity = reviewer_identity or os.environ.get("QROS_REVIEWER_ID") or "codex-reviewer"
+    resolved_role = reviewer_role or os.environ.get("QROS_REVIEWER_ROLE") or "reviewer"
+    resolved_session = reviewer_session_id or os.environ.get("QROS_REVIEWER_SESSION_ID") or "local-review-session"
+    resolved_mode = reviewer_mode or os.environ.get("QROS_REVIEWER_MODE") or "adversarial"
+    return ReviewerRuntimeIdentity(
+        reviewer_identity=resolved_identity,
+        reviewer_role=resolved_role,
+        reviewer_session_id=resolved_session,
+        reviewer_mode=resolved_mode,
+    )
 
 
 def run_stage_review(
     *,
     cwd: Path | None = None,
     explicit_context: dict[str, Any] | None = None,
+    reviewer_identity: str | None = None,
+    reviewer_role: str | None = None,
+    reviewer_session_id: str | None = None,
+    reviewer_mode: str | None = None,
 ) -> dict[str, Any]:
     if explicit_context is not None:
         inferred = infer_review_context(Path(explicit_context["stage_dir"]))
@@ -126,7 +167,23 @@ def run_stage_review(
     stage_contract = gates["stages"][stage]
     stage_checks = checklist["stages"][stage]
 
-    reviewer_findings = load_review_findings(stage_dir / "review_findings.yaml")
+    request_path = stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    result_path = stage_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
+    request_payload = load_adversarial_review_request(request_path)
+    runtime_identity = _runtime_identity(
+        reviewer_identity=reviewer_identity,
+        reviewer_role=reviewer_role,
+        reviewer_session_id=reviewer_session_id,
+        reviewer_mode=reviewer_mode,
+    )
+    request_payload = assign_runtime_reviewer_to_request(request_path, request_payload, runtime_identity)
+    review_result = load_adversarial_review_result(result_path)
+    validate_result_against_request(
+        request_payload=request_payload,
+        result_payload=review_result,
+        runtime_identity=runtime_identity,
+    )
+    reviewer_findings = load_review_findings_if_present(stage_dir / "review_findings.yaml")
 
     missing_required_outputs = _check_required_outputs(stage_dir, stage_contract.get("required_outputs", []))
     blocking_findings = [f"Missing required output: {item}" for item in missing_required_outputs]
@@ -139,19 +196,75 @@ def run_stage_review(
     reservation_findings.extend(reviewer_findings["reservation_findings"])
 
     blocking_findings.extend(reviewer_findings["blocking_findings"])
+    blocking_findings.extend(review_result["blocking_findings"])
     info_findings = list(reviewer_findings["info_findings"])
+    info_findings.extend(review_result["info_findings"])
     residual_risks = list(reviewer_findings["residual_risks"])
+    residual_risks.extend(review_result["residual_risks"])
 
-    final_verdict = _resolve_verdict(reviewer_findings, blocking_findings, reservation_findings)
-    rollback_stage = reviewer_findings.get("rollback_stage") or stage_contract.get("rollback_rules", {}).get(
+    final_verdict, review_loop_outcome = _resolve_verdict(
+        review_result,
+        reviewer_findings,
+        blocking_findings,
+        reservation_findings,
+    )
+    rollback_stage = review_result.get("rollback_stage") or reviewer_findings.get("rollback_stage") or stage_contract.get("rollback_rules", {}).get(
         "default_rollback_stage"
     )
-    allowed_modifications = reviewer_findings.get("allowed_modifications") or list(
+    allowed_modifications = review_result.get("allowed_modifications") or reviewer_findings.get("allowed_modifications") or list(
         stage_contract.get("rollback_rules", {}).get("allowed_modifications", [])
     )
-    downstream_permissions = reviewer_findings.get("downstream_permissions") or list(
+    downstream_permissions = review_result.get("downstream_permissions") or reviewer_findings.get("downstream_permissions") or list(
         stage_contract.get("downstream_permissions", {}).get("may_advance_to", [])
     )
+
+    common_payload = {
+        "lineage_id": lineage_id,
+        "stage": stage,
+        "review_loop_outcome": review_loop_outcome,
+        "stage_status": review_loop_outcome,
+        "blocking_findings": blocking_findings,
+        "reservation_findings": reservation_findings,
+        "info_findings": info_findings,
+        "residual_risks": residual_risks,
+        "reviewer_identity": review_result["reviewer_identity"],
+        "reviewer_role": review_result["reviewer_role"],
+        "reviewer_session_id": review_result["reviewer_session_id"],
+        "reviewer_mode": review_result["reviewer_mode"],
+        "author_identity": request_payload["author_identity"],
+        "author_session_id": request_payload["author_session_id"],
+        "rollback_stage": rollback_stage,
+        "allowed_modifications": allowed_modifications,
+        "downstream_permissions": downstream_permissions,
+        "review_scope": {
+            "required_program_dir": request_payload["required_program_dir"],
+            "required_program_entrypoint": request_payload["required_program_entrypoint"],
+            "required_artifact_paths": request_payload["required_artifact_paths"],
+            "required_provenance_paths": request_payload["required_provenance_paths"],
+            "reviewed_program_dir": review_result["reviewed_program_dir"],
+            "reviewed_program_entrypoint": review_result["reviewed_program_entrypoint"],
+            "reviewed_artifact_paths": review_result["reviewed_artifact_paths"],
+            "reviewed_provenance_paths": review_result["reviewed_provenance_paths"],
+        },
+        "adversarial_review_request": request_payload,
+        "adversarial_review_result": review_result,
+        "contract_source": str(GATES_PATH.relative_to(ROOT)),
+        "checklist_source": str(CHECKLIST_PATH.relative_to(ROOT)),
+        "required_outputs_checked": {
+            "expected": list(stage_contract.get("required_outputs", [])),
+            "missing": missing_required_outputs,
+        },
+        "evidence_summary": {
+            "recommended_gate_doc": stage_checks.get("recommended_gate_doc"),
+            "review_summary": review_result.get("review_summary"),
+        },
+    }
+
+    if review_loop_outcome == FIX_REQUIRED_OUTCOME:
+        return {
+            **common_payload,
+            "final_verdict": None,
+        }
 
     payload = build_review_payload(
         lineage_id=lineage_id,
@@ -162,19 +275,23 @@ def run_stage_review(
         reservation_findings=reservation_findings,
         info_findings=info_findings,
         residual_risks=residual_risks,
-        reviewer_identity=reviewer_findings["reviewer_identity"],
+        reviewer_identity=review_result["reviewer_identity"],
+        reviewer_role=review_result["reviewer_role"],
+        reviewer_session_id=review_result["reviewer_session_id"],
+        reviewer_mode=review_result["reviewer_mode"],
+        author_identity=request_payload["author_identity"],
+        author_session_id=request_payload["author_session_id"],
+        review_loop_outcome=review_loop_outcome,
         rollback_stage=rollback_stage,
         allowed_modifications=allowed_modifications,
         downstream_permissions=downstream_permissions,
-        contract_source=str(GATES_PATH.relative_to(ROOT)),
-        checklist_source=str(CHECKLIST_PATH.relative_to(ROOT)),
-        required_outputs_checked={
-            "expected": list(stage_contract.get("required_outputs", [])),
-            "missing": missing_required_outputs,
-        },
-        evidence_summary={
-            "recommended_gate_doc": stage_checks.get("recommended_gate_doc"),
-        },
+        review_scope=common_payload["review_scope"],
+        adversarial_review_request=request_payload,
+        adversarial_review_result=review_result,
+        contract_source=common_payload["contract_source"],
+        checklist_source=common_payload["checklist_source"],
+        required_outputs_checked=common_payload["required_outputs_checked"],
+        evidence_summary=common_payload["evidence_summary"],
     )
 
     write_closure_artifacts(

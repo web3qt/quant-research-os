@@ -33,12 +33,19 @@ def _latest_review_pack(payload: dict[str, Any]) -> dict[str, Any]:
         "stage": payload["stage"],
         "stage_status": payload["stage_status"],
         "final_verdict": payload["final_verdict"],
+        "review_loop_outcome": payload.get("review_loop_outcome"),
+        "author_identity": payload.get("author_identity"),
+        "author_session_id": payload.get("author_session_id"),
         "reviewer_identity": payload.get("reviewer_identity"),
+        "reviewer_role": payload.get("reviewer_role"),
+        "reviewer_session_id": payload.get("reviewer_session_id"),
+        "reviewer_mode": payload.get("reviewer_mode"),
         "review_timestamp_utc": payload["review_timestamp_utc"],
         "blocking_findings": payload["blocking_findings"],
         "reservation_findings": payload["reservation_findings"],
         "info_findings": payload["info_findings"],
         "residual_risks": payload["residual_risks"],
+        "review_scope": payload.get("review_scope", {}),
         "evidence_summary": payload.get("evidence_summary", {}),
     }
 
@@ -52,6 +59,8 @@ def _stage_gate_review(payload: dict[str, Any]) -> dict[str, Any]:
         "rollback_stage": payload.get("rollback_stage"),
         "allowed_modifications": list(payload.get("allowed_modifications", [])),
         "downstream_permissions": list(payload.get("downstream_permissions", [])),
+        "adversarial_review_request": payload.get("adversarial_review_request", {}),
+        "adversarial_review_result": payload.get("adversarial_review_result", {}),
     }
 
 
