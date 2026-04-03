@@ -25,6 +25,37 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         (stage_dir / name).write_text("ok\n", encoding="utf-8")
 
     _write_yaml(stage_dir / "review_findings.yaml", {"reviewer_identity": "codex"})
+    _write_yaml(
+        stage_dir / "adversarial_review_request.yaml",
+        {
+            "review_cycle_id": "review-cycle-1",
+            "lineage_id": "topic_a",
+            "stage": "mandate",
+            "author_identity": "author-agent",
+            "author_session_id": "author-session",
+            "required_program_dir": "program/mandate",
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": ["mandate.md", "research_scope.md"],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_reviewer_mode": "adversarial",
+        },
+    )
+    _write_yaml(
+        stage_dir / "adversarial_review_result.yaml",
+        {
+            "review_cycle_id": "review-cycle-1",
+            "reviewer_identity": "codex-reviewer",
+            "reviewer_role": "reviewer",
+            "reviewer_session_id": "local-review-session",
+            "reviewer_mode": "adversarial",
+            "reviewed_program_dir": "program/mandate",
+            "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_artifact_paths": ["mandate.md", "research_scope.md"],
+            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "review_loop_outcome": "CLOSURE_READY_PASS",
+        },
+    )
+    (stage_dir / "program_execution_manifest.json").write_text("ok\n", encoding="utf-8")
     return stage_dir
 
 

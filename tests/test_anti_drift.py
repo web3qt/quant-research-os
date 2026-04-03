@@ -44,7 +44,7 @@ def test_canonical_snapshot_preserves_semantic_fields_for_review_stage() -> None
     assert "dataset_manifest.json" in snapshot.required_artifacts
     assert snapshot.downstream_permissions == ("signal_ready",)
     assert snapshot.blocking_reasons == (
-        "data_ready review closure is still incomplete.",
+        "data_ready is ready for independent adversarial review, but adversarial_review_request.yaml is missing.",
         "dataset manifest missing peer coverage note",
     )
 

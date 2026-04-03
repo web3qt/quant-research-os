@@ -1,12 +1,12 @@
 {
   "fixture_id": "mandate-review-replay",
-  "input_digest": "9e002cdb6302fca9354b663d6709f3adf341e1f0b8c24a2e25008be11c7556c5",
+  "input_digest": "21c3bced42c366ed87bed7634f46e5e6fefb38e4b017ecf828d8da328b1c07b5",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
   "route_skill": "qros-mandate-review",
   "stage_id": "mandate",
   "session_stage": "mandate_review",
-  "formal_decision": "REVIEW_PENDING",
+  "formal_decision": "ADVERSARIAL_REVIEW_PENDING",
   "required_artifacts": [
     "mandate.md",
     "research_scope.md",
@@ -21,9 +21,9 @@
     "csf_data_ready"
   ],
   "blocking_reasons": [
-    "mandate review closure is still incomplete."
+    "mandate is ready for independent adversarial review, but adversarial_review_request.yaml is missing."
   ],
-  "lineage_transition": "Write review_findings.yaml and run mandate review",
+  "lineage_transition": "Produce adversarial_review_result.yaml via independent adversarial review.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::mandate_review"
   ],

@@ -81,13 +81,13 @@ Audit-only items:
 
 ## Mandatory Adversarial Reviewer Contract
 
-You are the adversarial reviewer lane, not the original author.
+You are the adversarial reviewer-agent lane, not the original author.
 
 Before any closure artifacts can exist:
 
 1. Inspect `adversarial_review_request.yaml`
 2. Verify your reviewer identity differs from `author_identity`
-3. Inspect the lineage-local stage program source in `required_program_dir` and its `required_program_entrypoint`
+3. Perform source-code inspection of the lineage-local stage program in `required_program_dir` and its `required_program_entrypoint`
 4. Inspect the required artifacts and provenance named in the request
 5. Write `adversarial_review_result.yaml`
 
@@ -119,6 +119,8 @@ Allowed `review_loop_outcome` values:
 - `CLOSURE_READY_CHILD_LINEAGE`
 
 `FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+
+The closure-ready adverse verdict path includes `CLOSURE_READY_NO_GO`, `CLOSURE_READY_CHILD_LINEAGE`, and any equivalent closure-ready terminal failure outcome; these may proceed to deterministic closure writing and downstream failure routing.
 
 ## Optional Reviewer Findings File
 

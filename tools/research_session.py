@@ -1739,7 +1739,7 @@ def _review_substate(
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Run {author_skill} to address findings, then rerun {review_skill}.",
+            f"Run {author_skill} to fix findings, then rerun {review_skill}.",
         )
     return (
         "awaiting_review_closure",
@@ -2308,7 +2308,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (
             "AUTHOR_FIX_REQUIRED",
-            "Address adversarial review findings in the author lane, then resubmit for review.",
+            "Fix adversarial review findings in the author lane, then resubmit for review.",
         )
     return (
         "REVIEW_CLOSURE_PENDING",
