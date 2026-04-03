@@ -156,6 +156,63 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
     assert not (stage_dir / "stage_completion_certificate.yaml").exists()
 
 
+def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, author_identity="author-agent")
+    _write_adversarial_review_result(
+        stage_dir,
+        reviewer_identity="reviewer-agent",
+        review_loop_outcome="CLOSURE_READY_PASS",
+        reviewer_mode="observer",
+    )
+    _write_yaml(
+        stage_dir / "review_findings.yaml",
+        {
+            "reviewer_identity": "reviewer-agent",
+            "recommended_verdict": "PASS",
+        },
+    )
+
+    with pytest.raises(ValueError, match="adversarial"):
+        run_stage_review(cwd=stage_dir)
+
+
+def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, author_identity="author-agent")
+    _write_adversarial_review_result(
+        stage_dir,
+        reviewer_identity="reviewer-agent",
+        review_loop_outcome="CLOSURE_READY_PASS",
+    )
+    _write_yaml(
+        stage_dir / "adversarial_review_result.yaml",
+        {
+            "review_cycle_id": "review-cycle-1",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_session_id": "reviewer-session",
+            "reviewer_mode": "adversarial",
+            "reviewed_program_scope": {
+                "program_dir": "program/unapproved_scope",
+                "program_entrypoint": "alternate.py",
+            },
+            "reviewed_artifact_paths": ["mandate.md", "research_scope.md"],
+            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "review_loop_outcome": "CLOSURE_READY_PASS",
+        },
+    )
+    _write_yaml(
+        stage_dir / "review_findings.yaml",
+        {
+            "reviewer_identity": "reviewer-agent",
+            "recommended_verdict": "PASS",
+        },
+    )
+
+    with pytest.raises(ValueError, match="program scope|required_program"):
+        run_stage_review(cwd=stage_dir)
+
+
 @pytest.mark.parametrize(
     ("lineage_id", "stage_key", "stage_dir_name", "expected_stage", "expected_skill"),
     [
