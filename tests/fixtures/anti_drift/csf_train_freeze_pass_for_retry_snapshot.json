@@ -23,7 +23,7 @@
   "blocking_reasons": [
     "Normal progression is blocked by review verdict PASS FOR RETRY."
   ],
-  "lineage_transition": "Enter failure handling for csf_train_freeze_review via qros-stage-failure-handler",
+  "lineage_transition": "Enter failure handling for csf_train_freeze via qros-stage-failure-handler",
   "evidence_refs": [
     "tools/anti_drift_scenarios_failure.py::csf_train_freeze_pass_for_retry"
   ],

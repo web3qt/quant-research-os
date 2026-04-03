@@ -25,7 +25,7 @@
   "blocking_reasons": [
     "Normal progression is blocked by review verdict CHILD LINEAGE."
   ],
-  "lineage_transition": "Enter failure handling for csf_data_ready_review via qros-stage-failure-handler",
+  "lineage_transition": "Enter failure handling for csf_data_ready via qros-stage-failure-handler",
   "evidence_refs": [
     "tools/anti_drift_scenarios_failure.py::csf_data_ready_child_lineage"
   ],

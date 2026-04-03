@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 def test_project_bootstrap_files_exist() -> None:
+    assert Path("AGENTS.md").exists()
     assert Path("pyproject.toml").exists()
     assert Path("README.md").exists()
     assert Path("setup").exists()
@@ -28,6 +29,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("tools/train_runtime.py").exists()
     assert Path("docs/intake-sop/qualification_scorecard_schema.yaml").exists()
     assert Path("docs/intake-sop/idea_gate_decision_schema.yaml").exists()
+    assert Path("docs/check-sop/review_checklist_master.yaml").exists()
     assert Path("docs/experience/installation.md").exists()
     assert Path("docs/README.codex.md").exists()
     assert Path("docs/experience/quickstart-codex.md").exists()

@@ -33,8 +33,19 @@ else
 fi
 
 cd "$PROJECT_ROOT"
+set +e
 if [ "${#ARGS[@]}" -gt 0 ]; then
-  exec "$PYTHON_BIN" "$REPO_ROOT/scripts/run_research_session.py" --outputs-root "$PROJECT_ROOT/outputs" "${ARGS[@]}"
+  "$PYTHON_BIN" "$REPO_ROOT/scripts/run_research_session.py" --outputs-root "$PROJECT_ROOT/outputs" "${ARGS[@]}"
+else
+  "$PYTHON_BIN" "$REPO_ROOT/scripts/run_research_session.py" --outputs-root "$PROJECT_ROOT/outputs"
 fi
-
-exec "$PYTHON_BIN" "$REPO_ROOT/scripts/run_research_session.py" --outputs-root "$PROJECT_ROOT/outputs"
+STATUS=$?
+set -e
+case "$STATUS" in
+  2|3|4|5|6|7|8)
+    exit 0
+    ;;
+  *)
+    exit "$STATUS"
+    ;;
+esac

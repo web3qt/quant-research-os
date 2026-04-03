@@ -21,7 +21,7 @@
   "blocking_reasons": [
     "Normal progression is blocked by review verdict NO-GO."
   ],
-  "lineage_transition": "Enter failure handling for holdout_validation_review via qros-stage-failure-handler",
+  "lineage_transition": "Enter failure handling for holdout_validation via qros-stage-failure-handler",
   "evidence_refs": [
     "tools/anti_drift_scenarios_failure.py::holdout_validation_no_go"
   ],
