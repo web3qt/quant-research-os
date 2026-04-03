@@ -5,6 +5,8 @@ import argparse
 from pathlib import Path
 import sys
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -21,9 +23,22 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _require_confirmed_freeze_groups(lineage_root: Path) -> None:
+    draft_path = lineage_root / "02_data_ready" / "data_ready_freeze_draft.yaml"
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
+    groups = payload.get("groups", {})
+    unconfirmed = sorted(name for name, group in groups.items() if not group.get("confirmed"))
+    if unconfirmed:
+        raise StageProgramRuntimeError(
+            "FREEZE_APPROVAL_MISSING",
+            "data_ready_freeze_draft.yaml has unconfirmed groups: " + ", ".join(unconfirmed),
+        )
+
+
 def main() -> int:
     args = _parse_args()
     try:
+        _require_confirmed_freeze_groups(args.lineage_root.resolve())
         result = invoke_stage_if_admitted(
             args.lineage_root.resolve(),
             StageProgramSpec(
