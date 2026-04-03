@@ -6,6 +6,10 @@
 
 用户不需要记多个命令，只要从这一个 skill 开始，让 QROS 判断当前 lineage 处在哪个阶段。
 
+如果你不熟悉阶段里的 grouped freeze 字段，可以把
+`docs/experience/stage-freeze-group-field-guide.md`
+当作 companion 说明文档一起看。它专门解释 `research_intent`、`scope_contract`、`window_contract`、`delivery_contract` 这类通用字段在回答什么问题。
+
 ## First-Wave Boundary
 
 当前版本覆盖：

@@ -15,6 +15,10 @@ In Codex, start with:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
+如果你第一次看到 `research_intent`、`window_contract`、`delivery_contract` 这类 group 名，先看：
+
+- `docs/experience/stage-freeze-group-field-guide.md`
+
 ## 3. Let The Agent Drive The Current Flow
 
 This version of QROS will drive:

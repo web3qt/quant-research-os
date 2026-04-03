@@ -47,3 +47,4 @@ def test_usage_doc_exists() -> None:
     assert Path("docs/experience/closure-artifact-writer-usage.md").exists()
     assert Path("docs/experience/idea-intake-to-mandate-flow.md").exists()
     assert Path("docs/experience/qros-research-session-usage.md").exists()
+    assert Path("docs/experience/stage-freeze-group-field-guide.md").exists()

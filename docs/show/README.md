@@ -137,6 +137,10 @@ flowchart TB
 - review closure，而不是研究员自己宣布通过。
 - lineage control 和 failure handling，而不是静默重试或直接改题。
 
+如果展示时有人追问 `research_intent`、`scope_contract`、`delivery_contract` 这些字段到底是什么意思，可以直接打开：
+
+- `docs/experience/stage-freeze-group-field-guide.md`
+
 ## 为什么重要
 
 - 对组织，它把研究从个人经验驱动的过程，变成可治理、可审计、可追溯的正式流程。

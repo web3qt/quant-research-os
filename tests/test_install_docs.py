@@ -24,3 +24,29 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
     assert "Restart Codex" in combined
     assert "Uninstalling" in combined
+
+
+def test_install_docs_reference_stage_field_guide() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    quickstart = Path("docs/experience/quickstart-codex.md").read_text(encoding="utf-8")
+    session_usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
+    guide = Path("docs/experience/stage-freeze-group-field-guide.md").read_text(encoding="utf-8")
+
+    combined = "\n".join([readme, quickstart, session_usage])
+
+    assert "stage-freeze-group-field-guide.md" in combined
+    assert "research_intent" in guide
+    assert "scope_contract" in guide
+    assert "delivery_contract" in guide
+    assert "| 字段 | 含义 | 为什么需要 | 不该怎么填 |" in guide
+    assert "为什么需要" in guide
+    assert "不该怎么填" in guide
+    assert "param_identity" in guide
+    assert "reuse_contract" in guide
+    assert "best_h" in guide
+    assert "selected_symbols" in guide
+    assert "panel_primary_key" in guide
+    assert "factor_id" in guide
+    assert "search_governance_contract" in guide
+    assert "portfolio_contract" in guide
+    assert "stability_contract" in guide

@@ -92,6 +92,7 @@ The plugin system manages skill discovery and hook injection automatically.
 - [Codex Installation](docs/experience/installation.md)
 - [Quickstart For Codex](docs/experience/quickstart-codex.md)
 - [QROS Research Session Usage](docs/experience/qros-research-session-usage.md)
+- [Stage Freeze Group Field Guide (CN)](docs/experience/stage-freeze-group-field-guide.md)
 
 ## Troubleshooting
 

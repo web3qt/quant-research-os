@@ -13,6 +13,7 @@
 - `README.md`
 - `docs/experience/installation.md`
 - `docs/experience/quickstart-codex.md`
+- `docs/experience/stage-freeze-group-field-guide.md`
 
 ## Flow
 
@@ -105,6 +106,10 @@ qualification 至少评估以下 6 项：
 - `scope_contract`
 - `data_contract`
 - `execution_contract`
+
+如果只记得组名，不确定字段该怎么理解，直接查：
+
+- `docs/experience/stage-freeze-group-field-guide.md`
 
 每一组都要先回显 freeze draft，再确认。
 
