@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools.research_session import run_research_session
+from tools.research_session_reflection import build_data_ready_reflection, render_reflection_lines
 from tools.anti_drift import canonical_snapshot_from_session_context
 
 EXIT_CODES = {
@@ -234,6 +235,14 @@ def main() -> int:
         print("Artifacts written:")
         for item in status.artifacts_written:
             print(f"- {item}")
+    reflection = build_data_ready_reflection(
+        lineage_root=status.lineage_root,
+        current_stage=status.current_stage,
+        current_route=status.current_route,
+    )
+    if reflection is not None:
+        for line in render_reflection_lines(reflection):
+            print(line)
     return _exit_code(status)
 
 

@@ -548,6 +548,7 @@ def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
     assert payload["current_stage"] == "idea_intake_confirmation_pending"
     assert payload["current_skill"] == "qros-idea-intake-author"
     assert payload["lineage_root"].endswith("btc_leads_high_liquidity_alts_after_shock_events")
+    assert "reflection" not in payload
     assert "🧭" not in result.stdout
 
 
@@ -582,6 +583,7 @@ def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
     assert "artifact_catalog.md" in payload["required_artifacts"]
     assert "scripts/run_research_session.py" in payload["evidence_refs"]
     assert "🧭" not in result.stdout
+    assert "Data Ready Reflection" not in result.stdout
 
 
 def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted(tmp_path: Path) -> None:
@@ -1069,6 +1071,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     assert "Blocking reason: data_ready freeze confirmation is still incomplete." in result.stdout
     assert "Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
     assert "Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts" in result.stdout
+    assert "Data Ready Reflection:" not in result.stdout
 
 
 def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1132,6 +1135,7 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
     assert result.returncode == 7
     assert "Current stage: data_ready_review" in result.stdout
     assert (lineage_root / "02_data_ready" / "data_contract.md").exists()
+    assert "Data Ready Reflection:" not in result.stdout
 
 
 def test_run_research_session_reports_signal_ready_next_group_after_data_ready_review_complete(
@@ -1141,8 +1145,16 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     script_path = repo_root / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = lineage_root / "02_data_ready"
+    mandate_dir.mkdir(parents=True)
     data_ready_dir.mkdir(parents=True)
+    _write_yaml(
+        mandate_dir / "research_route.yaml",
+        {
+            "research_route": "time_series_signal",
+        },
+    )
     for name in [
         "qc_report.parquet",
         "dataset_manifest.json",
@@ -1188,6 +1200,11 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     assert result.returncode == 2
     assert "Current stage: signal_ready_confirmation_pending" in result.stdout
     assert "Next action: Complete signal_ready freeze group: signal_expression" in result.stdout
+    assert "Data Ready Reflection:" in result.stdout
+    assert "Data Coverage And Gaps:" in result.stdout
+    assert "QC / Anomaly Summary:" in result.stdout
+    assert "Artifact Directory And Key Files:" in result.stdout
+    assert "stage directory: outputs/btc_leads_alts/02_data_ready" in result.stdout
 
 
 def test_run_research_session_builds_signal_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:

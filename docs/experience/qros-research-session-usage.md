@@ -109,6 +109,54 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
+当 time-series 主线的 `data_ready` 已经完成、session 进入 `signal_ready_confirmation_pending` 时，`qros-session` 还会在同一块终端面板里追加一个 `Data Ready Reflection` 区域。这个区域是给研究员看的辅助反思层，不是 review verdict，也不会自动推进阶段。它的目标只是让研究员在 1 到 2 分钟内看懂当前 `data_ready` 产物是否值得继续追问。
+
+第一版 reflection 只展示 3 个固定块：
+
+- `Data Coverage And Gaps`
+- `QC / Anomaly Summary`
+- `Artifact Directory And Key Files`
+
+简化示例：
+
+```text
+Lineage: btc_leads_alts
+Orchestrator: qros-research-session
+Current stage: signal_ready_confirmation_pending
+Current active skill: qros-signal-ready-author
+Research route: time_series_signal
+Stage status: awaiting_freeze_approval
+Blocking reason code: FREEZE_APPROVAL_MISSING
+Next action: Complete signal_ready freeze group: signal_expression
+Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts after completing the next required step.
+Data Ready Reflection:
+- Data Coverage And Gaps:
+  - core data layers present: 5/5
+  - missing core data layers: none
+  - supporting contract files present: 5/5
+  - missing supporting contract files: none
+  - question: do the available coverage artifacts support the stated admission rule and coverage floor?
+- QC / Anomaly Summary:
+  - qc_report.parquet: available
+  - validation_report.md: available
+  - universe_exclusions.csv: available
+  - universe_exclusions.md: available
+  - data_ready_gate_decision.md: available
+  - question: do the QC evidence and exclusion artifacts explain any symbols removed before signal work continues?
+- Artifact Directory And Key Files:
+  - stage directory: outputs/btc_leads_alts/02_data_ready
+  - key files present: dataset_manifest.json, validation_report.md, data_contract.md, run_manifest.json, artifact_catalog.md, rebuild_data_ready.py
+  - missing key files: none
+```
+
+这个 reflection 面板在第一版里有几个明确边界：
+
+- 只出现在 time-series 主线
+- 只出现在 `signal_ready_confirmation_pending`
+- 不出现在 `data_ready_review`
+- 不替代 formal review closure
+- 不改 `--json` 或 `--snapshot` 的机读输出
+
 如果你要让脚本输出机读状态而不是文本面板，可以加 `--json`：
 
 ```bash
@@ -120,6 +168,8 @@ Lineage: btc_leads_alts
 - shell 脚本轮询当前 session 状态
 - 后续 HUD 或自动化集成
 - 想稳定读取 `current_stage / current_skill / next_action / resume_hint` 这些字段的场景
+
+`--snapshot` 仍然输出 canonical anti-drift decision snapshot，不会附带 reflection 面板内容。
 
 例如，当 `data_ready` 已经 freeze 但本地程序还没补齐时，机读状态应明确给出 program gate：
 
