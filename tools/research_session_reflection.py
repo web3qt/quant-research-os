@@ -49,6 +49,30 @@ class DataReadyReflection:
     title: str
     sections: tuple[ReflectionSection, ...]
 
+    def to_payload(
+        self,
+        *,
+        lineage_root: Path,
+        current_stage: str,
+        current_route: str | None,
+    ) -> dict[str, object]:
+        return {
+            "stage_id": "data_ready",
+            "lineage_id": lineage_root.name,
+            "lineage_root": str(lineage_root),
+            "stage_directory": f"outputs/{lineage_root.name}/02_data_ready",
+            "session_stage": current_stage,
+            "current_route": current_route,
+            "title": self.title,
+            "sections": [
+                {
+                    "title": section.title,
+                    "lines": list(section.lines),
+                }
+                for section in self.sections
+            ],
+        }
+
 
 def build_data_ready_reflection(
     *,
@@ -65,6 +89,60 @@ def build_data_ready_reflection(
     if not stage_dir.exists():
         return None
 
+    return _build_data_ready_reflection_from_stage_dir(lineage_root=lineage_root, stage_dir=stage_dir)
+
+
+# HTML proof-of-concept 仍然沿用当前 reflection 的生命周期与 route 边界。
+def build_data_ready_reflection_payload(
+    *,
+    lineage_root: Path,
+    current_stage: str = SIGNAL_READY_CONFIRMATION_STAGE,
+    current_route: str | None = TIME_SERIES_SIGNAL_ROUTE,
+) -> dict[str, object] | None:
+    reflection = build_data_ready_reflection(
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        current_route=current_route,
+    )
+    if reflection is None:
+        return None
+    return reflection.to_payload(
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        current_route=current_route,
+    )
+
+
+def reflection_payload_to_dict(payload: dict[str, object]) -> dict[str, object]:
+    # 明确复制一份稳定结构，避免 exporter 直接依赖调用侧对象引用或未来 dataclass 形状漂移。
+    return {
+        "stage_id": payload["stage_id"],
+        "lineage_id": payload["lineage_id"],
+        "lineage_root": payload["lineage_root"],
+        "stage_directory": payload["stage_directory"],
+        "session_stage": payload["session_stage"],
+        "current_route": payload["current_route"],
+        "title": payload["title"],
+        "sections": [
+            {
+                "title": section["title"],
+                "lines": list(section["lines"]),
+            }
+            for section in payload["sections"]
+        ],
+    }
+
+
+def render_reflection_lines(reflection: DataReadyReflection) -> list[str]:
+    lines = [f"{reflection.title}:"]
+    for section in reflection.sections:
+        lines.append(f"- {section.title}:")
+        for item in section.lines:
+            lines.append(f"  - {item}")
+    return lines
+
+
+def _build_data_ready_reflection_from_stage_dir(*, lineage_root: Path, stage_dir: Path) -> DataReadyReflection:
     coverage_section = ReflectionSection(
         title="Data Coverage And Gaps",
         lines=_coverage_lines(stage_dir),
@@ -81,15 +159,6 @@ def build_data_ready_reflection(
         title="Data Ready Reflection",
         sections=(coverage_section, qc_section, artifact_section),
     )
-
-
-def render_reflection_lines(reflection: DataReadyReflection) -> list[str]:
-    lines = [f"{reflection.title}:"]
-    for section in reflection.sections:
-        lines.append(f"- {section.title}:")
-        for item in section.lines:
-            lines.append(f"  - {item}")
-    return lines
 
 
 def _coverage_lines(stage_dir: Path) -> tuple[str, ...]:
