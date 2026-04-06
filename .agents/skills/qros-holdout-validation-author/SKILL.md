@@ -46,6 +46,8 @@ description: Use when reviewed backtest_ready outputs must be frozen into formal
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 holdout_validation？`
 - `holdout` 只能产生验证结论、重跑边界和 child lineage 触发条件，不能回写主线规则
 
+- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+
 ## Working Rules
 
 1. 确认 `06_backtest/stage_completion_certificate.yaml` 已存在

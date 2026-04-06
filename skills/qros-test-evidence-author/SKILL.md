@@ -57,6 +57,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 test_evidence？`
 - 不得在 test 窗里重估 train thresholds、whitelist 或 best_h
 
+- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+
 ## Gate Discipline
 
 ### frozen_spec.json 完整性要求

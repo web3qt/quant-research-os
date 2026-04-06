@@ -57,6 +57,8 @@ description: Use when a reviewed mandate must be frozen into formal data_ready a
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 data_ready？`
 - 不得静默修改 mandate 冻结的时间边界和 universe 口径
 
+- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+
 ## Working Rules
 
 1. 确认 `01_mandate/stage_completion_certificate.yaml` 已存在

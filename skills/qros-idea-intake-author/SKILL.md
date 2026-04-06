@@ -32,6 +32,8 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 - 必须写 machine-readable `idea_gate_decision.yaml`
 - 不能直接宣布进入 train、backtest 或 shadow
 
+- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+
 ## Qualification Dimensions
 
 - `observability`

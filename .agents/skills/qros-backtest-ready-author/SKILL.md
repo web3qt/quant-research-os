@@ -47,6 +47,8 @@ description: Use when reviewed test_evidence outputs must be frozen into formal 
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 backtest_ready？`
 - 不得在 backtest 阶段重新选币或重估 best_h
 
+- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+
 ## Working Rules
 
 1. 确认 `05_test_evidence/stage_completion_certificate.yaml` 已存在
