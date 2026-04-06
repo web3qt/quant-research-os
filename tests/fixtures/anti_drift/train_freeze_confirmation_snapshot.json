@@ -1,9 +1,9 @@
 {
   "fixture_id": "train-freeze-confirmation",
-  "input_digest": "1ea2c11d58efbb2733cc79b02e812a1859feef447989cf66dbd7aac792cbfcda",
+  "input_digest": "c0ee01c42f37c4a83b74b5504145e11a7c7b1a39aabce3e8843713692910b1ff",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-train-freeze-author",
+  "route_skill": "qros-research-session",
   "stage_id": "train_calibration",
   "session_stage": "train_freeze_confirmation_pending",
   "formal_decision": "PASS",
@@ -20,9 +20,9 @@
     "test_evidence"
   ],
   "blocking_reasons": [
-    "train_freeze freeze confirmation is still incomplete."
+    "signal_ready display decision is still incomplete."
   ],
-  "lineage_transition": "Complete train_freeze group: window_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::train_freeze_confirmation"
   ],

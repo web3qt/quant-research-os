@@ -23,7 +23,7 @@
   "blocking_reasons": [
     "Normal progression is blocked by review verdict NO-GO."
   ],
-  "lineage_transition": "Enter failure handling for backtest_ready via qros-stage-failure-handler",
+  "lineage_transition": "Enter failure handling for test_evidence via qros-stage-failure-handler",
   "evidence_refs": [
     "tools/anti_drift_scenarios_failure.py::backtest_ready_no_go"
   ],

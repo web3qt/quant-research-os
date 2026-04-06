@@ -52,7 +52,7 @@ def main() -> int:
     )
     if payload is None:
         raise SystemExit(
-            "data_ready HTML export is only available for time_series_signal lineages at signal_ready_confirmation_pending."
+            "data_ready HTML export is only available for time_series_signal lineages at data_ready_next_stage_confirmation_pending after DISPLAY_STAGE."
         )
 
     payload_dict = reflection_payload_to_dict(payload)

@@ -37,6 +37,34 @@ def _write_stage_completion_certificate(
     )
 
 
+def _write_display_decision(stage_dir: Path, *, stage: str, decision: str = "DISPLAY_STAGE") -> None:
+    _write_yaml(
+        stage_dir / "display_transition_decision.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": decision,
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:00:00Z",
+            "source_stage": f"{stage}_display_confirmation_pending",
+        },
+    )
+
+
+def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
+    _write_yaml(
+        stage_dir / "next_stage_transition_approval.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": "CONFIRM_NEXT_STAGE",
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:05:00Z",
+            "source_stage": f"{stage}_next_stage_confirmation_pending",
+        },
+    )
+
+
 def _write_fake_parquet(path: Path) -> None:
     path.write_bytes(b"PAR1test-payloadPAR1")
 
@@ -515,10 +543,9 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
     assert result.returncode == 2
     lineage_root = outputs_root / "btc_leads_high_liquidity_alts_after_shock_events"
     assert (lineage_root / "00_idea_intake").exists()
-    assert "Current stage: idea_intake_confirmation_pending" in result.stdout
-    assert "Orchestrator: qros-research-session" in result.stdout
-    assert "Current active skill: qros-idea-intake-author" in result.stdout
-    assert "🧭" not in result.stdout
+    assert "📍 Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
+    assert "🔨 Current active skill: qros-idea-intake-author" in result.stdout
 
 
 def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
@@ -856,7 +883,8 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
     )
 
     assert result.returncode == 7
-    assert "Current stage: mandate_review" in result.stdout
+    assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
+    assert "▶ Next action: Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>" in result.stdout
     assert "Research route: cross_sectional_factor" in result.stdout
     assert (lineage_root / "01_mandate" / "mandate.md").exists()
 
@@ -897,7 +925,7 @@ def test_run_research_session_reports_mandate_review_when_review_pending(tmp_pat
     )
 
     assert result.returncode == 7
-    assert "Current stage: mandate_review" in result.stdout
+    assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
 
 
 def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_activation(
@@ -981,7 +1009,7 @@ def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_acti
     )
 
     assert result.returncode == 2
-    assert "Current stage: csf_data_ready_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
     assert "⚠ Open risks:" not in result.stdout
     assert "rollback_target remains 00_idea_intake" not in result.stdout
 
@@ -1023,7 +1051,7 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
     )
 
     assert result.returncode == 2
-    assert "Current stage: data_ready_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
 
 
 def test_run_research_session_reports_data_ready_next_group_after_mandate_review_complete(
@@ -1065,12 +1093,12 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     )
 
     assert result.returncode == 2
-    assert "Orchestrator: qros-research-session" in result.stdout
-    assert "Current stage: data_ready_confirmation_pending" in result.stdout
-    assert "Current active skill: qros-data-ready-author" in result.stdout
-    assert "Blocking reason: data_ready freeze confirmation is still incomplete." in result.stdout
-    assert "Next action: Complete data_ready freeze group: extraction_contract" in result.stdout
-    assert "Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts" in result.stdout
+    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
+    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "🔨 Current active skill: qros-research-session" in result.stdout
+    assert "⛔ Blocking reason: mandate display decision is still incomplete." in result.stdout
+    assert "--display-stage" in result.stdout
+    assert "🔁 Resume hint: Record a display decision for mandate" in result.stdout
     assert "Data Ready Reflection:" not in result.stdout
 
 
@@ -1097,7 +1125,45 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+    _write_display_decision(mandate_dir, stage="mandate")
+    _write_next_stage_confirmation(mandate_dir, stage="mandate")
     ensure_stage_program(lineage_root, "data_ready")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1133,7 +1199,7 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
     )
 
     assert result.returncode == 7
-    assert "Current stage: data_ready_review" in result.stdout
+    assert "📍 Current stage: data_ready_review_confirmation_pending" in result.stdout
     assert (lineage_root / "02_data_ready" / "data_contract.md").exists()
     assert "Data Ready Reflection:" not in result.stdout
 
@@ -1181,6 +1247,7 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     ]:
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
+    _write_display_decision(data_ready_dir, stage="data_ready")
 
     result = run(
         [
@@ -1198,8 +1265,8 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     )
 
     assert result.returncode == 2
-    assert "Current stage: signal_ready_confirmation_pending" in result.stdout
-    assert "Next action: Complete signal_ready freeze group: signal_expression" in result.stdout
+    assert "📍 Current stage: data_ready_next_stage_confirmation_pending" in result.stdout
+    assert "--confirm-next-stage" in result.stdout
     assert "Data Ready Reflection:" in result.stdout
     assert "Data Coverage And Gaps:" in result.stdout
     assert "QC / Anomaly Summary:" in result.stdout
@@ -1243,7 +1310,27 @@ def test_run_research_session_builds_signal_ready_only_after_explicit_confirmati
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
     _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+    _write_display_decision(data_ready_dir, stage="data_ready")
+    _write_next_stage_confirmation(data_ready_dir, stage="data_ready")
     ensure_stage_program(lineage_root, "signal_ready")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1279,7 +1366,7 @@ def test_run_research_session_builds_signal_ready_only_after_explicit_confirmati
     )
 
     assert result.returncode == 7
-    assert "Current stage: signal_ready_review" in result.stdout
+    assert "📍 Current stage: signal_ready_review_confirmation_pending" in result.stdout
     assert (lineage_root / "03_signal_ready" / "signal_contract.md").exists()
 
 
@@ -1324,8 +1411,8 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
     )
 
     assert result.returncode == 2
-    assert "Current stage: train_freeze_confirmation_pending" in result.stdout
-    assert "Next action: Complete train_freeze group: window_contract" in result.stdout
+    assert "📍 Current stage: signal_ready_display_confirmation_pending" in result.stdout
+    assert "--display-stage" in result.stdout
 
 
 def test_run_research_session_builds_train_freeze_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1362,7 +1449,27 @@ def test_run_research_session_builds_train_freeze_only_after_explicit_confirmati
         encoding="utf-8",
     )
     _write_yaml(train_dir / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
+    _write_display_decision(signal_ready_dir, stage="signal_ready")
+    _write_next_stage_confirmation(signal_ready_dir, stage="signal_ready")
     ensure_stage_program(lineage_root, "train_freeze")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1398,7 +1505,7 @@ def test_run_research_session_builds_train_freeze_only_after_explicit_confirmati
     )
 
     assert result.returncode == 7
-    assert "Current stage: train_freeze_review" in result.stdout
+    assert "📍 Current stage: train_freeze_review_confirmation_pending" in result.stdout
     assert (lineage_root / "04_train_freeze" / "train_thresholds.json").exists()
 
 
@@ -1440,8 +1547,8 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
     )
 
     assert result.returncode == 2
-    assert "Current stage: test_evidence_confirmation_pending" in result.stdout
-    assert "Next action: Complete test_evidence group: window_contract" in result.stdout
+    assert "📍 Current stage: train_freeze_display_confirmation_pending" in result.stdout
+    assert "--display-stage" in result.stdout
 
 
 def test_run_research_session_builds_test_evidence_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1497,8 +1604,28 @@ def test_run_research_session_builds_test_evidence_only_after_explicit_confirmat
         encoding="utf-8",
     )
     _write_yaml(test_dir / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
+    _write_display_decision(train_dir, stage="train_freeze")
+    _write_next_stage_confirmation(train_dir, stage="train_freeze")
     write_fake_stage_provenance(lineage_root, "train_freeze")
     ensure_stage_program(lineage_root, "test_evidence")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1534,7 +1661,7 @@ def test_run_research_session_builds_test_evidence_only_after_explicit_confirmat
     )
 
     assert result.returncode == 7
-    assert "Current stage: test_evidence_review" in result.stdout
+    assert "📍 Current stage: test_evidence_review_confirmation_pending" in result.stdout
     assert (lineage_root / "05_test_evidence" / "frozen_spec.json").exists()
 
 
@@ -1580,8 +1707,8 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
     )
 
     assert result.returncode == 2
-    assert "Current stage: backtest_ready_confirmation_pending" in result.stdout
-    assert "Next action: Complete backtest_ready group: execution_policy" in result.stdout
+    assert "📍 Current stage: test_evidence_display_confirmation_pending" in result.stdout
+    assert "--display-stage" in result.stdout
 
 
 def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp_path: Path) -> None:
@@ -1624,14 +1751,14 @@ def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp
     )
 
     assert result.returncode == 8
-    assert "Orchestrator: qros-research-session" in result.stdout
-    assert "Current stage: test_evidence_review" in result.stdout
-    assert "Current active skill: qros-stage-failure-handler" in result.stdout
-    assert "Why this skill: Review verdict RETRY blocks normal progression, so failure handling is now the active workflow." in result.stdout
-    assert "Blocking reason: Normal progression is blocked by review verdict RETRY." in result.stdout
-    assert "Review verdict: RETRY" in result.stdout
-    assert "Requires failure handling: True" in result.stdout
-    assert "Failure stage: test_evidence_review" in result.stdout
+    assert "🧭 Current orchestrator: qros-research-session" in result.stdout
+    assert "📍 Current stage: test_evidence_review" in result.stdout
+    assert "🔨 Current active skill: qros-stage-failure-handler" in result.stdout
+    assert "💡 Why this skill: Review verdict RETRY blocks normal progression, so failure handling is now the active workflow." in result.stdout
+    assert "⛔ Blocking reason: Normal progression is blocked by review verdict RETRY." in result.stdout
+    assert "🧪 Review verdict: RETRY" in result.stdout
+    assert "🧯 Requires failure handling: True" in result.stdout
+    assert "🧨 Failure stage: test_evidence_review" in result.stdout
     assert "qros-stage-failure-handler" in result.stdout
     assert "backtest_ready_confirmation_pending" not in result.stdout
 
@@ -1677,8 +1804,28 @@ def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engin
         encoding="utf-8",
     )
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_display_decision(test_dir, stage="test_evidence")
+    _write_next_stage_confirmation(test_dir, stage="test_evidence")
     write_fake_stage_provenance(lineage_root, "test_evidence")
     ensure_stage_program(lineage_root, "backtest_ready")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1741,8 +1888,28 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
     )
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _prepare_real_backtest_engine_outputs(backtest_dir)
+    _write_display_decision(test_dir, stage="test_evidence")
+    _write_next_stage_confirmation(test_dir, stage="test_evidence")
     write_fake_stage_provenance(lineage_root, "test_evidence")
     ensure_stage_program(lineage_root, "backtest_ready")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1778,7 +1945,7 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
     )
 
     assert result.returncode == 7
-    assert "Current stage: backtest_ready_review" in result.stdout
+    assert "📍 Current stage: backtest_ready_review_confirmation_pending" in result.stdout
     assert (lineage_root / "06_backtest" / "engine_compare.csv").exists()
 
 
@@ -1819,8 +1986,8 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
     )
 
     assert result.returncode == 2
-    assert "Current stage: holdout_validation_confirmation_pending" in result.stdout
-    assert "Next action: Complete holdout_validation group: window_contract" in result.stdout
+    assert "📍 Current stage: backtest_ready_display_confirmation_pending" in result.stdout
+    assert "--display-stage" in result.stdout
 
 
 def test_run_research_session_builds_holdout_validation_only_after_explicit_confirmation(
@@ -1862,8 +2029,28 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
         holdout_dir / "holdout_validation_draft.yaml",
         _holdout_validation_draft(confirmed=True),
     )
+    _write_display_decision(backtest_dir, stage="backtest_ready")
+    _write_next_stage_confirmation(backtest_dir, stage="backtest_ready")
     write_fake_stage_provenance(lineage_root, "backtest_ready")
     ensure_stage_program(lineage_root, "holdout_validation")
+
+    skip_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--skip-display",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert skip_result.returncode == 2
 
     confirm_result = run(
         [
@@ -1899,5 +2086,5 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
     )
 
     assert result.returncode == 7
-    assert "Current stage: holdout_validation_review" in result.stdout
+    assert "📍 Current stage: holdout_validation_review_confirmation_pending" in result.stdout
     assert (lineage_root / "07_holdout" / "holdout_run_manifest.json").exists()

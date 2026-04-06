@@ -14,6 +14,34 @@ def _write_stage_completion_certificate(path: Path, stage_status: str = "PASS") 
     _write_yaml(path, {"stage_status": stage_status, "final_verdict": stage_status})
 
 
+def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
+    _write_yaml(
+        stage_dir / "display_transition_decision.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": "DISPLAY_STAGE",
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:00:00Z",
+            "source_stage": f"{stage}_display_confirmation_pending",
+        },
+    )
+
+
+def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
+    _write_yaml(
+        stage_dir / "next_stage_transition_approval.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": "CONFIRM_NEXT_STAGE",
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:05:00Z",
+            "source_stage": f"{stage}_next_stage_confirmation_pending",
+        },
+    )
+
+
 def _prepare_mandate_review_complete(lineage_root: Path) -> None:
     mandate_dir = lineage_root / "01_mandate"
     mandate_dir.mkdir(parents=True)
@@ -50,7 +78,7 @@ def test_detect_session_stage_routes_csf_lineage_into_csf_data_ready(tmp_path: P
     lineage_root = tmp_path / "outputs" / "csf_case"
     _prepare_mandate_review_complete(lineage_root)
 
-    assert detect_session_stage(lineage_root) == "csf_data_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_display_confirmation_pending"
 
 
 def test_run_research_session_scaffolds_csf_data_ready_after_mandate_review(tmp_path: Path) -> None:
@@ -59,8 +87,8 @@ def test_run_research_session_scaffolds_csf_data_ready_after_mandate_review(tmp_
 
     status = run_research_session(outputs_root=tmp_path / "outputs", lineage_id="csf_case")
 
-    assert status.current_stage == "csf_data_ready_confirmation_pending"
-    assert (lineage_root / "02_csf_data_ready" / "csf_data_ready_freeze_draft.yaml").exists()
+    assert status.current_stage == "mandate_display_confirmation_pending"
+    assert not (lineage_root / "02_csf_data_ready" / "csf_data_ready_freeze_draft.yaml").exists()
     assert status.current_route == "cross_sectional_factor"
     assert status.factor_role == "regime_filter"
     assert status.portfolio_expression == "long_only_rank"
@@ -78,4 +106,10 @@ def test_run_research_session_writes_csf_transition_approval_in_csf_directory(tm
 
     approval_path = lineage_root / "02_csf_data_ready" / "data_ready_transition_approval.yaml"
     assert approval_path.exists()
+    assert status.current_stage == "mandate_display_confirmation_pending"
+
+    _write_display_decision(lineage_root / "01_mandate", stage="mandate")
+    _write_next_stage_confirmation(lineage_root / "01_mandate", stage="mandate")
+
+    status = run_research_session(outputs_root=tmp_path / "outputs", lineage_id="csf_case")
     assert status.current_stage in {"csf_data_ready_confirmation_pending", "csf_data_ready_author"}

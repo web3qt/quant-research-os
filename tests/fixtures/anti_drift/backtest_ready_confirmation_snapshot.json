@@ -1,9 +1,9 @@
 {
   "fixture_id": "backtest-ready-confirmation",
-  "input_digest": "88b6f5c122a21e855af8003140754d0e48ed8b21239d46d0f07cbd10acb80411",
+  "input_digest": "ceab89c6df44b0367a10438c4390dba1694baa3be40d85a53e5900f6a22b0b0f",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-backtest-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "backtest_ready",
   "session_stage": "backtest_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -21,9 +21,9 @@
     "holdout_validation"
   ],
   "blocking_reasons": [
-    "backtest_ready freeze confirmation is still incomplete."
+    "test_evidence display decision is still incomplete."
   ],
-  "lineage_transition": "Complete backtest_ready group: execution_policy",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::backtest_ready_confirmation"
   ],

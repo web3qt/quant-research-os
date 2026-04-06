@@ -1,9 +1,9 @@
 {
   "fixture_id": "csf-test-evidence-confirmation",
-  "input_digest": "a7690717ec732619ea5568ac319b8b7253ebda5af9555595858b19587c8f2b6f",
+  "input_digest": "cf4f8bb584dd57b06b854ca4a86f43d98828df7b28390e4a1709d7783e396b33",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-csf-test-evidence-author",
+  "route_skill": "qros-research-session",
   "stage_id": "csf_test_evidence",
   "session_stage": "csf_test_evidence_confirmation_pending",
   "formal_decision": "PASS",
@@ -18,9 +18,9 @@
     "csf_backtest_ready"
   ],
   "blocking_reasons": [
-    "csf_test_evidence freeze confirmation is still incomplete."
+    "csf_train_freeze display decision is still incomplete."
   ],
-  "lineage_transition": "Complete csf_test_evidence group: window_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_test_evidence_confirmation"
   ],

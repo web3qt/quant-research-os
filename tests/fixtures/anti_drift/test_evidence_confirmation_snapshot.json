@@ -1,9 +1,9 @@
 {
   "fixture_id": "test-evidence-confirmation",
-  "input_digest": "29b00e2a87d67ecbeb0904d4b0e65b02cbb2fef6f3b784e3a2bd3f935ec7ade6",
+  "input_digest": "20f180d4d92bd3c829b449febf1b97ef558029c9ae0a4328bffbb7a7bfec14bc",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-test-evidence-author",
+  "route_skill": "qros-research-session",
   "stage_id": "test_evidence",
   "session_stage": "test_evidence_confirmation_pending",
   "formal_decision": "PASS",
@@ -24,9 +24,9 @@
     "backtest_ready"
   ],
   "blocking_reasons": [
-    "test_evidence freeze confirmation is still incomplete."
+    "train_freeze display decision is still incomplete."
   ],
-  "lineage_transition": "Complete test_evidence group: window_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation"
   ],

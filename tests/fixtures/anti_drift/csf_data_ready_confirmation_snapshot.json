@@ -1,9 +1,9 @@
 {
   "fixture_id": "csf-data-ready-confirmation",
-  "input_digest": "36aafc5791c58f4fcc1018055e8f2892a2dc6f9b50c4020f0ddb454d4bdb700f",
+  "input_digest": "d30bd50da6373b5706e305ce611854693bb26b24cb1113f17aa1c1983f8be561",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-csf-data-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "csf_data_ready",
   "session_stage": "csf_data_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -23,9 +23,9 @@
     "csf_signal_ready"
   ],
   "blocking_reasons": [
-    "csf_data_ready freeze confirmation is still incomplete."
+    "mandate display decision is still incomplete."
   ],
-  "lineage_transition": "Complete csf_data_ready freeze group: panel_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation"
   ],

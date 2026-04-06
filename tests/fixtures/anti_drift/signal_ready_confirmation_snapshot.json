@@ -1,9 +1,9 @@
 {
   "fixture_id": "signal-ready-confirmation",
-  "input_digest": "c7a1f8a226f7e6d89610d72aaa641e9fb87bf0c4a5f284915b76df3af5fed8a8",
+  "input_digest": "d49d9aa39bf7de982d51f7245b3f6a7a31890e432adf00a4c756b7e59c9d4dd2",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-signal-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "signal_ready",
   "session_stage": "signal_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -23,9 +23,9 @@
     "train_calibration"
   ],
   "blocking_reasons": [
-    "signal_ready freeze confirmation is still incomplete."
+    "data_ready display decision is still incomplete."
   ],
-  "lineage_transition": "Complete signal_ready freeze group: signal_expression",
+  "lineage_transition": "Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation"
   ],

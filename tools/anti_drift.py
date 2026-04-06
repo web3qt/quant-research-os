@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from tools.research_session import SessionContext
+from tools.research_session import SessionContext, session_stage_base_name
 from tools.review_skillgen.loaders import load_gate_schema
 
 
@@ -34,11 +34,30 @@ _SESSION_STAGE_TO_GATE_STAGE = {
 }
 
 _SESSION_STAGE_SUFFIXES = (
+    "_review_confirmation_pending",
+    "_display_confirmation_pending",
+    "_next_stage_confirmation_pending",
     "_confirmation_pending",
     "_review_complete",
     "_review",
     "_author",
 )
+
+_NEXT_STAGE_SNAPSHOT = {
+    "mandate": "data_ready_confirmation_pending",
+    "data_ready": "signal_ready_confirmation_pending",
+    "signal_ready": "train_freeze_confirmation_pending",
+    "train_freeze": "test_evidence_confirmation_pending",
+    "test_evidence": "backtest_ready_confirmation_pending",
+    "backtest_ready": "holdout_validation_confirmation_pending",
+    "holdout_validation": "holdout_validation_review_complete",
+    "csf_data_ready": "csf_signal_ready_confirmation_pending",
+    "csf_signal_ready": "csf_train_freeze_confirmation_pending",
+    "csf_train_freeze": "csf_test_evidence_confirmation_pending",
+    "csf_test_evidence": "csf_backtest_ready_confirmation_pending",
+    "csf_backtest_ready": "csf_holdout_validation_confirmation_pending",
+    "csf_holdout_validation": "csf_holdout_validation_review_complete",
+}
 
 
 @dataclass(frozen=True)
@@ -64,15 +83,24 @@ class CanonicalDecisionSnapshot:
 
 
 def session_stage_to_gate_stage(session_stage: str) -> str:
-    normalized = session_stage
-    for suffix in _SESSION_STAGE_SUFFIXES:
-        if normalized.endswith(suffix):
-            normalized = normalized[: -len(suffix)]
-            break
+    normalized = session_stage_base_name(session_stage)
     try:
         return _SESSION_STAGE_TO_GATE_STAGE[normalized]
     except KeyError as exc:
         raise KeyError(f"Unsupported session stage for canonical snapshot: {session_stage}") from exc
+
+
+def canonicalize_snapshot_session_stage(session_stage: str, *, current_route: str | None) -> str:
+    if session_stage.endswith("_review_confirmation_pending"):
+        return session_stage
+    if session_stage.endswith("_display_confirmation_pending") or session_stage.endswith(
+        "_next_stage_confirmation_pending"
+    ):
+        stage_base = session_stage.rsplit("_", 3)[0]
+        if stage_base == "mandate" and current_route == "cross_sectional_factor":
+            return "csf_data_ready_confirmation_pending"
+        return _NEXT_STAGE_SNAPSHOT.get(stage_base, session_stage)
+    return session_stage
 
 
 @lru_cache(maxsize=1)
@@ -108,6 +136,10 @@ def canonical_snapshot_from_session_context(
     failure_class: str | None = None,
     severity: str | None = None,
 ) -> CanonicalDecisionSnapshot:
+    canonical_session_stage = canonicalize_snapshot_session_stage(
+        context.current_stage,
+        current_route=context.current_route,
+    )
     formal_decision = context.review_verdict or context.gate_status
     blocking_reasons = tuple(
         item for item in [context.blocking_reason, *context.open_risks] if item
@@ -118,7 +150,7 @@ def canonical_snapshot_from_session_context(
             [
                 fixture_id,
                 context.lineage_id,
-                context.current_stage,
+                canonical_session_stage,
                 context.current_route,
                 context.current_skill,
                 formal_decision,
@@ -127,11 +159,11 @@ def canonical_snapshot_from_session_context(
         snapshot_version=SNAPSHOT_VERSION,
         schema_version=SCHEMA_VERSION,
         route_skill=context.current_skill,
-        stage_id=session_stage_to_gate_stage(context.current_stage),
-        session_stage=context.current_stage,
+        stage_id=session_stage_to_gate_stage(canonical_session_stage),
+        session_stage=canonical_session_stage,
         formal_decision=formal_decision,
-        required_artifacts=required_artifacts_for_session_stage(context.current_stage),
-        downstream_permissions=downstream_permissions_for_session_stage(context.current_stage),
+        required_artifacts=required_artifacts_for_session_stage(canonical_session_stage),
+        downstream_permissions=downstream_permissions_for_session_stage(canonical_session_stage),
         blocking_reasons=blocking_reasons,
         lineage_transition=context.next_action,
         evidence_refs=tuple(evidence_refs),

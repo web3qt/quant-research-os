@@ -42,6 +42,34 @@ def _write_stage_completion_certificate(
     )
 
 
+def _write_display_decision(stage_dir: Path, *, stage: str, decision: str = "DISPLAY_STAGE") -> None:
+    _write_yaml(
+        stage_dir / "display_transition_decision.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": decision,
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:00:00Z",
+            "source_stage": f"{stage}_display_confirmation_pending",
+        },
+    )
+
+
+def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
+    _write_yaml(
+        stage_dir / "next_stage_transition_approval.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "decision": "CONFIRM_NEXT_STAGE",
+            "approved_by": "tester",
+            "approved_at": "2026-04-06T10:05:00Z",
+            "source_stage": f"{stage}_next_stage_confirmation_pending",
+        },
+    )
+
+
 def _write_adversarial_review_request(
     stage_dir: Path,
     *,
@@ -908,7 +936,7 @@ def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exis
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
-    assert detect_session_stage(lineage_root) == "mandate_review"
+    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_artifacts_exist(
@@ -931,7 +959,7 @@ def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_ar
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
-    assert detect_session_stage(lineage_root) == "data_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_display_confirmation_pending"
 
 
 def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_review_complete(
@@ -954,7 +982,7 @@ def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_revie
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
-    assert detect_session_stage(lineage_root) == "data_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Path) -> None:
@@ -978,8 +1006,8 @@ def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Pat
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "data_ready_confirmation_pending"
-    assert status.next_action == "Complete data_ready freeze group: extraction_contract"
+    assert status.current_stage == "mandate_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirmed(
@@ -1003,6 +1031,7 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
     ]:
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
+    _write_yaml(mandate_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
     _write_yaml(
         data_ready_dir / "data_ready_transition_approval.yaml",
@@ -1014,6 +1043,8 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
             "source_stage": "mandate_review_complete",
         },
     )
+    _write_display_decision(mandate_dir, stage="mandate")
+    _write_next_stage_confirmation(mandate_dir, stage="mandate")
 
     assert detect_session_stage(lineage_root) == "data_ready_author"
 
@@ -1048,7 +1079,7 @@ def test_detect_session_stage_returns_data_ready_review_when_outputs_exist(tmp_p
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
 
-    assert detect_session_stage(lineage_root) == "data_ready_review"
+    assert detect_session_stage(lineage_root) == "data_ready_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closure_exists(
@@ -1084,7 +1115,7 @@ def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closu
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
 
-    assert detect_session_stage(lineage_root) == "signal_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "data_ready_display_confirmation_pending"
 
 
 def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_review_complete(
@@ -1120,7 +1151,7 @@ def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
 
-    assert detect_session_stage(lineage_root) == "signal_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "data_ready_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: Path) -> None:
@@ -1157,8 +1188,8 @@ def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: P
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "signal_ready_confirmation_pending"
-    assert status.next_action == "Complete signal_ready freeze group: signal_expression"
+    assert status.current_stage == "data_ready_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confirmed(
@@ -1195,6 +1226,7 @@ def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confir
     ]:
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
+    _write_yaml(data_ready_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
     _write_yaml(
         signal_ready_dir / "signal_ready_transition_approval.yaml",
@@ -1206,6 +1238,8 @@ def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confir
             "source_stage": "data_ready_review_complete",
         },
     )
+    _write_display_decision(data_ready_dir, stage="data_ready")
+    _write_next_stage_confirmation(data_ready_dir, stage="data_ready")
 
     assert detect_session_stage(lineage_root) == "signal_ready_author"
 
@@ -1229,7 +1263,7 @@ def test_detect_session_stage_returns_signal_ready_review_when_outputs_exist(tmp
     (signal_ready_dir / "params").mkdir()
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
-    assert detect_session_stage(lineage_root) == "signal_ready_review"
+    assert detect_session_stage(lineage_root) == "signal_ready_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_signal_ready_review_complete_when_closure_exists(
@@ -1254,7 +1288,7 @@ def test_detect_session_stage_returns_signal_ready_review_complete_when_closure_
     (signal_ready_dir / "params").mkdir()
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
-    assert detect_session_stage(lineage_root) == "train_freeze_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "signal_ready_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) -> None:
@@ -1280,8 +1314,8 @@ def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) ->
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "train_freeze_confirmation_pending"
-    assert status.next_action == "Complete train_freeze group: window_contract"
+    assert status.current_stage == "signal_ready_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confirmed(
@@ -1307,6 +1341,7 @@ def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confir
         (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
     (signal_ready_dir / "params").mkdir()
     write_fake_stage_provenance(lineage_root, "signal_ready")
+    _write_yaml(signal_ready_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(train_dir / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
     _write_yaml(
         train_dir / "train_transition_approval.yaml",
@@ -1318,6 +1353,8 @@ def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confir
             "source_stage": "signal_ready_review_complete",
         },
     )
+    _write_display_decision(signal_ready_dir, stage="signal_ready")
+    _write_next_stage_confirmation(signal_ready_dir, stage="signal_ready")
 
     assert detect_session_stage(lineage_root) == "train_freeze_author"
 
@@ -1338,7 +1375,7 @@ def test_detect_session_stage_returns_train_freeze_review_when_outputs_exist(tmp
         (train_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
-    assert detect_session_stage(lineage_root) == "train_freeze_review"
+    assert detect_session_stage(lineage_root) == "train_freeze_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_test_evidence_pending_when_train_freeze_closure_exists(
@@ -1360,7 +1397,7 @@ def test_detect_session_stage_returns_test_evidence_pending_when_train_freeze_cl
         (train_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
-    assert detect_session_stage(lineage_root) == "test_evidence_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "train_freeze_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -> None:
@@ -1383,8 +1420,8 @@ def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "test_evidence_confirmation_pending"
-    assert status.next_action == "Complete test_evidence group: window_contract"
+    assert status.current_stage == "train_freeze_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confirmed(
@@ -1407,6 +1444,7 @@ def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confi
     ]:
         (train_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
+    _write_yaml(train_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(test_dir / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
     _write_yaml(
         test_dir / "test_evidence_transition_approval.yaml",
@@ -1418,6 +1456,8 @@ def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confi
             "source_stage": "train_freeze_review_complete",
         },
     )
+    _write_display_decision(train_dir, stage="train_freeze")
+    _write_next_stage_confirmation(train_dir, stage="train_freeze")
 
     assert detect_session_stage(lineage_root) == "test_evidence_author"
 
@@ -1442,7 +1482,7 @@ def test_detect_session_stage_returns_test_evidence_review_when_outputs_exist(tm
         (test_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
-    assert detect_session_stage(lineage_root) == "test_evidence_review"
+    assert detect_session_stage(lineage_root) == "test_evidence_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_backtest_ready_pending_when_test_evidence_closure_exists(
@@ -1469,7 +1509,7 @@ def test_detect_session_stage_returns_backtest_ready_pending_when_test_evidence_
     write_fake_stage_provenance(lineage_root, "test_evidence")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
-    assert detect_session_stage(lineage_root) == "backtest_ready_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "test_evidence_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) -> None:
@@ -1496,8 +1536,8 @@ def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) 
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "backtest_ready_confirmation_pending"
-    assert status.next_action == "Complete backtest_ready group: execution_policy"
+    assert status.current_stage == "test_evidence_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_confirmed(
@@ -1524,6 +1564,7 @@ def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_conf
     ]:
         (test_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
+    _write_yaml(test_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _write_yaml(
         backtest_dir / "backtest_ready_transition_approval.yaml",
@@ -1535,6 +1576,8 @@ def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_conf
             "source_stage": "test_evidence_review_complete",
         },
     )
+    _write_display_decision(test_dir, stage="test_evidence")
+    _write_next_stage_confirmation(test_dir, stage="test_evidence")
 
     assert detect_session_stage(lineage_root) == "backtest_ready_author"
 
@@ -1544,7 +1587,7 @@ def test_detect_session_stage_returns_backtest_ready_review_when_outputs_exist(t
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
 
-    assert detect_session_stage(lineage_root) == "backtest_ready_review"
+    assert detect_session_stage(lineage_root) == "backtest_ready_review_confirmation_pending"
 
 
 def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_are_placeholder(
@@ -1555,6 +1598,7 @@ def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_ar
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(test_dir, stage="test_evidence")
     (test_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_yaml(test_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     backtest_dir.mkdir(parents=True)
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _write_yaml(
@@ -1589,6 +1633,9 @@ def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_ar
             encoding="utf-8",
         )
 
+    _write_display_decision(test_dir, stage="test_evidence")
+    _write_next_stage_confirmation(test_dir, stage="test_evidence")
+
     assert detect_session_stage(lineage_root) == "backtest_ready_author"
 
 
@@ -1600,7 +1647,7 @@ def test_detect_session_stage_returns_backtest_ready_review_complete_when_closur
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
 
-    assert detect_session_stage(lineage_root) == "holdout_validation_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "backtest_ready_display_confirmation_pending"
 
 
 def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Path) -> None:
@@ -1612,8 +1659,8 @@ def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Pa
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "holdout_validation_confirmation_pending"
-    assert status.next_action == "Complete holdout_validation group: window_contract"
+    assert status.current_stage == "backtest_ready_display_confirmation_pending"
+    assert "--display-stage" in status.next_action
 
 
 def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_confirmed(
@@ -1625,6 +1672,7 @@ def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     holdout_dir.mkdir(parents=True)
     (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_yaml(backtest_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
     _write_yaml(
         holdout_dir / "holdout_validation_draft.yaml",
         _holdout_validation_draft(confirmed=True),
@@ -1639,6 +1687,8 @@ def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_
             "source_stage": "backtest_ready_review_complete",
         },
     )
+    _write_display_decision(backtest_dir, stage="backtest_ready")
+    _write_next_stage_confirmation(backtest_dir, stage="backtest_ready")
 
     assert detect_session_stage(lineage_root) == "holdout_validation_author"
 
@@ -1658,7 +1708,7 @@ def test_detect_session_stage_returns_holdout_validation_review_when_outputs_exi
     (holdout_dir / "window_results").mkdir()
     write_fake_stage_provenance(lineage_root, "holdout_validation")
 
-    assert detect_session_stage(lineage_root) == "holdout_validation_review"
+    assert detect_session_stage(lineage_root) == "holdout_validation_review_confirmation_pending"
 
 
 def test_detect_session_stage_returns_holdout_validation_review_complete_when_closure_exists(
@@ -1679,7 +1729,7 @@ def test_detect_session_stage_returns_holdout_validation_review_complete_when_cl
     (holdout_dir / "window_results").mkdir()
     write_fake_stage_provenance(lineage_root, "holdout_validation")
 
-    assert detect_session_stage(lineage_root) == "holdout_validation_review_complete"
+    assert detect_session_stage(lineage_root) == "holdout_validation_display_confirmation_pending"
 
 
 def test_detect_session_stage_does_not_advance_on_retry_completion_certificate(tmp_path: Path) -> None:
@@ -1704,13 +1754,13 @@ def test_detect_session_stage_does_not_advance_on_retry_completion_certificate(t
 def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     cases = [
-        ("mandate", lineage_root / "01_mandate", "data_ready_confirmation_pending"),
-        ("data_ready", lineage_root / "02_data_ready", "signal_ready_confirmation_pending"),
-        ("signal_ready", lineage_root / "03_signal_ready", "train_freeze_confirmation_pending"),
-        ("train_freeze", lineage_root / "04_train_freeze", "test_evidence_confirmation_pending"),
-        ("test_evidence", lineage_root / "05_test_evidence", "backtest_ready_confirmation_pending"),
-        ("backtest_ready", lineage_root / "06_backtest", "holdout_validation_confirmation_pending"),
-        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_review_complete"),
+        ("mandate", lineage_root / "01_mandate", "mandate_display_confirmation_pending"),
+        ("data_ready", lineage_root / "02_data_ready", "data_ready_display_confirmation_pending"),
+        ("signal_ready", lineage_root / "03_signal_ready", "signal_ready_display_confirmation_pending"),
+        ("train_freeze", lineage_root / "04_train_freeze", "train_freeze_display_confirmation_pending"),
+        ("test_evidence", lineage_root / "05_test_evidence", "test_evidence_display_confirmation_pending"),
+        ("backtest_ready", lineage_root / "06_backtest", "backtest_ready_display_confirmation_pending"),
+        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_display_confirmation_pending"),
     ]
 
     for stage, stage_dir, expected_stage in cases:
@@ -1718,6 +1768,93 @@ def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: 
         _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
 
         assert detect_session_stage(lineage_root) == expected_stage, stage
+
+
+def test_run_research_session_allows_display_skip_before_next_stage_confirmation(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_minimal_stage_outputs(mandate_dir, stage="mandate")
+    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        display_decision="SKIP",
+    )
+
+    assert status.current_stage == "mandate_next_stage_confirmation_pending"
+    assert status.gate_status == "NEXT_STAGE_CONFIRMATION_PENDING"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
+    assert "display_transition_decision.yaml" in status.artifacts_written[0]
+
+
+def test_detect_session_stage_routes_mainline_and_csf_through_display_confirmation_before_advancing(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    mainline_root = outputs_root / "mainline_case"
+    csf_root = outputs_root / "csf_case"
+
+    mainline_cases = [
+        ("data_ready", mainline_root / "02_data_ready", "data_ready_display_confirmation_pending"),
+        ("signal_ready", mainline_root / "03_signal_ready", "signal_ready_display_confirmation_pending"),
+        ("train_freeze", mainline_root / "04_train_freeze", "train_freeze_display_confirmation_pending"),
+    ]
+    for stage, stage_dir, expected in mainline_cases:
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+        write_fake_stage_provenance(mainline_root, stage)
+        assert detect_session_stage(mainline_root) == expected
+
+    mandate_dir = csf_root / "01_mandate"
+    _write_minimal_stage_outputs(mandate_dir, stage="mandate")
+    _write_yaml(
+        mandate_dir / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "regime_filter",
+            "factor_structure": "multi_factor_score",
+            "portfolio_expression": "long_only_rank",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_fake_stage_provenance(csf_root, "mandate")
+    assert detect_session_stage(csf_root) == "mandate_display_confirmation_pending"
+
+    csf_cases = [
+        ("csf_data_ready", csf_root / "02_csf_data_ready", "csf_data_ready_display_confirmation_pending"),
+        ("csf_signal_ready", csf_root / "03_csf_signal_ready", "csf_signal_ready_display_confirmation_pending"),
+        ("csf_train_freeze", csf_root / "04_csf_train_freeze", "csf_train_freeze_display_confirmation_pending"),
+        ("csf_test_evidence", csf_root / "05_csf_test_evidence", "csf_test_evidence_display_confirmation_pending"),
+        ("csf_backtest_ready", csf_root / "06_csf_backtest_ready", "csf_backtest_ready_display_confirmation_pending"),
+        ("csf_holdout_validation", csf_root / "07_csf_holdout_validation", "csf_holdout_validation_display_confirmation_pending"),
+    ]
+    for stage, stage_dir, expected in csf_cases:
+        _write_minimal_stage_outputs(stage_dir, stage=stage)
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+        write_fake_stage_provenance(csf_root, stage.removeprefix("csf_"))
+        assert detect_session_stage(csf_root) == expected
+
+
+def test_run_research_session_allows_final_holdout_display_skip_to_finish(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    holdout_dir = lineage_root / "07_holdout"
+    _write_minimal_stage_outputs(holdout_dir, stage="holdout_validation")
+    _write_stage_completion_certificate(holdout_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_fake_stage_provenance(lineage_root, "holdout_validation")
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        display_decision="SKIP",
+    )
+
+    assert status.current_stage == "holdout_validation_next_stage_confirmation_pending"
+    assert "terminal completion confirmation" in (status.blocking_reason or "")
 
 
 def test_run_research_session_requires_failure_handling_on_non_advancing_review_verdicts(
@@ -1827,7 +1964,7 @@ def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handli
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "backtest_ready_confirmation_pending"
+    assert status.current_stage == "test_evidence_display_confirmation_pending"
     assert status.review_verdict == "PASS"
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
@@ -1893,7 +2030,7 @@ def test_run_research_session_clears_intake_open_risks_after_routing_into_csf_da
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="csf_case")
 
-    assert status.current_stage == "csf_data_ready_confirmation_pending"
+    assert status.current_stage == "mandate_display_confirmation_pending"
     assert status.open_risks == []
 
 

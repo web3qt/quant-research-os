@@ -1,9 +1,9 @@
 {
   "fixture_id": "csf-signal-ready-confirmation",
-  "input_digest": "1ebe7c4ddedf1f68450439ca51678b405c730f3d83eb38c0031e5d02c53ca52b",
+  "input_digest": "c5dec53e872913905f4e4728b7499e798b172383312ab64fbd97e6cccaeae3bd",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-csf-signal-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "csf_signal_ready",
   "session_stage": "csf_signal_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -20,9 +20,9 @@
     "csf_train_freeze"
   ],
   "blocking_reasons": [
-    "csf_signal_ready freeze confirmation is still incomplete."
+    "csf_data_ready display decision is still incomplete."
   ],
-  "lineage_transition": "Complete csf_signal_ready freeze group: factor_identity",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_signal_ready_confirmation"
   ],

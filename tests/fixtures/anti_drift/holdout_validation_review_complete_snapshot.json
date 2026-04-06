@@ -18,8 +18,10 @@
   "downstream_permissions": [
     "promotion_decision"
   ],
-  "blocking_reasons": [],
-  "lineage_transition": "No further action required.",
+  "blocking_reasons": [
+    "holdout_validation display decision is still incomplete."
+  ],
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete"
   ],

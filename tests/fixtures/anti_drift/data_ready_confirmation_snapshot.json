@@ -1,9 +1,9 @@
 {
   "fixture_id": "data-ready-confirmation",
-  "input_digest": "74415f7cd7705cbda626849bf1fdef431a64f233d8df26b995842345feee5590",
+  "input_digest": "97054defb89fde5ac526001a0f6b69385a73ee2cd0cfb0ecca5e3d4c8ed900c5",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-data-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "data_ready",
   "session_stage": "data_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -28,9 +28,9 @@
     "signal_ready"
   ],
   "blocking_reasons": [
-    "data_ready freeze confirmation is still incomplete."
+    "mandate display decision is still incomplete."
   ],
-  "lineage_transition": "Complete data_ready freeze group: extraction_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::data_ready_confirmation"
   ],

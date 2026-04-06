@@ -1,9 +1,9 @@
 {
   "fixture_id": "csf-backtest-ready-confirmation",
-  "input_digest": "a53bcf8e6ca29f4ed907a65b9be75c1cf2af26b7300686eb915a7482dbc966fe",
+  "input_digest": "7fa6825a1be41b6176c72186418e6891f2132796ff95375e1867683104ddc5eb",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
-  "route_skill": "qros-csf-backtest-ready-author",
+  "route_skill": "qros-research-session",
   "stage_id": "csf_backtest_ready",
   "session_stage": "csf_backtest_ready_confirmation_pending",
   "formal_decision": "PASS",
@@ -26,9 +26,9 @@
     "csf_holdout_validation"
   ],
   "blocking_reasons": [
-    "csf_backtest_ready freeze confirmation is still incomplete."
+    "csf_test_evidence display decision is still incomplete."
   ],
-  "lineage_transition": "Complete csf_backtest_ready group: portfolio_contract",
+  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation"
   ],

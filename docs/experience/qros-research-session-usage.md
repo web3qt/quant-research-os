@@ -91,12 +91,12 @@ deterministic backend 的入口在克隆下来的仓库里：
 ```text
 Lineage: btc_leads_alts
 🧭 Current orchestrator: qros-research-session
-📍 Current stage: data_ready_confirmation_pending
-🔨 Current active skill: qros-data-ready-author
-💡 Why this skill: Current stage data_ready_confirmation_pending is in the authoring/freeze flow, so qros-data-ready-author is the active author skill.
-⛔ Blocking reason: data_ready freeze confirmation is still incomplete.
-▶ Next action: Complete data_ready freeze group: extraction_contract
-🔁 Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts after completing the next required step.
+📍 Current stage: mandate_display_confirmation_pending
+🔨 Current active skill: qros-research-session
+💡 Why this skill: Current stage mandate_display_confirmation_pending is waiting for an explicit display decision, so qros-research-session is holding the orchestration gate.
+⛔ Blocking reason: mandate display decision is still incomplete.
+▶ Next action: Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.
+🔁 Resume hint: Record a display decision for mandate, then rerun qros-session --lineage-id btc_leads_alts.
 🧠 Why now:
 - qualified
 ⚠ Open risks:
@@ -109,7 +109,7 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
-当 time-series 主线的 `data_ready` 已经完成、session 进入 `signal_ready_confirmation_pending` 时，`qros-session` 还会在同一块终端面板里追加一个 `Data Ready Reflection` 区域。这个区域是给研究员看的辅助反思层，不是 review verdict，也不会自动推进阶段。它的目标只是让研究员在 1 到 2 分钟内看懂当前 `data_ready` 产物是否值得继续追问。
+当 time-series 主线的 `data_ready` 已经完成、review 也完成后，session 不会立刻进入 `signal_ready_confirmation_pending`。它会先停在 `data_ready_display_confirmation_pending`，等待显式 `DISPLAY_STAGE` / `SKIP_DISPLAY`。只有在用户选择 `DISPLAY_STAGE` 后，session 才会进入 `data_ready_next_stage_confirmation_pending`，并在这个子阶段追加 `Data Ready Reflection`。这个区域是给研究员看的辅助反思层，不是 review verdict，也不会自动推进阶段。它的目标只是让研究员在 1 到 2 分钟内看懂当前 `data_ready` 产物是否值得继续追问。
 
 第一版 reflection 只展示 3 个固定块：
 
@@ -121,14 +121,14 @@ Lineage: btc_leads_alts
 
 ```text
 Lineage: btc_leads_alts
-Orchestrator: qros-research-session
-Current stage: signal_ready_confirmation_pending
-Current active skill: qros-signal-ready-author
-Research route: time_series_signal
-Stage status: awaiting_freeze_approval
-Blocking reason code: FREEZE_APPROVAL_MISSING
-Next action: Complete signal_ready freeze group: signal_expression
-Resume hint: Continue in the same research repo and rerun qros-session --lineage-id btc_leads_alts after completing the next required step.
+🧭 Current orchestrator: qros-research-session
+📍 Current stage: data_ready_next_stage_confirmation_pending
+🔨 Current active skill: qros-research-session
+🧪 Research route: time_series_signal
+🪜 Stage status: awaiting_next_stage_confirmation
+⛔ Blocking reason code: NEXT_STAGE_CONFIRMATION_REQUIRED
+▶ Next action: Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter signal_ready.
+🔁 Resume hint: Confirm the next-stage handoff for data_ready, then rerun qros-session --lineage-id btc_leads_alts.
 Data Ready Reflection:
 - Data Coverage And Gaps:
   - core data layers present: 5/5
@@ -152,7 +152,7 @@ Data Ready Reflection:
 这个 reflection 面板在第一版里有几个明确边界：
 
 - 只出现在 time-series 主线
-- 只出现在 `signal_ready_confirmation_pending`
+- 只出现在 `data_ready_next_stage_confirmation_pending` 且已经记录 `DISPLAY_STAGE`
 - 不出现在 `data_ready_review`
 - 不替代 formal review closure
 - 不改 `--json` 或 `--snapshot` 的机读输出

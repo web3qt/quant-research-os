@@ -6,7 +6,7 @@ from subprocess import run
 import sys
 
 from tests.lineage_program_support import write_fake_stage_provenance
-from tests.test_run_research_session_script import _write_yaml
+from tests.test_run_research_session_script import _write_display_decision, _write_yaml
 from tools.research_session_reflection import build_data_ready_reflection_payload
 from tools.stage_summary_html import build_subagent_render_prompt, render_data_ready_summary_html, write_subagent_bundle
 
@@ -50,6 +50,7 @@ def _build_signal_ready_confirmation_lineage(tmp_path: Path) -> tuple[Path, Path
         "topic_basket_state",
     ]:
         (data_ready_dir / name).mkdir()
+    _write_display_decision(data_ready_dir, stage="data_ready")
     write_fake_stage_provenance(lineage_root, "data_ready")
     return outputs_root, lineage_root
 
@@ -59,14 +60,14 @@ def test_build_data_ready_reflection_payload_preserves_metadata_and_order(tmp_pa
 
     payload = build_data_ready_reflection_payload(
         lineage_root=lineage_root,
-        current_stage="signal_ready_confirmation_pending",
+        current_stage="data_ready_next_stage_confirmation_pending",
         current_route="time_series_signal",
     )
 
     assert payload is not None
     assert payload["stage_id"] == "data_ready"
     assert payload["lineage_id"] == "btc_leads_alts"
-    assert payload["session_stage"] == "signal_ready_confirmation_pending"
+    assert payload["session_stage"] == "data_ready_next_stage_confirmation_pending"
     assert [section["title"] for section in payload["sections"]] == [
         "Data Coverage And Gaps",
         "QC / Anomaly Summary",
@@ -80,10 +81,11 @@ def test_payload_and_html_preserve_missing_evidence_markers(tmp_path: Path) -> N
     stage_dir.mkdir(parents=True)
     (stage_dir / "aligned_bars").mkdir()
     (stage_dir / "dataset_manifest.json").write_text("ok\n", encoding="utf-8")
+    _write_display_decision(stage_dir, stage="data_ready")
 
     payload = build_data_ready_reflection_payload(
         lineage_root=lineage_root,
-        current_stage="signal_ready_confirmation_pending",
+        current_stage="data_ready_next_stage_confirmation_pending",
         current_route="time_series_signal",
     )
 
@@ -102,7 +104,7 @@ def test_build_subagent_render_prompt_locks_forbidden_behaviors(tmp_path: Path) 
     _, lineage_root = _build_signal_ready_confirmation_lineage(tmp_path)
     payload = build_data_ready_reflection_payload(
         lineage_root=lineage_root,
-        current_stage="signal_ready_confirmation_pending",
+        current_stage="data_ready_next_stage_confirmation_pending",
         current_route="time_series_signal",
     )
 
@@ -122,7 +124,7 @@ def test_write_subagent_bundle_writes_payload_prompt_and_output_path(tmp_path: P
     _, lineage_root = _build_signal_ready_confirmation_lineage(tmp_path)
     payload = build_data_ready_reflection_payload(
         lineage_root=lineage_root,
-        current_stage="signal_ready_confirmation_pending",
+        current_stage="data_ready_next_stage_confirmation_pending",
         current_route="time_series_signal",
     )
 
@@ -164,7 +166,7 @@ def test_export_stage_summary_html_script_writes_bundle_and_deterministic_html(t
 
     assert result.returncode == 0
     manifest = json.loads(result.stdout)
-    assert manifest["current_stage"] == "signal_ready_confirmation_pending"
+    assert manifest["current_stage"] == "data_ready_next_stage_confirmation_pending"
     assert manifest["current_route"] == "time_series_signal"
     assert manifest["codex_time_dependency_only"] is True
 
