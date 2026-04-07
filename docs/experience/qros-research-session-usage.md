@@ -95,7 +95,7 @@ Lineage: btc_leads_alts
 🔨 Current active skill: qros-research-session
 💡 Why this skill: Current stage mandate_display_confirmation_pending is waiting for an explicit display decision, so qros-research-session is holding the orchestration gate.
 ⛔ Blocking reason: mandate display decision is still incomplete.
-▶ Next action: Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.
+▶ Next action: Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.
 🔁 Resume hint: Record a display decision for mandate, then rerun qros-session --lineage-id btc_leads_alts.
 🧠 Why now:
 - qualified
@@ -109,9 +109,24 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
-当 time-series 主线的 `data_ready` 已经完成、review 也完成后，session 不会立刻进入 `signal_ready_confirmation_pending`。它会先停在 `data_ready_display_confirmation_pending`，等待显式 `DISPLAY_STAGE` / `SKIP_DISPLAY`。只有在用户选择 `DISPLAY_STAGE` 后，session 才会进入 `data_ready_next_stage_confirmation_pending`，并在这个子阶段追加 `Data Ready Reflection`。这个区域是给研究员看的辅助反思层，不是 review verdict，也不会自动推进阶段。它的目标只是让研究员在 1 到 2 分钟内看懂当前 `data_ready` 产物是否值得继续追问。
+当某个已完成 review closure 的阶段进入 display gate 时，session 不会立刻进入下一个 `*_confirmation_pending`。它会先停在 `*_display_confirmation_pending`，等待显式 `DISPLAY_STAGE` / `SKIP_DISPLAY`。第一波 runtime-backed HTML display 只正式支持：
 
-第一版 reflection 只展示 3 个固定块：
+- `mandate`
+- `csf_data_ready`
+
+如果用户选择 `DISPLAY_STAGE`：
+
+- 对已支持阶段，session 会先运行 deterministic summary + Codex subagent render
+- 只有 HTML 成功生成后，才允许进入 `*_next_stage_confirmation_pending`
+- 如果 render 失败，session 会继续阻塞在 display gate，而不会放行下一阶段确认
+
+如果用户选择 `SKIP_DISPLAY`：
+
+- session 会直接进入 `*_next_stage_confirmation_pending`
+
+未注册阶段仍会显式返回 not implemented，而不会伪造 partial HTML success。
+
+`csf_data_ready` 的第一版 reflection / HTML 只展示 3 个固定块：
 
 - `Data Coverage And Gaps`
 - `QC / Anomaly Summary`

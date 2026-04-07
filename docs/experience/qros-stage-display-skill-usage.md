@@ -11,18 +11,21 @@ This is the supported skill-native path for stage display work. It replaces the 
 
 ## v1 Supported Stages
 
+- `mandate`
 - `csf_data_ready`
 
 The runtime is intentionally registry-thin:
 
 - one generic skill surface
-- one registered stage builder in v1
+- two registered stage builders in v1
 - explicit fail-fast behavior for any unsupported stage
 
 ## Output Location
 
 Successful runs write to:
 
+- `<lineage_root>/reports/stage_display/mandate.summary.json`
+- `<lineage_root>/reports/stage_display/mandate.summary.html`
 - `<lineage_root>/reports/stage_display/csf_data_ready.summary.json`
 - `<lineage_root>/reports/stage_display/csf_data_ready.summary.html`
 
@@ -32,7 +35,7 @@ If the subagent render step fails, the run fails and only the summary JSON may r
 
 ```bash
 python scripts/run_stage_display.py \
-  --stage-id csf_data_ready \
+  --stage-id mandate \
   --lineage-root <lineage-root> \
   --json
 ```
@@ -59,6 +62,12 @@ The summary JSON includes at least:
 - `sections[]`
 - explicit item markers: `available`, `missing`, `question`
 
+`mandate` v1 reflects only frozen mandate artifacts plus explicit review closure artifacts, for example:
+
+- research question / route / factor identity
+- scope and data contract facts already frozen into mandate outputs
+- execution and review closure evidence
+
 `csf_data_ready` v1 reflects only frozen artifact and contract facts such as:
 
 - panel manifest evidence
@@ -73,7 +82,7 @@ For tests or controlled wrappers, you may override the render command:
 
 ```bash
 python scripts/run_stage_display.py \
-  --stage-id csf_data_ready \
+  --stage-id mandate \
   --lineage-root <lineage-root> \
   --renderer-command "python path/to/render_stub.py" \
   --json

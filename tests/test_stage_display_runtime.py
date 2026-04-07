@@ -100,12 +100,12 @@ def test_export_stage_display_writes_structured_summary_and_html(tmp_path: Path)
 def test_unsupported_stage_fails_without_partial_html_or_summary(tmp_path: Path) -> None:
     lineage_root = _build_csf_data_ready_lineage(tmp_path)
 
-    with pytest.raises(ValueError, match="Unsupported stage for qros-stage-display: mandate"):
+    with pytest.raises(ValueError, match="Unsupported stage for qros-stage-display: signal_ready"):
         export_stage_display(
             lineage_root=lineage_root,
-            stage_id="mandate",
+            stage_id="signal_ready",
             html_renderer=render_stage_display_html,
         )
 
-    display_dir = lineage_root / "reports" / "stage_display" / "mandate"
+    display_dir = lineage_root / "reports" / "stage_display" / "signal_ready"
     assert not display_dir.exists()

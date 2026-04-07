@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -70,6 +71,12 @@ from tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_DRAFT_FILE,
     SIGNAL_READY_FREEZE_GROUP_ORDER,
     scaffold_signal_ready,
+)
+from tools.stage_display_runtime import (
+    StageDisplayError,
+    resolve_stage_display_config,
+    supported_stage_ids as supported_stage_display_ids,
+    write_stage_display_report,
 )
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
@@ -617,7 +624,7 @@ NEXT_STAGE_BY_BASE: dict[str, str | None] = {
     "csf_holdout_validation": None,
 }
 
-DISPLAY_IMPLEMENTED_STAGE_BASES = {"data_ready"}
+DISPLAY_IMPLEMENTED_STAGE_BASES = set(supported_stage_display_ids())
 
 
 def slugify_idea(raw_idea: str) -> str:
@@ -1455,6 +1462,101 @@ def read_display_transition_decision(lineage_root: Path, *, stage_base: str) -> 
     if decision in {"DISPLAY_STAGE", "SKIP_DISPLAY"}:
         return str(decision)
     return None
+
+
+def _supports_stage_display(stage_base: str) -> bool:
+    return stage_base in DISPLAY_IMPLEMENTED_STAGE_BASES
+
+
+def _stage_display_artifact_paths(lineage_root: Path, *, stage_base: str) -> tuple[Path, Path] | None:
+    if not _supports_stage_display(stage_base):
+        return None
+    config = resolve_stage_display_config(stage_base)
+    display_dir = (lineage_root / "reports" / "stage_display").resolve()
+    return display_dir / config.summary_filename, display_dir / config.html_filename
+
+
+def _read_stage_display_summary(lineage_root: Path, *, stage_base: str) -> dict | None:
+    artifact_paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
+    if artifact_paths is None:
+        return None
+    summary_path, _ = artifact_paths
+    if not summary_path.exists():
+        return None
+    try:
+        loaded = json.loads(summary_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _stage_display_render_status(lineage_root: Path, *, stage_base: str) -> str | None:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
+        return None
+    status = summary.get("render_status")
+    return str(status) if isinstance(status, str) and status.strip() else None
+
+
+def _stage_display_render_error(lineage_root: Path, *, stage_base: str) -> str | None:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
+        return None
+    error = summary.get("render_error")
+    return str(error) if isinstance(error, str) and error.strip() else None
+
+
+def _stage_display_summary_status(lineage_root: Path, *, stage_base: str) -> str | None:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
+        return None
+    status = summary.get("status")
+    return str(status) if isinstance(status, str) and status.strip() else None
+
+
+def _stage_display_missing_required_inputs(lineage_root: Path, *, stage_base: str) -> list[str]:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
+        return []
+    raw_value = summary.get("missing_required_inputs")
+    if not isinstance(raw_value, list):
+        return []
+    return [str(item) for item in raw_value if str(item).strip()]
+
+
+def _invoke_stage_display(
+    lineage_root: Path,
+    *,
+    current_stage: SessionStage,
+) -> list[str]:
+    stage_base = _stage_base_name(current_stage)
+    if not _supports_stage_display(stage_base):
+        return []
+    try:
+        result = write_stage_display_report(lineage_root=lineage_root, stage_id=stage_base)
+    except StageDisplayError:
+        paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
+        if paths is None:
+            return []
+        summary_path, html_path = paths
+        written: list[str] = []
+        if summary_path.exists():
+            written.append(str(summary_path.relative_to(lineage_root)))
+        if html_path.exists():
+            written.append(str(html_path.relative_to(lineage_root)))
+        return written
+
+    return [
+        str(Path(result["structured_summary_path"]).resolve().relative_to(lineage_root.resolve())),
+        str(Path(result["html_path"]).resolve().relative_to(lineage_root.resolve())),
+    ]
+
+
+def _stage_display_ready_for_handoff(lineage_root: Path, *, stage_base: str) -> bool:
+    return (
+        _stage_display_render_status(lineage_root, stage_base=stage_base) == "complete"
+        and _stage_display_summary_status(lineage_root, stage_base=stage_base) == "complete"
+    )
 
 
 def read_next_stage_transition_decision(lineage_root: Path, *, stage_base: str) -> str | None:
@@ -2312,6 +2414,7 @@ def run_research_session(
         current_stage = detect_session_stage(lineage_root)
 
     if display_decision is not None:
+        display_stage_before_write = current_stage
         written = write_display_transition_decision(
             lineage_root,
             current_stage=current_stage,
@@ -2319,6 +2422,13 @@ def run_research_session(
         )
         if written is not None:
             artifacts_written.append(written)
+        if display_decision == "DISPLAY_STAGE":
+            artifacts_written.extend(
+                _invoke_stage_display(
+                    lineage_root,
+                    current_stage=display_stage_before_write,
+                )
+            )
         current_stage = detect_session_stage(lineage_root)
 
     if next_stage_decision is not None:
@@ -2619,6 +2729,10 @@ def _post_review_completion_stage(lineage_root: Path, *, stage_base: str) -> Ses
     if display_decision is None:
         return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
 
+    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
+        if not _stage_display_ready_for_handoff(lineage_root, stage_base=stage_base):
+            return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
+
     next_stage_decision = read_next_stage_transition_decision(lineage_root, stage_base=stage_base)
     if next_stage_decision is None:
         return f"{stage_base}_next_stage_confirmation_pending"  # type: ignore[return-value]
@@ -2803,12 +2917,43 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
 
 def _display_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
-    if read_display_transition_decision(lineage_root, stage_base=stage_base) == "SKIP_DISPLAY":
+    display_decision = read_display_transition_decision(lineage_root, stage_base=stage_base)
+    if display_decision == "SKIP_DISPLAY":
         return (
             "DISPLAY_SKIPPED",
             f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue past {stage_base}.",
         )
-    if stage_base in DISPLAY_IMPLEMENTED_STAGE_BASES:
+    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
+        render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
+        render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
+        summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
+        missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
+        if render_status == "complete" and summary_status == "complete":
+            return (
+                "DISPLAY_RENDER_COMPLETE",
+                f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue past {stage_base}.",
+            )
+        if render_status == "complete" and summary_status != "complete":
+            missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
+            return (
+                "DISPLAY_RENDER_FAILED",
+                f"The {stage_base} display summary is incomplete ({missing_text}), so rerun display only after the frozen display inputs exist.",
+            )
+        if render_status == "incomplete_diagnostic":
+            if render_error:
+                return (
+                    "DISPLAY_RENDER_FAILED",
+                    f"Fix the {stage_base} display render failure ({render_error}), then rerun with --display-stage.",
+                )
+            return (
+                "DISPLAY_RENDER_FAILED",
+                f"Fix the {stage_base} display render failure, then rerun with --display-stage.",
+            )
+        return (
+            "DISPLAY_RENDER_PENDING",
+            f"Run with --display-stage to render the {stage_base} stage summary before continuing.",
+        )
+    if _supports_stage_display(stage_base):
         return (
             "DISPLAY_CONFIRMATION_PENDING",
             "Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.",
@@ -2823,6 +2968,27 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
     stage_base = _stage_base_name(current_stage)
     display_decision = read_display_transition_decision(lineage_root, stage_base=stage_base)
     next_stage_base = NEXT_STAGE_BY_BASE[stage_base]
+    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
+        render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
+        render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
+        summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
+        missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
+        if render_status != "complete" or summary_status != "complete":
+            if render_status == "complete" and summary_status != "complete":
+                missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
+                return (
+                    "DISPLAY_RENDER_FAILED",
+                    f"Fix the incomplete {stage_base} display summary ({missing_text}) before confirming the next stage.",
+                )
+            if render_error:
+                return (
+                    "DISPLAY_RENDER_FAILED",
+                    f"Fix the {stage_base} display render failure ({render_error}), then rerun with --display-stage before confirming the next stage.",
+                )
+            return (
+                "DISPLAY_RENDER_FAILED",
+                f"Render {stage_base} display successfully with --display-stage before confirming the next stage.",
+            )
     if display_decision == "DISPLAY_STAGE" and stage_base not in DISPLAY_IMPLEMENTED_STAGE_BASES:
         if next_stage_base is None:
             return (

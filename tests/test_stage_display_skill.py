@@ -11,8 +11,68 @@ from tools.stage_display_runtime import (
     StageDisplayRenderError,
     UnsupportedStageError,
     build_stage_display_summary,
+    supported_stage_ids,
     write_stage_display_report,
 )
+
+
+def _build_mandate_lineage(tmp_path: Path) -> Path:
+    lineage_root = tmp_path / "outputs" / "btc_alt"
+    stage_dir = lineage_root / "01_mandate"
+    stage_dir.mkdir(parents=True)
+    (stage_dir / "mandate.md").write_text(
+        "\n".join(
+            [
+                "# Mandate",
+                "",
+                "- 研究问题: BTC 冲击发生时，哪些 ALT 在同一横截面里更容易出现后续相对弱势？",
+                "- 主假设: BTC 冲击会暴露横截面脆弱性差异。",
+                "- 对立假设: 只是共同 beta 去风险，并不存在相对弱势机制。",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "research_scope.md").write_text(
+        "\n".join(
+            [
+                "# Research Scope",
+                "",
+                "- 市场: crypto perpetuals",
+                "- 数据来源: /Users/mac08/workspace/coin-data",
+                "- Universe: liquid ALT perpetuals ex-BTC",
+                "- Bar 粒度: 5m",
+                "- 研究任务: cross-sectional ranking",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "research_route.yaml").write_text(
+        "\n".join(
+            [
+                "research_route: cross_sectional_factor",
+                "factor_role: standalone_alpha",
+                "factor_structure: single_factor",
+                "portfolio_expression: long_only_rank",
+                "neutralization_policy: group_neutral",
+                "target_strategy_reference: post_shock_weakness_v1",
+                "group_taxonomy_reference: sector_bucket_v1",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "time_split.json").write_text('{"train":"2024-01-01/2024-06-30","test":"2024-07-01/2024-09-30","holdout":"2024-10-01/2024-12-31"}\n', encoding="utf-8")
+    (stage_dir / "parameter_grid.yaml").write_text("shock_window: [15m, 30m]\n", encoding="utf-8")
+    (stage_dir / "run_config.toml").write_text("no_lookahead = true\n", encoding="utf-8")
+    (stage_dir / "artifact_catalog.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
+    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_completion_certificate.yaml").write_text("stage_status: PASS\nfinal_verdict: PASS\n", encoding="utf-8")
+    return lineage_root
 
 
 def _build_csf_data_ready_lineage(tmp_path: Path) -> Path:
@@ -101,7 +161,7 @@ def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_
     summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="csf_data_ready")
 
     assert summary["stage_id"] == "csf_data_ready"
-    assert summary["supported_stage_ids"] == ["csf_data_ready"]
+    assert summary["supported_stage_ids"] == ["mandate", "csf_data_ready"]
     assert summary["status"] == "complete"
     assert summary["missing_required_inputs"] == []
     assert summary["section_order"] == [
@@ -113,6 +173,33 @@ def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_
     first_section_items = summary["sections"][0]["items"]
     assert any(item["text"] == "date_key: trade_date" for item in first_section_items)
     assert any(item["marker"] == "question" for section in summary["sections"] for item in section["items"])
+
+
+def test_supported_stage_ids_are_first_wave_only() -> None:
+    assert supported_stage_ids() == ("mandate", "csf_data_ready")
+
+
+def test_build_stage_display_summary_for_mandate_has_bounded_sections_and_review_evidence(tmp_path: Path) -> None:
+    lineage_root = _build_mandate_lineage(tmp_path)
+
+    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="mandate")
+
+    assert summary["stage_id"] == "mandate"
+    assert summary["title"] == "Mandate Display Summary"
+    assert summary["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert summary["status"] == "complete"
+    assert summary["missing_required_inputs"] == []
+    assert summary["section_order"] == [
+        "Mandate Question And Route",
+        "Scope And Data Contract",
+        "Execution And Review Evidence",
+    ]
+    first_section_items = summary["sections"][0]["items"]
+    assert any(
+        item["text"] == "research_question: BTC 冲击发生时，哪些 ALT 在同一横截面里更容易出现后续相对弱势？"
+        for item in first_section_items
+    )
+    assert any(item["text"] == "review_verdict: PASS" for item in summary["sections"][2]["items"])
 
 
 def test_write_stage_display_report_writes_summary_and_html_via_subagent_command(tmp_path: Path) -> None:
@@ -135,6 +222,26 @@ def test_write_stage_display_report_writes_summary_and_html_via_subagent_command
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     assert summary["render_status"] == "complete"
     assert summary["artifacts"]["html_path"] == str(html_path)
+
+
+def test_write_stage_display_report_supports_mandate(tmp_path: Path) -> None:
+    lineage_root = _build_mandate_lineage(tmp_path)
+    renderer = _write_renderer_stub(tmp_path)
+
+    result = write_stage_display_report(
+        lineage_root=lineage_root,
+        stage_id="mandate",
+        renderer_command=[sys.executable, str(renderer)],
+    )
+
+    summary_path = Path(result["structured_summary_path"])
+    html_path = Path(result["html_path"])
+    assert result["render_status"] == "complete"
+    assert summary_path.exists()
+    assert html_path.exists()
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["stage_id"] == "mandate"
+    assert summary["render_status"] == "complete"
 
 
 # 失败时保留 summary 诊断件，但不能留下伪成功 HTML。
@@ -182,6 +289,37 @@ def test_run_stage_display_script_uses_renderer_override(tmp_path: Path) -> None
             sys.executable,
             str(script_path),
             "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(_build_mandate_lineage(tmp_path)),
+            "--renderer-command",
+            f"{sys.executable} {renderer}",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads(result.stdout)
+    assert manifest["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert Path(manifest["structured_summary_path"]).exists()
+    assert Path(manifest["html_path"]).exists()
+
+
+def test_run_stage_display_script_uses_renderer_override_for_csf_data_ready(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_stage_display.py"
+    lineage_root = _build_csf_data_ready_lineage(tmp_path)
+    renderer = _write_renderer_stub(tmp_path)
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-id",
             "csf_data_ready",
             "--lineage-root",
             str(lineage_root),
@@ -197,6 +335,6 @@ def test_run_stage_display_script_uses_renderer_override(tmp_path: Path) -> None
 
     assert result.returncode == 0, result.stderr
     manifest = json.loads(result.stdout)
-    assert manifest["supported_stage_ids"] == ["csf_data_ready"]
+    assert manifest["supported_stage_ids"] == ["mandate", "csf_data_ready"]
     assert Path(manifest["structured_summary_path"]).exists()
     assert Path(manifest["html_path"]).exists()

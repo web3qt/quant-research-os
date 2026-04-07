@@ -1031,7 +1031,7 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
     ]:
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
-    _write_yaml(mandate_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(mandate_dir, stage="mandate", decision="SKIP_DISPLAY")
     _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
     _write_yaml(
         data_ready_dir / "data_ready_transition_approval.yaml",
@@ -1043,7 +1043,6 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
             "source_stage": "mandate_review_complete",
         },
     )
-    _write_display_decision(mandate_dir, stage="mandate")
     _write_next_stage_confirmation(mandate_dir, stage="mandate")
 
     assert detect_session_stage(lineage_root) == "data_ready_author"
@@ -1226,7 +1225,7 @@ def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confir
     ]:
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
-    _write_yaml(data_ready_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(data_ready_dir, stage="data_ready", decision="SKIP_DISPLAY")
     _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
     _write_yaml(
         signal_ready_dir / "signal_ready_transition_approval.yaml",
@@ -1341,7 +1340,7 @@ def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confir
         (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
     (signal_ready_dir / "params").mkdir()
     write_fake_stage_provenance(lineage_root, "signal_ready")
-    _write_yaml(signal_ready_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(signal_ready_dir, stage="signal_ready", decision="SKIP_DISPLAY")
     _write_yaml(train_dir / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
     _write_yaml(
         train_dir / "train_transition_approval.yaml",
@@ -1444,7 +1443,7 @@ def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confi
     ]:
         (train_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
-    _write_yaml(train_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(train_dir, stage="train_freeze", decision="SKIP_DISPLAY")
     _write_yaml(test_dir / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
     _write_yaml(
         test_dir / "test_evidence_transition_approval.yaml",
@@ -1564,7 +1563,7 @@ def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_conf
     ]:
         (test_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
-    _write_yaml(test_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(test_dir, stage="test_evidence", decision="SKIP_DISPLAY")
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _write_yaml(
         backtest_dir / "backtest_ready_transition_approval.yaml",
@@ -1598,7 +1597,7 @@ def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_ar
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(test_dir, stage="test_evidence")
     (test_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
-    _write_yaml(test_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(test_dir, stage="test_evidence", decision="SKIP_DISPLAY")
     backtest_dir.mkdir(parents=True)
     _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _write_yaml(
@@ -1672,7 +1671,7 @@ def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     holdout_dir.mkdir(parents=True)
     (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
-    _write_yaml(backtest_dir / "stage_display_decision.yaml", {"decision": "SKIP"})
+    _write_display_decision(backtest_dir, stage="backtest_ready", decision="SKIP_DISPLAY")
     _write_yaml(
         holdout_dir / "holdout_validation_draft.yaml",
         _holdout_validation_draft(confirmed=True),

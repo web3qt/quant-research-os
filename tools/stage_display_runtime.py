@@ -9,10 +9,33 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+import yaml
+
+MANDATE_STAGE_ID = "mandate"
 CSF_DATA_READY_STAGE_ID = "csf_data_ready"
 DISPLAY_REPORTS_DIR = Path("reports") / "stage_display"
 STRUCTURED_SUMMARY_SCHEMA_VERSION = "1.0"
 SUBAGENT_COMMAND_ENV = "QROS_STAGE_DISPLAY_SUBAGENT_CMD"
+
+MANDATE_REQUIRED_OUTPUTS = (
+    "mandate.md",
+    "research_scope.md",
+    "research_route.yaml",
+    "time_split.json",
+    "parameter_grid.yaml",
+    "run_config.toml",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+    "program_execution_manifest.json",
+    "latest_review_pack.yaml",
+    "stage_gate_review.yaml",
+    "stage_completion_certificate.yaml",
+)
+MANDATE_SECTION_ORDER = (
+    "Mandate Question And Route",
+    "Scope And Data Contract",
+    "Execution And Review Evidence",
+)
 
 CSF_REQUIRED_OUTPUTS = (
     "panel_manifest.json",
@@ -58,6 +81,12 @@ class StageDisplayConfig:
 
 
 SUPPORTED_STAGE_CONFIGS: dict[str, StageDisplayConfig] = {
+    MANDATE_STAGE_ID: StageDisplayConfig(
+        stage_id=MANDATE_STAGE_ID,
+        stage_dir_name="01_mandate",
+        summary_filename="mandate.summary.json",
+        html_filename="mandate.summary.html",
+    ),
     CSF_DATA_READY_STAGE_ID: StageDisplayConfig(
         stage_id=CSF_DATA_READY_STAGE_ID,
         stage_dir_name="02_csf_data_ready",
@@ -80,6 +109,8 @@ def resolve_stage_display_config(stage_id: str) -> StageDisplayConfig:
 
 def build_stage_display_summary(*, lineage_root: Path, stage_id: str) -> dict[str, object]:
     config = resolve_stage_display_config(stage_id)
+    if config.stage_id == MANDATE_STAGE_ID:
+        return _build_mandate_summary(lineage_root=lineage_root, config=config)
     if config.stage_id == CSF_DATA_READY_STAGE_ID:
         return _build_csf_data_ready_summary(lineage_root=lineage_root, config=config)
     raise UnsupportedStageError(f"Unsupported stage for qros-stage-display: {stage_id}")
@@ -255,7 +286,7 @@ def _build_compat_export_summary(summary: Mapping[str, object]) -> dict[str, obj
             }
         )
     return {
-        "title": "CSF Data Ready Display Summary",
+        "title": str(summary.get("title", "Stage Display Summary")),
         "stage_id": str(summary["stage_id"]),
         "lineage_id": str(summary["lineage_id"]),
         "lineage_root": str(summary["lineage_root"]),
@@ -305,6 +336,179 @@ def _render_compat_stage_display_html(summary: Mapping[str, object]) -> str:
     )
 
 
+def _build_mandate_summary(*, lineage_root: Path, config: StageDisplayConfig) -> dict[str, object]:
+    stage_dir = lineage_root / config.stage_dir_name
+    if not stage_dir.exists():
+        raise StageDisplayError(f"Missing stage directory for qros-stage-display: {stage_dir}")
+
+    required_paths = {name: stage_dir / name for name in MANDATE_REQUIRED_OUTPUTS}
+    missing_required = sorted(name for name, path in required_paths.items() if not path.exists())
+    route_contract = _read_yaml_object(stage_dir / "research_route.yaml")
+    review_certificate = _read_yaml_object(stage_dir / "stage_completion_certificate.yaml")
+
+    sections = [
+        {
+            "id": "mandate_question_and_route",
+            "title": MANDATE_SECTION_ORDER[0],
+            "items": _mandate_question_and_route_items(
+                lineage_root=lineage_root,
+                stage_dir=stage_dir,
+                route_contract=route_contract,
+            ),
+        },
+        {
+            "id": "scope_and_data_contract",
+            "title": MANDATE_SECTION_ORDER[1],
+            "items": _mandate_scope_and_data_items(stage_dir=stage_dir),
+        },
+        {
+            "id": "execution_and_review_evidence",
+            "title": MANDATE_SECTION_ORDER[2],
+            "items": _mandate_execution_and_review_items(
+                stage_dir=stage_dir,
+                route_contract=route_contract,
+                review_certificate=review_certificate,
+            ),
+        },
+    ]
+
+    return {
+        "title": "Mandate Display Summary",
+        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
+        "stage_id": config.stage_id,
+        "lineage_id": lineage_root.name,
+        "lineage_root": str(lineage_root),
+        "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
+        "supported_stage_ids": list(supported_stage_ids()),
+        "required_subagent": True,
+        "status": "complete" if not missing_required else "incomplete",
+        "missing_required_inputs": missing_required,
+        "section_order": list(MANDATE_SECTION_ORDER),
+        "sections": sections,
+    }
+
+
+def _mandate_question_and_route_items(
+    *,
+    lineage_root: Path,
+    stage_dir: Path,
+    route_contract: Mapping[str, object] | None,
+) -> list[dict[str, str]]:
+    mandate_text = _safe_read_text(stage_dir / "mandate.md")
+    items = [
+        _info_item(
+            label="stage_directory",
+            text=f"stage directory: outputs/{lineage_root.name}/{stage_dir.name}",
+        ),
+        _artifact_item("mandate.md", stage_dir / "mandate.md"),
+        _artifact_item("research_route.yaml", stage_dir / "research_route.yaml"),
+    ]
+    research_question = _extract_line_value(mandate_text, "- 研究问题:")
+    primary_hypothesis = _extract_line_value(mandate_text, "- 主假设:")
+    counter_hypothesis = _extract_line_value(mandate_text, "- 对立假设:")
+    if research_question:
+        items.append(_info_item("research_question", f"research_question: {research_question}"))
+    else:
+        items.append(_missing_item("research_question", "research_question: missing from mandate.md"))
+    if primary_hypothesis:
+        items.append(_info_item("primary_hypothesis", f"primary_hypothesis: {primary_hypothesis}"))
+    else:
+        items.append(_question_item("Which frozen line in mandate.md states the primary hypothesis?"))
+    if counter_hypothesis:
+        items.append(_info_item("counter_hypothesis", f"counter_hypothesis: {counter_hypothesis}"))
+    else:
+        items.append(_question_item("Which frozen line in mandate.md states the counter hypothesis?"))
+    if route_contract is None:
+        items.append(_missing_item("research_route", "research_route: missing from research_route.yaml"))
+    else:
+        for field_name in (
+            "research_route",
+            "factor_role",
+            "factor_structure",
+            "portfolio_expression",
+            "neutralization_policy",
+        ):
+            value = route_contract.get(field_name)
+            if value in (None, ""):
+                items.append(_missing_item(field_name, f"{field_name}: missing from research_route.yaml"))
+            else:
+                items.append(_info_item(field_name, f"{field_name}: {value}"))
+    items.append(
+        _question_item(
+            "Does the frozen mandate question still match the declared route and factor identity without reinterpreting alpha quality?",
+        )
+    )
+    return items
+
+
+def _mandate_scope_and_data_items(*, stage_dir: Path) -> list[dict[str, str]]:
+    scope_text = _safe_read_text(stage_dir / "research_scope.md")
+    run_config_text = _safe_read_text(stage_dir / "run_config.toml")
+    time_split_text = _safe_read_text(stage_dir / "time_split.json")
+    items = [
+        _artifact_item("research_scope.md", stage_dir / "research_scope.md"),
+        _artifact_item("time_split.json", stage_dir / "time_split.json"),
+        _artifact_item("parameter_grid.yaml", stage_dir / "parameter_grid.yaml"),
+        _artifact_item("run_config.toml", stage_dir / "run_config.toml"),
+    ]
+    for label, prefix in (
+        ("market", "- 市场:"),
+        ("data_source", "- 数据来源:"),
+        ("universe", "- Universe:"),
+        ("bar_size", "- Bar 粒度:"),
+        ("target_task", "- 研究任务:"),
+    ):
+        value = _extract_line_value(scope_text, prefix)
+        if value:
+            items.append(_info_item(label, f"{label}: {value}"))
+        else:
+            items.append(_question_item(f"Which frozen scope line records {label}?"))
+    if "\"holdout\"" in time_split_text or "\"test\"" in time_split_text:
+        items.append(_info_item("time_split", "time_split.json: present with frozen split keys"))
+    else:
+        items.append(_question_item("Does time_split.json freeze the downstream train/test/holdout boundaries?"))
+    if "lookahead" in run_config_text.lower() or "no_lookahead" in run_config_text.lower():
+        items.append(_info_item("lookahead_guardrail", "run_config.toml: lookahead guardrail recorded"))
+    else:
+        items.append(_question_item("Where is the no-lookahead guardrail frozen for downstream consumers?"))
+    return items
+
+
+def _mandate_execution_and_review_items(
+    *,
+    stage_dir: Path,
+    route_contract: Mapping[str, object] | None,
+    review_certificate: Mapping[str, object] | None,
+) -> list[dict[str, str]]:
+    items = [
+        _artifact_item("artifact_catalog.md", stage_dir / "artifact_catalog.md"),
+        _artifact_item("field_dictionary.md", stage_dir / "field_dictionary.md"),
+        _artifact_item("program_execution_manifest.json", stage_dir / "program_execution_manifest.json"),
+        _artifact_item("latest_review_pack.yaml", stage_dir / "latest_review_pack.yaml"),
+        _artifact_item("stage_gate_review.yaml", stage_dir / "stage_gate_review.yaml"),
+        _artifact_item("stage_completion_certificate.yaml", stage_dir / "stage_completion_certificate.yaml"),
+    ]
+    if route_contract is not None:
+        for field_name in ("target_strategy_reference", "group_taxonomy_reference"):
+            value = route_contract.get(field_name)
+            if value:
+                items.append(_info_item(field_name, f"{field_name}: {value}"))
+    if review_certificate is None:
+        items.append(_missing_item("review_verdict", "review_verdict: missing from stage_completion_certificate.yaml"))
+    else:
+        verdict = review_certificate.get("stage_status") or review_certificate.get("final_verdict")
+        if verdict:
+            items.append(_info_item("review_verdict", f"review_verdict: {verdict}"))
+        else:
+            items.append(_question_item("Which explicit review closure verdict governs this frozen mandate stage?"))
+    items.append(
+        _question_item(
+            "Do the closure artifacts fully explain what was approved and what remains reserved without adding new interpretation?",
+        )
+    )
+    return items
+
+
 # 这里读取 stage-local contracts，只抽取已冻结事实；不解析 parquet 内容，也不推断 alpha 含义。
 def _build_csf_data_ready_summary(*, lineage_root: Path, config: StageDisplayConfig) -> dict[str, object]:
     stage_dir = lineage_root / config.stage_dir_name
@@ -339,12 +543,13 @@ def _build_csf_data_ready_summary(*, lineage_root: Path, config: StageDisplayCon
     ]
 
     return {
+        "title": "CSF Data Ready Display Summary",
         "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
         "stage_id": config.stage_id,
         "lineage_id": lineage_root.name,
         "lineage_root": str(lineage_root),
         "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
-        "supported_stage_ids": [CSF_DATA_READY_STAGE_ID],
+        "supported_stage_ids": list(supported_stage_ids()),
         "required_subagent": True,
         "status": "complete" if not missing_required else "incomplete",
         "missing_required_inputs": missing_required,
@@ -492,6 +697,27 @@ def _read_json_object(path: Path) -> dict[str, object] | None:
     except json.JSONDecodeError:
         return None
     return loaded if isinstance(loaded, dict) else None
+
+
+def _read_yaml_object(path: Path) -> dict[str, object] | None:
+    if not path.exists():
+        return None
+    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _safe_read_text(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def _extract_line_value(text: str, prefix: str) -> str | None:
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return None
 
 
 def _artifact_item(label: str, path: Path, *, is_directory: bool = False) -> dict[str, str]:

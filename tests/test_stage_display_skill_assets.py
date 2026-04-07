@@ -8,8 +8,9 @@ SKILL_PATHS = (
 
 REQUIRED_SUPPORT_LIST_SUBSTRINGS = (
     "## v1 Supported Stage List",
+    "`mandate`",
     "`csf_data_ready`",
-    "v1 formally supports **only** `csf_data_ready`.",
+    "v1 formally supports **only** `mandate` and `csf_data_ready`.",
     "No other stage is supported in v1.",
 )
 
@@ -26,7 +27,7 @@ def test_stage_display_skill_assets_exist_in_both_trees() -> None:
         assert path.exists(), f"missing skill asset: {path}"
 
 
-def test_stage_display_skill_v1_support_list_contains_only_csf_data_ready() -> None:
+def test_stage_display_skill_v1_support_list_contains_only_first_wave_stages() -> None:
     for path in SKILL_PATHS:
         text = path.read_text(encoding="utf-8")
         for needle in REQUIRED_SUPPORT_LIST_SUBSTRINGS:
