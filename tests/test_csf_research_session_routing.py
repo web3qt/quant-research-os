@@ -14,13 +14,13 @@ def _write_stage_completion_certificate(path: Path, stage_status: str = "PASS") 
     _write_yaml(path, {"stage_status": stage_status, "final_verdict": stage_status})
 
 
-def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
+def _write_display_decision(stage_dir: Path, *, stage: str, decision: str = "DISPLAY_STAGE") -> None:
     _write_yaml(
         stage_dir / "display_transition_decision.yaml",
         {
             "lineage_id": stage_dir.parent.name,
             "stage_id": stage,
-            "decision": "DISPLAY_STAGE",
+            "decision": decision,
             "approved_by": "tester",
             "approved_at": "2026-04-06T10:00:00Z",
             "source_stage": f"{stage}_display_confirmation_pending",
@@ -108,7 +108,7 @@ def test_run_research_session_writes_csf_transition_approval_in_csf_directory(tm
     assert approval_path.exists()
     assert status.current_stage == "mandate_display_confirmation_pending"
 
-    _write_display_decision(lineage_root / "01_mandate", stage="mandate")
+    _write_display_decision(lineage_root / "01_mandate", stage="mandate", decision="SKIP_DISPLAY")
     _write_next_stage_confirmation(lineage_root / "01_mandate", stage="mandate")
 
     status = run_research_session(outputs_root=tmp_path / "outputs", lineage_id="csf_case")

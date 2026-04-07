@@ -58,6 +58,7 @@ from tools.lineage_program_runtime import (
     invoke_stage_if_admitted,
     load_provenance_manifest,
     stage_outputs_complete,
+    validate_stage_program,
 )
 from tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
@@ -72,6 +73,7 @@ from tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_GROUP_ORDER,
     scaffold_signal_ready,
 )
+from tools.stage_program_scaffold import materialize_stage_program
 from tools.stage_display_runtime import (
     StageDisplayError,
     load_stage_display_request,
@@ -850,6 +852,21 @@ def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
 def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
     if detect_session_stage(lineage_root) != "csf_data_ready_author":
         return []
+    if next_csf_data_ready_freeze_group(lineage_root) is not None:
+        return []
+    inspection = inspect_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+    if inspection.error_code == "STAGE_PROGRAM_MISSING":
+        try:
+            materialize_stage_program(
+                lineage_root,
+                "csf_data_ready",
+                authored_by_agent_id="codex",
+                authored_by_agent_role="executor",
+                authoring_session_id="auto-csf-data-ready-program",
+            )
+            validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        except StageProgramRuntimeError:
+            return []
     try:
         return _invoke_program_stage(lineage_root, "csf_data_ready_author")
     except StageProgramRuntimeError:

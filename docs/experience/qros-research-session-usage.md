@@ -127,6 +127,12 @@ Lineage: btc_leads_alts
 
 未注册阶段仍会显式返回 not implemented，而不会伪造 partial HTML success。
 
+另外，第一波 author-stage 自动补程式能力目前只正式覆盖：
+
+- `csf_data_ready_author`
+
+也就是说，当 lineage 已经进入 `csf_data_ready_author`，且 `csf_data_ready` 的 freeze groups 已全部确认，只剩 `program/cross_sectional_factor/data_ready` 缺失时，session 会自动物化一个 runnable first-pass stage program，并继续尝试执行它，而不是永远停在 `STAGE_PROGRAM_MISSING`。
+
 `csf_data_ready` 的第一版 reflection / HTML 只展示 3 个固定块：
 
 - `Data Coverage And Gaps`

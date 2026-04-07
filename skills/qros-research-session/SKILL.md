@@ -274,6 +274,7 @@ Auto-act when:
 - scaffolding `00_idea_intake/`
 - detecting the current stage
 - reporting current state
+- when the stage is `csf_data_ready_author`, all freeze groups are already confirmed, and the only remaining blocker is a missing lineage-local stage program, auto-materialize the first-pass runnable program and continue
 
 Ask the user only when:
 
