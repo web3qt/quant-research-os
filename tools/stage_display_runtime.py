@@ -5,7 +5,7 @@ import os
 import shlex
 import subprocess
 import tempfile
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
@@ -16,6 +16,9 @@ CSF_DATA_READY_STAGE_ID = "csf_data_ready"
 DISPLAY_REPORTS_DIR = Path("reports") / "stage_display"
 STRUCTURED_SUMMARY_SCHEMA_VERSION = "1.0"
 SUBAGENT_COMMAND_ENV = "QROS_STAGE_DISPLAY_SUBAGENT_CMD"
+DISPLAY_REQUEST_STATUS = "awaiting_native_subagent_render"
+DISPLAY_RESULT_COMPLETE = "complete"
+DISPLAY_RESULT_FAILED = "failed"
 
 MANDATE_REQUIRED_OUTPUTS = (
     "mandate.md",
@@ -77,6 +80,9 @@ class StageDisplayConfig:
     stage_id: str
     stage_dir_name: str
     summary_filename: str
+    request_filename: str
+    prompt_filename: str
+    result_filename: str
     html_filename: str
 
 
@@ -85,12 +91,18 @@ SUPPORTED_STAGE_CONFIGS: dict[str, StageDisplayConfig] = {
         stage_id=MANDATE_STAGE_ID,
         stage_dir_name="01_mandate",
         summary_filename="mandate.summary.json",
+        request_filename="mandate.display_request.json",
+        prompt_filename="mandate.display_prompt.txt",
+        result_filename="mandate.display_result.json",
         html_filename="mandate.summary.html",
     ),
     CSF_DATA_READY_STAGE_ID: StageDisplayConfig(
         stage_id=CSF_DATA_READY_STAGE_ID,
         stage_dir_name="02_csf_data_ready",
         summary_filename="csf_data_ready.summary.json",
+        request_filename="csf_data_ready.display_request.json",
+        prompt_filename="csf_data_ready.display_prompt.txt",
+        result_filename="csf_data_ready.display_result.json",
         html_filename="csf_data_ready.summary.html",
     ),
 }
@@ -117,6 +129,61 @@ def build_stage_display_summary(*, lineage_root: Path, stage_id: str) -> dict[st
 
 
 # 这里保持 registry-thin：generic shell 只做路由，阶段语义仍由 repo-owned builder 决定。
+def prepare_stage_display_handoff(
+    *,
+    lineage_root: Path,
+    stage_id: str,
+    output_dir: Path | None = None,
+) -> dict[str, object]:
+    config = resolve_stage_display_config(stage_id)
+    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id=stage_id)
+
+    resolved_output_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+    paths = _display_artifact_paths(resolved_output_dir, config)
+    prompt = build_stage_display_render_prompt(summary)
+
+    if paths["html_path"].exists():
+        paths["html_path"].unlink()
+    if paths["result_path"].exists():
+        paths["result_path"].unlink()
+
+    summary["artifacts"] = _artifact_strings(paths)
+    summary["render_status"] = DISPLAY_REQUEST_STATUS
+    _write_json(paths["summary_path"], summary)
+    paths["prompt_path"].write_text(prompt.rstrip() + "\n", encoding="utf-8")
+
+    request_payload = {
+        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
+        "stage_id": stage_id,
+        "lineage_id": lineage_root.name,
+        "lineage_root": str(lineage_root),
+        "summary_path": str(paths["summary_path"]),
+        "prompt_path": str(paths["prompt_path"]),
+        "html_output_path": str(paths["html_path"]),
+        "result_path": str(paths["result_path"]),
+        "status": DISPLAY_REQUEST_STATUS,
+        "required_subagent": True,
+        "instructions": (
+            "Use any Codex session to read prompt_path, natively spawn a visible subagent to render HTML "
+            "to html_output_path, then write result_path with completion metadata."
+        ),
+    }
+    _write_json(paths["request_path"], request_payload)
+    return {
+        "stage_id": stage_id,
+        "lineage_root": str(lineage_root),
+        "supported_stage_ids": list(supported_stage_ids()),
+        "structured_summary_path": str(paths["summary_path"]),
+        "request_path": str(paths["request_path"]),
+        "prompt_path": str(paths["prompt_path"]),
+        "html_path": str(paths["html_path"]),
+        "result_path": str(paths["result_path"]),
+        "render_status": DISPLAY_REQUEST_STATUS,
+        "required_subagent": True,
+    }
+
+
 def write_stage_display_report(
     *,
     lineage_root: Path,
@@ -124,21 +191,15 @@ def write_stage_display_report(
     output_dir: Path | None = None,
     renderer_command: Sequence[str] | str | None = None,
 ) -> dict[str, object]:
-    config = resolve_stage_display_config(stage_id)
-    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id=stage_id)
+    result = prepare_stage_display_handoff(
+        lineage_root=lineage_root,
+        stage_id=stage_id,
+        output_dir=output_dir,
+    )
+    if renderer_command is None:
+        return result
 
-    resolved_output_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
-    resolved_output_dir.mkdir(parents=True, exist_ok=True)
-    summary_path = resolved_output_dir / config.summary_filename
-    html_path = resolved_output_dir / config.html_filename
-
-    summary["artifacts"] = {
-        "structured_summary_path": str(summary_path),
-        "html_path": str(html_path),
-    }
-    summary["render_status"] = "pending"
-    _write_json(summary_path, summary)
-
+    summary = _read_json_required(Path(result["structured_summary_path"]))
     try:
         html = render_stage_display_html(
             summary=summary,
@@ -146,25 +207,23 @@ def write_stage_display_report(
             renderer_command=renderer_command,
         )
     except StageDisplayRenderError as exc:
-        summary["render_status"] = "incomplete_diagnostic"
-        summary["render_error"] = str(exc)
-        _write_json(summary_path, summary)
-        if html_path.exists():
-            html_path.unlink()
+        write_stage_display_result(
+            lineage_root=lineage_root,
+            stage_id=stage_id,
+            error=str(exc),
+            output_dir=output_dir,
+        )
         raise
 
-    html_path.write_text(html.rstrip() + "\n", encoding="utf-8")
-    summary["render_status"] = "complete"
-    _write_json(summary_path, summary)
-    return {
-        "stage_id": stage_id,
-        "lineage_root": str(lineage_root),
-        "supported_stage_ids": list(supported_stage_ids()),
-        "structured_summary_path": str(summary_path),
-        "html_path": str(html_path),
-        "render_status": summary["render_status"],
-        "required_subagent": True,
-    }
+    write_stage_display_result(
+        lineage_root=lineage_root,
+        stage_id=stage_id,
+        html=html,
+        rendered_by="runtime_renderer_override",
+        output_dir=output_dir,
+    )
+    result["render_status"] = DISPLAY_RESULT_COMPLETE
+    return result
 
 
 # 兼容旧测试入口：保留 export_stage_display 名称，但内部仍复用新的 registry-thin summary builder。
@@ -269,6 +328,86 @@ def build_stage_display_render_prompt(summary: Mapping[str, object]) -> str:
             "```",
         ]
     )
+
+
+def load_stage_display_request(
+    *,
+    lineage_root: Path,
+    stage_id: str,
+    output_dir: Path | None = None,
+) -> dict[str, object] | None:
+    config = resolve_stage_display_config(stage_id)
+    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
+    request_path = display_dir / config.request_filename
+    return _read_json_object(request_path)
+
+
+def load_stage_display_result(
+    *,
+    lineage_root: Path,
+    stage_id: str,
+    output_dir: Path | None = None,
+) -> dict[str, object] | None:
+    config = resolve_stage_display_config(stage_id)
+    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
+    result_path = display_dir / config.result_filename
+    return _read_json_object(result_path)
+
+
+def write_stage_display_result(
+    *,
+    lineage_root: Path,
+    stage_id: str,
+    html: str | None = None,
+    error: str | None = None,
+    rendered_by: str = "codex-native-subagent",
+    rendered_at: str | None = None,
+    output_dir: Path | None = None,
+) -> dict[str, object]:
+    if (html is None) == (error is None):
+        raise StageDisplayError("write_stage_display_result requires exactly one of html or error")
+
+    config = resolve_stage_display_config(stage_id)
+    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
+    display_dir.mkdir(parents=True, exist_ok=True)
+    paths = _display_artifact_paths(display_dir, config)
+    request_payload = _read_json_required(paths["request_path"])
+    summary_payload = _read_json_required(paths["summary_path"])
+
+    if request_payload.get("stage_id") != stage_id or request_payload.get("lineage_id") != lineage_root.name:
+        raise StageDisplayError("display request artifact does not match stage/lineage")
+    if str(request_payload.get("summary_path")) != str(paths["summary_path"]):
+        raise StageDisplayError("display request artifact summary_path does not match expected summary path")
+
+    timestamp = rendered_at or _utc_now()
+    result_payload = {
+        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
+        "stage_id": stage_id,
+        "lineage_id": lineage_root.name,
+        "summary_path": str(paths["summary_path"]),
+        "html_path": str(paths["html_path"]),
+        "request_path": str(paths["request_path"]),
+        "status": DISPLAY_RESULT_COMPLETE if html is not None else DISPLAY_RESULT_FAILED,
+        "rendered_by": rendered_by,
+        "rendered_at": timestamp,
+        "render_error": error,
+    }
+
+    if html is not None:
+        if "<html" not in html.lower():
+            raise StageDisplayError("completion HTML must be a complete HTML document")
+        paths["html_path"].write_text(html.rstrip() + "\n", encoding="utf-8")
+        summary_payload["render_status"] = DISPLAY_RESULT_COMPLETE
+        summary_payload.pop("render_error", None)
+    else:
+        if paths["html_path"].exists():
+            paths["html_path"].unlink()
+        summary_payload["render_status"] = DISPLAY_RESULT_FAILED
+        summary_payload["render_error"] = error
+
+    _write_json(paths["summary_path"], summary_payload)
+    _write_json(paths["result_path"], result_payload)
+    return result_payload
 
 
 def _build_compat_export_summary(summary: Mapping[str, object]) -> dict[str, object]:
@@ -658,8 +797,22 @@ def _delivery_and_rebuild_items(
             _question_item(
                 "Which stage-local program artifacts prove the frozen panel can be rebuilt from the declared inputs?",
             )
-        )
+    )
     return items
+
+
+def _display_artifact_paths(display_dir: Path, config: StageDisplayConfig) -> dict[str, Path]:
+    return {
+        "summary_path": display_dir / config.summary_filename,
+        "request_path": display_dir / config.request_filename,
+        "prompt_path": display_dir / config.prompt_filename,
+        "result_path": display_dir / config.result_filename,
+        "html_path": display_dir / config.html_filename,
+    }
+
+
+def _artifact_strings(paths: Mapping[str, Path]) -> dict[str, str]:
+    return {key: str(value) for key, value in paths.items()}
 
 
 def _resolve_renderer_command(renderer_command: Sequence[str] | str | None, *, cwd: Path) -> list[str]:
@@ -697,6 +850,13 @@ def _read_json_object(path: Path) -> dict[str, object] | None:
     except json.JSONDecodeError:
         return None
     return loaded if isinstance(loaded, dict) else None
+
+
+def _read_json_required(path: Path) -> dict[str, object]:
+    loaded = _read_json_object(path)
+    if loaded is None:
+        raise StageDisplayError(f"Expected machine-readable JSON artifact is missing or invalid: {path}")
+    return loaded
 
 
 def _read_yaml_object(path: Path) -> dict[str, object] | None:
@@ -757,3 +917,9 @@ def _question_item(text: str) -> dict[str, str]:
 
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _utc_now() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).isoformat()

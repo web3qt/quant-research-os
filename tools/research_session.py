@@ -74,9 +74,12 @@ from tools.signal_ready_runtime import (
 )
 from tools.stage_display_runtime import (
     StageDisplayError,
+    load_stage_display_request,
+    load_stage_display_result,
+    prepare_stage_display_handoff,
     resolve_stage_display_config,
     supported_stage_ids as supported_stage_display_ids,
-    write_stage_display_report,
+    write_stage_display_result,
 )
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
@@ -1491,19 +1494,23 @@ def _read_stage_display_summary(lineage_root: Path, *, stage_base: str) -> dict 
 
 
 def _stage_display_render_status(lineage_root: Path, *, stage_base: str) -> str | None:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
+    result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_base)
+    if result is None:
         return None
-    status = summary.get("render_status")
+    status = result.get("status")
     return str(status) if isinstance(status, str) and status.strip() else None
 
 
 def _stage_display_render_error(lineage_root: Path, *, stage_base: str) -> str | None:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
+    result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_base)
+    if result is None:
         return None
-    error = summary.get("render_error")
+    error = result.get("render_error")
     return str(error) if isinstance(error, str) and error.strip() else None
+
+
+def _stage_display_request_exists(lineage_root: Path, *, stage_base: str) -> bool:
+    return load_stage_display_request(lineage_root=lineage_root, stage_id=stage_base) is not None
 
 
 def _stage_display_summary_status(lineage_root: Path, *, stage_base: str) -> str | None:
@@ -1532,24 +1539,13 @@ def _invoke_stage_display(
     stage_base = _stage_base_name(current_stage)
     if not _supports_stage_display(stage_base):
         return []
-    try:
-        result = write_stage_display_report(lineage_root=lineage_root, stage_id=stage_base)
-    except StageDisplayError:
-        paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
-        if paths is None:
-            return []
-        summary_path, html_path = paths
-        written: list[str] = []
-        if summary_path.exists():
-            written.append(str(summary_path.relative_to(lineage_root)))
-        if html_path.exists():
-            written.append(str(html_path.relative_to(lineage_root)))
-        return written
-
-    return [
-        str(Path(result["structured_summary_path"]).resolve().relative_to(lineage_root.resolve())),
-        str(Path(result["html_path"]).resolve().relative_to(lineage_root.resolve())),
-    ]
+    result = prepare_stage_display_handoff(lineage_root=lineage_root, stage_id=stage_base)
+    written: list[str] = []
+    for key in ("structured_summary_path", "request_path", "prompt_path", "html_path", "result_path"):
+        path = Path(result[key]).resolve()
+        if path.exists():
+            written.append(str(path.relative_to(lineage_root.resolve())))
+    return written
 
 
 def _stage_display_ready_for_handoff(lineage_root: Path, *, stage_base: str) -> bool:
@@ -2937,21 +2933,26 @@ def _display_gate_status_and_next_action(lineage_root: Path, current_stage: Sess
             missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
             return (
                 "DISPLAY_RENDER_FAILED",
-                f"The {stage_base} display summary is incomplete ({missing_text}), so rerun display only after the frozen display inputs exist.",
+                f"The {stage_base} display summary is incomplete ({missing_text}), so regenerate the handoff only after the frozen display inputs exist.",
             )
-        if render_status == "incomplete_diagnostic":
+        if render_status == "failed":
             if render_error:
                 return (
                     "DISPLAY_RENDER_FAILED",
-                    f"Fix the {stage_base} display render failure ({render_error}), then rerun with --display-stage.",
+                    f"Fix the {stage_base} display render failure ({render_error}), then rerun the native subagent display handoff.",
                 )
             return (
                 "DISPLAY_RENDER_FAILED",
-                f"Fix the {stage_base} display render failure, then rerun with --display-stage.",
+                f"Fix the {stage_base} display render failure, then rerun the native subagent display handoff.",
+            )
+        if _stage_display_request_exists(lineage_root, stage_base=stage_base):
+            return (
+                "DISPLAY_RENDER_PENDING",
+                f"Use any Codex session to consume the {stage_base} display request artifact and write the completion artifact before continuing.",
             )
         return (
             "DISPLAY_RENDER_PENDING",
-            f"Run with --display-stage to render the {stage_base} stage summary before continuing.",
+            f"Run with --display-stage to generate the {stage_base} display handoff artifact before continuing.",
         )
     if _supports_stage_display(stage_base):
         return (
@@ -2983,11 +2984,11 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
             if render_error:
                 return (
                     "DISPLAY_RENDER_FAILED",
-                    f"Fix the {stage_base} display render failure ({render_error}), then rerun with --display-stage before confirming the next stage.",
+                    f"Fix the {stage_base} display render failure ({render_error}), then rerun the native subagent display handoff before confirming the next stage.",
                 )
             return (
-                "DISPLAY_RENDER_FAILED",
-                f"Render {stage_base} display successfully with --display-stage before confirming the next stage.",
+                "DISPLAY_RENDER_PENDING",
+                f"Complete the {stage_base} native subagent display handoff before confirming the next stage.",
             )
     if display_decision == "DISPLAY_STAGE" and stage_base not in DISPLAY_IMPLEMENTED_STAGE_BASES:
         if next_stage_base is None:

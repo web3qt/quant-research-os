@@ -11,7 +11,11 @@ from tools.stage_display_runtime import (
     StageDisplayRenderError,
     UnsupportedStageError,
     build_stage_display_summary,
+    load_stage_display_request,
+    load_stage_display_result,
+    prepare_stage_display_handoff,
     supported_stage_ids,
+    write_stage_display_result,
     write_stage_display_report,
 )
 
@@ -224,6 +228,24 @@ def test_write_stage_display_report_writes_summary_and_html_via_subagent_command
     assert summary["artifacts"]["html_path"] == str(html_path)
 
 
+def test_prepare_stage_display_handoff_writes_summary_request_and_prompt_only(tmp_path: Path) -> None:
+    lineage_root = _build_mandate_lineage(tmp_path)
+
+    result = prepare_stage_display_handoff(
+        lineage_root=lineage_root,
+        stage_id="mandate",
+    )
+
+    assert Path(result["structured_summary_path"]).exists()
+    assert Path(result["request_path"]).exists()
+    assert Path(result["prompt_path"]).exists()
+    assert not Path(result["html_path"]).exists()
+    assert not Path(result["result_path"]).exists()
+    request = load_stage_display_request(lineage_root=lineage_root, stage_id="mandate")
+    assert request is not None
+    assert request["status"] == "awaiting_native_subagent_render"
+
+
 def test_write_stage_display_report_supports_mandate(tmp_path: Path) -> None:
     lineage_root = _build_mandate_lineage(tmp_path)
     renderer = _write_renderer_stub(tmp_path)
@@ -258,11 +280,33 @@ def test_write_stage_display_report_preserves_incomplete_summary_when_subagent_f
 
     summary_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.json"
     html_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.html"
+    result_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.display_result.json"
     assert summary_path.exists()
     assert not html_path.exists()
+    assert result_path.exists()
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    assert summary["render_status"] == "incomplete_diagnostic"
+    assert summary["render_status"] == "failed"
     assert "renderer exploded" in summary["render_error"]
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    assert result["status"] == "failed"
+
+
+def test_write_stage_display_result_writes_completion_artifact_from_html(tmp_path: Path) -> None:
+    lineage_root = _build_csf_data_ready_lineage(tmp_path)
+    prepare_stage_display_handoff(lineage_root=lineage_root, stage_id="csf_data_ready")
+
+    payload = write_stage_display_result(
+        lineage_root=lineage_root,
+        stage_id="csf_data_ready",
+        html="<!DOCTYPE html><html><body><h1>Rendered</h1></body></html>",
+        rendered_by="visible-subagent",
+    )
+
+    assert payload["status"] == "complete"
+    result = load_stage_display_result(lineage_root=lineage_root, stage_id="csf_data_ready")
+    assert result is not None
+    assert result["status"] == "complete"
+    assert (lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.html").exists()
 
 
 def test_unsupported_stage_fails_without_writing_partial_outputs(tmp_path: Path) -> None:
@@ -307,6 +351,83 @@ def test_run_stage_display_script_uses_renderer_override(tmp_path: Path) -> None
     assert manifest["supported_stage_ids"] == ["mandate", "csf_data_ready"]
     assert Path(manifest["structured_summary_path"]).exists()
     assert Path(manifest["html_path"]).exists()
+
+
+def test_run_stage_display_script_default_writes_handoff_only(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_stage_display.py"
+    lineage_root = _build_mandate_lineage(tmp_path)
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads(result.stdout)
+    assert Path(manifest["structured_summary_path"]).exists()
+    assert Path(manifest["request_path"]).exists()
+    assert Path(manifest["prompt_path"]).exists()
+    assert not Path(manifest["html_path"]).exists()
+
+
+def test_run_stage_display_script_can_write_completion_from_html(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_stage_display.py"
+    lineage_root = _build_mandate_lineage(tmp_path)
+    html_input = tmp_path / "rendered.html"
+    html_input.write_text("<!DOCTYPE html><html><body><h1>Mandate</h1></body></html>\n", encoding="utf-8")
+
+    prep = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert prep.returncode == 0, prep.stderr
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--complete-from-html",
+            str(html_input),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads(result.stdout)
+    assert manifest["status"] == "complete"
+    assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
 
 
 def test_run_stage_display_script_uses_renderer_override_for_csf_data_ready(tmp_path: Path) -> None:

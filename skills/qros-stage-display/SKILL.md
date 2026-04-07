@@ -62,27 +62,36 @@ No other stage is supported in v1.
 
 ## Required Outputs
 
-Successful runs must write both artifacts under a stable display path:
+runtime 必须先写出 deterministic summary 与 handoff artifacts：
 
 - `reports/stage_display/mandate.summary.json`
-- `reports/stage_display/mandate.summary.html`
+- `reports/stage_display/mandate.display_request.json`
+- `reports/stage_display/mandate.display_prompt.txt`
 - `reports/stage_display/csf_data_ready.summary.json`
-- `reports/stage_display/csf_data_ready.summary.html`
+- `reports/stage_display/csf_data_ready.display_request.json`
+- `reports/stage_display/csf_data_ready.display_prompt.txt`
+
+当任意 Codex 会话完成原生 subagent render 之后，再回写：
+
+- `reports/stage_display/<stage>.summary.html`
+- `reports/stage_display/<stage>.display_result.json`
 
 - `*.summary.json` 是 deterministic source of truth
-- `*.summary.html` 只有在必需的 Codex subagent render 成功后才算有效成功产物
+- `*.display_request.json` / `*.display_prompt.txt` 是 native subagent handoff contract
+- `*.display_result.json` 是 render completion contract
+- `*.summary.html` 只有在 completion artifact 标记成功后才算有效成功产物
 
 ## Subagent Contract (Required)
 
-Codex subagent 是这个 workflow 里的 **required core worker**。
+Codex subagent 是这个 workflow 里的 **required core worker**，但它不再由 runtime 在后台 hidden subprocess 方式直接拥有。
 
 也就是说：
 
 - skill 必须先构建 deterministic structured summary
-- 然后必须调用 Codex subagent 来渲染 HTML 页面
-- success 必须同时包含 structured summary 和 rendered HTML
-- 如果 subagent rendering 失败，则整个 display run 失败
-- render 失败时，structured summary 只能作为显式 incomplete diagnostic artifact 留下，不能伪装成成功
+- runtime 必须产出 handoff artifact，让任意 Codex 会话都能原生、可见地 spawn subagent
+- success 必须同时包含 structured summary、completion artifact 和 rendered HTML
+- 如果 subagent rendering 失败，则 completion artifact 必须把失败状态回写到 lineage
+- render 失败时，structured summary 可以保留，但不能伪装成成功 HTML
 
 ## Fact Boundary
 
@@ -97,7 +106,7 @@ Forbidden behaviors:
 
 ## Invocation
 
-可从 repo root 或 installed runtime 调用：
+可从 repo root 或 installed runtime 调用，生成 deterministic summary + handoff artifact：
 
 ```bash
 python scripts/run_stage_display.py \
@@ -119,5 +128,6 @@ python scripts/run_stage_display.py \
 ## Notes
 
 - This skill is generic by entrypoint，不是 free-form subagent discovery。
+- runtime 负责 facts + handoff；Codex 会话负责原生 visible subagent render。
 - 后续若要新增 stage，必须注册新的 builder，并补对应的 stage-specific tests。
 - 不得只靠修改 subagent prompt 就扩大支持范围。

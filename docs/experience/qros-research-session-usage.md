@@ -116,9 +116,10 @@ Lineage: btc_leads_alts
 
 如果用户选择 `DISPLAY_STAGE`：
 
-- 对已支持阶段，session 会先运行 deterministic summary + Codex subagent render
-- 只有 HTML 成功生成后，才允许进入 `*_next_stage_confirmation_pending`
-- 如果 render 失败，session 会继续阻塞在 display gate，而不会放行下一阶段确认
+- 对已支持阶段，session 会先运行 deterministic summary + display handoff generation
+- 然后等待任意 Codex 会话原生、可见地 spawn subagent 完成 HTML
+- 只有 completion artifact 标记 HTML 成功后，才允许进入 `*_next_stage_confirmation_pending`
+- 如果 completion artifact 标记 render 失败，session 会继续阻塞在 display gate，而不会放行下一阶段确认
 
 如果用户选择 `SKIP_DISPLAY`：
 

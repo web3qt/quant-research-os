@@ -2,12 +2,10 @@
 
 ## Purpose
 
-`qros-stage-display` turns a frozen stage directory into two artifacts:
+`qros-stage-display` now uses a two-layer contract:
 
-- a deterministic structured summary JSON
-- a Codex-subagent-rendered HTML summary page
-
-This is the supported skill-native path for stage display work. It replaces the older pattern of exporting a handoff bundle and rendering HTML manually outside the skill boundary.
+- runtime writes a deterministic structured summary plus native-subagent handoff artifacts
+- any Codex session can consume that handoff and visibly spawn a subagent to render the HTML page
 
 ## v1 Supported Stages
 
@@ -22,16 +20,22 @@ The runtime is intentionally registry-thin:
 
 ## Output Location
 
-Successful runs write to:
+Runtime first writes:
 
-- `<lineage_root>/reports/stage_display/mandate.summary.json`
-- `<lineage_root>/reports/stage_display/mandate.summary.html`
-- `<lineage_root>/reports/stage_display/csf_data_ready.summary.json`
-- `<lineage_root>/reports/stage_display/csf_data_ready.summary.html`
+- `<lineage_root>/reports/stage_display/<stage>.summary.json`
+- `<lineage_root>/reports/stage_display/<stage>.display_request.json`
+- `<lineage_root>/reports/stage_display/<stage>.display_prompt.txt`
 
-If the subagent render step fails, the run fails and only the summary JSON may remain as an `incomplete_diagnostic` artifact.
+After a Codex-native visible subagent completes rendering, it writes back:
+
+- `<lineage_root>/reports/stage_display/<stage>.summary.html`
+- `<lineage_root>/reports/stage_display/<stage>.display_result.json`
+
+`qros-research-session` reads the result artifact to decide whether display is still pending, failed, or complete.
 
 ## Command
+
+Generate deterministic summary + handoff artifact:
 
 ```bash
 python scripts/run_stage_display.py \
@@ -76,6 +80,24 @@ The summary JSON includes at least:
 
 It does **not** parse parquet internals or make performance claims.
 
+## Completing the render from another Codex session
+
+In another Codex session, read:
+
+- `*.display_request.json`
+- `*.display_prompt.txt`
+
+Then spawn a native visible subagent to render HTML to the requested `html_output_path`.
+After that HTML exists, write the completion artifact with:
+
+```bash
+python scripts/run_stage_display.py \
+  --stage-id mandate \
+  --lineage-root <lineage-root> \
+  --complete-from-html <rendered-html-path> \
+  --json
+```
+
 ## Testing / Controlled Renderers
 
 For tests or controlled wrappers, you may override the render command:
@@ -88,4 +110,4 @@ python scripts/run_stage_display.py \
   --json
 ```
 
-The default path uses `codex exec` as the required render worker.
+This compatibility path is for tests / controlled wrappers. It is **not** the canonical native-subagent display path.

@@ -1142,7 +1142,11 @@ def test_run_research_session_renders_mandate_display_before_next_stage_confirma
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
     mandate_dir.mkdir(parents=True)
-    renderer = _write_stage_display_renderer_stub(tmp_path)
+    renderer_html = tmp_path / "mandate_rendered.html"
+    renderer_html.write_text(
+        "<!DOCTYPE html><html><body><h1>Mandate Display</h1><p>available</p></body></html>\n",
+        encoding="utf-8",
+    )
     (mandate_dir / "mandate.md").write_text(
         "# Mandate\n\n- 研究问题: BTC shock 后哪些 ALT 更弱？\n- 主假设: 横截面脆弱性会延续。\n- 对立假设: 只是共同 beta。\n",
         encoding="utf-8",
@@ -1191,16 +1195,51 @@ def test_run_research_session_renders_mandate_display_before_next_stage_confirma
         capture_output=True,
         text=True,
         cwd=repo_root,
-        env={
-            **os.environ,
-            "QROS_STAGE_DISPLAY_SUBAGENT_CMD": f"{sys.executable} {renderer}",
-        },
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
-    assert "DISPLAY_NOT_IMPLEMENTED" not in result.stdout
+    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "DISPLAY_RENDER_PENDING" in result.stdout
+    assert (lineage_root / "reports" / "stage_display" / "mandate.display_request.json").exists()
+    assert (lineage_root / "reports" / "stage_display" / "mandate.display_prompt.txt").exists()
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
+    assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
+
+    completion = run(
+        [
+            sys.executable,
+            str(repo_root / "scripts" / "run_stage_display.py"),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--complete-from-html",
+            str(renderer_html),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert completion.returncode == 0, completion.stderr
+
+    rerun = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert rerun.returncode == 2
+    assert "📍 Current stage: mandate_next_stage_confirmation_pending" in rerun.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
 
 
@@ -1211,7 +1250,7 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
     mandate_dir.mkdir(parents=True)
-    renderer = _write_stage_display_renderer_stub(tmp_path, fail=True)
+    render_error = "renderer exploded"
     for name in [
         "mandate.md",
         "research_scope.md",
@@ -1243,18 +1282,51 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
         capture_output=True,
         text=True,
         cwd=repo_root,
-        env={
-            **os.environ,
-            "QROS_STAGE_DISPLAY_SUBAGENT_CMD": f"{sys.executable} {renderer}",
-        },
     )
 
     assert result.returncode == 2
     assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
-    assert "DISPLAY_RENDER_FAILED" in result.stdout
-    assert "renderer exploded" in result.stdout
+    assert "DISPLAY_RENDER_PENDING" in result.stdout
     assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
+
+    completion = run(
+        [
+            sys.executable,
+            str(repo_root / "scripts" / "run_stage_display.py"),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--render-error",
+            render_error,
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert completion.returncode == 0, completion.stderr
+
+    rerun = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert rerun.returncode == 2
+    assert "📍 Current stage: mandate_display_confirmation_pending" in rerun.stdout
+    assert "DISPLAY_RENDER_FAILED" in rerun.stdout
+    assert render_error in rerun.stdout
 
 
 def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_incomplete(tmp_path: Path) -> None:
@@ -1264,7 +1336,11 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
     mandate_dir.mkdir(parents=True)
-    renderer = _write_stage_display_renderer_stub(tmp_path)
+    renderer_html = tmp_path / "mandate_rendered_incomplete.html"
+    renderer_html.write_text(
+        "<!DOCTYPE html><html><body><h1>Mandate Display</h1><p>available</p></body></html>\n",
+        encoding="utf-8",
+    )
     for name in [
         "mandate.md",
         "research_scope.md",
@@ -1294,16 +1370,50 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_
         capture_output=True,
         text=True,
         cwd=repo_root,
-        env={
-            **os.environ,
-            "QROS_STAGE_DISPLAY_SUBAGENT_CMD": f"{sys.executable} {renderer}",
-        },
     )
 
     assert result.returncode == 2
     assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
-    assert "DISPLAY_RENDER_FAILED" in result.stdout
-    assert "latest_review_pack.yaml, stage_gate_review.yaml" in result.stdout
+    assert "DISPLAY_RENDER_PENDING" in result.stdout
+    assert (lineage_root / "reports" / "stage_display" / "mandate.display_request.json").exists()
+
+    completion = run(
+        [
+            sys.executable,
+            str(repo_root / "scripts" / "run_stage_display.py"),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--complete-from-html",
+            str(renderer_html),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert completion.returncode == 0, completion.stderr
+
+    rerun = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert rerun.returncode == 2
+    assert "📍 Current stage: mandate_display_confirmation_pending" in rerun.stdout
+    assert "DISPLAY_RENDER_FAILED" in rerun.stdout
+    assert "latest_review_pack.yaml, stage_gate_review.yaml" in rerun.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
 
