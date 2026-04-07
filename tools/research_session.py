@@ -2107,10 +2107,11 @@ def _invoke_program_stage(lineage_root: Path, current_stage: SessionStage) -> li
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
         return []
-    result = invoke_stage_if_admitted(lineage_root, spec)
+    resolved_lineage_root = lineage_root.resolve()
+    result = invoke_stage_if_admitted(resolved_lineage_root, spec)
     written = {
-        str(result.provenance_path.relative_to(lineage_root)),
-        str(result.manifest_path.relative_to(lineage_root)),
+        str(result.provenance_path.resolve().relative_to(resolved_lineage_root)),
+        str(result.manifest_path.resolve().relative_to(resolved_lineage_root)),
     }
     for ref in result.output_refs:
         written.add(ref)
