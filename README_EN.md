@@ -102,6 +102,42 @@ Most research ideas start as loose chat. Serious research does not. QROS exists 
 git pull && ./setup --host codex --mode user-global
 ```
 
+## How To Start Using It (Codex)
+
+After installation, the shortest path is:
+
+1. Run:
+
+```bash
+./setup --host codex --mode user-global
+```
+
+2. Create the Codex discovery symlink:
+
+```bash
+mkdir -p ~/.agents/skills
+ln -sfn ~/.qros/skills ~/.agents/skills/qros
+```
+
+3. Restart Codex
+4. In a fresh session, start with:
+
+```text
+qros-research-session Help me research this idea: BTC leads high-liquidity alts after shock events
+```
+
+Or ask for help first:
+
+```text
+qros-research-session help
+```
+
+To sanity-check the install from the runtime side:
+
+```bash
+~/.qros/bin/qros-verify --tier smoke
+```
+
 ## Runtime Layout
 
 **Plugin install (Claude Code):**

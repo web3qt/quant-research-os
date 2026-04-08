@@ -144,6 +144,42 @@ python scripts/run_verification_tier.py --tier full-smoke
 git pull && ./setup --host codex --mode user-global
 ```
 
+## 用户如何开始使用（Codex）
+
+安装完成后，按这 4 步走即可：
+
+1. 克隆仓库并运行：
+
+```bash
+./setup --host codex --mode user-global
+```
+
+2. 建立 Codex discovery symlink：
+
+```bash
+mkdir -p ~/.agents/skills
+ln -sfn ~/.qros/skills ~/.agents/skills/qros
+```
+
+3. 重启 Codex
+4. 在新会话里直接输入第一条命令：
+
+```text
+qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
+```
+
+也可以先看帮助：
+
+```text
+qros-research-session help
+```
+
+如果你想直接验证安装是否正常，也可以运行：
+
+```bash
+~/.qros/bin/qros-verify --tier smoke
+```
+
 ## 运行时布局
 
 **插件安装（Claude Code）:**
