@@ -7,7 +7,6 @@ import os
 import yaml
 
 from tests.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
-from tools.stage_display_runtime import write_stage_display_report
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
@@ -40,12 +39,8 @@ def _write_stage_completion_certificate(
 
 
 def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
-    for review_name in ("latest_review_pack.yaml", "stage_gate_review.yaml"):
-        if not (stage_dir / review_name).exists():
-            (stage_dir / review_name).write_text("status: ok\n", encoding="utf-8")
-    if not (stage_dir / "program_execution_manifest.json").exists():
-        (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
-    write_stage_display_report(lineage_root=stage_dir.parent, stage_id=stage)
+    # Dedicated stage display has been removed from the formal workflow.
+    return None
 
 
 def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
@@ -64,38 +59,6 @@ def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
 
 def _write_fake_parquet(path: Path) -> None:
     path.write_bytes(b"PAR1test-payloadPAR1")
-
-
-def _write_stage_display_renderer_stub(tmp_path: Path, *, fail: bool = False) -> Path:
-    script_path = tmp_path / ("fail_stage_display_renderer.py" if fail else "ok_stage_display_renderer.py")
-    script_path.write_text(
-        """
-from __future__ import annotations
-
-import argparse
-import sys
-from pathlib import Path
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-o', '--output-last-message', required=True)
-parser.add_argument('prompt_arg')
-args = parser.parse_args()
-prompt = sys.stdin.read()
-if "Structured summary JSON" not in prompt:
-    print("missing structured summary", file=sys.stderr)
-    raise SystemExit(4)
-if "fail_stage_display_renderer.py" in __file__:
-    print("renderer exploded", file=sys.stderr)
-    raise SystemExit(3)
-Path(args.output_last_message).write_text(
-    "<!DOCTYPE html><html><body><h1>Stage Display</h1><p>available</p></body></html>\\n",
-    encoding='utf-8',
-)
-""".strip()
-        + "\n",
-        encoding="utf-8",
-    )
-    return script_path
 
 
 def _prepare_real_backtest_engine_outputs(backtest_dir: Path) -> None:
@@ -1208,229 +1171,10 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
     assert "🔨 Current active skill: qros-research-session" in result.stdout
     assert "CONFIRM_NEXT_STAGE" in result.stdout
-    assert "mandate.summary.html" in result.stdout
     assert "Data Ready Reflection:" not in result.stdout
 
 
-def test_run_research_session_renders_mandate_display_before_next_stage_confirmation(tmp_path: Path) -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
-    outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_leads_alts"
-    mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True)
-    (mandate_dir / "mandate.md").write_text(
-        "# Mandate\n\n- 研究问题: BTC shock 后哪些 ALT 更弱？\n- 主假设: 横截面脆弱性会延续。\n- 对立假设: 只是共同 beta。\n",
-        encoding="utf-8",
-    )
-    (mandate_dir / "research_scope.md").write_text(
-        "# Research Scope\n\n- 市场: crypto perpetuals\n- 数据来源: /Users/mac08/workspace/coin-data\n- Universe: liquid ALT ex-BTC\n- Bar 粒度: 5m\n- 研究任务: cross-sectional ranking\n",
-        encoding="utf-8",
-    )
-    _write_yaml(
-        mandate_dir / "research_route.yaml",
-        {
-            "research_route": "cross_sectional_factor",
-            "factor_role": "standalone_alpha",
-            "factor_structure": "single_factor",
-            "portfolio_expression": "long_only_rank",
-            "neutralization_policy": "group_neutral",
-            "target_strategy_reference": "post_shock_weakness_v1",
-            "group_taxonomy_reference": "sector_bucket_v1",
-        },
-    )
-    for name in [
-        "time_split.json",
-        "parameter_grid.yaml",
-        "run_config.toml",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "latest_review_pack.yaml",
-        "stage_gate_review.yaml",
-        "stage_completion_certificate.yaml",
-    ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
-    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
-    write_fake_stage_provenance(lineage_root, "mandate")
 
-    result = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-    )
-
-    assert result.returncode == 2
-    assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
-    assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
-    assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
-
-
-def test_run_research_session_blocks_next_stage_when_mandate_display_render_fails(tmp_path: Path) -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
-    outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_leads_alts"
-    mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True)
-    render_error = "renderer exploded"
-    for name in [
-        "mandate.md",
-        "research_scope.md",
-        "research_route.yaml",
-        "time_split.json",
-        "parameter_grid.yaml",
-        "run_config.toml",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "latest_review_pack.yaml",
-        "stage_gate_review.yaml",
-        "stage_completion_certificate.yaml",
-    ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
-    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
-    write_fake_stage_provenance(lineage_root, "mandate")
-    failing_env = {**os.environ, "QROS_STAGE_DISPLAY_FORCE_RENDER_ERROR": render_error}
-
-    result = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-        env=failing_env,
-    )
-
-    assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_pending" in result.stdout
-    assert "DISPLAY_RETRYING" in result.stdout
-    assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
-    assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
-
-    rerun = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-        env=failing_env,
-    )
-    assert rerun.returncode == 2
-    assert "📍 Current stage: mandate_display_pending" in rerun.stdout
-    assert "DISPLAY_RETRYING" in rerun.stdout
-    assert "3/3" in rerun.stdout
-    assert (lineage_root / "reports" / "stage_display" / "mandate.display_retry_state.json").exists()
-
-
-def test_run_research_session_blocks_after_mandate_display_retry_exhaustion(tmp_path: Path) -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    session_script = repo_root / "scripts" / "run_research_session.py"
-    outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_leads_alts"
-    mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True)
-    render_error = "renderer exploded"
-    for name in [
-        "mandate.md",
-        "research_scope.md",
-        "research_route.yaml",
-        "time_split.json",
-        "parameter_grid.yaml",
-        "run_config.toml",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-        "latest_review_pack.yaml",
-        "stage_gate_review.yaml",
-        "stage_completion_certificate.yaml",
-    ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
-    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
-    write_fake_stage_provenance(lineage_root, "mandate")
-    failing_env = {**os.environ, "QROS_STAGE_DISPLAY_FORCE_RENDER_ERROR": render_error}
-
-    first = run(
-        [
-            sys.executable,
-            str(session_script),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-        env=failing_env,
-    )
-    assert first.returncode == 2
-    assert "DISPLAY_RETRYING" in first.stdout
-    assert "2/3" in first.stdout
-
-    second = run(
-        [
-            sys.executable,
-            str(session_script),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-        env=failing_env,
-    )
-    assert second.returncode == 2
-    assert "DISPLAY_RETRYING" in second.stdout
-    assert "3/3" in second.stdout
-
-    exhausted = run(
-        [
-            sys.executable,
-            str(session_script),
-            "--outputs-root",
-            str(outputs_root),
-            "--lineage-id",
-            "btc_leads_alts",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-        env=failing_env,
-    )
-
-    assert exhausted.returncode == 2
-    assert "📍 Current stage: mandate_display_pending" in exhausted.stdout
-    assert "DISPLAY_RETRY_EXHAUSTED" in exhausted.stdout
-    assert "3/3" in exhausted.stdout
-    assert render_error in exhausted.stdout
-    assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
 
 
 def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:

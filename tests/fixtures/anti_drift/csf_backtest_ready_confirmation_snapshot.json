@@ -30,7 +30,7 @@
   "blocking_reasons": [
     "Explicit confirmation to enter csf_backtest_ready is still incomplete."
   ],
-  "lineage_transition": "Display completed. HTML: <html-path>. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter csf_backtest_ready.",
+  "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter csf_backtest_ready.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation"
   ],

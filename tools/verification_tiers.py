@@ -7,9 +7,6 @@ SMOKE_TEST_PATHS: tuple[str, ...] = (
     "tests/test_verification_tiers.py",
     "tests/test_research_session_runtime.py",
     "tests/test_run_research_session_script.py",
-    "tests/test_stage_display_skill_assets.py",
-    "tests/test_stage_display_skill.py",
-    "tests/test_stage_display_runtime.py",
     "tests/test_stage_substep_normalization.py",
     "tests/test_skill_tree.py",
     "tests/test_research_session_assets.py",
@@ -51,7 +48,7 @@ def tier_definition(tier: str) -> VerificationTier:
     if tier == "smoke":
         return VerificationTier(
             name="smoke",
-            description="Fast critical orchestration smoke across qros-session, stage-display, bootstrap, and install-doc contracts.",
+            description="Fast critical orchestration smoke across qros-session, bootstrap, and install-doc contracts.",
             test_paths=SMOKE_TEST_PATHS,
         )
     if tier == "full-smoke":

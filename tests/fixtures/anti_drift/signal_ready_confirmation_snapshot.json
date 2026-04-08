@@ -27,7 +27,7 @@
   "blocking_reasons": [
     "Explicit confirmation to enter signal_ready is still incomplete."
   ],
-  "lineage_transition": "Display completed. HTML: <html-path>. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter signal_ready.",
+  "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter signal_ready.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation"
   ],

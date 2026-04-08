@@ -24,7 +24,6 @@
 ## 1. 基本信息
 
 - `stage`:
-- `stage_display_name`:
 - `lineage_id`:
 - `run_id`:
 - `decision_date_utc`:

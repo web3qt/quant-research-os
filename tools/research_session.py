@@ -74,11 +74,6 @@ from tools.signal_ready_runtime import (
     scaffold_signal_ready,
 )
 from tools.stage_program_scaffold import materialize_stage_program
-from tools.stage_display_runtime import (
-    resolve_stage_display_config,
-    supported_stage_ids as supported_stage_display_ids,
-    write_stage_display_report,
-)
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
     BACKTEST_READY_GROUP_ORDER,
@@ -105,88 +100,73 @@ from tools.train_runtime import (
 SessionStage = Literal[
     "idea_intake",
     "idea_intake_confirmation_pending",
-    "mandate_display_pending",
     "mandate_next_stage_confirmation_pending",
     "mandate_confirmation_pending",
     "mandate_author",
     "mandate_review_confirmation_pending",
     "mandate_review",
-    "mandate_display_pending",
     "mandate_next_stage_confirmation_pending",
     "csf_data_ready_confirmation_pending",
     "csf_data_ready_author",
     "csf_data_ready_review_confirmation_pending",
     "csf_data_ready_review",
-    "csf_data_ready_display_pending",
     "csf_data_ready_next_stage_confirmation_pending",
     "csf_signal_ready_confirmation_pending",
     "csf_signal_ready_author",
     "csf_signal_ready_review_confirmation_pending",
     "csf_signal_ready_review",
-    "csf_signal_ready_display_pending",
     "csf_signal_ready_next_stage_confirmation_pending",
     "csf_train_freeze_confirmation_pending",
     "csf_train_freeze_author",
     "csf_train_freeze_review_confirmation_pending",
     "csf_train_freeze_review",
-    "csf_train_freeze_display_pending",
     "csf_train_freeze_next_stage_confirmation_pending",
     "csf_test_evidence_confirmation_pending",
     "csf_test_evidence_author",
     "csf_test_evidence_review_confirmation_pending",
     "csf_test_evidence_review",
-    "csf_test_evidence_display_pending",
     "csf_test_evidence_next_stage_confirmation_pending",
     "csf_backtest_ready_confirmation_pending",
     "csf_backtest_ready_author",
     "csf_backtest_ready_review_confirmation_pending",
     "csf_backtest_ready_review",
-    "csf_backtest_ready_display_pending",
     "csf_backtest_ready_next_stage_confirmation_pending",
     "csf_holdout_validation_confirmation_pending",
     "csf_holdout_validation_author",
     "csf_holdout_validation_review_confirmation_pending",
     "csf_holdout_validation_review",
-    "csf_holdout_validation_display_pending",
     "csf_holdout_validation_next_stage_confirmation_pending",
     "csf_holdout_validation_review_complete",
-    "data_ready_display_pending",
     "data_ready_next_stage_confirmation_pending",
     "data_ready_confirmation_pending",
     "data_ready_author",
     "data_ready_review_confirmation_pending",
     "data_ready_review",
-    "data_ready_display_pending",
     "data_ready_next_stage_confirmation_pending",
     "signal_ready_confirmation_pending",
     "signal_ready_author",
     "signal_ready_review_confirmation_pending",
     "signal_ready_review",
-    "signal_ready_display_pending",
     "signal_ready_next_stage_confirmation_pending",
     "train_freeze_confirmation_pending",
     "train_freeze_author",
     "train_freeze_review_confirmation_pending",
     "train_freeze_review",
-    "train_freeze_display_pending",
     "train_freeze_next_stage_confirmation_pending",
     "test_evidence_confirmation_pending",
     "test_evidence_author",
     "test_evidence_review_confirmation_pending",
     "test_evidence_review",
-    "test_evidence_display_pending",
     "test_evidence_next_stage_confirmation_pending",
     "backtest_ready_confirmation_pending",
     "backtest_ready_author",
     "backtest_ready_review_confirmation_pending",
     "backtest_ready_review",
-    "backtest_ready_display_pending",
     "backtest_ready_next_stage_confirmation_pending",
     "holdout_validation_confirmation_pending",
     "holdout_validation_author",
     "holdout_validation_review_confirmation_pending",
     "holdout_validation_review",
-    "holdout_validation_display_pending",
     "holdout_validation_next_stage_confirmation_pending",
     "holdout_validation_review_complete",
 ]
@@ -370,7 +350,6 @@ ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
 SESSION_STAGE_RUNTIME_SUFFIXES = (
     "_next_stage_confirmation_pending",
-    "_display_pending",
     "_review_confirmation_pending",
     "_confirmation_pending",
     "_review_complete",
@@ -387,8 +366,6 @@ BACKTEST_READY_TRANSITION_APPROVAL_FILE = "backtest_ready_transition_approval.ya
 HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_approval.yaml"
 REVIEW_TRANSITION_APPROVAL_FILE = "review_transition_approval.yaml"
 NEXT_STAGE_TRANSITION_APPROVAL_FILE = "next_stage_transition_approval.yaml"
-DISPLAY_RETRY_STATE_FILE = "display_retry_state.json"
-MANDATORY_DISPLAY_MAX_RETRIES = 3
 
 
 @dataclass(frozen=True)
@@ -428,88 +405,73 @@ class SessionContext:
 STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "idea_intake": "qros-idea-intake-author",
     "idea_intake_confirmation_pending": "qros-idea-intake-author",
-    "mandate_display_pending": "qros-research-session",
     "mandate_next_stage_confirmation_pending": "qros-research-session",
     "mandate_confirmation_pending": "qros-mandate-author",
     "mandate_author": "qros-mandate-author",
     "mandate_review_confirmation_pending": "qros-mandate-review",
     "mandate_review": "qros-mandate-review",
-    "mandate_display_pending": "qros-research-session",
     "mandate_next_stage_confirmation_pending": "qros-research-session",
     "csf_data_ready_confirmation_pending": "qros-csf-data-ready-author",
     "csf_data_ready_author": "qros-csf-data-ready-author",
     "csf_data_ready_review_confirmation_pending": "qros-csf-data-ready-review",
     "csf_data_ready_review": "qros-csf-data-ready-review",
-    "csf_data_ready_display_pending": "qros-research-session",
     "csf_data_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_signal_ready_confirmation_pending": "qros-csf-signal-ready-author",
     "csf_signal_ready_author": "qros-csf-signal-ready-author",
     "csf_signal_ready_review_confirmation_pending": "qros-csf-signal-ready-review",
     "csf_signal_ready_review": "qros-csf-signal-ready-review",
-    "csf_signal_ready_display_pending": "qros-research-session",
     "csf_signal_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_train_freeze_confirmation_pending": "qros-csf-train-freeze-author",
     "csf_train_freeze_author": "qros-csf-train-freeze-author",
     "csf_train_freeze_review_confirmation_pending": "qros-csf-train-freeze-review",
     "csf_train_freeze_review": "qros-csf-train-freeze-review",
-    "csf_train_freeze_display_pending": "qros-research-session",
     "csf_train_freeze_next_stage_confirmation_pending": "qros-research-session",
     "csf_test_evidence_confirmation_pending": "qros-csf-test-evidence-author",
     "csf_test_evidence_author": "qros-csf-test-evidence-author",
     "csf_test_evidence_review_confirmation_pending": "qros-csf-test-evidence-review",
     "csf_test_evidence_review": "qros-csf-test-evidence-review",
-    "csf_test_evidence_display_pending": "qros-research-session",
     "csf_test_evidence_next_stage_confirmation_pending": "qros-research-session",
     "csf_backtest_ready_confirmation_pending": "qros-csf-backtest-ready-author",
     "csf_backtest_ready_author": "qros-csf-backtest-ready-author",
     "csf_backtest_ready_review_confirmation_pending": "qros-csf-backtest-ready-review",
     "csf_backtest_ready_review": "qros-csf-backtest-ready-review",
-    "csf_backtest_ready_display_pending": "qros-research-session",
     "csf_backtest_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_holdout_validation_confirmation_pending": "qros-csf-holdout-validation-author",
     "csf_holdout_validation_author": "qros-csf-holdout-validation-author",
     "csf_holdout_validation_review_confirmation_pending": "qros-csf-holdout-validation-review",
     "csf_holdout_validation_review": "qros-csf-holdout-validation-review",
-    "csf_holdout_validation_display_pending": "qros-research-session",
     "csf_holdout_validation_next_stage_confirmation_pending": "qros-research-session",
     "csf_holdout_validation_review_complete": "qros-research-session",
-    "data_ready_display_pending": "qros-research-session",
     "data_ready_next_stage_confirmation_pending": "qros-research-session",
     "data_ready_confirmation_pending": "qros-data-ready-author",
     "data_ready_author": "qros-data-ready-author",
     "data_ready_review_confirmation_pending": "qros-data-ready-review",
     "data_ready_review": "qros-data-ready-review",
-    "data_ready_display_pending": "qros-research-session",
     "data_ready_next_stage_confirmation_pending": "qros-research-session",
     "signal_ready_confirmation_pending": "qros-signal-ready-author",
     "signal_ready_author": "qros-signal-ready-author",
     "signal_ready_review_confirmation_pending": "qros-signal-ready-review",
     "signal_ready_review": "qros-signal-ready-review",
-    "signal_ready_display_pending": "qros-research-session",
     "signal_ready_next_stage_confirmation_pending": "qros-research-session",
     "train_freeze_confirmation_pending": "qros-train-freeze-author",
     "train_freeze_author": "qros-train-freeze-author",
     "train_freeze_review_confirmation_pending": "qros-train-freeze-review",
     "train_freeze_review": "qros-train-freeze-review",
-    "train_freeze_display_pending": "qros-research-session",
     "train_freeze_next_stage_confirmation_pending": "qros-research-session",
     "test_evidence_confirmation_pending": "qros-test-evidence-author",
     "test_evidence_author": "qros-test-evidence-author",
     "test_evidence_review_confirmation_pending": "qros-test-evidence-review",
     "test_evidence_review": "qros-test-evidence-review",
-    "test_evidence_display_pending": "qros-research-session",
     "test_evidence_next_stage_confirmation_pending": "qros-research-session",
     "backtest_ready_confirmation_pending": "qros-backtest-ready-author",
     "backtest_ready_author": "qros-backtest-ready-author",
     "backtest_ready_review_confirmation_pending": "qros-backtest-ready-review",
     "backtest_ready_review": "qros-backtest-ready-review",
-    "backtest_ready_display_pending": "qros-research-session",
     "backtest_ready_next_stage_confirmation_pending": "qros-research-session",
     "holdout_validation_confirmation_pending": "qros-holdout-validation-author",
     "holdout_validation_author": "qros-holdout-validation-author",
     "holdout_validation_review_confirmation_pending": "qros-holdout-validation-review",
     "holdout_validation_review": "qros-holdout-validation-review",
-    "holdout_validation_display_pending": "qros-research-session",
     "holdout_validation_next_stage_confirmation_pending": "qros-research-session",
     "holdout_validation_review_complete": "qros-research-session",
 }
@@ -627,7 +589,6 @@ NEXT_STAGE_BY_BASE: dict[str, str | None] = {
     "csf_holdout_validation": None,
 }
 
-DISPLAY_IMPLEMENTED_STAGE_BASES = set(supported_stage_display_ids())
 
 
 def slugify_idea(raw_idea: str) -> str:
@@ -1484,193 +1445,6 @@ def read_review_transition_decision(lineage_root: Path, *, stage_base: str) -> s
     return None
 
 
-def _supports_stage_display(stage_base: str) -> bool:
-    return stage_base in DISPLAY_IMPLEMENTED_STAGE_BASES
-
-
-def _stage_display_artifact_paths(lineage_root: Path, *, stage_base: str) -> tuple[Path, Path] | None:
-    if not _supports_stage_display(stage_base):
-        return None
-    config = resolve_stage_display_config(stage_base)
-    display_dir = (lineage_root / "reports" / "stage_display").resolve()
-    return display_dir / config.summary_filename, display_dir / config.html_filename
-
-
-def _read_stage_display_summary(lineage_root: Path, *, stage_base: str) -> dict | None:
-    artifact_paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
-    if artifact_paths is None:
-        return None
-    summary_path, _ = artifact_paths
-    if not summary_path.exists():
-        return None
-    try:
-        loaded = json.loads(summary_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-    return loaded if isinstance(loaded, dict) else None
-
-
-def _stage_display_render_status(lineage_root: Path, *, stage_base: str) -> str | None:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
-        return None
-    status = summary.get("render_status")
-    return str(status) if isinstance(status, str) and status.strip() else None
-
-
-def _stage_display_render_error(lineage_root: Path, *, stage_base: str) -> str | None:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
-        return None
-    error = summary.get("render_error")
-    return str(error) if isinstance(error, str) and error.strip() else None
-
-
-def _stage_display_retry_state_path(lineage_root: Path, *, stage_base: str) -> Path | None:
-    if not _supports_stage_display(stage_base):
-        return None
-    config = resolve_stage_display_config(stage_base)
-    return (lineage_root / "reports" / "stage_display" / f"{config.stage_id}.{DISPLAY_RETRY_STATE_FILE}").resolve()
-
-
-def _read_stage_display_retry_state(lineage_root: Path, *, stage_base: str) -> dict | None:
-    path = _stage_display_retry_state_path(lineage_root, stage_base=stage_base)
-    if path is None or not path.exists():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-    return payload if isinstance(payload, dict) else None
-
-
-def _write_stage_display_retry_state(
-    lineage_root: Path,
-    *,
-    stage_base: str,
-    attempt_count: int,
-    status: str,
-    last_error: str | None = None,
-) -> Path | None:
-    path = _stage_display_retry_state_path(lineage_root, stage_base=stage_base)
-    if path is None:
-        return None
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(
-            {
-                "stage_id": stage_base,
-                "lineage_id": lineage_root.name,
-                "attempt_count": attempt_count,
-                "status": status,
-                "last_error": last_error,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    return path
-
-
-def _stage_display_summary_status(lineage_root: Path, *, stage_base: str) -> str | None:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
-        return None
-    status = summary.get("status")
-    return str(status) if isinstance(status, str) and status.strip() else None
-
-
-def _stage_display_missing_required_inputs(lineage_root: Path, *, stage_base: str) -> list[str]:
-    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
-    if summary is None:
-        return []
-    raw_value = summary.get("missing_required_inputs")
-    if not isinstance(raw_value, list):
-        return []
-    return [str(item) for item in raw_value if str(item).strip()]
-
-
-def _stage_display_html_path(lineage_root: Path, *, stage_base: str) -> Path | None:
-    paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
-    if paths is None:
-        return None
-    _, html_path = paths
-    return html_path
-
-
-def _invoke_stage_display(
-    lineage_root: Path,
-    *,
-    current_stage: SessionStage,
-) -> list[str]:
-    stage_base = _stage_base_name(current_stage)
-    if not _supports_stage_display(stage_base):
-        return []
-    result = write_stage_display_report(lineage_root=lineage_root, stage_id=stage_base)
-    written: list[str] = []
-    for key in ("structured_summary_path", "html_path"):
-        path = Path(result[key]).resolve()
-        if path.exists():
-            written.append(str(path.relative_to(lineage_root.resolve())))
-    return written
-
-
-def _auto_progress_display(lineage_root: Path, *, current_stage: SessionStage) -> list[str]:
-    if not current_stage.endswith("_display_pending"):
-        return []
-
-    stage_base = _stage_base_name(current_stage)
-    if not _supports_stage_display(stage_base):
-        return []
-
-    render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
-    retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
-    attempt_count = int(retry_state.get("attempt_count", 0))
-
-    if render_status == "complete":
-        _write_stage_display_retry_state(
-            lineage_root,
-            stage_base=stage_base,
-            attempt_count=max(attempt_count, 1),
-            status="complete",
-        )
-        return []
-
-    if render_status == "failed" and attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
-        _write_stage_display_retry_state(
-            lineage_root,
-            stage_base=stage_base,
-            attempt_count=attempt_count,
-            status="failed",
-            last_error=_stage_display_render_error(lineage_root, stage_base=stage_base),
-        )
-        return []
-
-    next_attempt = attempt_count + 1 if attempt_count else 1
-    written = _invoke_stage_display(lineage_root, current_stage=current_stage)
-    updated_render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
-    updated_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
-    retry_path = _write_stage_display_retry_state(
-        lineage_root,
-        stage_base=stage_base,
-        attempt_count=next_attempt,
-        status=updated_render_status or "failed",
-        last_error=updated_error,
-    )
-    if retry_path is not None:
-        written.append(str(retry_path.relative_to(lineage_root.resolve())))
-    return sorted(set(written))
-
-
-def _stage_display_ready_for_handoff(lineage_root: Path, *, stage_base: str) -> bool:
-    return (
-        _stage_display_render_status(lineage_root, stage_base=stage_base) == "complete"
-        and _stage_display_summary_status(lineage_root, stage_base=stage_base) == "complete"
-    )
-
-
 def read_next_stage_transition_decision(lineage_root: Path, *, stage_base: str) -> str | None:
     approval_path = _next_stage_transition_approval_path(lineage_root, stage_base)
     if approval_path is None or not approval_path.exists():
@@ -2073,8 +1847,6 @@ def _why_this_skill(
         return (
             f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
         )
-    if current_stage.endswith("_display_pending"):
-        return f"Current stage {current_stage} is running the mandatory post-review display phase before progression can continue."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit approval before entering the downstream stage."
     if current_stage.endswith("_review_complete"):
@@ -2085,8 +1857,6 @@ def _why_this_skill(
         if runtime_stage_status == "awaiting_author_fix":
             return f"Current stage {current_stage} has fixable adversarial findings, so {current_skill} is the active author-fix skill."
         return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
-    if current_stage.endswith("_display_pending"):
-        return f"Current stage {current_stage} is in the mandatory display phase, so {current_skill} is holding the orchestration gate."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit next-stage confirmation, so {current_skill} is holding the orchestration gate."
     return f"Current stage {current_stage} is in the authoring/freeze flow, so {current_skill} is the active author skill."
@@ -2105,8 +1875,6 @@ def _blocking_reason(
         return "Idea intake inputs or admission evidence are still incomplete."
     if current_stage.endswith("_review_confirmation_pending"):
         return f"{_stage_base_name(current_stage)} review entry is still waiting for explicit confirmation."
-    if current_stage.endswith("_display_pending"):
-        return f"{_stage_base_name(current_stage)} mandatory display has not completed yet."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         next_stage_base = NEXT_STAGE_BY_BASE.get(_stage_base_name(current_stage))
         if next_stage_base is None:
@@ -2151,11 +1919,6 @@ def _resume_hint(
             f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
             "to inspect updated status."
         )
-    if current_stage.endswith("_display_pending"):
-        return (
-            f"Rerun qros-session --lineage-id {lineage_id} to continue the mandatory display phase for "
-            f"{_stage_base_name(current_stage)}."
-        )
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return (
             f"Confirm the next-stage handoff for {_stage_base_name(current_stage)}, then rerun "
@@ -2172,7 +1935,6 @@ def _resume_hint(
 def session_stage_base_name(current_stage: SessionStage | str) -> str:
     for suffix in (
         "_review_confirmation_pending",
-        "_display_pending",
         "_next_stage_confirmation_pending",
         "_confirmation_pending",
         "_author",
@@ -2392,31 +2154,6 @@ def _program_runtime_status(
             provenance_status,
             review_blocking_reason,
             review_next_action,
-        )
-    if current_stage.endswith("_display_pending"):
-        gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
-        reason_code = {
-            "DISPLAY_RENDER_PENDING": "DISPLAY_RENDER_PENDING",
-            "DISPLAY_RETRYING": "DISPLAY_RETRYING",
-            "DISPLAY_RENDER_FAILED": "DISPLAY_RENDER_FAILED",
-            "DISPLAY_RETRY_EXHAUSTED": "DISPLAY_RETRY_EXHAUSTED",
-            "DISPLAY_NOT_IMPLEMENTED": "DISPLAY_NOT_IMPLEMENTED",
-            "DISPLAY_RENDER_COMPLETE": "DISPLAY_RENDER_PENDING",
-        }.get(gate_status, "DISPLAY_RENDER_PENDING")
-        stage_status = "display_running" if gate_status in {"DISPLAY_RENDER_PENDING", "DISPLAY_RETRYING"} else "display_blocked"
-        return (
-            stage_status,
-            reason_code,
-            inspection.required_program_dir,
-            inspection.required_program_entrypoint,
-            inspection.program_contract_status,
-            provenance_status,
-            _blocking_reason(
-                current_stage=current_stage,
-                review_verdict=review_verdict,
-                requires_failure_handling=requires_failure_handling,
-            ),
-            next_action,
         )
     if current_stage.endswith("_next_stage_confirmation_pending"):
         gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
@@ -2692,15 +2429,6 @@ def run_research_session(
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage.endswith("_display_pending"):
-        artifacts_written.extend(
-            _auto_progress_display(
-                lineage_root,
-                current_stage=current_stage,
-            )
-        )
-        current_stage = detect_session_stage(lineage_root)
-
     _ensure_review_request_for_stage(lineage_root, current_stage)
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
@@ -2883,11 +2611,6 @@ def _review_has_started(stage_dir: Path) -> bool:
 
 
 def _post_review_completion_stage(lineage_root: Path, *, stage_base: str) -> SessionStage:
-    if not _supports_stage_display(stage_base):
-        return f"{stage_base}_display_pending"  # type: ignore[return-value]
-    if not _stage_display_ready_for_handoff(lineage_root, stage_base=stage_base):
-        return f"{stage_base}_display_pending"  # type: ignore[return-value]
-
     next_stage_decision = read_next_stage_transition_decision(lineage_root, stage_base=stage_base)
     if next_stage_decision is None:
         return f"{stage_base}_next_stage_confirmation_pending"  # type: ignore[return-value]
@@ -3070,87 +2793,9 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     )
 
 
-def _display_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
-    stage_base = _stage_base_name(current_stage)
-    if _supports_stage_display(stage_base):
-        render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
-        render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
-        summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
-        missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
-        retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
-        attempt_count = int(retry_state.get("attempt_count", 0))
-        html_path = _stage_display_html_path(lineage_root, stage_base=stage_base)
-        if render_status == "complete" and summary_status == "complete":
-            return (
-                "DISPLAY_RENDER_COMPLETE",
-                f"Display completed for {stage_base}. HTML: {html_path}. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue.",
-            )
-        if render_status == "complete" and summary_status != "complete":
-            missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
-            return (
-                "DISPLAY_RENDER_FAILED",
-                f"The {stage_base} display summary is incomplete ({missing_text}), so the mandatory display phase is blocked.",
-            )
-        if render_status == "failed":
-            if attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
-                if render_error:
-                    return (
-                        "DISPLAY_RETRY_EXHAUSTED",
-                        f"Mandatory display failed after {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} attempts for {stage_base}: {render_error}",
-                    )
-                return (
-                    "DISPLAY_RETRY_EXHAUSTED",
-                    f"Mandatory display failed after {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} attempts for {stage_base}.",
-                )
-            if render_error:
-                return (
-                    "DISPLAY_RETRYING",
-                    f"Mandatory display retry {attempt_count + 1}/{MANDATORY_DISPLAY_MAX_RETRIES} will be prepared for {stage_base} after previous error: {render_error}",
-                )
-            return (
-                "DISPLAY_RETRYING",
-                f"Mandatory display retry {attempt_count + 1}/{MANDATORY_DISPLAY_MAX_RETRIES} will be prepared for {stage_base}.",
-            )
-        return (
-            "DISPLAY_RENDER_PENDING",
-            f"Mandatory display runtime render has not completed yet for {stage_base}.",
-        )
-    return (
-        "DISPLAY_NOT_IMPLEMENTED",
-        f"Mandatory display for {stage_base} is not implemented yet, so stage progression is blocked until display support exists.",
-    )
-
-
 def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
     next_stage_base = NEXT_STAGE_BY_BASE[stage_base]
-    if _supports_stage_display(stage_base):
-        render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
-        render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
-        summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
-        missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
-        html_path = _stage_display_html_path(lineage_root, stage_base=stage_base)
-        if render_status != "complete" or summary_status != "complete":
-            if render_status == "complete" and summary_status != "complete":
-                missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
-                return (
-                    "DISPLAY_RENDER_FAILED",
-                    f"Fix the incomplete {stage_base} display summary ({missing_text}) before confirming the next stage.",
-                )
-            if render_error:
-                return (
-                    "DISPLAY_RENDER_FAILED",
-                    f"Mandatory display for {stage_base} has not completed successfully ({render_error}).",
-                )
-            return (
-                "DISPLAY_RENDER_PENDING",
-                f"Mandatory display for {stage_base} must complete before next-stage confirmation.",
-            )
-    if stage_base not in DISPLAY_IMPLEMENTED_STAGE_BASES:
-        return (
-            "DISPLAY_NOT_IMPLEMENTED",
-            f"Mandatory display for {stage_base} is not implemented yet, so next-stage confirmation is blocked.",
-        )
     if next_stage_base is None:
         return (
             "NEXT_STAGE_CONFIRMATION_PENDING",
@@ -3158,7 +2803,7 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
         )
     return (
         "NEXT_STAGE_CONFIRMATION_PENDING",
-        f"Display completed. HTML: {html_path}. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
+        f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
     )
 
 
@@ -3186,8 +2831,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             "Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>",
         )
 
-    if current_stage.endswith("_display_pending"):
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3216,8 +2859,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "mandate_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "mandate_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "mandate_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3237,8 +2878,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_data_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_data_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_data_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3258,8 +2897,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "data_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "data_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "data_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3279,8 +2916,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "signal_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "signal_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "signal_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3300,8 +2935,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_signal_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_signal_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_signal_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3321,8 +2954,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "train_freeze_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "train_freeze_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "train_freeze_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3342,8 +2973,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_train_freeze_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_train_freeze_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_train_freeze_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3363,8 +2992,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "test_evidence_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "test_evidence_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "test_evidence_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3384,8 +3011,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_test_evidence_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_test_evidence_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_test_evidence_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3405,8 +3030,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "backtest_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "backtest_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "backtest_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3426,8 +3049,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_backtest_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_backtest_ready_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_backtest_ready_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
@@ -3453,8 +3074,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "holdout_validation_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "holdout_validation_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_holdout_validation_confirmation_pending":
         next_group = next_csf_holdout_validation_group(lineage_root)
@@ -3477,8 +3096,6 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_holdout_validation_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_holdout_validation_display_pending":
-        return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
 

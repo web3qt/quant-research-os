@@ -5,7 +5,6 @@ import yaml
 from tests.lineage_program_support import write_fake_stage_provenance
 from tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
 from tools.research_session import run_research_session
-from tools.stage_display_runtime import write_stage_display_report
 from tools.stage_program_scaffold import materialize_stage_program
 
 
@@ -62,7 +61,6 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         },
     )
     write_fake_stage_provenance(lineage_root, "mandate")
-    write_stage_display_report(lineage_root=lineage_root, stage_id="mandate")
 
 
 def _confirmed_csf_data_ready_draft() -> dict:

@@ -4,7 +4,6 @@ import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
 from tools.research_session import detect_session_stage, run_research_session
-from tools.stage_display_runtime import write_stage_display_report
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -21,7 +20,6 @@ def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
             (stage_dir / review_name).write_text("status: ok\n", encoding="utf-8")
     if not (stage_dir / "program_execution_manifest.json").exists():
         (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
-    write_stage_display_report(lineage_root=stage_dir.parent, stage_id=stage)
 
 
 def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
@@ -74,7 +72,7 @@ def test_detect_session_stage_routes_csf_lineage_into_csf_data_ready(tmp_path: P
     lineage_root = tmp_path / "outputs" / "csf_case"
     _prepare_mandate_review_complete(lineage_root)
 
-    assert detect_session_stage(lineage_root) == "mandate_display_pending"
+    assert detect_session_stage(lineage_root) == "mandate_next_stage_confirmation_pending"
 
 
 def test_run_research_session_scaffolds_csf_data_ready_after_mandate_review(tmp_path: Path) -> None:

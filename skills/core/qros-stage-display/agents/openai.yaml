@@ -1,2 +1,0 @@
-name: qros-stage-display
-description: Use when a frozen stage needs a runtime-owned stage-display summary that renders structured summary JSON and HTML directly.

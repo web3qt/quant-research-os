@@ -98,12 +98,12 @@ deterministic backend 的入口在克隆下来的仓库里：
 ```text
 Lineage: btc_leads_alts
 🧭 Current orchestrator: qros-research-session
-📍 Current stage: mandate_display_pending
+📍 Current stage: mandate_next_stage_confirmation_pending
 🔨 Current active skill: qros-research-session
-💡 Why this skill: Current stage mandate_display_pending is running the mandatory post-review display phase before progression can continue.
-⛔ Blocking reason: mandate mandatory display has not completed yet.
-▶ Next action: Mandatory display retry 2/3 will be prepared for mandate after previous error: render failed.
-🔁 Resume hint: Rerun qros-session --lineage-id btc_leads_alts to continue the mandatory display phase for mandate.
+💡 Why this skill: Current stage mandate_next_stage_confirmation_pending is waiting for explicit approval before entering the downstream stage.
+⛔ Blocking reason: Explicit confirmation to enter data_ready is still incomplete.
+▶ Next action: Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter data_ready.
+🔁 Resume hint: Confirm the next-stage handoff for mandate, then rerun qros-session --lineage-id btc_leads_alts.
 🧠 Why now:
 - qualified
 ⚠ Open risks:
@@ -116,83 +116,7 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
-当某个已完成 review closure 的阶段进入 display phase 时，session 不会立刻进入下一个 `*_confirmation_pending`。它会自动进入 display 执行与重试流程。当前 reviewable mainline / CSF stages 都走这条 runtime-backed HTML display 路径：
-
-- `mandate`
-- `data_ready`
-- `signal_ready`
-- `train_freeze`
-- `test_evidence`
-- `backtest_ready`
-- `holdout_validation`
-- `csf_data_ready`
-- `csf_signal_ready`
-- `csf_train_freeze`
-- `csf_test_evidence`
-- `csf_backtest_ready`
-- `csf_holdout_validation`
-
-对已支持阶段：
-
-- session 会先自动运行 deterministic summary + direct HTML render
-- runtime 直接从 summary 渲染 HTML，不再等待外部会话继续完成 display
-- 如果 render 失败，会自动重试，最多 3 次
-- 只有 runtime 自己成功写出 `summary.json + summary.html` 后，才允许进入 `*_next_stage_confirmation_pending`
-- 如果第 3 次仍失败，session 会继续阻塞在 display phase，而不会放行下一阶段确认
-
-未注册阶段会显式返回 mandatory display blocker，而不会伪造 partial HTML success。
-
-另外，第一波 author-stage 自动补程式能力目前只正式覆盖：
-
-- `csf_data_ready_author`
-
-也就是说，当 lineage 已经进入 `csf_data_ready_author`，且 `csf_data_ready` 的 freeze groups 已全部确认，只剩 `program/cross_sectional_factor/data_ready` 缺失时，session 会自动物化一个 runnable first-pass stage program，并继续尝试执行它，而不是永远停在 `STAGE_PROGRAM_MISSING`。
-
-`csf_data_ready` 的第一版 reflection / HTML 只展示 3 个固定块：
-
-- `Data Coverage And Gaps`
-- `QC / Anomaly Summary`
-- `Artifact Directory And Key Files`
-
-简化示例：
-
-```text
-Lineage: btc_leads_alts
-🧭 Current orchestrator: qros-research-session
-📍 Current stage: data_ready_next_stage_confirmation_pending
-🔨 Current active skill: qros-research-session
-🧪 Research route: time_series_signal
-🪜 Stage status: awaiting_next_stage_confirmation
-⛔ Blocking reason code: NEXT_STAGE_CONFIRMATION_REQUIRED
-▶ Next action: Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter signal_ready.
-🔁 Resume hint: Confirm the next-stage handoff for data_ready, then rerun qros-session --lineage-id btc_leads_alts.
-Data Ready Reflection:
-- Data Coverage And Gaps:
-  - core data layers present: 5/5
-  - missing core data layers: none
-  - supporting contract files present: 5/5
-  - missing supporting contract files: none
-  - question: do the available coverage artifacts support the stated admission rule and coverage floor?
-- QC / Anomaly Summary:
-  - qc_report.parquet: available
-  - validation_report.md: available
-  - universe_exclusions.csv: available
-  - universe_exclusions.md: available
-  - data_ready_gate_decision.md: available
-  - question: do the QC evidence and exclusion artifacts explain any symbols removed before signal work continues?
-- Artifact Directory And Key Files:
-  - stage directory: outputs/btc_leads_alts/02_data_ready
-  - key files present: dataset_manifest.json, validation_report.md, data_contract.md, run_manifest.json, artifact_catalog.md, rebuild_data_ready.py
-  - missing key files: none
-```
-
-这个 reflection 面板在第一版里有几个明确边界：
-
-- 只出现在 time-series 主线
-- 只出现在 `data_ready_next_stage_confirmation_pending`，也就是 mandatory display 已成功完成之后
-- 不出现在 `data_ready_review`
-- 不替代 formal review closure
-- 不改 `--json` 或 `--snapshot` 的机读输出
+如果某个阶段已经 review closure 完成，session 会直接进入 `*_next_stage_confirmation_pending`，等待用户是否进入下一阶段。展示/总结不是 formal workflow gate；如果用户想看阶段总结，应直接在对话里提出。
 
 如果你要让脚本输出机读状态而不是文本面板，可以加 `--json`：
 

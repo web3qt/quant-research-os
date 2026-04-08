@@ -51,9 +51,6 @@ def test_project_bootstrap_files_exist() -> None:
     assert skill_path("qros-test-evidence-author").exists()
     assert skill_path("qros-backtest-ready-author").exists()
     assert skill_path("qros-holdout-validation-author").exists()
-    assert skill_path("qros-stage-display").exists()
-    assert Path("scripts/run_stage_display.py").exists()
-    assert Path("tools/stage_display_runtime.py").exists()
     assert Path("tools/verification_tiers.py").exists()
 
 
@@ -64,5 +61,4 @@ def test_usage_doc_exists() -> None:
     assert Path("docs/experience/qros-research-session-usage.md").exists()
     assert Path("docs/experience/qros-verification-tiers.md").exists()
     assert Path("docs/experience/stage-freeze-group-field-guide.md").exists()
-    assert Path("docs/experience/qros-stage-display-skill-usage.md").exists()
     assert Path("docs/governance/review-governance-decision-workflow.md").exists()

@@ -22,7 +22,7 @@
   "blocking_reasons": [
     "Explicit confirmation to enter csf_test_evidence is still incomplete."
   ],
-  "lineage_transition": "Display completed. HTML: <html-path>. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter csf_test_evidence.",
+  "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter csf_test_evidence.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_test_evidence_confirmation"
   ],

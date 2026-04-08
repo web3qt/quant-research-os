@@ -40,7 +40,6 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
     assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
-    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
     assert "qros-mandate-review" in manifest["installed_skills"]
     assert "qros-train-freeze-author" in manifest["installed_skills"]
     assert "qros-test-evidence-author" in manifest["installed_skills"]
