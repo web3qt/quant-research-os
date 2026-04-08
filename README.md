@@ -144,6 +144,8 @@ python scripts/run_verification_tier.py --tier full-smoke
 git pull && ./setup --host codex --mode user-global
 ```
 
+如果你之前装的是旧版（例如还在用 `~/.agents/skills`，或还保留 display 相关旧 skill/runtime），也按上面这条重新执行一次，然后**重启 Codex**，让本地安装树刷新到当前合同。
+
 ## 用户如何开始使用（Codex）
 
 安装完成后，按这 4 步走即可：
@@ -201,5 +203,5 @@ Codex 扫描 `~/.codex/skills/`，`./setup --mode user-global` 会把扁平 `qro
 
 - Claude Code 看不到技能：确认已执行 `/plugin install web3qt/quant-research-os`，重启会话
 - Codex 看不到技能：确认 `~/.codex/skills/` 里存在 `qros-*`
-- 感觉安装内容过旧：Claude Code 执行 `/plugin update quant-research-os`；手动安装执行 `git pull && ./setup --host codex --mode user-global`
+- 感觉安装内容过旧：Claude Code 执行 `/plugin update quant-research-os`；手动安装执行 `git pull && ./setup --host codex --mode user-global`，然后重启 Codex
 - 不确定安装是否正常：新开会话，输入 “帮我研究一个量化策略” 测试自动触发

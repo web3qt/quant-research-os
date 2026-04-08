@@ -36,6 +36,8 @@ git pull
 
 Codex will see the updated skills after `setup` refreshes `~/.codex/skills`.
 
+如果你之前装的是旧版（例如还走 `~/.agents/skills` 或保留了旧 display 相关安装产物），这里也要完整重新跑一遍，然后**重启 Codex**，不要只 `git pull`。
+
 ## Check
 
 Check is simple:
@@ -62,6 +64,6 @@ The recommended user path is still skill-first. The repo clone is the authored s
 ## Troubleshooting
 
 - `Codex` cannot see the skills: verify `~/.codex/skills/` contains `qros-*`
-- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`
+- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`，然后重启 Codex
 - Need workflow guidance: open `docs/experience/quickstart-codex.md`
 - Need the unified entry docs: open `docs/experience/qros-research-session-usage.md`

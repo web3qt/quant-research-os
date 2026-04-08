@@ -70,6 +70,8 @@ git pull
 ./setup --host codex --mode user-global
 ```
 
+If you installed an older QROS contract before the move to direct `~/.codex/skills` installs, rerun the same command and restart Codex so stale local skill directories are replaced.
+
 ## Uninstalling
 
 ```bash
