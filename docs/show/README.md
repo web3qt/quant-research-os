@@ -49,8 +49,8 @@ flowchart LR
 
     C --> E["Runtime / Skills / Session"]
     E --> E1["统一入口: qros-research-session"]
-    E --> E2["按阶段切换 skill"]
-    E --> E3["在当前 research repo 写入 outputs/<lineage_id>/<stage>"]
+    E --> E2["按显式 gate 推进: content / review / display / next-stage"]
+    E --> E3["在当前 research repo 写入 outputs/<lineage_id>/ + program/"]
 
     D --> F["研究主流程推进"]
     E --> F
@@ -94,12 +94,12 @@ flowchart TB
     M --> N["05 csf_backtest_ready"]
     N --> O["06 csf_holdout_validation"]
 
-    I --> P["07 promotion_decision"]
+    I --> P["当前单入口编排<br/>到 holdout_validation review 停止"]
     O --> P
-    P --> Q["08 shadow_admission"]
-    Q --> R["09 canary_production"]
+    P -.-> Q["07+ 后续治理阶段<br/>promotion / shadow / canary"]
+    Q -.-> R["SOP 已定义<br/>未纳入当前 qros-research-session"]
 
-    S["每个阶段都必须有<br/>formal artifacts + review closure"] -.-> D
+    S["每个阶段都必须有<br/>freeze + lineage-local program + artifacts + review closure"] -.-> D
     S -.-> E
     S -.-> F
     S -.-> G
@@ -112,28 +112,34 @@ flowchart TB
     S -.-> N
     S -.-> O
 
-    T["如果 review verdict 是<br/>RETRY / NO-GO / CHILD LINEAGE<br/>则转 failure handling，不继续直推下一阶段"] -.-> P
+    T["如果 review verdict 是<br/>RETRY / NO-GO / CHILD LINEAGE<br/>则转 failure handling + change control"] -.-> P
 
     classDef main fill:#d9f2d9,stroke:#4a7c59,stroke-width:1.5px,color:#111;
     classDef ts fill:#dfe8ff,stroke:#4a6fa5,stroke-width:1.2px,color:#111;
     classDef csf fill:#efe2ff,stroke:#7a4fa3,stroke-width:1.2px,color:#111;
     classDef gov fill:#ffe7c7,stroke:#b67b2d,stroke-width:1.2px,color:#111;
+    classDef future fill:#e2e8f0,stroke:#64748b,stroke-width:1.2px,color:#111;
 
-    class A,B,C,P,Q,R main;
+    class A,B,C,P main;
     class D,E,F,G,H,I ts;
     class J,K,L,M,N,O csf;
     class S,T gov;
+    class Q,R future;
 ```
 
 ## 它怎么运转
 
 研究从 `idea_intake` 开始。这个阶段先确认 observation、hypothesis、scope、data source、route assessment 和 kill criteria，目标不是立刻给出结果，而是判断这个想法是否具备正式研究资格。
 
-只有通过 intake gate，研究才会进入 `mandate`。在这里，研究问题、时间边界、Universe、数据合同、参数边界和执行合同会被正式冻结。`mandate` 之后，流程按 `research_route` 分流：`time_series_signal` 进入 `data_ready -> signal_ready -> train_freeze -> test_evidence -> backtest_ready -> holdout_validation`，`cross_sectional_factor` 进入对应的 `csf_*` 独立主线。两条主线最终汇入 `promotion_decision -> shadow_admission -> canary_production` 这一组治理准入阶段。
+只有通过 intake gate，研究才会进入 `mandate`。在这里，研究问题、时间边界、Universe、数据合同、参数边界和执行合同会被正式冻结。`mandate` 之后，流程按 `research_route` 分流：`time_series_signal` 进入 `data_ready -> signal_ready -> train_freeze -> test_evidence -> backtest_ready -> holdout_validation`，`cross_sectional_factor` 进入对应的 `csf_*` 独立主线。
 
-无论走哪条路线，阶段推进都依赖三件事：
+当前仓库里，`qros-research-session` 这条 first-wave 单入口编排只覆盖到 `holdout_validation review`。`promotion_decision -> shadow_admission -> canary_production` 这些更后面的治理节点已经在 SOP 中定义，但还没有接入当前 single-entry runtime，所以展示时应把它们理解成后续治理蓝图，而不是今天已经打通的实际编排路径。
 
+无论走哪条路线，阶段推进都依赖四件事：
+
+- freeze approval 和显式 gate，而不是口头默认继续。
 - 正式 artifact，而不是空目录、占位文件或口头说明。
+- lineage-local stage program 和 provenance，而不是框架仓共享 helper 直接冒充阶段完成。
 - review closure，而不是研究员自己宣布通过。
 - lineage control 和 failure handling，而不是静默重试或直接改题。
 

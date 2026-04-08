@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="qros-overview" name="Overview">
-        <mxGraphModel dx="1229" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3400" pageHeight="1800" math="0" shadow="0">
+        <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="3400" pageHeight="1800" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -43,10 +43,10 @@
                 <mxCell id="14" value="统一入口&#xa;qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="1030" y="760" width="240" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="15" value="按阶段切换 skill&#xa;mandate / review / failure handler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="15" value="按显式 gate 推进&#xa;content / review / display / next-stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="1310" y="760" width="280" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="在当前 research repo 写入&#xa;outputs/&lt;lineage_id&gt;/&lt;stage&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="16" value="在当前 research repo 写入&#xa;outputs/&lt;lineage_id&gt;/ + program/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="1630" y="760" width="320" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="17" value="可复现" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
@@ -125,11 +125,11 @@
         </mxGraphModel>
     </diagram>
     <diagram id="qros-flow" name="Flow">
-        <mxGraphModel dx="1229" dy="743" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1321" dy="357" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="2" value="QROS 简化流程图&#xa;Only What Each Stage Does" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                <mxCell id="2" value="QROS 当前已落地主流程图&#xa;First-Wave Runtime Boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
                     <mxGeometry x="1450" y="40" width="560" height="90" as="geometry"/>
                 </mxCell>
                 <mxCell id="3" value="00 idea_intake&#xa;判断这个想法值不值得正式研究" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
@@ -177,19 +177,19 @@
                 <mxCell id="17" value="06 csf_holdout_validation&#xa;验证最终方案在保留窗里是否仍成立" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2720" y="410" width="260" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="07 promotion_decision&#xa;给出组织层正式结论" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review 停止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="240" width="250" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="19" value="08 shadow_admission&#xa;冻结 shadow 监控和回滚条件" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="19" value="07+ 后续治理阶段&#xa;promotion / shadow / canary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="360" width="250" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="20" value="09 canary_production&#xa;确认 canary 或 production 准入" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="20" value="SOP 已定义&#xa;未纳入当前 qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="480" width="250" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="21" value="所有阶段都需要&#xa;formal artifacts + review closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">
-                    <mxGeometry x="1600" y="720" width="340" height="84" as="geometry"/>
+                <mxCell id="21" value="所有阶段都需要&#xa;freeze + lineage-local program + artifacts + review closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1530" y="720" width="470" height="84" as="geometry"/>
                 </mxCell>
-                <mxCell id="22" value="RETRY / NO-GO / CHILD LINEAGE&#xa;进入 failure handling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="22" value="RETRY / NO-GO / CHILD LINEAGE&#xa;进入 failure handling + change control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2020" y="720" width="340" height="84" as="geometry"/>
                 </mxCell>
                 <mxCell id="23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="3" target="4" edge="1">
@@ -234,16 +234,16 @@
                 <mxCell id="36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;" parent="1" source="16" target="17" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="11" target="18" edge="1">
+                <mxCell id="37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#D97706;" parent="1" source="11" target="18" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="17" target="18" edge="1">
+                <mxCell id="38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#D97706;" parent="1" source="17" target="18" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="18" target="19" edge="1">
+                <mxCell id="39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeWidth=2;endArrow=block;endFill=0;strokeColor=#64748B;" parent="1" source="18" target="19" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="19" target="20" edge="1">
+                <mxCell id="40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeWidth=2;endArrow=block;endFill=0;strokeColor=#64748B;" parent="1" source="19" target="20" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="41" style="dashed=1;html=1;strokeWidth=1.5;endArrow=none;strokeColor=#EA580C;" parent="1" source="21" target="8" edge="1">
