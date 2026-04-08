@@ -4,7 +4,7 @@ import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
 from tools.research_session import detect_session_stage, run_research_session
-from tools.stage_display_runtime import prepare_stage_display_handoff, write_stage_display_result
+from tools.stage_display_runtime import write_stage_display_report
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -21,13 +21,7 @@ def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
             (stage_dir / review_name).write_text("status: ok\n", encoding="utf-8")
     if not (stage_dir / "program_execution_manifest.json").exists():
         (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
-    prepare_stage_display_handoff(lineage_root=stage_dir.parent, stage_id=stage)
-    write_stage_display_result(
-        lineage_root=stage_dir.parent,
-        stage_id=stage,
-        html=f"<!DOCTYPE html><html><body><h1>{stage} display</h1></body></html>",
-        rendered_by="test-renderer",
-    )
+    write_stage_display_report(lineage_root=stage_dir.parent, stage_id=stage)
 
 
 def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
@@ -89,7 +83,7 @@ def test_run_research_session_scaffolds_csf_data_ready_after_mandate_review(tmp_
 
     status = run_research_session(outputs_root=tmp_path / "outputs", lineage_id="csf_case")
 
-    assert status.current_stage == "mandate_display_pending"
+    assert status.current_stage == "mandate_next_stage_confirmation_pending"
     assert not (lineage_root / "02_csf_data_ready" / "csf_data_ready_freeze_draft.yaml").exists()
     assert status.current_route == "cross_sectional_factor"
     assert status.factor_role == "regime_filter"
@@ -108,7 +102,7 @@ def test_run_research_session_writes_csf_transition_approval_in_csf_directory(tm
 
     approval_path = lineage_root / "02_csf_data_ready" / "data_ready_transition_approval.yaml"
     assert approval_path.exists()
-    assert status.current_stage == "mandate_display_pending"
+    assert status.current_stage == "mandate_next_stage_confirmation_pending"
 
     _write_display_decision(lineage_root / "01_mandate", stage="mandate")
     _write_next_stage_confirmation(lineage_root / "01_mandate", stage="mandate")

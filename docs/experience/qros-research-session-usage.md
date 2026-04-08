@@ -95,7 +95,7 @@ Lineage: btc_leads_alts
 🔨 Current active skill: qros-research-session
 💡 Why this skill: Current stage mandate_display_pending is running the mandatory post-review display phase before progression can continue.
 ⛔ Blocking reason: mandate mandatory display has not completed yet.
-▶ Next action: Mandatory display attempt 1/3 is in progress for mandate. Waiting for HTML completion artifact.
+▶ Next action: Mandatory display retry 2/3 will be prepared for mandate after previous error: render failed.
 🔁 Resume hint: Rerun qros-session --lineage-id btc_leads_alts to continue the mandatory display phase for mandate.
 🧠 Why now:
 - qualified
@@ -127,10 +127,10 @@ Lineage: btc_leads_alts
 
 对已支持阶段：
 
-- session 会先自动运行 deterministic summary + display handoff generation
-- 然后等待任意 Codex 会话原生、可见地 spawn subagent 完成 HTML
+- session 会先自动运行 deterministic summary + direct HTML render
+- runtime 直接从 summary 渲染 HTML，不再等待外部会话继续完成 display
 - 如果 render 失败，会自动重试，最多 3 次
-- 只有 completion artifact 标记 HTML 成功后，才允许进入 `*_next_stage_confirmation_pending`
+- 只有 runtime 自己成功写出 `summary.json + summary.html` 后，才允许进入 `*_next_stage_confirmation_pending`
 - 如果第 3 次仍失败，session 会继续阻塞在 display phase，而不会放行下一阶段确认
 
 未注册阶段会显式返回 mandatory display blocker，而不会伪造 partial HTML success。

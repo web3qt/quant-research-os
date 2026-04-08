@@ -10,7 +10,7 @@ from tools.research_session import (
     slugify_idea,
     summarize_session_status,
 )
-from tools.stage_display_runtime import prepare_stage_display_handoff, write_stage_display_result
+from tools.stage_display_runtime import write_stage_display_report
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -49,13 +49,7 @@ def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
             (stage_dir / review_name).write_text("status: ok\n", encoding="utf-8")
     if not (stage_dir / "program_execution_manifest.json").exists():
         (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
-    prepare_stage_display_handoff(lineage_root=stage_dir.parent, stage_id=stage)
-    write_stage_display_result(
-        lineage_root=stage_dir.parent,
-        stage_id=stage,
-        html=f"<!DOCTYPE html><html><body><h1>{stage} display</h1></body></html>",
-        rendered_by="test-renderer",
-    )
+    write_stage_display_report(lineage_root=stage_dir.parent, stage_id=stage)
 
 
 def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
@@ -1008,8 +1002,8 @@ def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Pat
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "mandate_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for mandate." in status.next_action
+    assert status.current_stage == "mandate_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirmed(
@@ -1189,8 +1183,8 @@ def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: P
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "data_ready_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for data_ready." in status.next_action
+    assert status.current_stage == "data_ready_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confirmed(
@@ -1314,8 +1308,8 @@ def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) ->
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "signal_ready_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for signal_ready." in status.next_action
+    assert status.current_stage == "signal_ready_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confirmed(
@@ -1419,8 +1413,8 @@ def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "train_freeze_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for train_freeze." in status.next_action
+    assert status.current_stage == "train_freeze_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confirmed(
@@ -1534,8 +1528,8 @@ def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) 
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "test_evidence_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for test_evidence." in status.next_action
+    assert status.current_stage == "test_evidence_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_confirmed(
@@ -1655,8 +1649,8 @@ def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Pa
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "backtest_ready_display_pending"
-    assert "Mandatory display attempt 1/3 is in progress for backtest_ready." in status.next_action
+    assert status.current_stage == "backtest_ready_next_stage_confirmation_pending"
+    assert "CONFIRM_NEXT_STAGE" in status.next_action
 
 
 def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_confirmed(
@@ -1954,7 +1948,7 @@ def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handli
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "test_evidence_display_pending"
+    assert status.current_stage == "test_evidence_next_stage_confirmation_pending"
     assert status.review_verdict == "PASS"
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
@@ -2020,7 +2014,7 @@ def test_run_research_session_clears_intake_open_risks_after_routing_into_csf_da
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="csf_case")
 
-    assert status.current_stage == "mandate_display_pending"
+    assert status.current_stage == "mandate_next_stage_confirmation_pending"
     assert status.open_risks == []
 
 

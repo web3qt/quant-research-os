@@ -23,9 +23,9 @@
     "csf_signal_ready"
   ],
   "blocking_reasons": [
-    "mandate mandatory display has not completed yet."
+    "Explicit confirmation to enter data_ready is still incomplete."
   ],
-  "lineage_transition": "Mandatory display attempt 1/3 is in progress for mandate. Waiting for HTML completion artifact.",
+  "lineage_transition": "Display completed. HTML: <html-path>. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter data_ready.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation"
   ],

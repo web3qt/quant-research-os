@@ -1,25 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from subprocess import run
 import sys
 
 import pytest
 
+import tools.stage_display_runtime as stage_display_runtime
 from tools.stage_display_runtime import (
     StageDisplayRenderError,
     UnsupportedStageError,
     build_stage_display_summary,
-    load_stage_display_request,
-    load_stage_display_result,
-    prepare_stage_display_handoff,
+    export_stage_display,
     resolve_stage_display_config,
     supported_stage_ids,
-    write_stage_display_result,
     write_stage_display_report,
 )
-
 
 EXPECTED_SUPPORTED_STAGE_IDS = (
     "mandate",
@@ -145,22 +143,6 @@ def _build_csf_data_ready_lineage(tmp_path: Path) -> Path:
     return lineage_root
 
 
-def _build_generic_signal_ready_lineage(tmp_path: Path) -> Path:
-    lineage_root = tmp_path / "outputs" / "btc_signal_lineage"
-    stage_dir = lineage_root / "03_signal_ready"
-    stage_dir.mkdir(parents=True)
-    (stage_dir / "params").mkdir()
-    (stage_dir / "artifact_catalog.md").write_text("ok\n", encoding="utf-8")
-    (stage_dir / "field_dictionary.md").write_text("ok\n", encoding="utf-8")
-    (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
-    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
-    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
-    (stage_dir / "stage_completion_certificate.yaml").write_text("stage_status: PASS\nfinal_verdict: PASS\n", encoding="utf-8")
-    (stage_dir / "signal_contract.md").write_text("ok\n", encoding="utf-8")
-    (stage_dir / "signal_gate_decision.md").write_text("ok\n", encoding="utf-8")
-    return lineage_root
-
-
 def _build_generic_stage_lineage(tmp_path: Path, *, stage_id: str) -> Path:
     lineage_root = tmp_path / "outputs" / f"{stage_id}_lineage"
     config = resolve_stage_display_config(stage_id)
@@ -171,95 +153,13 @@ def _build_generic_stage_lineage(tmp_path: Path, *, stage_id: str) -> Path:
     (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
     (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
     (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
-    (stage_dir / "stage_completion_certificate.yaml").write_text(
-        "stage_status: PASS\nfinal_verdict: PASS\n",
-        encoding="utf-8",
-    )
+    (stage_dir / "stage_completion_certificate.yaml").write_text("stage_status: PASS\nfinal_verdict: PASS\n", encoding="utf-8")
     (stage_dir / f"{stage_id}_marker.txt").write_text("ok\n", encoding="utf-8")
     return lineage_root
 
 
-def _write_renderer_stub(tmp_path: Path, *, fail: bool = False) -> Path:
-    script_path = tmp_path / ("fail_renderer.py" if fail else "ok_renderer.py")
-    script_path.write_text(
-        """
-from __future__ import annotations
-
-import argparse
-import sys
-from pathlib import Path
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-o', '--output-last-message', required=True)
-parser.add_argument('prompt_arg')
-args = parser.parse_args()
-prompt = sys.stdin.read()
-if "Structured summary JSON" not in prompt:
-    print("missing prompt payload", file=sys.stderr)
-    raise SystemExit(4)
-if "--fail" in prompt:
-    print("unexpected fail token", file=sys.stderr)
-    raise SystemExit(5)
-if "fail_renderer.py" in __file__:
-    print("renderer exploded", file=sys.stderr)
-    raise SystemExit(3)
-Path(args.output_last_message).write_text(
-    "<!DOCTYPE html><html><body><h1>CSF Data Ready Display</h1><p>available</p></body></html>\\n",
-    encoding='utf-8',
-)
-""".strip()
-        + "\n",
-        encoding="utf-8",
-    )
-    return script_path
-
-
-def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_markers(tmp_path: Path) -> None:
-    lineage_root = _build_csf_data_ready_lineage(tmp_path)
-
-    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="csf_data_ready")
-
-    assert summary["stage_id"] == "csf_data_ready"
-    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
-    assert summary["status"] == "complete"
-    assert summary["missing_required_inputs"] == []
-    assert summary["section_order"] == [
-        "Panel Contract And Core Evidence",
-        "Coverage And Eligibility Evidence",
-        "Delivery And Rebuild Evidence",
-    ]
-    assert [section["title"] for section in summary["sections"]] == summary["section_order"]
-    first_section_items = summary["sections"][0]["items"]
-    assert any(item["text"] == "date_key: trade_date" for item in first_section_items)
-    assert any(item["marker"] == "question" for section in summary["sections"] for item in section["items"])
-
-
 def test_supported_stage_ids_cover_current_reviewable_stages() -> None:
     assert supported_stage_ids() == EXPECTED_SUPPORTED_STAGE_IDS
-
-
-def test_build_stage_display_summary_for_generic_signal_ready_uses_generic_sections(tmp_path: Path) -> None:
-    lineage_root = _build_generic_signal_ready_lineage(tmp_path)
-
-    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="signal_ready")
-
-    assert summary["stage_id"] == "signal_ready"
-    assert summary["title"] == "Signal Ready Display Summary"
-    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
-    assert summary["status"] == "complete"
-    assert summary["missing_required_inputs"] == []
-    assert summary["section_order"] == [
-        "Stage Metadata And Core Evidence",
-        "Frozen Artifact Inventory",
-        "Review Closure Evidence",
-    ]
-    assert [section["title"] for section in summary["sections"]] == summary["section_order"]
-    first_section_items = summary["sections"][0]["items"]
-    assert any(item["text"] == "stage_id: signal_ready" for item in first_section_items)
-    assert any(item["text"] == "review_verdict: PASS" for item in first_section_items)
-    inventory_items = summary["sections"][1]["items"]
-    assert any(item["text"] == "params/: directory present" for item in inventory_items)
-    assert any(item["text"] == "signal_contract.md: present" for item in inventory_items)
 
 
 def test_build_stage_display_summary_for_mandate_has_bounded_sections_and_review_evidence(tmp_path: Path) -> None:
@@ -277,191 +177,128 @@ def test_build_stage_display_summary_for_mandate_has_bounded_sections_and_review
         "Scope And Data Contract",
         "Execution And Review Evidence",
     ]
-    first_section_items = summary["sections"][0]["items"]
     assert any(
         item["text"] == "research_question: BTC 冲击发生时，哪些 ALT 在同一横截面里更容易出现后续相对弱势？"
-        for item in first_section_items
+        for item in summary["sections"][0]["items"]
     )
     assert any(item["text"] == "review_verdict: PASS" for item in summary["sections"][2]["items"])
 
 
-def test_write_stage_display_report_writes_summary_and_html_via_subagent_command(tmp_path: Path) -> None:
+def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_markers(tmp_path: Path) -> None:
     lineage_root = _build_csf_data_ready_lineage(tmp_path)
-    renderer = _write_renderer_stub(tmp_path)
 
-    result = write_stage_display_report(
-        lineage_root=lineage_root,
-        stage_id="csf_data_ready",
-        renderer_command=[sys.executable, str(renderer)],
-    )
+    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="csf_data_ready")
+
+    assert summary["stage_id"] == "csf_data_ready"
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
+    assert summary["status"] == "complete"
+    assert summary["missing_required_inputs"] == []
+    assert summary["section_order"] == [
+        "Panel Contract And Core Evidence",
+        "Coverage And Eligibility Evidence",
+        "Delivery And Rebuild Evidence",
+    ]
+    assert any(item["text"] == "date_key: trade_date" for item in summary["sections"][0]["items"])
+    assert any(item["marker"] == "question" for section in summary["sections"] for item in section["items"])
+
+
+def test_build_stage_display_summary_for_generic_signal_ready_uses_generic_sections(tmp_path: Path) -> None:
+    lineage_root = _build_generic_stage_lineage(tmp_path, stage_id="signal_ready")
+
+    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="signal_ready")
+
+    assert summary["stage_id"] == "signal_ready"
+    assert summary["title"] == "Signal Ready Display Summary"
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
+    assert summary["status"] == "complete"
+    assert summary["section_order"] == [
+        "Stage Metadata And Core Evidence",
+        "Frozen Artifact Inventory",
+        "Review Closure Evidence",
+    ]
+    assert any(item["text"] == "stage_id: signal_ready" for item in summary["sections"][0]["items"])
+    assert any(item["text"] == "review_verdict: PASS" for item in summary["sections"][0]["items"])
+
+
+def test_write_stage_display_report_writes_summary_and_html_for_mandate(tmp_path: Path) -> None:
+    lineage_root = _build_mandate_lineage(tmp_path)
+
+    result = write_stage_display_report(lineage_root=lineage_root, stage_id="mandate")
 
     summary_path = Path(result["structured_summary_path"])
     html_path = Path(result["html_path"])
     assert result["render_status"] == "complete"
-    assert result["required_subagent"] is True
     assert summary_path.exists()
     assert html_path.exists()
-    assert "CSF Data Ready Display" in html_path.read_text(encoding="utf-8")
+    assert not (lineage_root / "reports" / "stage_display" / "mandate.display_request.json").exists()
+    assert not (lineage_root / "reports" / "stage_display" / "mandate.display_prompt.txt").exists()
+    assert not (lineage_root / "reports" / "stage_display" / "mandate.display_result.json").exists()
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     assert summary["render_status"] == "complete"
     assert summary["artifacts"]["html_path"] == str(html_path)
+    assert summary["artifacts"]["summary_path"] == str(summary_path)
 
 
-def test_prepare_stage_display_handoff_writes_summary_request_and_prompt_only(tmp_path: Path) -> None:
-    lineage_root = _build_mandate_lineage(tmp_path)
+def test_write_stage_display_report_marks_failed_summary_when_render_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    lineage_root = _build_csf_data_ready_lineage(tmp_path)
 
-    result = prepare_stage_display_handoff(
-        lineage_root=lineage_root,
-        stage_id="mandate",
-    )
+    def _boom(summary: dict[str, object]) -> str:
+        raise StageDisplayRenderError("renderer exploded")
 
-    assert Path(result["structured_summary_path"]).exists()
-    assert Path(result["request_path"]).exists()
-    assert Path(result["prompt_path"]).exists()
-    assert not Path(result["html_path"]).exists()
-    assert not Path(result["result_path"]).exists()
-    request = load_stage_display_request(lineage_root=lineage_root, stage_id="mandate")
-    assert request is not None
-    assert request["status"] == "awaiting_native_subagent_render"
-
-
-def test_write_stage_display_report_supports_mandate(tmp_path: Path) -> None:
-    lineage_root = _build_mandate_lineage(tmp_path)
-    renderer = _write_renderer_stub(tmp_path)
-
-    result = write_stage_display_report(
-        lineage_root=lineage_root,
-        stage_id="mandate",
-        renderer_command=[sys.executable, str(renderer)],
-    )
+    monkeypatch.setattr(stage_display_runtime, "render_stage_display_html", _boom)
+    result = write_stage_display_report(lineage_root=lineage_root, stage_id="csf_data_ready")
 
     summary_path = Path(result["structured_summary_path"])
     html_path = Path(result["html_path"])
-    assert result["render_status"] == "complete"
-    assert summary_path.exists()
-    assert html_path.exists()
-    summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    assert summary["stage_id"] == "mandate"
-    assert summary["render_status"] == "complete"
-
-
-# 失败时保留 summary 诊断件，但不能留下伪成功 HTML。
-def test_write_stage_display_report_preserves_incomplete_summary_when_subagent_fails(tmp_path: Path) -> None:
-    lineage_root = _build_csf_data_ready_lineage(tmp_path)
-    renderer = _write_renderer_stub(tmp_path, fail=True)
-
-    with pytest.raises(StageDisplayRenderError):
-        write_stage_display_report(
-            lineage_root=lineage_root,
-            stage_id="csf_data_ready",
-            renderer_command=[sys.executable, str(renderer)],
-        )
-
-    summary_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.json"
-    html_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.html"
-    result_path = lineage_root / "reports" / "stage_display" / "csf_data_ready.display_result.json"
+    assert result["render_status"] == "failed"
     assert summary_path.exists()
     assert not html_path.exists()
-    assert result_path.exists()
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     assert summary["render_status"] == "failed"
-    assert "renderer exploded" in summary["render_error"]
-    result = json.loads(result_path.read_text(encoding="utf-8"))
-    assert result["status"] == "failed"
-
-
-def test_write_stage_display_result_writes_completion_artifact_from_html(tmp_path: Path) -> None:
-    lineage_root = _build_csf_data_ready_lineage(tmp_path)
-    prepare_stage_display_handoff(lineage_root=lineage_root, stage_id="csf_data_ready")
-
-    payload = write_stage_display_result(
-        lineage_root=lineage_root,
-        stage_id="csf_data_ready",
-        html="<!DOCTYPE html><html><body><h1>Rendered</h1></body></html>",
-        rendered_by="visible-subagent",
-    )
-
-    assert payload["status"] == "complete"
-    result = load_stage_display_result(lineage_root=lineage_root, stage_id="csf_data_ready")
-    assert result is not None
-    assert result["status"] == "complete"
-    assert (lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.html").exists()
+    assert summary["render_error"] == "renderer exploded"
 
 
 @pytest.mark.parametrize("stage_id", GENERIC_SUPPORTED_STAGE_IDS)
-def test_prepare_and_complete_stage_display_for_every_generic_supported_stage(
-    tmp_path: Path,
-    stage_id: str,
-) -> None:
+def test_write_stage_display_report_supports_every_generic_supported_stage(tmp_path: Path, stage_id: str) -> None:
     lineage_root = _build_generic_stage_lineage(tmp_path, stage_id=stage_id)
 
-    handoff = prepare_stage_display_handoff(lineage_root=lineage_root, stage_id=stage_id)
-    assert Path(handoff["structured_summary_path"]).exists()
-    assert Path(handoff["request_path"]).exists()
-    assert Path(handoff["prompt_path"]).exists()
-    summary = json.loads(Path(handoff["structured_summary_path"]).read_text(encoding="utf-8"))
-    assert summary["stage_id"] == stage_id
-    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
-    assert summary["status"] == "complete"
+    result = write_stage_display_report(lineage_root=lineage_root, stage_id=stage_id)
 
-    result = write_stage_display_result(
-        lineage_root=lineage_root,
-        stage_id=stage_id,
-        html=f"<!DOCTYPE html><html><body><h1>{stage_id}</h1></body></html>",
-        rendered_by="visible-subagent",
-    )
-    assert result["status"] == "complete"
-    assert Path(handoff["html_path"]).exists()
-    loaded_result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_id)
-    assert loaded_result is not None
-    assert loaded_result["status"] == "complete"
+    assert result["render_status"] == "complete"
+    summary_path = Path(result["structured_summary_path"])
+    html_path = Path(result["html_path"])
+    assert summary_path.exists()
+    assert html_path.exists()
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["stage_id"] == stage_id
+    assert summary["render_status"] == "complete"
 
 
 def test_unsupported_stage_fails_without_writing_partial_outputs(tmp_path: Path) -> None:
     lineage_root = _build_csf_data_ready_lineage(tmp_path)
 
     with pytest.raises(UnsupportedStageError):
-        write_stage_display_report(
-            lineage_root=lineage_root,
-            stage_id="shadow",
-            renderer_command=[sys.executable, str(_write_renderer_stub(tmp_path))],
-        )
+        write_stage_display_report(lineage_root=lineage_root, stage_id="shadow")
 
     assert not (lineage_root / "reports" / "stage_display").exists()
 
 
-def test_run_stage_display_script_uses_renderer_override(tmp_path: Path) -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_stage_display.py"
+def test_export_stage_display_writes_runtime_owned_compat_summary_and_html(tmp_path: Path) -> None:
     lineage_root = _build_csf_data_ready_lineage(tmp_path)
-    renderer = _write_renderer_stub(tmp_path)
 
-    result = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--stage-id",
-            "mandate",
-            "--lineage-root",
-            str(_build_mandate_lineage(tmp_path)),
-            "--renderer-command",
-            f"{sys.executable} {renderer}",
-            "--json",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-    )
+    manifest = export_stage_display(lineage_root=lineage_root, stage_id="csf_data_ready")
 
-    assert result.returncode == 0, result.stderr
-    manifest = json.loads(result.stdout)
-    assert manifest["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
-    assert Path(manifest["structured_summary_path"]).exists()
-    assert Path(manifest["html_path"]).exists()
+    summary_path = Path(manifest["structured_summary_path"])
+    html_path = Path(manifest["html_path"])
+    assert summary_path.exists()
+    assert html_path.exists()
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["artifact_status"] == "complete"
+    assert summary["stage_id"] == "csf_data_ready"
+    assert summary["html_path"] == str(html_path)
 
 
-def test_run_stage_display_script_default_writes_handoff_only(tmp_path: Path) -> None:
+def test_run_stage_display_script_writes_summary_and_html(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_stage_display.py"
     lineage_root = _build_mandate_lineage(tmp_path)
@@ -484,35 +321,16 @@ def test_run_stage_display_script_default_writes_handoff_only(tmp_path: Path) ->
 
     assert result.returncode == 0, result.stderr
     manifest = json.loads(result.stdout)
+    assert manifest["render_status"] == "complete"
     assert Path(manifest["structured_summary_path"]).exists()
-    assert Path(manifest["request_path"]).exists()
-    assert Path(manifest["prompt_path"]).exists()
-    assert not Path(manifest["html_path"]).exists()
+    assert Path(manifest["html_path"]).exists()
 
 
-def test_run_stage_display_script_can_write_completion_from_html(tmp_path: Path) -> None:
+def test_run_stage_display_script_returns_nonzero_when_runtime_render_fails(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_stage_display.py"
     lineage_root = _build_mandate_lineage(tmp_path)
-    html_input = tmp_path / "rendered.html"
-    html_input.write_text("<!DOCTYPE html><html><body><h1>Mandate</h1></body></html>\n", encoding="utf-8")
-
-    prep = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--stage-id",
-            "mandate",
-            "--lineage-root",
-            str(lineage_root),
-            "--json",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=repo_root,
-    )
-    assert prep.returncode == 0, prep.stderr
+    env = {"QROS_STAGE_DISPLAY_FORCE_RENDER_ERROR": "renderer exploded"}
 
     result = run(
         [
@@ -522,39 +340,41 @@ def test_run_stage_display_script_can_write_completion_from_html(tmp_path: Path)
             "mandate",
             "--lineage-root",
             str(lineage_root),
-            "--complete-from-html",
-            str(html_input),
             "--json",
         ],
         check=False,
         capture_output=True,
         text=True,
         cwd=repo_root,
+        env={**os.environ, **env},
     )
 
-    assert result.returncode == 0, result.stderr
-    manifest = json.loads(result.stdout)
-    assert manifest["status"] == "complete"
-    assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["render_status"] == "failed"
+    assert "renderer exploded" in payload["render_error"]
 
 
-def test_run_stage_display_script_uses_renderer_override_for_csf_data_ready(tmp_path: Path) -> None:
+@pytest.mark.parametrize("flag,value", [("--renderer-command", "python stub.py"), ("--complete-from-html", "rendered.html"), ("--render-error", "boom")])
+def test_run_stage_display_script_rejects_removed_subagent_flags(tmp_path: Path, flag: str, value: str) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "run_stage_display.py"
-    lineage_root = _build_csf_data_ready_lineage(tmp_path)
-    renderer = _write_renderer_stub(tmp_path)
+    lineage_root = _build_mandate_lineage(tmp_path)
+    if flag == "--complete-from-html":
+        html_path = tmp_path / value
+        html_path.write_text("<!DOCTYPE html><html><body>Rendered</body></html>\n", encoding="utf-8")
+        value = str(html_path)
 
     result = run(
         [
             sys.executable,
             str(script_path),
             "--stage-id",
-            "csf_data_ready",
+            "mandate",
             "--lineage-root",
             str(lineage_root),
-            "--renderer-command",
-            f"{sys.executable} {renderer}",
-            "--json",
+            flag,
+            value,
         ],
         check=False,
         capture_output=True,
@@ -562,8 +382,5 @@ def test_run_stage_display_script_uses_renderer_override_for_csf_data_ready(tmp_
         cwd=repo_root,
     )
 
-    assert result.returncode == 0, result.stderr
-    manifest = json.loads(result.stdout)
-    assert manifest["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
-    assert Path(manifest["structured_summary_path"]).exists()
-    assert Path(manifest["html_path"]).exists()
+    assert result.returncode != 0
+    assert flag in result.stderr

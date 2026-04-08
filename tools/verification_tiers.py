@@ -21,7 +21,6 @@ FULL_SMOKE_EXTRA_TEST_PATHS: tuple[str, ...] = (
     "tests/test_csf_research_session_routing.py",
     "tests/test_csf_data_ready_auto_program.py",
     "tests/test_research_session_reflection.py",
-    "tests/test_stage_summary_html_export.py",
     "tests/test_anti_drift.py",
     "tests/test_anti_drift_replay.py",
     "tests/test_export_anti_drift_snapshots.py",

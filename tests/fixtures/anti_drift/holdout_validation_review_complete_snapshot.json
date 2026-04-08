@@ -19,9 +19,9 @@
     "promotion_decision"
   ],
   "blocking_reasons": [
-    "holdout_validation mandatory display has not completed yet."
+    "holdout_validation terminal completion confirmation is still incomplete."
   ],
-  "lineage_transition": "Mandatory display attempt 1/3 is in progress for holdout_validation. Waiting for HTML completion artifact.",
+  "lineage_transition": "Run with --confirm-next-stage to mark the session complete.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete"
   ],

@@ -1,6 +1,6 @@
 ---
 name: qros-stage-display
-description: Use when a frozen stage needs a stage-display summary skill that produces a structured summary plus subagent-rendered HTML.
+description: Use when a frozen stage needs a runtime-owned stage-display summary that renders structured summary JSON and HTML directly.
 ---
 
 # QROS Stage Display
@@ -13,7 +13,8 @@ description: Use when a frozen stage needs a stage-display summary skill that pr
 
 - 只有一个统一 skill 入口
 - 具体阶段语义仍由 repo-owned stage builder 决定
-- v1 先正式支持所有 reviewable mainline / CSF stages；其中 `mandate` 与 `csf_data_ready` 仍保留更强的 stage-specific summary 语义
+- runtime 自己直接写 summary JSON 与 HTML，不依赖外部 handoff
+- `mandate` 与 `csf_data_ready` 仍保留更强的 stage-specific summary 语义
 
 ## v1 Supported Stage List
 
@@ -33,9 +34,7 @@ description: Use when a frozen stage needs a stage-display summary skill that pr
 
 v1 formally supports the current reviewable mainline and CSF stages.
 
-Any non-reviewable or unregistered stage is unsupported in v1.
-
-任何未注册阶段都必须显式失败：
+未注册阶段必须显式失败：
 
 - `Unsupported stage for qros-stage-display: <stage_id>`
 - 不得写出 partial HTML
@@ -52,8 +51,6 @@ Any non-reviewable or unregistered stage is unsupported in v1.
 - `01_mandate/artifact_catalog.md`
 - `01_mandate/field_dictionary.md`
 - `01_mandate/program_execution_manifest.json`
-- `01_mandate/latest_review_pack.yaml`
-- `01_mandate/stage_gate_review.yaml`
 - `01_mandate/stage_completion_certificate.yaml`
 
 ## Required Inputs For `csf_data_ready`
@@ -73,42 +70,16 @@ Any non-reviewable or unregistered stage is unsupported in v1.
 
 ## Required Outputs
 
-runtime 必须先写出 deterministic summary 与 handoff artifacts：
-
-- `reports/stage_display/mandate.summary.json`
-- `reports/stage_display/mandate.display_request.json`
-- `reports/stage_display/mandate.display_prompt.txt`
-- `reports/stage_display/csf_data_ready.summary.json`
-- `reports/stage_display/csf_data_ready.display_request.json`
-- `reports/stage_display/csf_data_ready.display_prompt.txt`
-
-其他已支持 stage 也遵循同样命名：
+runtime 直接写出：
 
 - `reports/stage_display/<stage>.summary.json`
-- `reports/stage_display/<stage>.display_request.json`
-- `reports/stage_display/<stage>.display_prompt.txt`
-
-当任意 Codex 会话完成原生 subagent render 之后，再回写：
-
 - `reports/stage_display/<stage>.summary.html`
-- `reports/stage_display/<stage>.display_result.json`
+
+其中：
 
 - `*.summary.json` 是 deterministic source of truth
-- `*.display_request.json` / `*.display_prompt.txt` 是 native subagent handoff contract
-- `*.display_result.json` 是 render completion contract
-- `*.summary.html` 只有在 completion artifact 标记成功后才算有效成功产物
-
-## Subagent Contract (Required)
-
-Codex subagent 是这个 workflow 里的 **required core worker**，但它不再由 runtime 在后台 hidden subprocess 方式直接拥有。
-
-也就是说：
-
-- skill 必须先构建 deterministic structured summary
-- runtime 必须产出 handoff artifact，让任意 Codex 会话都能原生、可见地 spawn subagent
-- success 必须同时包含 structured summary、completion artifact 和 rendered HTML
-- 如果 subagent rendering 失败，则 completion artifact 必须把失败状态回写到 lineage
-- render 失败时，structured summary 可以保留，但不能伪装成成功 HTML
+- `*.summary.html` 是 runtime 直接从 summary 渲染出的用户可见页面
+- render 失败时，`summary.json` 必须保留 `render_status` / `render_error`，且不得保留伪成功 HTML
 
 ## Fact Boundary
 
@@ -123,7 +94,7 @@ Forbidden behaviors:
 
 ## Invocation
 
-可从 repo root 或 installed runtime 调用，生成 deterministic summary + handoff artifact：
+可从 repo root 或 installed runtime 调用，直接生成 deterministic summary + HTML：
 
 ```bash
 python scripts/run_stage_display.py \
@@ -144,8 +115,7 @@ python scripts/run_stage_display.py \
 
 ## Notes
 
-- This skill is generic by entrypoint，不是 free-form subagent discovery。
-- runtime 负责 facts + handoff；Codex 会话负责原生 visible subagent render。
+- This skill is generic by entrypoint，不是 free-form worker discovery。
+- runtime 负责 facts、summary 和 HTML render。
 - 其他 reviewable stage 可以走 generic deterministic summary builder；`mandate` 与 `csf_data_ready` 允许保留更强的 stage-owned section 语义。
 - 后续若要新增 stage，必须注册新的 builder，并补对应的 stage-specific tests。
-- 不得只靠修改 subagent prompt 就扩大支持范围。

@@ -36,7 +36,7 @@ python scripts/run_verification_tier.py --tier smoke
 
 - CSF route routing
 - `csf_data_ready_author` auto-program seam
-- reflection / export chain
+- reflection chain
 - anti-drift snapshot export 与 replay
 
 运行命令：
@@ -78,6 +78,6 @@ python scripts/run_verification_tier.py --tier full-smoke --dry-run
 
 ## Current Boundary
 
-这里的 `full-smoke` 仍然是**repo 内自动化 full smoke**，不是“真人在真实 Codex 可见 subagent 会话里把每个支持 stage 全部 live 跑一遍”。
+这里的 `full-smoke` 仍然是**repo 内自动化 full smoke**，不是“真人在真实操作员会话里把每个支持 stage 全部 live 跑一遍”。
 
 后者如果要做，应被视为更高一层的 operator rehearsal。

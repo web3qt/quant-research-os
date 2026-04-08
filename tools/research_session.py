@@ -75,13 +75,9 @@ from tools.signal_ready_runtime import (
 )
 from tools.stage_program_scaffold import materialize_stage_program
 from tools.stage_display_runtime import (
-    StageDisplayError,
-    load_stage_display_request,
-    load_stage_display_result,
-    prepare_stage_display_handoff,
     resolve_stage_display_config,
     supported_stage_ids as supported_stage_display_ids,
-    write_stage_display_result,
+    write_stage_display_report,
 )
 from tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
@@ -1468,23 +1464,19 @@ def _read_stage_display_summary(lineage_root: Path, *, stage_base: str) -> dict 
 
 
 def _stage_display_render_status(lineage_root: Path, *, stage_base: str) -> str | None:
-    result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_base)
-    if result is None:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
         return None
-    status = result.get("status")
+    status = summary.get("render_status")
     return str(status) if isinstance(status, str) and status.strip() else None
 
 
 def _stage_display_render_error(lineage_root: Path, *, stage_base: str) -> str | None:
-    result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_base)
-    if result is None:
+    summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
+    if summary is None:
         return None
-    error = result.get("render_error")
+    error = summary.get("render_error")
     return str(error) if isinstance(error, str) and error.strip() else None
-
-
-def _stage_display_request_exists(lineage_root: Path, *, stage_base: str) -> bool:
-    return load_stage_display_request(lineage_root=lineage_root, stage_id=stage_base) is not None
 
 
 def _stage_display_retry_state_path(lineage_root: Path, *, stage_base: str) -> Path | None:
@@ -1569,9 +1561,9 @@ def _invoke_stage_display(
     stage_base = _stage_base_name(current_stage)
     if not _supports_stage_display(stage_base):
         return []
-    result = prepare_stage_display_handoff(lineage_root=lineage_root, stage_id=stage_base)
+    result = write_stage_display_report(lineage_root=lineage_root, stage_id=stage_base)
     written: list[str] = []
-    for key in ("structured_summary_path", "request_path", "prompt_path", "html_path", "result_path"):
+    for key in ("structured_summary_path", "html_path"):
         path = Path(result[key]).resolve()
         if path.exists():
             written.append(str(path.relative_to(lineage_root.resolve())))
@@ -1587,59 +1579,38 @@ def _auto_progress_display(lineage_root: Path, *, current_stage: SessionStage) -
         return []
 
     render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
+    retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
+    attempt_count = int(retry_state.get("attempt_count", 0))
+
     if render_status == "complete":
         _write_stage_display_retry_state(
             lineage_root,
             stage_base=stage_base,
-            attempt_count=(_read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}).get("attempt_count", 1),
+            attempt_count=max(attempt_count, 1),
             status="complete",
         )
         return []
 
-    retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
-    attempt_count = int(retry_state.get("attempt_count", 0))
-
-    if render_status == "failed":
-        error = _stage_display_render_error(lineage_root, stage_base=stage_base)
-        if attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
-            _write_stage_display_retry_state(
-                lineage_root,
-                stage_base=stage_base,
-                attempt_count=attempt_count,
-                status="failed",
-                last_error=error,
-            )
-            return []
-        next_attempt = attempt_count + 1 if attempt_count else 1
-        written = _invoke_stage_display(lineage_root, current_stage=current_stage)
-        retry_path = _write_stage_display_retry_state(
+    if render_status == "failed" and attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
+        _write_stage_display_retry_state(
             lineage_root,
             stage_base=stage_base,
-            attempt_count=next_attempt,
-            status="pending",
-            last_error=error,
+            attempt_count=attempt_count,
+            status="failed",
+            last_error=_stage_display_render_error(lineage_root, stage_base=stage_base),
         )
-        if retry_path is not None:
-            written.append(str(retry_path.relative_to(lineage_root.resolve())))
-        return sorted(set(written))
-
-    if _stage_display_request_exists(lineage_root, stage_base=stage_base):
-        if attempt_count == 0:
-            retry_path = _write_stage_display_retry_state(
-                lineage_root,
-                stage_base=stage_base,
-                attempt_count=1,
-                status="pending",
-            )
-            return [str(retry_path.relative_to(lineage_root.resolve()))] if retry_path is not None else []
         return []
 
+    next_attempt = attempt_count + 1 if attempt_count else 1
     written = _invoke_stage_display(lineage_root, current_stage=current_stage)
+    updated_render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
+    updated_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
     retry_path = _write_stage_display_retry_state(
         lineage_root,
         stage_base=stage_base,
-        attempt_count=1,
-        status="pending",
+        attempt_count=next_attempt,
+        status=updated_render_status or "failed",
+        last_error=updated_error,
     )
     if retry_path is not None:
         written.append(str(retry_path.relative_to(lineage_root.resolve())))
@@ -3048,14 +3019,9 @@ def _display_gate_status_and_next_action(lineage_root: Path, current_stage: Sess
                 "DISPLAY_RETRYING",
                 f"Mandatory display retry {attempt_count + 1}/{MANDATORY_DISPLAY_MAX_RETRIES} will be prepared for {stage_base}.",
             )
-        if _stage_display_request_exists(lineage_root, stage_base=stage_base):
-            return (
-                "DISPLAY_RENDER_PENDING",
-                f"Mandatory display attempt {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} is in progress for {stage_base}. Waiting for HTML completion artifact.",
-            )
         return (
             "DISPLAY_RENDER_PENDING",
-            f"Mandatory display is preparing the first render attempt for {stage_base}.",
+            f"Mandatory display runtime render has not completed yet for {stage_base}.",
         )
     return (
         "DISPLAY_NOT_IMPLEMENTED",

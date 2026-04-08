@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-import shlex
-import subprocess
-import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
+from html import escape
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Mapping
 
 import yaml
 
@@ -28,16 +26,13 @@ GENERIC_SUPPORTED_STAGE_DIRS: dict[str, str] = {
 }
 DISPLAY_REPORTS_DIR = Path("reports") / "stage_display"
 STRUCTURED_SUMMARY_SCHEMA_VERSION = "1.0"
-SUBAGENT_COMMAND_ENV = "QROS_STAGE_DISPLAY_SUBAGENT_CMD"
-DISPLAY_REQUEST_STATUS = "awaiting_native_subagent_render"
 DISPLAY_RESULT_COMPLETE = "complete"
 DISPLAY_RESULT_FAILED = "failed"
+FORCE_RENDER_ERROR_ENV = "QROS_STAGE_DISPLAY_FORCE_RENDER_ERROR"
 GENERIC_REQUIRED_OUTPUTS = (
     "artifact_catalog.md",
     "field_dictionary.md",
     "program_execution_manifest.json",
-    "latest_review_pack.yaml",
-    "stage_gate_review.yaml",
     "stage_completion_certificate.yaml",
 )
 GENERIC_SECTION_ORDER = (
@@ -56,8 +51,6 @@ MANDATE_REQUIRED_OUTPUTS = (
     "artifact_catalog.md",
     "field_dictionary.md",
     "program_execution_manifest.json",
-    "latest_review_pack.yaml",
-    "stage_gate_review.yaml",
     "stage_completion_certificate.yaml",
 )
 MANDATE_SECTION_ORDER = (
@@ -98,7 +91,7 @@ class UnsupportedStageError(StageDisplayError):
 
 
 class StageDisplayRenderError(StageDisplayError):
-    """Raised when the required Codex subagent render step fails."""
+    """Raised when runtime-owned HTML rendering fails."""
 
 
 @dataclass(frozen=True)
@@ -106,9 +99,6 @@ class StageDisplayConfig:
     stage_id: str
     stage_dir_name: str
     summary_filename: str
-    request_filename: str
-    prompt_filename: str
-    result_filename: str
     html_filename: str
 
 
@@ -117,9 +107,6 @@ def _config(stage_id: str, stage_dir_name: str) -> StageDisplayConfig:
         stage_id=stage_id,
         stage_dir_name=stage_dir_name,
         summary_filename=f"{stage_id}.summary.json",
-        request_filename=f"{stage_id}.display_request.json",
-        prompt_filename=f"{stage_id}.display_prompt.txt",
-        result_filename=f"{stage_id}.display_result.json",
         html_filename=f"{stage_id}.summary.html",
     )
 
@@ -151,8 +138,7 @@ def build_stage_display_summary(*, lineage_root: Path, stage_id: str) -> dict[st
     return _build_generic_stage_summary(lineage_root=lineage_root, config=config)
 
 
-# 这里保持 registry-thin：generic shell 只做路由，阶段语义仍由 repo-owned builder 决定。
-def prepare_stage_display_handoff(
+def write_stage_display_report(
     *,
     lineage_root: Path,
     stage_id: str,
@@ -160,96 +146,59 @@ def prepare_stage_display_handoff(
 ) -> dict[str, object]:
     config = resolve_stage_display_config(stage_id)
     summary = build_stage_display_summary(lineage_root=lineage_root, stage_id=stage_id)
-
     resolved_output_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
     resolved_output_dir.mkdir(parents=True, exist_ok=True)
     paths = _display_artifact_paths(resolved_output_dir, config)
-    prompt = build_stage_display_render_prompt(summary)
-
-    if paths["html_path"].exists():
-        paths["html_path"].unlink()
-    if paths["result_path"].exists():
-        paths["result_path"].unlink()
 
     summary["artifacts"] = _artifact_strings(paths)
-    summary["render_status"] = DISPLAY_REQUEST_STATUS
-    _write_json(paths["summary_path"], summary)
-    paths["prompt_path"].write_text(prompt.rstrip() + "\n", encoding="utf-8")
+    summary["render_status"] = DISPLAY_RESULT_FAILED
+    summary.pop("render_error", None)
+    if paths["html_path"].exists():
+        paths["html_path"].unlink()
 
-    request_payload = {
-        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
-        "stage_id": stage_id,
-        "lineage_id": lineage_root.name,
-        "lineage_root": str(lineage_root),
-        "summary_path": str(paths["summary_path"]),
-        "prompt_path": str(paths["prompt_path"]),
-        "html_output_path": str(paths["html_path"]),
-        "result_path": str(paths["result_path"]),
-        "status": DISPLAY_REQUEST_STATUS,
-        "required_subagent": True,
-        "instructions": (
-            "Use any Codex session to read prompt_path, natively spawn a visible subagent to render HTML "
-            "to html_output_path, then write result_path with completion metadata."
-        ),
-    }
-    _write_json(paths["request_path"], request_payload)
+    missing_inputs = summary.get("missing_required_inputs")
+    if isinstance(missing_inputs, list) and missing_inputs:
+        summary["render_error"] = "missing required display inputs: " + ", ".join(str(item) for item in missing_inputs)
+        _write_json(paths["summary_path"], summary)
+        return {
+            "stage_id": stage_id,
+            "lineage_root": str(lineage_root),
+            "supported_stage_ids": list(supported_stage_ids()),
+            "structured_summary_path": str(paths["summary_path"]),
+            "html_path": str(paths["html_path"]),
+            "render_status": DISPLAY_RESULT_FAILED,
+            "render_error": summary["render_error"],
+        }
+
+    try:
+        html = render_stage_display_html(summary)
+    except StageDisplayRenderError as exc:
+        summary["render_error"] = str(exc)
+        _write_json(paths["summary_path"], summary)
+        return {
+            "stage_id": stage_id,
+            "lineage_root": str(lineage_root),
+            "supported_stage_ids": list(supported_stage_ids()),
+            "structured_summary_path": str(paths["summary_path"]),
+            "html_path": str(paths["html_path"]),
+            "render_status": DISPLAY_RESULT_FAILED,
+            "render_error": str(exc),
+        }
+
+    paths["html_path"].write_text(html.rstrip() + "\n", encoding="utf-8")
+    summary["render_status"] = DISPLAY_RESULT_COMPLETE
+    _write_json(paths["summary_path"], summary)
     return {
         "stage_id": stage_id,
         "lineage_root": str(lineage_root),
         "supported_stage_ids": list(supported_stage_ids()),
         "structured_summary_path": str(paths["summary_path"]),
-        "request_path": str(paths["request_path"]),
-        "prompt_path": str(paths["prompt_path"]),
         "html_path": str(paths["html_path"]),
-        "result_path": str(paths["result_path"]),
-        "render_status": DISPLAY_REQUEST_STATUS,
-        "required_subagent": True,
+        "render_status": DISPLAY_RESULT_COMPLETE,
     }
 
 
-def write_stage_display_report(
-    *,
-    lineage_root: Path,
-    stage_id: str,
-    output_dir: Path | None = None,
-    renderer_command: Sequence[str] | str | None = None,
-) -> dict[str, object]:
-    result = prepare_stage_display_handoff(
-        lineage_root=lineage_root,
-        stage_id=stage_id,
-        output_dir=output_dir,
-    )
-    if renderer_command is None:
-        return result
-
-    summary = _read_json_required(Path(result["structured_summary_path"]))
-    try:
-        html = render_stage_display_html(
-            summary=summary,
-            lineage_root=lineage_root,
-            renderer_command=renderer_command,
-        )
-    except StageDisplayRenderError as exc:
-        write_stage_display_result(
-            lineage_root=lineage_root,
-            stage_id=stage_id,
-            error=str(exc),
-            output_dir=output_dir,
-        )
-        raise
-
-    write_stage_display_result(
-        lineage_root=lineage_root,
-        stage_id=stage_id,
-        html=html,
-        rendered_by="runtime_renderer_override",
-        output_dir=output_dir,
-    )
-    result["render_status"] = DISPLAY_RESULT_COMPLETE
-    return result
-
-
-# 兼容旧测试入口：保留 export_stage_display 名称，但内部仍复用新的 registry-thin summary builder。
+# 兼容旧测试入口：保留 export_stage_display 名称，但它现在也是 runtime-owned deterministic render。
 def export_stage_display(
     *,
     lineage_root: Path,
@@ -271,7 +220,6 @@ def export_stage_display(
     compat_summary["structured_summary_path"] = str(summary_path)
     compat_summary["html_path"] = str(html_path)
 
-    # 旧入口只需要稳定成功产物合同，不把 subagent 强依赖重新暴露给这一层兼容测试。
     _ = html_renderer
     html = _render_compat_stage_display_html(compat_summary)
     _write_json(summary_path, compat_summary)
@@ -281,156 +229,6 @@ def export_stage_display(
         "structured_summary_path": str(summary_path),
         "html_path": str(html_path),
     }
-
-
-# subagent 是强依赖：成功 artifact 必须来自 Codex render，而不是本地 deterministic fallback 伪装成功。
-def render_stage_display_html(
-    *,
-    summary: Mapping[str, object],
-    lineage_root: Path,
-    renderer_command: Sequence[str] | str | None = None,
-) -> str:
-    prompt = build_stage_display_render_prompt(summary)
-    command = _resolve_renderer_command(renderer_command, cwd=lineage_root)
-    html = ""
-    with tempfile.TemporaryDirectory(prefix="qros-stage-display-") as tmp_dir_name:
-        tmp_dir = Path(tmp_dir_name)
-        last_message_path = tmp_dir / "last-message.html"
-        full_command = [*command, "-o", str(last_message_path), "-"]
-        result = subprocess.run(
-            full_command,
-            input=prompt,
-            text=True,
-            capture_output=True,
-            check=False,
-            cwd=lineage_root,
-        )
-        if last_message_path.exists():
-            html = last_message_path.read_text(encoding="utf-8").strip()
-    if result.returncode != 0:
-        stderr = result.stderr.strip()
-        stdout = result.stdout.strip()
-        message = stderr or stdout or "subagent renderer returned a non-zero exit code"
-        raise StageDisplayRenderError(f"Codex subagent render failed: {message}")
-    if not html:
-        html = result.stdout.strip()
-    if not html:
-        raise StageDisplayRenderError("Codex subagent render failed: empty HTML response")
-    if "<html" not in html.lower():
-        raise StageDisplayRenderError("Codex subagent render failed: response was not an HTML document")
-    return html
-
-
-def build_stage_display_render_prompt(summary: Mapping[str, object]) -> str:
-    summary_json = json.dumps(summary, ensure_ascii=False, indent=2)
-    return "\n".join(
-        [
-            "# QROS Stage Display HTML Renderer",
-            "",
-            "You are rendering a user-visible HTML summary page from a deterministic structured summary.",
-            "",
-            "Requirements:",
-            "- Use ONLY the structured summary JSON below as the source of truth.",
-            "- Preserve the section order exactly as provided.",
-            "- Preserve every item's marker value (`available`, `missing`, `question`).",
-            "- Output exactly one complete HTML document and nothing else.",
-            "",
-            "Forbidden behaviors:",
-            "- Do not infer factor performance, alpha quality, or coverage interpretations beyond the summary.",
-            "- Do not hide, soften, or rewrite missing/question markers.",
-            "- Do not introduce unsupported stages, extra sections, or unstated remediation claims.",
-            "",
-            "Suggested layout:",
-            "- Title and lineage metadata header",
-            "- One section card per structured summary section",
-            "- A compact visual treatment for marker states so missing/question items remain explicit",
-            "",
-            "Structured summary JSON:",
-            "```json",
-            summary_json,
-            "```",
-        ]
-    )
-
-
-def load_stage_display_request(
-    *,
-    lineage_root: Path,
-    stage_id: str,
-    output_dir: Path | None = None,
-) -> dict[str, object] | None:
-    config = resolve_stage_display_config(stage_id)
-    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
-    request_path = display_dir / config.request_filename
-    return _read_json_object(request_path)
-
-
-def load_stage_display_result(
-    *,
-    lineage_root: Path,
-    stage_id: str,
-    output_dir: Path | None = None,
-) -> dict[str, object] | None:
-    config = resolve_stage_display_config(stage_id)
-    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
-    result_path = display_dir / config.result_filename
-    return _read_json_object(result_path)
-
-
-def write_stage_display_result(
-    *,
-    lineage_root: Path,
-    stage_id: str,
-    html: str | None = None,
-    error: str | None = None,
-    rendered_by: str = "codex-native-subagent",
-    rendered_at: str | None = None,
-    output_dir: Path | None = None,
-) -> dict[str, object]:
-    if (html is None) == (error is None):
-        raise StageDisplayError("write_stage_display_result requires exactly one of html or error")
-
-    config = resolve_stage_display_config(stage_id)
-    display_dir = (output_dir or (lineage_root / DISPLAY_REPORTS_DIR)).resolve()
-    display_dir.mkdir(parents=True, exist_ok=True)
-    paths = _display_artifact_paths(display_dir, config)
-    request_payload = _read_json_required(paths["request_path"])
-    summary_payload = _read_json_required(paths["summary_path"])
-
-    if request_payload.get("stage_id") != stage_id or request_payload.get("lineage_id") != lineage_root.name:
-        raise StageDisplayError("display request artifact does not match stage/lineage")
-    if str(request_payload.get("summary_path")) != str(paths["summary_path"]):
-        raise StageDisplayError("display request artifact summary_path does not match expected summary path")
-
-    timestamp = rendered_at or _utc_now()
-    result_payload = {
-        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
-        "stage_id": stage_id,
-        "lineage_id": lineage_root.name,
-        "summary_path": str(paths["summary_path"]),
-        "html_path": str(paths["html_path"]),
-        "request_path": str(paths["request_path"]),
-        "status": DISPLAY_RESULT_COMPLETE if html is not None else DISPLAY_RESULT_FAILED,
-        "rendered_by": rendered_by,
-        "rendered_at": timestamp,
-        "render_error": error,
-    }
-
-    if html is not None:
-        if "<html" not in html.lower():
-            raise StageDisplayError("completion HTML must be a complete HTML document")
-        paths["html_path"].write_text(html.rstrip() + "\n", encoding="utf-8")
-        summary_payload["render_status"] = DISPLAY_RESULT_COMPLETE
-        summary_payload.pop("render_error", None)
-    else:
-        if paths["html_path"].exists():
-            paths["html_path"].unlink()
-        summary_payload["render_status"] = DISPLAY_RESULT_FAILED
-        summary_payload["render_error"] = error
-
-    _write_json(paths["summary_path"], summary_payload)
-    _write_json(paths["result_path"], result_payload)
-    return result_payload
 
 
 def _build_compat_export_summary(summary: Mapping[str, object]) -> dict[str, object]:
@@ -498,6 +296,82 @@ def _render_compat_stage_display_html(summary: Mapping[str, object]) -> str:
     )
 
 
+def render_stage_display_html(summary: Mapping[str, object]) -> str:
+    forced_error = os.environ.get(FORCE_RENDER_ERROR_ENV)
+    if forced_error:
+        raise StageDisplayRenderError(forced_error)
+    sections = summary.get("sections")
+    if not isinstance(sections, list):
+        raise StageDisplayRenderError("display summary is missing sections")
+
+    section_html: list[str] = []
+    for section in sections:
+        title = escape(str(section.get("title", "Untitled Section")))
+        items = section.get("items")
+        if not isinstance(items, list):
+            raise StageDisplayRenderError(f"display section {title} is missing item list")
+        item_html = []
+        for item in items:
+            marker = escape(str(item.get("marker", "available")))
+            text = escape(str(item.get("text", "")))
+            item_html.append(
+                "\n".join(
+                    [
+                        f'        <li class="marker-{marker}">',
+                        f'          <span class="marker-label">{marker}</span>',
+                        f'          <span class="marker-text">{text}</span>',
+                        '        </li>',
+                    ]
+                )
+            )
+        section_html.append(
+            "\n".join(
+                [
+                    '    <section class="summary-section">',
+                    f'      <h2>{title}</h2>',
+                    '      <ul>',
+                    *item_html,
+                    '      </ul>',
+                    '    </section>',
+                ]
+            )
+        )
+
+    title = escape(str(summary.get("title", "Stage Display Summary")))
+    lineage_id = escape(str(summary.get("lineage_id", "unknown")))
+    stage_id = escape(str(summary.get("stage_id", "unknown")))
+    stage_directory = escape(str(summary.get("stage_directory", "unknown")))
+    return "\n".join(
+        [
+            '<!DOCTYPE html>',
+            '<html lang="zh-CN">',
+            '  <head>',
+            '    <meta charset="utf-8">',
+            f'    <title>{title}</title>',
+            '    <style>',
+            '      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1080px; margin: 32px auto; padding: 0 24px; line-height: 1.6; color: #111827; }',
+            '      h1, h2 { color: #0f172a; }',
+            '      .meta { color: #475569; margin-bottom: 24px; }',
+            '      .summary-section { border: 1px solid #d1d5db; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; background: #f8fafc; }',
+            '      ul { margin: 0; padding-left: 20px; }',
+            '      li { margin: 8px 0; }',
+            '      .marker-label { display: inline-block; min-width: 78px; font-weight: 600; text-transform: uppercase; }',
+            '      .marker-available .marker-label { color: #166534; }',
+            '      .marker-missing .marker-label { color: #b91c1c; }',
+            '      .marker-question .marker-label { color: #92400e; }',
+            '    </style>',
+            '  </head>',
+            '  <body>',
+            f'    <h1>{title}</h1>',
+            f'    <p class="meta">Lineage: {lineage_id} · Stage: {stage_id}</p>',
+            f'    <p class="meta">Stage directory: {stage_directory}</p>',
+            *section_html,
+            '  </body>',
+            '</html>',
+        ]
+    )
+
+
 def _build_mandate_summary(*, lineage_root: Path, config: StageDisplayConfig) -> dict[str, object]:
     stage_dir = lineage_root / config.stage_dir_name
     if not stage_dir.exists():
@@ -542,7 +416,6 @@ def _build_mandate_summary(*, lineage_root: Path, config: StageDisplayConfig) ->
         "lineage_root": str(lineage_root),
         "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
         "supported_stage_ids": list(supported_stage_ids()),
-        "required_subagent": True,
         "status": "complete" if not missing_required else "incomplete",
         "missing_required_inputs": missing_required,
         "section_order": list(MANDATE_SECTION_ORDER),
@@ -588,7 +461,6 @@ def _build_generic_stage_summary(*, lineage_root: Path, config: StageDisplayConf
         "lineage_root": str(lineage_root),
         "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
         "supported_stage_ids": list(supported_stage_ids()),
-        "required_subagent": True,
         "status": "complete" if not missing_required else "incomplete",
         "missing_required_inputs": missing_required,
         "section_order": list(GENERIC_SECTION_ORDER),
@@ -815,7 +687,6 @@ def _build_csf_data_ready_summary(*, lineage_root: Path, config: StageDisplayCon
         "lineage_root": str(lineage_root),
         "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
         "supported_stage_ids": list(supported_stage_ids()),
-        "required_subagent": True,
         "status": "complete" if not missing_required else "incomplete",
         "missing_required_inputs": missing_required,
         "section_order": list(CSF_SECTION_ORDER),
@@ -930,42 +801,12 @@ def _delivery_and_rebuild_items(
 def _display_artifact_paths(display_dir: Path, config: StageDisplayConfig) -> dict[str, Path]:
     return {
         "summary_path": display_dir / config.summary_filename,
-        "request_path": display_dir / config.request_filename,
-        "prompt_path": display_dir / config.prompt_filename,
-        "result_path": display_dir / config.result_filename,
         "html_path": display_dir / config.html_filename,
     }
 
 
 def _artifact_strings(paths: Mapping[str, Path]) -> dict[str, str]:
     return {key: str(value) for key, value in paths.items()}
-
-
-def _resolve_renderer_command(renderer_command: Sequence[str] | str | None, *, cwd: Path) -> list[str]:
-    command_value: Sequence[str] | str | None = renderer_command
-    if command_value is None:
-        env_value = os.environ.get(SUBAGENT_COMMAND_ENV)
-        if env_value:
-            command_value = env_value
-    if isinstance(command_value, str):
-        parsed = shlex.split(command_value)
-        if not parsed:
-            raise StageDisplayRenderError("Codex subagent render failed: empty renderer command override")
-        return parsed
-    if command_value is not None:
-        parsed = [str(part) for part in command_value]
-        if not parsed:
-            raise StageDisplayRenderError("Codex subagent render failed: empty renderer command override")
-        return parsed
-    return [
-        "codex",
-        "exec",
-        "--skip-git-repo-check",
-        "--color",
-        "never",
-        "-C",
-        str(cwd),
-    ]
 
 
 def _read_json_object(path: Path) -> dict[str, object] | None:
@@ -1043,9 +884,3 @@ def _question_item(text: str) -> dict[str, str]:
 
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-
-def _utc_now() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).isoformat()

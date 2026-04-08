@@ -5,6 +5,7 @@ from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any, Iterable, Mapping
 
 from tools.research_session import SessionContext, session_stage_base_name
@@ -128,6 +129,14 @@ def _input_digest(parts: Iterable[str | None]) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
+def _canonical_lineage_transition(next_action: str) -> str:
+    return re.sub(
+        r"Display completed\. HTML: .*?\. Run with --confirm-next-stage",
+        "Display completed. HTML: <html-path>. Run with --confirm-next-stage",
+        next_action,
+    )
+
+
 def canonical_snapshot_from_session_context(
     context: SessionContext,
     *,
@@ -165,7 +174,7 @@ def canonical_snapshot_from_session_context(
         required_artifacts=required_artifacts_for_session_stage(canonical_session_stage),
         downstream_permissions=downstream_permissions_for_session_stage(canonical_session_stage),
         blocking_reasons=blocking_reasons,
-        lineage_transition=context.next_action,
+        lineage_transition=_canonical_lineage_transition(context.next_action),
         evidence_refs=tuple(evidence_refs),
         failure_class=failure_class,
         severity=severity,
