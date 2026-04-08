@@ -1,10 +1,12 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_path, skill_text
+
 
 def test_stage_failure_handler_skill_exists_and_covers_failure_flow() -> None:
-    skill_path = Path("skills/qros-stage-failure-handler/SKILL.md")
-    assert skill_path.exists()
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-stage-failure-handler")
+    assert skill_file.exists()
+    content = skill_file.read_text(encoding="utf-8")
     assert "data_ready" in content
     assert "signal_ready" in content
     assert "train_freeze" in content
@@ -24,11 +26,11 @@ def test_stage_failure_handler_bootstrap_expectation_is_present() -> None:
     bootstrap_path = Path("tests/test_project_bootstrap.py")
     content = bootstrap_path.read_text(encoding="utf-8")
 
-    assert "skills/qros-stage-failure-handler/SKILL.md" in content
+    assert "qros-stage-failure-handler" in content
 
 
 def test_qros_research_session_requires_automatic_failure_routing() -> None:
-    session_skill = Path("skills/qros-research-session/SKILL.md").read_text(encoding="utf-8")
+    session_skill = skill_text("qros-research-session")
 
     assert "qros-stage-failure-handler" in session_skill
     assert "PASS FOR RETRY" in session_skill

@@ -9,17 +9,20 @@ First version supports:
 Install entry point:
 
 ```bash
-git clone <QROS_REPO_URL> ~/.qros
+git clone <QROS_REPO_URL> ~/workspace/quant-research-os
+cd ~/workspace/quant-research-os
+./setup --host codex --mode user-global
 mkdir -p ~/.agents/skills
-ln -s ~/.qros/skills ~/.agents/skills/qros
+ln -sfn ~/.qros/skills ~/.agents/skills/qros
 ```
 
-This keeps QROS as a cloned repo while exposing skills through Codex's native discovery path.
+This keeps the repo clone as the authored source while exposing the flattened installed skills through Codex's native discovery path.
 
 ## Install Layout
 
 What it writes:
 
+- cloned repo source bundles under `~/workspace/quant-research-os/skills/`
 - `~/.qros/skills/`
 - `~/.agents/skills/qros -> ~/.qros/skills`
 
@@ -28,11 +31,12 @@ What it writes:
 Update overwrites the cloned repo in place.
 
 ```bash
-cd ~/.qros
+cd ~/workspace/quant-research-os
 git pull
+./setup --host codex --mode user-global
 ```
 
-Codex will immediately see the updated skills because `~/.agents/skills/qros` points at the repo skill tree.
+Codex will see the updated skills after `setup` refreshes the flattened install tree.
 
 ## Check
 
@@ -46,7 +50,7 @@ test -d ~/.qros/skills
 It verifies:
 
 - Codex can discover QROS skills through `~/.agents/skills/`
-- the symlink points at the repo skill tree
+- the symlink points at the installed flat skill tree
 
 ## First Commands After Install
 
@@ -60,6 +64,6 @@ The recommended user path is still skill-first. The repo clone and symlink are o
 ## Troubleshooting
 
 - `Codex` cannot see the skills: verify `~/.agents/skills/qros` points to `~/.qros/skills`
-- Skill content looks stale: run `cd ~/.qros && git pull`
+- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`
 - Need workflow guidance: open `docs/experience/quickstart-codex.md`
 - Need the unified entry docs: open `docs/experience/qros-research-session-usage.md`

@@ -22,21 +22,30 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 1. Clone the repo:
 
 ```bash
-git clone https://github.com/web3qt/quant-research-os.git ~/.qros
+git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-research-os
+cd ~/workspace/quant-research-os
 ```
 
-2. Create the skills symlink:
+2. Build the installed runtime tree:
+
+```bash
+./setup --host codex --mode user-global
+```
+
+3. Create the skills symlink:
 
 ```bash
 mkdir -p ~/.agents/skills
-ln -s ~/.qros/skills ~/.agents/skills/qros
+ln -sfn ~/.qros/skills ~/.agents/skills/qros
 ```
 
-3. Restart Codex.
+4. Restart Codex.
 
 ## How It Works
 
 Codex has native skill discovery. It scans `~/.agents/skills/` at startup, parses `SKILL.md` frontmatter, and loads matching skills on demand.
+
+QROS keeps its authored source bundles in the cloned repo under `skills/`, then `./setup` flattens them into the installed runtime tree under `~/.qros/skills/`.
 
 QROS skills become visible through a single symlink:
 
@@ -61,8 +70,9 @@ If you need deterministic runtime debugging or manual recovery, use the repo-loc
 ## Updating
 
 ```bash
-cd ~/.qros
+cd ~/workspace/quant-research-os
 git pull
+./setup --host codex --mode user-global
 ```
 
 ## Uninstalling
@@ -74,7 +84,7 @@ rm ~/.agents/skills/qros
 Optionally remove the clone:
 
 ```bash
-rm -rf ~/.qros
+rm -rf ~/workspace/quant-research-os
 ```
 
 ## Troubleshooting
@@ -93,4 +103,11 @@ ls -la ~/.agents/skills/qros
 ls ~/.qros/skills
 ```
 
-3. Restart Codex. Skills are discovered at startup.
+3. If you just updated the repo, rerun:
+
+```bash
+cd ~/workspace/quant-research-os
+./setup --host codex --mode user-global
+```
+
+4. Restart Codex. Skills are discovered at startup.

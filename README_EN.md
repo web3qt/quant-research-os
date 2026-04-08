@@ -99,7 +99,7 @@ Most research ideas start as loose chat. Serious research does not. QROS exists 
 **Codex / manual install:**
 
 ```bash
-cd ~/.qros && git pull
+git pull && ./setup --host codex --mode user-global
 ```
 
 ## Runtime Layout
@@ -114,6 +114,8 @@ The plugin system manages skill discovery and hook injection automatically.
 ~/.qros/skills/
 ~/.agents/skills/qros -> ~/.qros/skills
 ```
+
+The symlink should point at the flat installed tree produced by `./setup --host codex --mode user-global`.
 
 If you want the deeper runtime behavior, state fields, and workflow semantics, continue with:
 
@@ -132,5 +134,5 @@ If you want the deeper runtime behavior, state fields, and workflow semantics, c
 
 - Claude Code: skills not visible after install — restart session or run `/plugin update quant-research-os`
 - Codex: skills not visible — verify `~/.agents/skills/qros` points to `~/.qros/skills`
-- Stale install: Claude Code `/plugin update quant-research-os`; Codex `cd ~/.qros && git pull`
+- Stale install: Claude Code `/plugin update quant-research-os`; Codex `git pull && ./setup --host codex --mode user-global`
 - Unsure if install is healthy: start a new session and mention a quant research idea to test auto-trigger

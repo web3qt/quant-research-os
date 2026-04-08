@@ -33,8 +33,24 @@ def test_generator_writes_mainline_and_csf_review_skills(tmp_path: Path) -> None
     )
 
     assert result.returncode == 0
-    for skill_name in EXPECTED_REVIEW_SKILLS:
-        assert (output_root / ".agents" / "skills" / skill_name / "SKILL.md").exists(), skill_name
+    expected_paths = {
+        "qros-mandate-review": output_root / "skills/mandate/qros-mandate-review/SKILL.md",
+        "qros-data-ready-review": output_root / "skills/data_ready/qros-data-ready-review/SKILL.md",
+        "qros-signal-ready-review": output_root / "skills/signal_ready/qros-signal-ready-review/SKILL.md",
+        "qros-train-freeze-review": output_root / "skills/train_freeze/qros-train-freeze-review/SKILL.md",
+        "qros-test-evidence-review": output_root / "skills/test_evidence/qros-test-evidence-review/SKILL.md",
+        "qros-backtest-ready-review": output_root / "skills/backtest_ready/qros-backtest-ready-review/SKILL.md",
+        "qros-holdout-validation-review": output_root / "skills/holdout_validation/qros-holdout-validation-review/SKILL.md",
+        "qros-csf-data-ready-review": output_root / "skills/csf_data_ready/qros-csf-data-ready-review/SKILL.md",
+        "qros-csf-signal-ready-review": output_root / "skills/csf_signal_ready/qros-csf-signal-ready-review/SKILL.md",
+        "qros-csf-train-freeze-review": output_root / "skills/csf_train_freeze/qros-csf-train-freeze-review/SKILL.md",
+        "qros-csf-test-evidence-review": output_root / "skills/csf_test_evidence/qros-csf-test-evidence-review/SKILL.md",
+        "qros-csf-backtest-ready-review": output_root / "skills/csf_backtest_ready/qros-csf-backtest-ready-review/SKILL.md",
+        "qros-csf-holdout-validation-review": output_root / "skills/csf_holdout_validation/qros-csf-holdout-validation-review/SKILL.md",
+    }
+    assert set(expected_paths) == set(EXPECTED_REVIEW_SKILLS)
+    for skill_name, path in expected_paths.items():
+        assert path.exists(), skill_name
 
 
 def test_generated_review_skill_template_contains_adversarial_contract_language(tmp_path: Path) -> None:
@@ -50,7 +66,7 @@ def test_generated_review_skill_template_contains_adversarial_contract_language(
     )
 
     assert result.returncode == 0
-    skill_text = (output_root / ".agents" / "skills" / "qros-test-evidence-review" / "SKILL.md").read_text(
+    skill_text = (output_root / "skills" / "test_evidence" / "qros-test-evidence-review" / "SKILL.md").read_text(
         encoding="utf-8"
     )
 

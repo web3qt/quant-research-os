@@ -8,7 +8,7 @@
 - `qros-data-ready-review`
 - `qros-signal-ready-review`
 
-它们都是通过 `~/.agents/skills/qros -> ~/.qros/skills` symlink 暴露给 Codex 的 skills。
+它们都是通过 `~/.agents/skills/qros -> ~/.qros/skills` symlink 暴露给 Codex 的 skills；`~/.qros/skills` 来自 `./setup --host codex --mode user-global` 生成的扁平安装树。
 
 ## What These Skills Do
 

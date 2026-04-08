@@ -1,9 +1,11 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_text
+
 
 def test_public_skills_reference_repo_local_wrappers() -> None:
-    session_skill = Path("skills/qros-research-session/SKILL.md").read_text(encoding="utf-8")
-    review_skill = Path("skills/qros-mandate-review/SKILL.md").read_text(encoding="utf-8")
+    session_skill = skill_text("qros-research-session")
+    review_skill = skill_text("qros-mandate-review")
 
     assert "~/.qros/bin/qros-session" in session_skill
     assert "~/.qros/bin/qros-review" in review_skill

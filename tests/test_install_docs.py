@@ -15,6 +15,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "~/.agents/skills" in combined
     assert "ln -s" in combined
     assert "git pull" in combined
+    assert "./setup --host codex --mode user-global" in combined
     assert "pipx install qros" not in combined
     assert "uv tool install qros" not in combined
     assert "qros-research-session" in combined

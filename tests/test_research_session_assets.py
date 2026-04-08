@@ -1,11 +1,13 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_path
+
 
 def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
-    skill_path = Path(".agents/skills/qros-research-session/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-research-session")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "idea_intake" in content
     assert "idea_intake_confirmation_pending" in content
     assert "mandate" in content
@@ -96,10 +98,10 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
 
 
 def test_data_ready_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-data-ready-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-data-ready-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "data_ready" in content.lower()
     assert "extraction_contract" in content
     assert "quality_semantics" in content
@@ -109,10 +111,10 @@ def test_data_ready_author_skill_exists() -> None:
 
 
 def test_idea_intake_author_skill_requires_interview() -> None:
-    skill_path = Path(".agents/skills/qros-idea-intake-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-idea-intake-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "intake" in content.lower()
     assert "observation" in content
     assert "counter-hypothesis" in content or "counter_hypothesis" in content
@@ -121,10 +123,10 @@ def test_idea_intake_author_skill_requires_interview() -> None:
 
 
 def test_signal_ready_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-signal-ready-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-signal-ready-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "signal_ready" in content.lower()
     assert "signal_expression" in content
     assert "param_identity" in content
@@ -134,10 +136,10 @@ def test_signal_ready_author_skill_exists() -> None:
 
 
 def test_train_freeze_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-train-freeze-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-train-freeze-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "train_freeze" in content.lower()
     assert "window_contract" in content
     assert "threshold_contract" in content
@@ -147,10 +149,10 @@ def test_train_freeze_author_skill_exists() -> None:
 
 
 def test_test_evidence_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-test-evidence-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-test-evidence-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "test_evidence" in content.lower()
     assert "window_contract" in content
     assert "formal_gate_contract" in content
@@ -160,10 +162,10 @@ def test_test_evidence_author_skill_exists() -> None:
 
 
 def test_backtest_ready_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-backtest-ready-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-backtest-ready-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "backtest_ready" in content.lower()
     assert "execution_policy" in content
     assert "portfolio_policy" in content
@@ -173,10 +175,10 @@ def test_backtest_ready_author_skill_exists() -> None:
 
 
 def test_holdout_validation_author_skill_exists() -> None:
-    skill_path = Path(".agents/skills/qros-holdout-validation-author/SKILL.md")
-    content = skill_path.read_text(encoding="utf-8")
+    skill_file = skill_path("qros-holdout-validation-author")
+    content = skill_file.read_text(encoding="utf-8")
 
-    assert skill_path.exists()
+    assert skill_file.exists()
     assert "holdout_validation" in content.lower()
     assert "window_contract" in content
     assert "reuse_contract" in content

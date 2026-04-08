@@ -3,9 +3,11 @@
 ## 1. Install
 
 ```bash
-git clone <QROS_REPO_URL> ~/.qros
+git clone <QROS_REPO_URL> ~/workspace/quant-research-os
+cd ~/workspace/quant-research-os
+./setup --host codex --mode user-global
 mkdir -p ~/.agents/skills
-ln -s ~/.qros/skills ~/.agents/skills/qros
+ln -sfn ~/.qros/skills ~/.agents/skills/qros
 ```
 
 ## 2. Start From The Unified Skill
@@ -107,4 +109,4 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 After `holdout_validation review`, this version stops. `promotion_decision` orchestration is not yet part of the single-entry flow.
 
-Codex discovers QROS through `~/.agents/skills/qros`, which should point to `~/.qros/skills`.
+Codex discovers QROS through `~/.agents/skills/qros`, which should point to the flattened installed tree `~/.qros/skills`.

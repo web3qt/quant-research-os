@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_path, skill_text
+
 
 # 用关键词集合锁定契约语义，避免只靠一整句精确匹配导致后续微调过脆。
 REQUIRED_SUBSTRINGS = (
@@ -31,32 +33,23 @@ AUTHOR_SKILL_NAMES = (
 )
 
 EXCLUDED_SKILL_PATHS = (
-    Path("skills/qros-research-session/SKILL.md"),
-    Path("skills/qros-stage-failure-handler/SKILL.md"),
-    Path(".agents/skills/qros-research-session/SKILL.md"),
+    skill_path("qros-research-session"),
+    skill_path("qros-stage-failure-handler"),
 )
 
 
-def _load_pair(skill_name: str) -> tuple[str, str]:
-    repo_text = (Path("skills") / skill_name / "SKILL.md").read_text(encoding="utf-8")
-    agent_text = (Path(".agents/skills") / skill_name / "SKILL.md").read_text(encoding="utf-8")
-    return repo_text, agent_text
-
-
-def test_author_skill_comment_contract_substrings_exist_in_both_trees() -> None:
+def test_author_skill_comment_contract_substrings_exist_in_grouped_source_tree() -> None:
     for skill_name in AUTHOR_SKILL_NAMES:
-        repo_text, agent_text = _load_pair(skill_name)
+        repo_text = skill_text(skill_name)
         for needle in REQUIRED_SUBSTRINGS:
-            assert needle in repo_text, f"{needle} missing in skills/{skill_name}/SKILL.md"
-            assert needle in agent_text, f"{needle} missing in .agents/skills/{skill_name}/SKILL.md"
+            assert needle in repo_text, f"{needle} missing in {skill_path(skill_name)}"
 
 
-def test_author_skill_comment_contract_keeps_required_substrings_aligned() -> None:
+def test_author_skill_comment_contract_keeps_required_substrings_complete() -> None:
     for skill_name in AUTHOR_SKILL_NAMES:
-        repo_text, agent_text = _load_pair(skill_name)
+        repo_text = skill_text(skill_name)
         repo_hits = {needle for needle in REQUIRED_SUBSTRINGS if needle in repo_text}
-        agent_hits = {needle for needle in REQUIRED_SUBSTRINGS if needle in agent_text}
-        assert repo_hits == agent_hits == set(REQUIRED_SUBSTRINGS)
+        assert repo_hits == set(REQUIRED_SUBSTRINGS)
 
 
 def test_excluded_skill_surfaces_do_not_pick_up_the_contract_marker() -> None:

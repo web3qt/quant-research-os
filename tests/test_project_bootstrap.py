@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_path
+
 
 def test_project_bootstrap_files_exist() -> None:
     assert Path("AGENTS.md").exists()
@@ -41,15 +43,15 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("docs/experience/qros-research-session-usage.md").exists()
     assert Path("docs/gates/review_governance_policy.yaml").exists()
     assert Path("docs/governance/review-governance-decision-workflow.md").exists()
-    assert Path("skills/qros-idea-intake-author/SKILL.md").exists()
-    assert Path("skills/qros-mandate-author/SKILL.md").exists()
-    assert Path("skills/qros-research-session/SKILL.md").exists()
-    assert Path("skills/qros-stage-failure-handler/SKILL.md").exists()
-    assert Path("skills/qros-train-freeze-author/SKILL.md").exists()
-    assert Path("skills/qros-test-evidence-author/SKILL.md").exists()
-    assert Path("skills/qros-backtest-ready-author/SKILL.md").exists()
-    assert Path("skills/qros-holdout-validation-author/SKILL.md").exists()
-    assert Path("skills/qros-stage-display/SKILL.md").exists()
+    assert skill_path("qros-idea-intake-author").exists()
+    assert skill_path("qros-mandate-author").exists()
+    assert skill_path("qros-research-session").exists()
+    assert skill_path("qros-stage-failure-handler").exists()
+    assert skill_path("qros-train-freeze-author").exists()
+    assert skill_path("qros-test-evidence-author").exists()
+    assert skill_path("qros-backtest-ready-author").exists()
+    assert skill_path("qros-holdout-validation-author").exists()
+    assert skill_path("qros-stage-display").exists()
     assert Path("scripts/run_stage_display.py").exists()
     assert Path("tools/stage_display_runtime.py").exists()
     assert Path("tools/verification_tiers.py").exists()

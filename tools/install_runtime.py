@@ -17,8 +17,8 @@ InstallHost = Literal["codex"]
 
 SUPPORTED_HOSTS: set[str] = {"codex"}
 SUPPORTED_MODES: set[str] = {"repo-local", "user-global", "auto"}
-SKILLS_SOURCE_DIR = Path(".agents/skills")
-RUNTIME_TREE_NAMES = ("scripts", "tools", "templates")
+SKILLS_SOURCE_DIR = Path("skills")
+RUNTIME_TREE_NAMES = ("bin", "scripts", "tools", "templates")
 DOC_TREE_NAMES = (
     "docs/experience",
     "docs/gates",
@@ -51,7 +51,7 @@ def resolve_install_mode(mode: str, cwd: Path) -> ResolvedInstallMode:
     if mode not in SUPPORTED_MODES:
         raise InstallError(f"unsupported install mode: {mode}")
     if mode == "auto":
-        return "repo-local" if (cwd / ".agents").exists() else "user-global"
+        return "repo-local" if (cwd / "skills").exists() else "user-global"
     return mode
 
 
@@ -61,7 +61,7 @@ def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
         runtime_root = cwd / ".qros"
         return InstallTarget(
             mode=resolved_mode,
-            skills_root=cwd / ".agents" / "skills",
+            skills_root=runtime_root / "skills",
             runtime_root=runtime_root,
             manifest_path=runtime_root / "install-manifest.json",
         )
@@ -69,7 +69,7 @@ def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
     runtime_root = home / ".qros"
     return InstallTarget(
         mode=resolved_mode,
-        skills_root=home / ".codex" / "skills",
+        skills_root=runtime_root / "skills",
         runtime_root=runtime_root,
         manifest_path=runtime_root / "install-manifest.json",
     )
@@ -81,10 +81,25 @@ def list_skill_dirs(repo_root: Path) -> list[Path]:
         raise InstallError(f"missing skills directory: {skills_root}")
 
     skill_dirs = sorted(
-        path for path in skills_root.iterdir() if path.is_dir() and path.name.startswith("qros-")
+        {
+            skill_md.parent
+            for skill_md in skills_root.rglob("SKILL.md")
+            if skill_md.is_file()
+        },
+        key=lambda path: str(path.relative_to(skills_root)),
     )
     if not skill_dirs:
-        raise InstallError(f"no qros skill directories found under {skills_root}")
+        raise InstallError(f"no skill bundles found under {skills_root}")
+
+    seen_names: set[str] = set()
+    duplicate_names: set[str] = set()
+    for skill_dir in skill_dirs:
+        if skill_dir.name in seen_names:
+            duplicate_names.add(skill_dir.name)
+        seen_names.add(skill_dir.name)
+    if duplicate_names:
+        duplicates = ", ".join(sorted(duplicate_names))
+        raise InstallError(f"duplicate skill bundle names found under {skills_root}: {duplicates}")
     return skill_dirs
 
 
@@ -187,12 +202,16 @@ def check_install(
     target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve())
     messages: list[str] = []
 
-    expected_skills = [path.name for path in list_skill_dirs(repo_root)]
+    expected_skill_dirs = list_skill_dirs(repo_root)
+    expected_skills = [path.name for path in expected_skill_dirs]
     expected_assets = list_runtime_assets(repo_root)
 
-    for skill_name in expected_skills:
-        if not (target.skills_root / skill_name / "SKILL.md").exists():
-            messages.append(f"missing skill: {target.skills_root / skill_name / 'SKILL.md'}")
+    for skill_dir in expected_skill_dirs:
+        destination_root = target.skills_root / skill_dir.name
+        for relative_file in _collect_files(skill_dir, root=skill_dir):
+            destination_file = destination_root / relative_file
+            if not destination_file.exists():
+                messages.append(f"missing skill asset: {destination_file}")
 
     for asset in expected_assets:
         destination = target.runtime_root / asset.relative_to(repo_root)

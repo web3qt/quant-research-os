@@ -30,6 +30,21 @@ REVIEW_SKILLS = {
     "holdout_validation": "qros-holdout-validation-review",
     "csf_holdout_validation": "qros-csf-holdout-validation-review",
 }
+SKILL_GROUPS = {
+    "qros-mandate-review": "mandate",
+    "qros-data-ready-review": "data_ready",
+    "qros-csf-data-ready-review": "csf_data_ready",
+    "qros-signal-ready-review": "signal_ready",
+    "qros-csf-signal-ready-review": "csf_signal_ready",
+    "qros-train-freeze-review": "train_freeze",
+    "qros-csf-train-freeze-review": "csf_train_freeze",
+    "qros-test-evidence-review": "test_evidence",
+    "qros-csf-test-evidence-review": "csf_test_evidence",
+    "qros-backtest-ready-review": "backtest_ready",
+    "qros-csf-backtest-ready-review": "csf_backtest_ready",
+    "qros-holdout-validation-review": "holdout_validation",
+    "qros-csf-holdout-validation-review": "csf_holdout_validation",
+}
 
 
 def _require_existing_file(path: Path, *, label: str) -> Path:
@@ -64,17 +79,17 @@ def _render_skill_outputs(
         ]
     )
 
-    skill_dir = output_root / ".agents" / "skills" / skill_name
+    skill_group = SKILL_GROUPS[skill_name]
+    skill_dir = output_root / "skills" / skill_group / skill_name
     return {
         skill_dir / "SKILL.md": skill_md,
         skill_dir / "agents" / "openai.yaml": openai_yaml,
-        output_root / "skills" / skill_name / "SKILL.md": skill_md,
     }
 
 
 def _write_skill(stage_key: str, skill_name: str, gates: dict, checklist: dict, output_root: Path) -> None:
     outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, output_root)
-    skill_dir = output_root / ".agents" / "skills" / skill_name
+    skill_dir = output_root / "skills" / SKILL_GROUPS[skill_name] / skill_name
     skill_dir.mkdir(parents=True, exist_ok=True)
 
     for output_path, content in outputs.items():

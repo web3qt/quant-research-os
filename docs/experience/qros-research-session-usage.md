@@ -44,7 +44,7 @@
 
 之后 agent 会接管并推进整个 session。
 
-Codex 会通过 `~/.agents/skills/qros` 找到这个 skill；这个路径应当指向 `~/.qros/skills`。
+Codex 会通过 `~/.agents/skills/qros` 找到这个 skill；这个路径应当指向 `./setup --mode user-global` 生成的扁平安装树 `~/.qros/skills`。
 
 对于一个全新的 raw idea，正常行为不应该是直接替用户完成 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。第一轮应该先停在 `idea_intake_confirmation_pending`，先问清 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria，并在得到显式确认后再进入正式 qualification。
 

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from tests.skill_test_utils import skill_path
+
 
 def test_idea_intake_docs_and_examples_exist() -> None:
     assert Path("docs/experience/idea-intake-to-mandate-flow.md").exists()
@@ -8,8 +10,8 @@ def test_idea_intake_docs_and_examples_exist() -> None:
 
 
 def test_author_skills_exist_and_reference_key_artifacts() -> None:
-    intake_skill = Path(".agents/skills/qros-idea-intake-author/SKILL.md")
-    mandate_skill = Path(".agents/skills/qros-mandate-author/SKILL.md")
+    intake_skill = skill_path("qros-idea-intake-author")
+    mandate_skill = skill_path("qros-mandate-author")
 
     assert intake_skill.exists()
     assert mandate_skill.exists()
