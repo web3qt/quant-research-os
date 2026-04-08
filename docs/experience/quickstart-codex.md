@@ -6,8 +6,6 @@
 git clone <QROS_REPO_URL> ~/workspace/quant-research-os
 cd ~/workspace/quant-research-os
 ./setup --host codex --mode user-global
-mkdir -p ~/.agents/skills
-ln -sfn ~/.qros/skills ~/.agents/skills/qros
 ```
 
 ## 2. Start From The Unified Skill
@@ -109,4 +107,4 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 After `holdout_validation review`, this version stops. `promotion_decision` orchestration is not yet part of the single-entry flow.
 
-Codex discovers QROS through `~/.agents/skills/qros`, which should point to the flattened installed tree `~/.qros/skills`.
+Codex discovers QROS directly through `~/.codex/skills/`; `./setup` writes the flat installed `qros-*` skills there.

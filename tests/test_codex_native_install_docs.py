@@ -10,7 +10,6 @@ def test_codex_native_install_docs_reference_clone_and_symlink() -> None:
 
     assert "git clone" in combined
     assert "~/.qros" in combined
-    assert "~/.agents/skills" in combined
-    assert "ln -s" in combined
+    assert "~/.codex/skills" in combined
     assert "git pull" in combined
     assert "./setup --host codex --mode user-global" in combined

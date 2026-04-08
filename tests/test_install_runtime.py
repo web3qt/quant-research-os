@@ -31,7 +31,7 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
 
     assert result.mode == "repo-local"
     assert (install_root / ".qros").exists()
-    assert (install_root / ".qros" / "skills").exists()
+    assert (install_root / ".codex" / "skills").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
     manifest_path = install_root / ".qros" / "install-manifest.json"
     assert manifest_path.exists()
@@ -39,8 +39,8 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
-    assert (install_root / ".qros" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
-    assert (install_root / ".qros" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
+    assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
     assert "qros-mandate-review" in manifest["installed_skills"]
     assert "qros-train-freeze-author" in manifest["installed_skills"]
     assert "qros-test-evidence-author" in manifest["installed_skills"]
@@ -62,9 +62,9 @@ def test_user_global_install_writes_skills_and_runtime_under_home(
     result = install_qros(repo_root=repo_root, cwd=cwd, home=home_root, mode="user-global")
 
     assert result.mode == "user-global"
-    assert (home_root / ".qros" / "skills").exists()
+    assert (home_root / ".codex" / "skills").exists()
     assert (home_root / ".qros" / "bin" / "qros-session").exists()
-    assert (home_root / ".qros" / "skills" / "qros-research-session" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
     assert (home_root / ".qros").exists()
     assert (home_root / ".qros" / "install-manifest.json").exists()
 
@@ -142,6 +142,6 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
     result = install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
 
     assert "qros-research-session" in result.skills_written
-    assert (install_root / ".qros" / "skills" / "qros-research-session" / "SKILL.md").exists()
-    assert (install_root / ".qros" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
-    assert not (install_root / ".qros" / "skills" / "mandate").exists()
+    assert (install_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
+    assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert not (install_root / ".codex" / "skills" / "mandate").exists()

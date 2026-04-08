@@ -154,15 +154,8 @@ git pull && ./setup --host codex --mode user-global
 ./setup --host codex --mode user-global
 ```
 
-2. 建立 Codex discovery symlink：
-
-```bash
-mkdir -p ~/.agents/skills
-ln -sfn ~/.qros/skills ~/.agents/skills/qros
-```
-
-3. 重启 Codex
-4. 在新会话里直接输入第一条命令：
+2. 重启 Codex
+3. 在新会话里直接输入第一条命令：
 
 ```text
 qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
@@ -189,11 +182,11 @@ qros-research-session help
 **手动安装（Codex / 通用）:**
 
 ```text
-~/.qros/skills/
-~/.agents/skills/qros -> ~/.qros/skills
+~/.codex/skills/qros-*
+~/.qros/
 ```
 
-Codex 扫描 `~/.agents/skills/`，`qros` 入口通过 symlink 指向 `./setup --mode user-global` 生成的扁平 skill tree。
+Codex 扫描 `~/.codex/skills/`，`./setup --mode user-global` 会把扁平 `qros-*` skills 直接写进去。
 
 ## 延伸阅读
 
@@ -207,6 +200,6 @@ Codex 扫描 `~/.agents/skills/`，`qros` 入口通过 symlink 指向 `./setup -
 ## 常见问题
 
 - Claude Code 看不到技能：确认已执行 `/plugin install web3qt/quant-research-os`，重启会话
-- Codex 看不到技能：确认 `~/.agents/skills/qros` 指向 `~/.qros/skills`
+- Codex 看不到技能：确认 `~/.codex/skills/` 里存在 `qros-*`
 - 感觉安装内容过旧：Claude Code 执行 `/plugin update quant-research-os`；手动安装执行 `git pull && ./setup --host codex --mode user-global`
 - 不确定安装是否正常：新开会话，输入 “帮我研究一个量化策略” 测试自动触发

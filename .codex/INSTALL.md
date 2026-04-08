@@ -15,40 +15,33 @@ git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-rese
 cd ~/workspace/quant-research-os
 ```
 
-2. Build the flat installed skill tree:
+2. Build the installed Codex skill tree and runtime:
 
 ```bash
 ./setup --host codex --mode user-global
 ```
 
-3. Create the Codex discovery symlink:
-
-```bash
-mkdir -p ~/.agents/skills
-ln -sfn ~/.qros/skills ~/.agents/skills/qros
-```
-
-4. Restart Codex to discover the skills.
+3. Restart Codex to discover the skills.
 
 ## Verify
 
 ```bash
-ls -la ~/.agents/skills/qros
+ls ~/.codex/skills | grep qros-
 ```
 
-You should see a symlink pointing to `~/.qros/skills`.
+You should see installed skill directories such as `qros-research-session`.
 
 ```bash
-ls ~/.qros/skills
+ls ~/.qros/bin
 ```
 
-You should see flat installed bundles such as `qros-research-session`.
+You should see runtime wrappers such as `qros-session`.
 
 ## How it works
 
 - repo source of truth: cloned repo `skills/`
-- installed flat skill tree: `~/.qros/skills/`
-- Codex discovery entry: `~/.agents/skills/qros -> ~/.qros/skills`
+- installed flat Codex skill tree: `~/.codex/skills/`
+- installed runtime helpers: `~/.qros/`
 
 ## Updating
 
@@ -58,17 +51,14 @@ git pull
 ./setup --host codex --mode user-global
 ```
 
-The symlink stays stable; rerunning `setup` refreshes the flattened installed tree.
+Rerunning `setup` refreshes the flat installed skill tree under `~/.codex/skills`.
 
 ## Uninstalling
 
-```bash
-rm ~/.agents/skills/qros
-```
-
-Optionally delete the installed runtime and repo clone:
+Optionally delete the installed skills, runtime, and repo clone:
 
 ```bash
+rm -rf ~/.codex/skills/qros-*
 rm -rf ~/.qros
 rm -rf ~/workspace/quant-research-os
 ```

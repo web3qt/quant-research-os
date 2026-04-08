@@ -112,15 +112,8 @@ After installation, the shortest path is:
 ./setup --host codex --mode user-global
 ```
 
-2. Create the Codex discovery symlink:
-
-```bash
-mkdir -p ~/.agents/skills
-ln -sfn ~/.qros/skills ~/.agents/skills/qros
-```
-
-3. Restart Codex
-4. In a fresh session, start with:
+2. Restart Codex
+3. In a fresh session, start with:
 
 ```text
 qros-research-session Help me research this idea: BTC leads high-liquidity alts after shock events
@@ -147,11 +140,11 @@ The plugin system manages skill discovery and hook injection automatically.
 **Manual install (Codex / generic):**
 
 ```text
-~/.qros/skills/
-~/.agents/skills/qros -> ~/.qros/skills
+~/.codex/skills/qros-*
+~/.qros/
 ```
 
-The symlink should point at the flat installed tree produced by `./setup --host codex --mode user-global`.
+Codex scans `~/.codex/skills/`, and `./setup --host codex --mode user-global` writes the flat `qros-*` skills there.
 
 If you want the deeper runtime behavior, state fields, and workflow semantics, continue with:
 
@@ -169,6 +162,6 @@ If you want the deeper runtime behavior, state fields, and workflow semantics, c
 ## Troubleshooting
 
 - Claude Code: skills not visible after install — restart session or run `/plugin update quant-research-os`
-- Codex: skills not visible — verify `~/.agents/skills/qros` points to `~/.qros/skills`
+- Codex: skills not visible — verify `~/.codex/skills/` contains `qros-*`
 - Stale install: Claude Code `/plugin update quant-research-os`; Codex `git pull && ./setup --host codex --mode user-global`
 - Unsure if install is healthy: start a new session and mention a quant research idea to test auto-trigger

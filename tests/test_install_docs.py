@@ -12,8 +12,7 @@ def test_install_docs_reference_supported_commands() -> None:
 
     assert "git clone" in combined
     assert "~/.qros" in combined
-    assert "~/.agents/skills" in combined
-    assert "ln -s" in combined
+    assert "~/.codex/skills" in combined
     assert "git pull" in combined
     assert "./setup --host codex --mode user-global" in combined
     assert "pipx install qros" not in combined

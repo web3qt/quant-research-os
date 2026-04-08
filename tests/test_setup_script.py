@@ -30,7 +30,7 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert (fixture_root / ".qros" / "install-manifest.json").exists()
     assert (fixture_root / ".qros" / "bin" / "qros-session").exists()
-    assert (fixture_root / ".qros" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (fixture_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
 
 def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
@@ -52,7 +52,7 @@ def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert (home_root / ".qros" / "install-manifest.json").exists()
     assert (home_root / ".qros" / "bin" / "qros-session").exists()
-    assert (home_root / ".qros" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
 
 def test_setup_check_reports_incomplete_install(tmp_path: Path) -> None:

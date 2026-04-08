@@ -8,7 +8,7 @@
 - `qros-data-ready-review`
 - `qros-signal-ready-review`
 
-它们都是通过 `~/.agents/skills/qros -> ~/.qros/skills` symlink 暴露给 Codex 的 skills；`~/.qros/skills` 来自 `./setup --host codex --mode user-global` 生成的扁平安装树。
+它们都是通过 `./setup --host codex --mode user-global` 直接写入 `~/.codex/skills/` 暴露给 Codex 的 skills。
 
 ## What These Skills Do
 
@@ -92,11 +92,17 @@ review 结束后，skills 统一面向以下 closure artifacts：
 python scripts/gen_codex_stage_review_skills.py
 ```
 
-这个命令会重写：
+这个命令会重写 repo source bundles：
 
-- `~/.qros/skills/qros-mandate-review/`
-- `~/.qros/skills/qros-data-ready-review/`
-- `~/.qros/skills/qros-signal-ready-review/`
+- `skills/mandate/qros-mandate-review/`
+- `skills/data_ready/qros-data-ready-review/`
+- `skills/signal_ready/qros-signal-ready-review/`
+
+如果你要把更新后的 source bundles 同步到 Codex 已安装环境，再运行：
+
+```bash
+./setup --host codex --mode user-global
+```
 
 ## Freshness Validation
 

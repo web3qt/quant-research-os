@@ -61,7 +61,7 @@ def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
         runtime_root = cwd / ".qros"
         return InstallTarget(
             mode=resolved_mode,
-            skills_root=runtime_root / "skills",
+            skills_root=cwd / ".codex" / "skills",
             runtime_root=runtime_root,
             manifest_path=runtime_root / "install-manifest.json",
         )
@@ -69,7 +69,7 @@ def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
     runtime_root = home / ".qros"
     return InstallTarget(
         mode=resolved_mode,
-        skills_root=runtime_root / "skills",
+        skills_root=home / ".codex" / "skills",
         runtime_root=runtime_root,
         manifest_path=runtime_root / "install-manifest.json",
     )
