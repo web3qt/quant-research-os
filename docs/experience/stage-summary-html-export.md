@@ -16,6 +16,7 @@
 ## 当前边界
 
 - 只支持 `data_ready`
+- 只在 `data_ready_next_stage_confirmation_pending`（也就是 mandatory display 已完成）之后导出
 - 只消费 `02_data_ready/` 的确定性 reflection payload
 - 不读取 parquet 内统计结果
 - 缺失证据时保留 `missing` / `question` 提示

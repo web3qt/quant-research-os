@@ -20,6 +20,23 @@ from tools.stage_display_runtime import (
 )
 
 
+EXPECTED_SUPPORTED_STAGE_IDS = (
+    "mandate",
+    "csf_data_ready",
+    "data_ready",
+    "signal_ready",
+    "train_freeze",
+    "test_evidence",
+    "backtest_ready",
+    "holdout_validation",
+    "csf_signal_ready",
+    "csf_train_freeze",
+    "csf_test_evidence",
+    "csf_backtest_ready",
+    "csf_holdout_validation",
+)
+
+
 def _build_mandate_lineage(tmp_path: Path) -> Path:
     lineage_root = tmp_path / "outputs" / "btc_alt"
     stage_dir = lineage_root / "01_mandate"
@@ -124,6 +141,22 @@ def _build_csf_data_ready_lineage(tmp_path: Path) -> Path:
     return lineage_root
 
 
+def _build_generic_signal_ready_lineage(tmp_path: Path) -> Path:
+    lineage_root = tmp_path / "outputs" / "btc_signal_lineage"
+    stage_dir = lineage_root / "03_signal_ready"
+    stage_dir.mkdir(parents=True)
+    (stage_dir / "params").mkdir()
+    (stage_dir / "artifact_catalog.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
+    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_completion_certificate.yaml").write_text("stage_status: PASS\nfinal_verdict: PASS\n", encoding="utf-8")
+    (stage_dir / "signal_contract.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "signal_gate_decision.md").write_text("ok\n", encoding="utf-8")
+    return lineage_root
+
+
 def _write_renderer_stub(tmp_path: Path, *, fail: bool = False) -> Path:
     script_path = tmp_path / ("fail_renderer.py" if fail else "ok_renderer.py")
     script_path.write_text(
@@ -165,7 +198,7 @@ def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_
     summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="csf_data_ready")
 
     assert summary["stage_id"] == "csf_data_ready"
-    assert summary["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
     assert summary["status"] == "complete"
     assert summary["missing_required_inputs"] == []
     assert summary["section_order"] == [
@@ -179,8 +212,32 @@ def test_build_stage_display_summary_for_csf_data_ready_has_stable_sections_and_
     assert any(item["marker"] == "question" for section in summary["sections"] for item in section["items"])
 
 
-def test_supported_stage_ids_are_first_wave_only() -> None:
-    assert supported_stage_ids() == ("mandate", "csf_data_ready")
+def test_supported_stage_ids_cover_current_reviewable_stages() -> None:
+    assert supported_stage_ids() == EXPECTED_SUPPORTED_STAGE_IDS
+
+
+def test_build_stage_display_summary_for_generic_signal_ready_uses_generic_sections(tmp_path: Path) -> None:
+    lineage_root = _build_generic_signal_ready_lineage(tmp_path)
+
+    summary = build_stage_display_summary(lineage_root=lineage_root, stage_id="signal_ready")
+
+    assert summary["stage_id"] == "signal_ready"
+    assert summary["title"] == "Signal Ready Display Summary"
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
+    assert summary["status"] == "complete"
+    assert summary["missing_required_inputs"] == []
+    assert summary["section_order"] == [
+        "Stage Metadata And Core Evidence",
+        "Frozen Artifact Inventory",
+        "Review Closure Evidence",
+    ]
+    assert [section["title"] for section in summary["sections"]] == summary["section_order"]
+    first_section_items = summary["sections"][0]["items"]
+    assert any(item["text"] == "stage_id: signal_ready" for item in first_section_items)
+    assert any(item["text"] == "review_verdict: PASS" for item in first_section_items)
+    inventory_items = summary["sections"][1]["items"]
+    assert any(item["text"] == "params/: directory present" for item in inventory_items)
+    assert any(item["text"] == "signal_contract.md: present" for item in inventory_items)
 
 
 def test_build_stage_display_summary_for_mandate_has_bounded_sections_and_review_evidence(tmp_path: Path) -> None:
@@ -190,7 +247,7 @@ def test_build_stage_display_summary_for_mandate_has_bounded_sections_and_review
 
     assert summary["stage_id"] == "mandate"
     assert summary["title"] == "Mandate Display Summary"
-    assert summary["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
     assert summary["status"] == "complete"
     assert summary["missing_required_inputs"] == []
     assert summary["section_order"] == [
@@ -315,7 +372,7 @@ def test_unsupported_stage_fails_without_writing_partial_outputs(tmp_path: Path)
     with pytest.raises(UnsupportedStageError):
         write_stage_display_report(
             lineage_root=lineage_root,
-            stage_id="signal_ready",
+            stage_id="shadow",
             renderer_command=[sys.executable, str(_write_renderer_stub(tmp_path))],
         )
 
@@ -348,7 +405,7 @@ def test_run_stage_display_script_uses_renderer_override(tmp_path: Path) -> None
 
     assert result.returncode == 0, result.stderr
     manifest = json.loads(result.stdout)
-    assert manifest["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert manifest["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
     assert Path(manifest["structured_summary_path"]).exists()
     assert Path(manifest["html_path"]).exists()
 
@@ -456,6 +513,6 @@ def test_run_stage_display_script_uses_renderer_override_for_csf_data_ready(tmp_
 
     assert result.returncode == 0, result.stderr
     manifest = json.loads(result.stdout)
-    assert manifest["supported_stage_ids"] == ["mandate", "csf_data_ready"]
+    assert manifest["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
     assert Path(manifest["structured_summary_path"]).exists()
     assert Path(manifest["html_path"]).exists()

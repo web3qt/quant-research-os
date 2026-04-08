@@ -14,8 +14,9 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 显式推进 `idea_intake -> idea_intake_confirmation_pending -> mandate_confirmation_pending -> mandate -> mandate review -> data_ready_confirmation_pending -> data_ready -> data_ready review -> signal_ready_confirmation_pending -> signal_ready -> signal_ready review -> train_freeze_confirmation_pending -> train_freeze -> train_freeze review -> test_evidence_confirmation_pending -> test_evidence -> test_evidence review -> backtest_ready_confirmation_pending -> backtest_ready -> backtest_ready review -> holdout_validation_confirmation_pending -> holdout_validation -> holdout_validation review`
-- 在 `research_route = cross_sectional_factor` 时，显式推进 `csf_data_ready_confirmation_pending -> csf_data_ready -> csf_data_ready review -> csf_signal_ready_confirmation_pending -> csf_signal_ready -> csf_signal_ready review -> csf_train_freeze_confirmation_pending -> csf_train_freeze -> csf_train_freeze review -> csf_test_evidence_confirmation_pending -> csf_test_evidence -> csf_test_evidence review -> csf_backtest_ready_confirmation_pending -> csf_backtest_ready -> csf_backtest_ready review -> csf_holdout_validation_confirmation_pending -> csf_holdout_validation -> csf_holdout_validation review`
+- 对每个 major stage 显式推进 `content-confirm -> author -> review-confirm -> review -> mandatory-display -> next-stage-confirm`
+- 在 mainline 中，review 完成后不再直接跳入下一个 `*_confirmation_pending`；必须先经过当前 stage 的 mandatory display，再进入 `*_next_stage_confirmation_pending`
+- 在 `research_route = cross_sectional_factor` 时，mandate review 完成后同样先走 mandate 的 mandatory display / next-stage gates，再切入 `csf_data_ready_confirmation_pending`
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope
@@ -77,7 +78,7 @@ QROS repo is the workflow package. The actual lineage artifacts must be written 
 
 When `research_route = cross_sectional_factor`, do not continue to use the default stage contract as if it were a time-series route.
 
-After mandate review closure, switch to the independent CSF chain:
+After mandate review closure, do **not** jump directly into CSF data-ready authoring. Mandatory display must run first, then next-stage confirmation, and only after that should the session switch to the independent CSF chain:
 
 - `csf_data_ready_confirmation_pending`
 - `csf_data_ready`
@@ -172,9 +173,9 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 22. Ask the user one explicit question: `是否确认进入 mandate？`
 23. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
 24. Drive mandate completion with the same discipline as `qros-mandate-author`
-25. When mandate artifacts are ready, move into mandate review
-26. Reuse the same gate discipline as `qros-mandate-review`
-27. After mandate review closure, enter `data_ready_confirmation_pending`
+25. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
+26. Only after explicit review confirmation may the session enter `mandate_review`
+27. After mandate review closure, run mandatory display automatically, then enter `mandate_next_stage_confirmation_pending`, and only then enter `data_ready_confirmation_pending`
 28. Confirm `extraction_contract`
 29. Confirm `quality_semantics`
 30. Confirm `universe_admission`
@@ -186,9 +187,9 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 36. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
 37. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
 38. Drive data_ready completion with the same discipline as `qros-data-ready-author`
-39. When data_ready artifacts are ready, move into data_ready review
-40. Reuse the same gate discipline as `qros-data-ready-review`
-41. After data_ready review closure, enter `signal_ready_confirmation_pending`
+39. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
+40. Only after explicit review confirmation may the session enter `data_ready_review`
+41. After data_ready review closure, run mandatory display automatically, then enter `data_ready_next_stage_confirmation_pending`; `Data Ready Reflection` only appears after successful display generation
 42. Confirm `signal_expression`
 43. Confirm `param_identity`
 44. Confirm `time_semantics`
@@ -427,6 +428,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_train_freez
 - `ranking_bucket_contract` 这一组冻结什么？
 - `rebalance_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
+- `csf_signal_ready` 冻结后，哪些轴不再允许作为 train variants 继续搜索？
 - 当前 research repo 里将真实生成哪些 train rules、quality artifacts、variant ledgers？
 - 每组回显当前 freeze draft，并单独确认
 - `是否按以上内容冻结 csf_train_freeze？`

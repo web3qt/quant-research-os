@@ -5,6 +5,7 @@ import yaml
 from tests.lineage_program_support import write_fake_stage_provenance
 from tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
 from tools.research_session import run_research_session
+from tools.stage_display_runtime import prepare_stage_display_handoff, write_stage_display_result
 from tools.stage_program_scaffold import materialize_stage_program
 
 
@@ -25,6 +26,8 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         "run_config.toml",
         "artifact_catalog.md",
         "field_dictionary.md",
+        "latest_review_pack.yaml",
+        "stage_gate_review.yaml",
         "stage_completion_certificate.yaml",
     ]:
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
@@ -48,17 +51,6 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         },
     )
     _write_yaml(
-        mandate_dir / "display_transition_decision.yaml",
-        {
-            "lineage_id": lineage_root.name,
-            "stage_id": "mandate",
-            "decision": "SKIP_DISPLAY",
-            "approved_by": "tester",
-            "approved_at": "2026-04-07T08:00:00Z",
-            "source_stage": "mandate_display_confirmation_pending",
-        },
-    )
-    _write_yaml(
         mandate_dir / "next_stage_transition_approval.yaml",
         {
             "lineage_id": lineage_root.name,
@@ -70,6 +62,13 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         },
     )
     write_fake_stage_provenance(lineage_root, "mandate")
+    prepare_stage_display_handoff(lineage_root=lineage_root, stage_id="mandate")
+    write_stage_display_result(
+        lineage_root=lineage_root,
+        stage_id="mandate",
+        html="<!DOCTYPE html><html><body><h1>mandate display</h1></body></html>",
+        rendered_by="test-renderer",
+    )
 
 
 def _confirmed_csf_data_ready_draft() -> dict:

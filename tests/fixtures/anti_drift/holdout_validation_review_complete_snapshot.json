@@ -19,9 +19,9 @@
     "promotion_decision"
   ],
   "blocking_reasons": [
-    "holdout_validation display decision is still incomplete."
+    "holdout_validation mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for holdout_validation. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete"
   ],

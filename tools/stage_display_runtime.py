@@ -13,12 +13,38 @@ import yaml
 
 MANDATE_STAGE_ID = "mandate"
 CSF_DATA_READY_STAGE_ID = "csf_data_ready"
+GENERIC_SUPPORTED_STAGE_DIRS: dict[str, str] = {
+    "data_ready": "02_data_ready",
+    "signal_ready": "03_signal_ready",
+    "train_freeze": "04_train_freeze",
+    "test_evidence": "05_test_evidence",
+    "backtest_ready": "06_backtest",
+    "holdout_validation": "07_holdout",
+    "csf_signal_ready": "03_csf_signal_ready",
+    "csf_train_freeze": "04_csf_train_freeze",
+    "csf_test_evidence": "05_csf_test_evidence",
+    "csf_backtest_ready": "06_csf_backtest_ready",
+    "csf_holdout_validation": "07_csf_holdout_validation",
+}
 DISPLAY_REPORTS_DIR = Path("reports") / "stage_display"
 STRUCTURED_SUMMARY_SCHEMA_VERSION = "1.0"
 SUBAGENT_COMMAND_ENV = "QROS_STAGE_DISPLAY_SUBAGENT_CMD"
 DISPLAY_REQUEST_STATUS = "awaiting_native_subagent_render"
 DISPLAY_RESULT_COMPLETE = "complete"
 DISPLAY_RESULT_FAILED = "failed"
+GENERIC_REQUIRED_OUTPUTS = (
+    "artifact_catalog.md",
+    "field_dictionary.md",
+    "program_execution_manifest.json",
+    "latest_review_pack.yaml",
+    "stage_gate_review.yaml",
+    "stage_completion_certificate.yaml",
+)
+GENERIC_SECTION_ORDER = (
+    "Stage Metadata And Core Evidence",
+    "Frozen Artifact Inventory",
+    "Review Closure Evidence",
+)
 
 MANDATE_REQUIRED_OUTPUTS = (
     "mandate.md",
@@ -86,25 +112,22 @@ class StageDisplayConfig:
     html_filename: str
 
 
+def _config(stage_id: str, stage_dir_name: str) -> StageDisplayConfig:
+    return StageDisplayConfig(
+        stage_id=stage_id,
+        stage_dir_name=stage_dir_name,
+        summary_filename=f"{stage_id}.summary.json",
+        request_filename=f"{stage_id}.display_request.json",
+        prompt_filename=f"{stage_id}.display_prompt.txt",
+        result_filename=f"{stage_id}.display_result.json",
+        html_filename=f"{stage_id}.summary.html",
+    )
+
+
 SUPPORTED_STAGE_CONFIGS: dict[str, StageDisplayConfig] = {
-    MANDATE_STAGE_ID: StageDisplayConfig(
-        stage_id=MANDATE_STAGE_ID,
-        stage_dir_name="01_mandate",
-        summary_filename="mandate.summary.json",
-        request_filename="mandate.display_request.json",
-        prompt_filename="mandate.display_prompt.txt",
-        result_filename="mandate.display_result.json",
-        html_filename="mandate.summary.html",
-    ),
-    CSF_DATA_READY_STAGE_ID: StageDisplayConfig(
-        stage_id=CSF_DATA_READY_STAGE_ID,
-        stage_dir_name="02_csf_data_ready",
-        summary_filename="csf_data_ready.summary.json",
-        request_filename="csf_data_ready.display_request.json",
-        prompt_filename="csf_data_ready.display_prompt.txt",
-        result_filename="csf_data_ready.display_result.json",
-        html_filename="csf_data_ready.summary.html",
-    ),
+    MANDATE_STAGE_ID: _config(MANDATE_STAGE_ID, "01_mandate"),
+    CSF_DATA_READY_STAGE_ID: _config(CSF_DATA_READY_STAGE_ID, "02_csf_data_ready"),
+    **{stage_id: _config(stage_id, stage_dir_name) for stage_id, stage_dir_name in GENERIC_SUPPORTED_STAGE_DIRS.items()},
 }
 
 
@@ -125,7 +148,7 @@ def build_stage_display_summary(*, lineage_root: Path, stage_id: str) -> dict[st
         return _build_mandate_summary(lineage_root=lineage_root, config=config)
     if config.stage_id == CSF_DATA_READY_STAGE_ID:
         return _build_csf_data_ready_summary(lineage_root=lineage_root, config=config)
-    raise UnsupportedStageError(f"Unsupported stage for qros-stage-display: {stage_id}")
+    return _build_generic_stage_summary(lineage_root=lineage_root, config=config)
 
 
 # 这里保持 registry-thin：generic shell 只做路由，阶段语义仍由 repo-owned builder 决定。
@@ -525,6 +548,109 @@ def _build_mandate_summary(*, lineage_root: Path, config: StageDisplayConfig) ->
         "section_order": list(MANDATE_SECTION_ORDER),
         "sections": sections,
     }
+
+
+def _build_generic_stage_summary(*, lineage_root: Path, config: StageDisplayConfig) -> dict[str, object]:
+    stage_dir = lineage_root / config.stage_dir_name
+    if not stage_dir.exists():
+        raise StageDisplayError(f"Missing stage directory for qros-stage-display: {stage_dir}")
+
+    required_paths = {name: stage_dir / name for name in GENERIC_REQUIRED_OUTPUTS}
+    missing_required = sorted(name for name, path in required_paths.items() if not path.exists())
+    review_certificate = _read_yaml_object(stage_dir / "stage_completion_certificate.yaml")
+    sections = [
+        {
+            "id": "stage_metadata",
+            "title": GENERIC_SECTION_ORDER[0],
+            "items": _generic_stage_metadata_items(
+                lineage_root=lineage_root,
+                stage_dir=stage_dir,
+                config=config,
+                review_certificate=review_certificate,
+            ),
+        },
+        {
+            "id": "artifact_inventory",
+            "title": GENERIC_SECTION_ORDER[1],
+            "items": _generic_artifact_inventory_items(stage_dir=stage_dir),
+        },
+        {
+            "id": "review_closure",
+            "title": GENERIC_SECTION_ORDER[2],
+            "items": _generic_review_closure_items(stage_dir=stage_dir, review_certificate=review_certificate),
+        },
+    ]
+    return {
+        "title": _generic_stage_title(config.stage_id),
+        "schema_version": STRUCTURED_SUMMARY_SCHEMA_VERSION,
+        "stage_id": config.stage_id,
+        "lineage_id": lineage_root.name,
+        "lineage_root": str(lineage_root),
+        "stage_directory": f"outputs/{lineage_root.name}/{config.stage_dir_name}",
+        "supported_stage_ids": list(supported_stage_ids()),
+        "required_subagent": True,
+        "status": "complete" if not missing_required else "incomplete",
+        "missing_required_inputs": missing_required,
+        "section_order": list(GENERIC_SECTION_ORDER),
+        "sections": sections,
+    }
+
+
+def _generic_stage_title(stage_id: str) -> str:
+    return stage_id.replace("_", " ").title() + " Display Summary"
+
+
+def _generic_stage_metadata_items(
+    *,
+    lineage_root: Path,
+    stage_dir: Path,
+    config: StageDisplayConfig,
+    review_certificate: Mapping[str, object] | None,
+) -> list[dict[str, str]]:
+    items = [
+        _info_item("stage_directory", f"stage directory: outputs/{lineage_root.name}/{stage_dir.name}"),
+        _info_item("stage_id", f"stage_id: {config.stage_id}"),
+        _artifact_item("artifact_catalog.md", stage_dir / "artifact_catalog.md"),
+        _artifact_item("field_dictionary.md", stage_dir / "field_dictionary.md"),
+        _artifact_item("program_execution_manifest.json", stage_dir / "program_execution_manifest.json"),
+    ]
+    verdict = None if review_certificate is None else review_certificate.get("stage_status") or review_certificate.get("final_verdict")
+    if verdict:
+        items.append(_info_item("review_verdict", f"review_verdict: {verdict}"))
+    else:
+        items.append(_question_item("Which explicit review closure verdict governs this frozen stage?"))
+    return items
+
+
+def _generic_artifact_inventory_items(*, stage_dir: Path) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for path in sorted(stage_dir.iterdir(), key=lambda p: p.name):
+        if path.name in {"adversarial_review_request.yaml", "adversarial_review_result.yaml", "review_findings.yaml"}:
+            continue
+        label = path.name + ("/" if path.is_dir() else "")
+        items.append(_artifact_item(label, path, is_directory=path.is_dir()))
+    if not items:
+        items.append(_question_item("Which frozen stage-local artifacts should be visible to reviewers here?"))
+    return items
+
+
+def _generic_review_closure_items(
+    *,
+    stage_dir: Path,
+    review_certificate: Mapping[str, object] | None,
+) -> list[dict[str, str]]:
+    items = [
+        _artifact_item("latest_review_pack.yaml", stage_dir / "latest_review_pack.yaml"),
+        _artifact_item("stage_gate_review.yaml", stage_dir / "stage_gate_review.yaml"),
+        _artifact_item("stage_completion_certificate.yaml", stage_dir / "stage_completion_certificate.yaml"),
+    ]
+    if review_certificate is None:
+        items.append(_question_item("Which review closure artifacts prove this stage may advance?"))
+    else:
+        verdict = review_certificate.get("stage_status") or review_certificate.get("final_verdict")
+        if verdict:
+            items.append(_info_item("closure_verdict", f"closure_verdict: {verdict}"))
+    return items
 
 
 def _mandate_question_and_route_items(

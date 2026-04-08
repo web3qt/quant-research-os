@@ -7,6 +7,7 @@ import os
 import yaml
 
 from tests.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
+from tools.stage_display_runtime import prepare_stage_display_handoff, write_stage_display_result
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
@@ -38,17 +39,18 @@ def _write_stage_completion_certificate(
     )
 
 
-def _write_display_decision(stage_dir: Path, *, stage: str, decision: str = "DISPLAY_STAGE") -> None:
-    _write_yaml(
-        stage_dir / "display_transition_decision.yaml",
-        {
-            "lineage_id": stage_dir.parent.name,
-            "stage_id": stage,
-            "decision": decision,
-            "approved_by": "tester",
-            "approved_at": "2026-04-06T10:00:00Z",
-            "source_stage": f"{stage}_display_confirmation_pending",
-        },
+def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
+    for review_name in ("latest_review_pack.yaml", "stage_gate_review.yaml"):
+        if not (stage_dir / review_name).exists():
+            (stage_dir / review_name).write_text("status: ok\n", encoding="utf-8")
+    if not (stage_dir / "program_execution_manifest.json").exists():
+        (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
+    prepare_stage_display_handoff(lineage_root=stage_dir.parent, stage_id=stage)
+    write_stage_display_result(
+        lineage_root=stage_dir.parent,
+        stage_id=stage,
+        html=f"<!DOCTYPE html><html><body><h1>{stage} display</h1></body></html>",
+        rendered_by="test-renderer",
     )
 
 
@@ -1129,9 +1131,9 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     assert "🧭 Current orchestrator: qros-research-session" in result.stdout
     assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
     assert "🔨 Current active skill: qros-research-session" in result.stdout
-    assert "⛔ Blocking reason: mandate display decision is still incomplete." in result.stdout
-    assert "--display-stage" in result.stdout
-    assert "🔁 Resume hint: Record a display decision for mandate" in result.stdout
+    assert "⛔ Blocking reason: mandate mandatory display has not completed yet." in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for mandate." in result.stdout
+    assert "🔁 Resume hint: Rerun qros-session --lineage-id btc_leads_alts to continue the mandatory display phase for mandate." in result.stdout
     assert "Data Ready Reflection:" not in result.stdout
 
 
@@ -1189,7 +1191,6 @@ def test_run_research_session_renders_mandate_display_before_next_stage_confirma
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--display-stage",
         ],
         check=False,
         capture_output=True,
@@ -1276,7 +1277,6 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--display-stage",
         ],
         check=False,
         capture_output=True,
@@ -1325,8 +1325,136 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
     )
     assert rerun.returncode == 2
     assert "📍 Current stage: mandate_display_confirmation_pending" in rerun.stdout
-    assert "DISPLAY_RENDER_FAILED" in rerun.stdout
-    assert render_error in rerun.stdout
+    assert "DISPLAY_RENDER_PENDING" in rerun.stdout
+    assert "2/3" in rerun.stdout
+    assert (lineage_root / "reports" / "stage_display" / "mandate.display_retry_state.json").exists()
+
+
+def test_run_research_session_blocks_after_mandate_display_retry_exhaustion(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    session_script = repo_root / "scripts" / "run_research_session.py"
+    display_script = repo_root / "scripts" / "run_stage_display.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    render_error = "renderer exploded"
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "latest_review_pack.yaml",
+        "stage_gate_review.yaml",
+        "stage_completion_certificate.yaml",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    first = run(
+        [
+            sys.executable,
+            str(session_script),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert first.returncode == 2
+    assert "DISPLAY_RENDER_PENDING" in first.stdout
+
+    for expected_attempt in (2, 3):
+        completion = run(
+            [
+                sys.executable,
+                str(display_script),
+                "--stage-id",
+                "mandate",
+                "--lineage-root",
+                str(lineage_root),
+                "--render-error",
+                render_error,
+                "--json",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+        assert completion.returncode == 0, completion.stderr
+
+        rerun = run(
+            [
+                sys.executable,
+                str(session_script),
+                "--outputs-root",
+                str(outputs_root),
+                "--lineage-id",
+                "btc_leads_alts",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+        assert rerun.returncode == 2
+        if expected_attempt < 3:
+            assert "DISPLAY_RENDER_PENDING" in rerun.stdout
+            assert f"{expected_attempt}/3" in rerun.stdout
+        else:
+            assert "DISPLAY_RENDER_PENDING" in rerun.stdout
+            assert "3/3" in rerun.stdout
+
+    final_completion = run(
+        [
+            sys.executable,
+            str(display_script),
+            "--stage-id",
+            "mandate",
+            "--lineage-root",
+            str(lineage_root),
+            "--render-error",
+            render_error,
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert final_completion.returncode == 0, final_completion.stderr
+
+    exhausted = run(
+        [
+            sys.executable,
+            str(session_script),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert exhausted.returncode == 2
+    assert "📍 Current stage: mandate_display_confirmation_pending" in exhausted.stdout
+    assert "DISPLAY_RETRY_EXHAUSTED" in exhausted.stdout
+    assert "3/3" in exhausted.stdout
+    assert render_error in exhausted.stdout
+    assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
 
 
 def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_incomplete(tmp_path: Path) -> None:
@@ -1364,7 +1492,6 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--display-stage",
         ],
         check=False,
         capture_output=True,
@@ -1453,7 +1580,6 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -1471,7 +1597,6 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -1563,7 +1688,6 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     ]:
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
-    _write_display_decision(data_ready_dir, stage="data_ready")
 
     result = run(
         [
@@ -1581,13 +1705,9 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: data_ready_next_stage_confirmation_pending" in result.stdout
-    assert "--confirm-next-stage" in result.stdout
-    assert "Data Ready Reflection:" in result.stdout
-    assert "Data Coverage And Gaps:" in result.stdout
-    assert "QC / Anomaly Summary:" in result.stdout
-    assert "Artifact Directory And Key Files:" in result.stdout
-    assert "stage directory: outputs/btc_leads_alts/02_data_ready" in result.stdout
+    assert "📍 Current stage: data_ready_display_confirmation_pending" in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for data_ready." in result.stdout
+    assert "Data Ready Reflection:" not in result.stdout
 
 
 def test_run_research_session_builds_signal_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1638,7 +1758,6 @@ def test_run_research_session_builds_signal_ready_only_after_explicit_confirmati
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -1728,7 +1847,7 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
 
     assert result.returncode == 2
     assert "📍 Current stage: signal_ready_display_confirmation_pending" in result.stdout
-    assert "--display-stage" in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for signal_ready." in result.stdout
 
 
 def test_run_research_session_builds_train_freeze_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1777,7 +1896,6 @@ def test_run_research_session_builds_train_freeze_only_after_explicit_confirmati
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -1864,7 +1982,7 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
 
     assert result.returncode == 2
     assert "📍 Current stage: train_freeze_display_confirmation_pending" in result.stdout
-    assert "--display-stage" in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for train_freeze." in result.stdout
 
 
 def test_run_research_session_builds_test_evidence_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1933,7 +2051,6 @@ def test_run_research_session_builds_test_evidence_only_after_explicit_confirmat
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -2024,7 +2141,7 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
 
     assert result.returncode == 2
     assert "📍 Current stage: test_evidence_display_confirmation_pending" in result.stdout
-    assert "--display-stage" in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for test_evidence." in result.stdout
 
 
 def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp_path: Path) -> None:
@@ -2133,7 +2250,6 @@ def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engin
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -2217,7 +2333,6 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,
@@ -2303,7 +2418,7 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
 
     assert result.returncode == 2
     assert "📍 Current stage: backtest_ready_display_confirmation_pending" in result.stdout
-    assert "--display-stage" in result.stdout
+    assert "Mandatory display attempt 1/3 is in progress for backtest_ready." in result.stdout
 
 
 def test_run_research_session_builds_holdout_validation_only_after_explicit_confirmation(
@@ -2358,7 +2473,6 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
             str(outputs_root),
             "--lineage-id",
             "btc_leads_alts",
-            "--skip-display",
         ],
         check=False,
         capture_output=True,

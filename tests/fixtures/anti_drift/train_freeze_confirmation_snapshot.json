@@ -20,9 +20,9 @@
     "test_evidence"
   ],
   "blocking_reasons": [
-    "signal_ready display decision is still incomplete."
+    "signal_ready mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for signal_ready. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::train_freeze_confirmation"
   ],

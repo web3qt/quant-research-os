@@ -13,16 +13,27 @@ description: Use when a frozen stage needs a stage-display summary skill that pr
 
 - 只有一个统一 skill 入口
 - 具体阶段语义仍由 repo-owned stage builder 决定
-- v1 **只正式支持** `mandate` 和 `csf_data_ready`
+- v1 先正式支持所有 reviewable mainline / CSF stages；其中 `mandate` 与 `csf_data_ready` 仍保留更强的 stage-specific summary 语义
 
 ## v1 Supported Stage List
 
 - `mandate`
+- `data_ready`
+- `signal_ready`
+- `train_freeze`
+- `test_evidence`
+- `backtest_ready`
+- `holdout_validation`
 - `csf_data_ready`
+- `csf_signal_ready`
+- `csf_train_freeze`
+- `csf_test_evidence`
+- `csf_backtest_ready`
+- `csf_holdout_validation`
 
-v1 formally supports **only** `mandate` and `csf_data_ready`.
+v1 formally supports the current reviewable mainline and CSF stages.
 
-No other stage is supported in v1.
+Any non-reviewable or unregistered stage is unsupported in v1.
 
 任何未注册阶段都必须显式失败：
 
@@ -70,6 +81,12 @@ runtime 必须先写出 deterministic summary 与 handoff artifacts：
 - `reports/stage_display/csf_data_ready.summary.json`
 - `reports/stage_display/csf_data_ready.display_request.json`
 - `reports/stage_display/csf_data_ready.display_prompt.txt`
+
+其他已支持 stage 也遵循同样命名：
+
+- `reports/stage_display/<stage>.summary.json`
+- `reports/stage_display/<stage>.display_request.json`
+- `reports/stage_display/<stage>.display_prompt.txt`
 
 当任意 Codex 会话完成原生 subagent render 之后，再回写：
 
@@ -129,5 +146,6 @@ python scripts/run_stage_display.py \
 
 - This skill is generic by entrypoint，不是 free-form subagent discovery。
 - runtime 负责 facts + handoff；Codex 会话负责原生 visible subagent render。
+- 其他 reviewable stage 可以走 generic deterministic summary builder；`mandate` 与 `csf_data_ready` 允许保留更强的 stage-owned section 语义。
 - 后续若要新增 stage，必须注册新的 builder，并补对应的 stage-specific tests。
 - 不得只靠修改 subagent prompt 就扩大支持范围。

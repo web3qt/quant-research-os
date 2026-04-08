@@ -93,10 +93,10 @@ Lineage: btc_leads_alts
 🧭 Current orchestrator: qros-research-session
 📍 Current stage: mandate_display_confirmation_pending
 🔨 Current active skill: qros-research-session
-💡 Why this skill: Current stage mandate_display_confirmation_pending is waiting for an explicit display decision, so qros-research-session is holding the orchestration gate.
-⛔ Blocking reason: mandate display decision is still incomplete.
-▶ Next action: Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.
-🔁 Resume hint: Record a display decision for mandate, then rerun qros-session --lineage-id btc_leads_alts.
+💡 Why this skill: Current stage mandate_display_confirmation_pending is running the mandatory post-review display phase before progression can continue.
+⛔ Blocking reason: mandate mandatory display has not completed yet.
+▶ Next action: Mandatory display attempt 1/3 is in progress for mandate. Waiting for HTML completion artifact.
+🔁 Resume hint: Rerun qros-session --lineage-id btc_leads_alts to continue the mandatory display phase for mandate.
 🧠 Why now:
 - qualified
 ⚠ Open risks:
@@ -109,23 +109,31 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
-当某个已完成 review closure 的阶段进入 display gate 时，session 不会立刻进入下一个 `*_confirmation_pending`。它会先停在 `*_display_confirmation_pending`，等待显式 `DISPLAY_STAGE` / `SKIP_DISPLAY`。第一波 runtime-backed HTML display 只正式支持：
+当某个已完成 review closure 的阶段进入 display phase 时，session 不会立刻进入下一个 `*_confirmation_pending`。它会自动进入 display 执行与重试流程。当前 reviewable mainline / CSF stages 都走这条 runtime-backed HTML display 路径：
 
 - `mandate`
+- `data_ready`
+- `signal_ready`
+- `train_freeze`
+- `test_evidence`
+- `backtest_ready`
+- `holdout_validation`
 - `csf_data_ready`
+- `csf_signal_ready`
+- `csf_train_freeze`
+- `csf_test_evidence`
+- `csf_backtest_ready`
+- `csf_holdout_validation`
 
-如果用户选择 `DISPLAY_STAGE`：
+对已支持阶段：
 
-- 对已支持阶段，session 会先运行 deterministic summary + display handoff generation
+- session 会先自动运行 deterministic summary + display handoff generation
 - 然后等待任意 Codex 会话原生、可见地 spawn subagent 完成 HTML
+- 如果 render 失败，会自动重试，最多 3 次
 - 只有 completion artifact 标记 HTML 成功后，才允许进入 `*_next_stage_confirmation_pending`
-- 如果 completion artifact 标记 render 失败，session 会继续阻塞在 display gate，而不会放行下一阶段确认
+- 如果第 3 次仍失败，session 会继续阻塞在 display phase，而不会放行下一阶段确认
 
-如果用户选择 `SKIP_DISPLAY`：
-
-- session 会直接进入 `*_next_stage_confirmation_pending`
-
-未注册阶段仍会显式返回 not implemented，而不会伪造 partial HTML success。
+未注册阶段会显式返回 mandatory display blocker，而不会伪造 partial HTML success。
 
 另外，第一波 author-stage 自动补程式能力目前只正式覆盖：
 
@@ -174,7 +182,7 @@ Data Ready Reflection:
 这个 reflection 面板在第一版里有几个明确边界：
 
 - 只出现在 time-series 主线
-- 只出现在 `data_ready_next_stage_confirmation_pending` 且已经记录 `DISPLAY_STAGE`
+- 只出现在 `data_ready_next_stage_confirmation_pending`，也就是 mandatory display 已成功完成之后
 - 不出现在 `data_ready_review`
 - 不替代 formal review closure
 - 不改 `--json` 或 `--snapshot` 的机读输出

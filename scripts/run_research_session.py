@@ -20,7 +20,11 @@ EXIT_CODES = {
     "NONE": 0,
     "FREEZE_APPROVAL_MISSING": 2,
     "REVIEW_CONFIRMATION_REQUIRED": 7,
-    "DISPLAY_CONFIRMATION_REQUIRED": 2,
+    "DISPLAY_RENDER_PENDING": 2,
+    "DISPLAY_RETRYING": 2,
+    "DISPLAY_RENDER_FAILED": 2,
+    "DISPLAY_RETRY_EXHAUSTED": 2,
+    "DISPLAY_NOT_IMPLEMENTED": 2,
     "NEXT_STAGE_CONFIRMATION_REQUIRED": 2,
     "STAGE_PROGRAM_MISSING": 3,
     "STAGE_PROGRAM_INVALID": 4,
@@ -96,16 +100,6 @@ def _parse_args() -> argparse.Namespace:
         "--confirm-review",
         action="store_true",
         help="Write an explicit approval artifact so the current stage may enter formal review.",
-    )
-    parser.add_argument(
-        "--display-stage",
-        action="store_true",
-        help="Record an explicit decision to run the display step for the current completed stage.",
-    )
-    parser.add_argument(
-        "--skip-display",
-        action="store_true",
-        help="Record an explicit decision to skip the display step for the current completed stage.",
     )
     parser.add_argument(
         "--confirm-next-stage",
@@ -237,10 +231,6 @@ def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
         confirmation_label = "CONFIRM_HOLDOUT_VALIDATION"
     elif args.confirm_review:
         confirmation_label = "CONFIRM_REVIEW"
-    elif args.display_stage:
-        confirmation_label = "DISPLAY_STAGE"
-    elif args.skip_display:
-        confirmation_label = "SKIP_DISPLAY"
     elif args.confirm_next_stage:
         confirmation_label = "CONFIRM_NEXT_STAGE"
 
@@ -273,8 +263,6 @@ def main() -> int:
         args.confirm_backtest_ready,
         args.confirm_holdout_validation,
         args.confirm_review,
-        args.display_stage,
-        args.skip_display,
         args.confirm_next_stage,
     ]
     if sum(1 for flag in confirm_flags if flag) > 1:
@@ -295,9 +283,6 @@ def main() -> int:
             "CONFIRM_HOLDOUT_VALIDATION" if args.confirm_holdout_validation else None
         ),
         review_decision="CONFIRM_REVIEW" if args.confirm_review else None,
-        display_decision=(
-            "DISPLAY_STAGE" if args.display_stage else "SKIP_DISPLAY" if args.skip_display else None
-        ),
         next_stage_decision="CONFIRM_NEXT_STAGE" if args.confirm_next_stage else None,
     )
 

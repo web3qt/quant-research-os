@@ -23,9 +23,9 @@
     "train_calibration"
   ],
   "blocking_reasons": [
-    "data_ready display decision is still incomplete."
+    "data_ready mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for data_ready. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation"
   ],

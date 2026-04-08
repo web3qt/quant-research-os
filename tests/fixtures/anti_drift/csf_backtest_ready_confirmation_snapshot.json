@@ -26,9 +26,9 @@
     "csf_holdout_validation"
   ],
   "blocking_reasons": [
-    "csf_test_evidence display decision is still incomplete."
+    "csf_test_evidence mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for csf_test_evidence. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation"
   ],

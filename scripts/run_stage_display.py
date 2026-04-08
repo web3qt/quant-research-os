@@ -21,7 +21,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run the generic qros-stage-display workflow for a supported frozen stage.",
     )
-    parser.add_argument("--stage-id", required=True, help="Registered stage id. v1 supports mandate and csf_data_ready.")
+    parser.add_argument("--stage-id", required=True, help="Registered reviewable stage id for qros-stage-display.")
     parser.add_argument("--lineage-root", type=Path, default=None)
     parser.add_argument("--outputs-root", type=Path, default=None)
     parser.add_argument("--lineage-id", default=None)

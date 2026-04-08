@@ -10,12 +10,24 @@
 ## v1 Supported Stages
 
 - `mandate`
+- `data_ready`
+- `signal_ready`
+- `train_freeze`
+- `test_evidence`
+- `backtest_ready`
+- `holdout_validation`
 - `csf_data_ready`
+- `csf_signal_ready`
+- `csf_train_freeze`
+- `csf_test_evidence`
+- `csf_backtest_ready`
+- `csf_holdout_validation`
 
 The runtime is intentionally registry-thin:
 
 - one generic skill surface
-- two registered stage builders in v1
+- `mandate` and `csf_data_ready` keep stage-specific summary builders
+- the remaining reviewable mainline / CSF stages use the shared generic review-closure builder
 - explicit fail-fast behavior for any unsupported stage
 
 ## Output Location
@@ -66,19 +78,25 @@ The summary JSON includes at least:
 - `sections[]`
 - explicit item markers: `available`, `missing`, `question`
 
-`mandate` v1 reflects only frozen mandate artifacts plus explicit review closure artifacts, for example:
+`mandate` still reflects only frozen mandate artifacts plus explicit review closure artifacts, for example:
 
 - research question / route / factor identity
 - scope and data contract facts already frozen into mandate outputs
 - execution and review closure evidence
 
-`csf_data_ready` v1 reflects only frozen artifact and contract facts such as:
+`csf_data_ready` still reflects only frozen artifact and contract facts such as:
 
 - panel manifest evidence
 - universe / eligibility / coverage evidence
 - run manifest / rebuild / delivery evidence
 
-It does **not** parse parquet internals or make performance claims.
+Other supported reviewable stages use a generic deterministic summary shape that stays bounded to:
+
+- stage metadata and core review evidence
+- frozen artifact inventory
+- review closure artifacts
+
+No supported stage display path parses parquet internals or makes performance claims.
 
 ## Completing the render from another Codex session
 

@@ -203,7 +203,6 @@ TestEvidenceTransitionDecision = Literal["CONFIRM_TEST_EVIDENCE", "HOLD", "REFRA
 BacktestReadyTransitionDecision = Literal["CONFIRM_BACKTEST_READY", "HOLD", "REFRAME"]
 HoldoutValidationTransitionDecision = Literal["CONFIRM_HOLDOUT_VALIDATION", "HOLD", "REFRAME"]
 ReviewTransitionDecision = Literal["CONFIRM_REVIEW"]
-DisplayTransitionDecision = Literal["DISPLAY_STAGE", "SKIP_DISPLAY"]
 NextStageTransitionDecision = Literal["CONFIRM_NEXT_STAGE"]
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
@@ -391,8 +390,9 @@ TEST_EVIDENCE_TRANSITION_APPROVAL_FILE = "test_evidence_transition_approval.yaml
 BACKTEST_READY_TRANSITION_APPROVAL_FILE = "backtest_ready_transition_approval.yaml"
 HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_approval.yaml"
 REVIEW_TRANSITION_APPROVAL_FILE = "review_transition_approval.yaml"
-DISPLAY_TRANSITION_DECISION_FILE = "display_transition_decision.yaml"
 NEXT_STAGE_TRANSITION_APPROVAL_FILE = "next_stage_transition_approval.yaml"
+DISPLAY_RETRY_STATE_FILE = "display_retry_state.json"
+MANDATORY_DISPLAY_MAX_RETRIES = 3
 
 
 @dataclass(frozen=True)
@@ -1311,38 +1311,6 @@ def write_review_transition_decision(
     return str(approval_path.relative_to(lineage_root))
 
 
-def write_display_transition_decision(
-    lineage_root: Path,
-    *,
-    current_stage: SessionStage,
-    decision: DisplayTransitionDecision,
-    approved_by: str = "codex",
-) -> str | None:
-    stage_base = _stage_base_name(current_stage)
-    decision_path = _display_transition_decision_path(lineage_root, stage_base)
-    if decision_path is None:
-        return None
-
-    normalized_decision = "SKIP_DISPLAY" if decision == "SKIP" else decision
-    decision_path.parent.mkdir(parents=True, exist_ok=True)
-    decision_path.write_text(
-        yaml.safe_dump(
-            {
-                "lineage_id": lineage_root.name,
-                "stage_id": stage_base,
-                "decision": normalized_decision,
-                "approved_by": approved_by,
-                "approved_at": datetime.now(timezone.utc).isoformat(),
-                "source_stage": f"{stage_base}_display_confirmation_pending",
-            },
-            sort_keys=False,
-            allow_unicode=True,
-        ),
-        encoding="utf-8",
-    )
-    return str(decision_path.relative_to(lineage_root))
-
-
 def write_next_stage_transition_decision(
     lineage_root: Path,
     *,
@@ -1473,17 +1441,6 @@ def read_review_transition_decision(lineage_root: Path, *, stage_base: str) -> s
     return None
 
 
-def read_display_transition_decision(lineage_root: Path, *, stage_base: str) -> str | None:
-    decision_path = _display_transition_decision_path(lineage_root, stage_base)
-    if decision_path is None or not decision_path.exists():
-        return None
-
-    decision = _read_yaml(decision_path).get("decision")
-    if decision in {"DISPLAY_STAGE", "SKIP_DISPLAY"}:
-        return str(decision)
-    return None
-
-
 def _supports_stage_display(stage_base: str) -> bool:
     return stage_base in DISPLAY_IMPLEMENTED_STAGE_BASES
 
@@ -1530,6 +1487,54 @@ def _stage_display_request_exists(lineage_root: Path, *, stage_base: str) -> boo
     return load_stage_display_request(lineage_root=lineage_root, stage_id=stage_base) is not None
 
 
+def _stage_display_retry_state_path(lineage_root: Path, *, stage_base: str) -> Path | None:
+    if not _supports_stage_display(stage_base):
+        return None
+    config = resolve_stage_display_config(stage_base)
+    return (lineage_root / "reports" / "stage_display" / f"{config.stage_id}.{DISPLAY_RETRY_STATE_FILE}").resolve()
+
+
+def _read_stage_display_retry_state(lineage_root: Path, *, stage_base: str) -> dict | None:
+    path = _stage_display_retry_state_path(lineage_root, stage_base=stage_base)
+    if path is None or not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _write_stage_display_retry_state(
+    lineage_root: Path,
+    *,
+    stage_base: str,
+    attempt_count: int,
+    status: str,
+    last_error: str | None = None,
+) -> Path | None:
+    path = _stage_display_retry_state_path(lineage_root, stage_base=stage_base)
+    if path is None:
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "stage_id": stage_base,
+                "lineage_id": lineage_root.name,
+                "attempt_count": attempt_count,
+                "status": status,
+                "last_error": last_error,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def _stage_display_summary_status(lineage_root: Path, *, stage_base: str) -> str | None:
     summary = _read_stage_display_summary(lineage_root, stage_base=stage_base)
     if summary is None:
@@ -1548,6 +1553,14 @@ def _stage_display_missing_required_inputs(lineage_root: Path, *, stage_base: st
     return [str(item) for item in raw_value if str(item).strip()]
 
 
+def _stage_display_html_path(lineage_root: Path, *, stage_base: str) -> Path | None:
+    paths = _stage_display_artifact_paths(lineage_root, stage_base=stage_base)
+    if paths is None:
+        return None
+    _, html_path = paths
+    return html_path
+
+
 def _invoke_stage_display(
     lineage_root: Path,
     *,
@@ -1563,6 +1576,74 @@ def _invoke_stage_display(
         if path.exists():
             written.append(str(path.relative_to(lineage_root.resolve())))
     return written
+
+
+def _auto_progress_display(lineage_root: Path, *, current_stage: SessionStage) -> list[str]:
+    if not current_stage.endswith("_display_confirmation_pending"):
+        return []
+
+    stage_base = _stage_base_name(current_stage)
+    if not _supports_stage_display(stage_base):
+        return []
+
+    render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
+    if render_status == "complete":
+        _write_stage_display_retry_state(
+            lineage_root,
+            stage_base=stage_base,
+            attempt_count=(_read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}).get("attempt_count", 1),
+            status="complete",
+        )
+        return []
+
+    retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
+    attempt_count = int(retry_state.get("attempt_count", 0))
+
+    if render_status == "failed":
+        error = _stage_display_render_error(lineage_root, stage_base=stage_base)
+        if attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
+            _write_stage_display_retry_state(
+                lineage_root,
+                stage_base=stage_base,
+                attempt_count=attempt_count,
+                status="failed",
+                last_error=error,
+            )
+            return []
+        next_attempt = attempt_count + 1 if attempt_count else 1
+        written = _invoke_stage_display(lineage_root, current_stage=current_stage)
+        retry_path = _write_stage_display_retry_state(
+            lineage_root,
+            stage_base=stage_base,
+            attempt_count=next_attempt,
+            status="pending",
+            last_error=error,
+        )
+        if retry_path is not None:
+            written.append(str(retry_path.relative_to(lineage_root.resolve())))
+        return sorted(set(written))
+
+    if _stage_display_request_exists(lineage_root, stage_base=stage_base):
+        if attempt_count == 0:
+            retry_path = _write_stage_display_retry_state(
+                lineage_root,
+                stage_base=stage_base,
+                attempt_count=1,
+                status="pending",
+            )
+            return [str(retry_path.relative_to(lineage_root.resolve()))] if retry_path is not None else []
+        return []
+
+    written = _invoke_stage_display(lineage_root, current_stage=current_stage)
+    retry_path = _write_stage_display_retry_state(
+        lineage_root,
+        stage_base=stage_base,
+        attempt_count=1,
+        status="pending",
+    )
+    if retry_path is not None:
+        written.append(str(retry_path.relative_to(lineage_root.resolve())))
+    return sorted(set(written))
 
 
 def _stage_display_ready_for_handoff(lineage_root: Path, *, stage_base: str) -> bool:
@@ -1935,7 +2016,7 @@ def _why_this_skill(
             f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
         )
     if current_stage.endswith("_display_confirmation_pending"):
-        return f"Current stage {current_stage} is waiting for an explicit display/skip decision before progression can continue."
+        return f"Current stage {current_stage} is running the mandatory post-review display phase before progression can continue."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit approval before entering the downstream stage."
     if current_stage.endswith("_review_complete"):
@@ -1947,7 +2028,7 @@ def _why_this_skill(
             return f"Current stage {current_stage} has fixable adversarial findings, so {current_skill} is the active author-fix skill."
         return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
     if current_stage.endswith("_display_confirmation_pending"):
-        return f"Current stage {current_stage} is waiting for an explicit display decision, so {current_skill} is holding the orchestration gate."
+        return f"Current stage {current_stage} is in the mandatory display phase, so {current_skill} is holding the orchestration gate."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit next-stage confirmation, so {current_skill} is holding the orchestration gate."
     return f"Current stage {current_stage} is in the authoring/freeze flow, so {current_skill} is the active author skill."
@@ -1967,7 +2048,7 @@ def _blocking_reason(
     if current_stage.endswith("_review_confirmation_pending"):
         return f"{_stage_base_name(current_stage)} review entry is still waiting for explicit confirmation."
     if current_stage.endswith("_display_confirmation_pending"):
-        return f"{_stage_base_name(current_stage)} display decision is still incomplete."
+        return f"{_stage_base_name(current_stage)} mandatory display has not completed yet."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         next_stage_base = NEXT_STAGE_BY_BASE.get(_stage_base_name(current_stage))
         if next_stage_base is None:
@@ -2014,8 +2095,8 @@ def _resume_hint(
         )
     if current_stage.endswith("_display_confirmation_pending"):
         return (
-            f"Record a display decision for {_stage_base_name(current_stage)}, then rerun "
-            f"qros-session --lineage-id {lineage_id}."
+            f"Rerun qros-session --lineage-id {lineage_id} to continue the mandatory display phase for "
+            f"{_stage_base_name(current_stage)}."
         )
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return (
@@ -2255,10 +2336,19 @@ def _program_runtime_status(
             review_next_action,
         )
     if current_stage.endswith("_display_confirmation_pending"):
-        next_action = _gate_status_and_next_action(lineage_root, current_stage)[1]
+        gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
+        reason_code = {
+            "DISPLAY_RENDER_PENDING": "DISPLAY_RENDER_PENDING",
+            "DISPLAY_RETRYING": "DISPLAY_RETRYING",
+            "DISPLAY_RENDER_FAILED": "DISPLAY_RENDER_FAILED",
+            "DISPLAY_RETRY_EXHAUSTED": "DISPLAY_RETRY_EXHAUSTED",
+            "DISPLAY_NOT_IMPLEMENTED": "DISPLAY_NOT_IMPLEMENTED",
+            "DISPLAY_RENDER_COMPLETE": "DISPLAY_RENDER_PENDING",
+        }.get(gate_status, "DISPLAY_RENDER_PENDING")
+        stage_status = "display_running" if gate_status in {"DISPLAY_RENDER_PENDING", "DISPLAY_RETRYING"} else "display_blocked"
         return (
-            "awaiting_display_confirmation",
-            "DISPLAY_CONFIRMATION_REQUIRED",
+            stage_status,
+            reason_code,
             inspection.required_program_dir,
             inspection.required_program_entrypoint,
             inspection.program_contract_status,
@@ -2271,10 +2361,11 @@ def _program_runtime_status(
             next_action,
         )
     if current_stage.endswith("_next_stage_confirmation_pending"):
-        next_action = _gate_status_and_next_action(lineage_root, current_stage)[1]
+        gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
+        reason_code = "NEXT_STAGE_CONFIRMATION_REQUIRED" if gate_status == "NEXT_STAGE_CONFIRMATION_PENDING" else gate_status
         return (
             "awaiting_next_stage_confirmation",
-            "NEXT_STAGE_CONFIRMATION_REQUIRED",
+            reason_code,
             inspection.required_program_dir,
             inspection.required_program_entrypoint,
             inspection.program_contract_status,
@@ -2374,7 +2465,6 @@ def run_research_session(
     backtest_ready_decision: BacktestReadyTransitionDecision | None = None,
     holdout_validation_decision: HoldoutValidationTransitionDecision | None = None,
     review_decision: ReviewTransitionDecision | None = None,
-    display_decision: DisplayTransitionDecision | None = None,
     next_stage_decision: NextStageTransitionDecision | None = None,
 ) -> SessionContext:
     lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
@@ -2425,24 +2515,6 @@ def run_research_session(
         )
         if written is not None:
             artifacts_written.append(written)
-        current_stage = detect_session_stage(lineage_root)
-
-    if display_decision is not None:
-        display_stage_before_write = current_stage
-        written = write_display_transition_decision(
-            lineage_root,
-            current_stage=current_stage,
-            decision=display_decision,
-        )
-        if written is not None:
-            artifacts_written.append(written)
-        if display_decision == "DISPLAY_STAGE":
-            artifacts_written.extend(
-                _invoke_stage_display(
-                    lineage_root,
-                    current_stage=display_stage_before_write,
-                )
-            )
         current_stage = detect_session_stage(lineage_root)
 
     if next_stage_decision is not None:
@@ -2557,6 +2629,15 @@ def run_research_session(
 
     if current_stage == "csf_holdout_validation_author":
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if current_stage.endswith("_display_confirmation_pending"):
+        artifacts_written.extend(
+            _auto_progress_display(
+                lineage_root,
+                current_stage=current_stage,
+            )
+        )
         current_stage = detect_session_stage(lineage_root)
 
     _ensure_review_request_for_stage(lineage_root, current_stage)
@@ -2739,13 +2820,10 @@ def _review_has_started(stage_dir: Path) -> bool:
 
 
 def _post_review_completion_stage(lineage_root: Path, *, stage_base: str) -> SessionStage:
-    display_decision = read_display_transition_decision(lineage_root, stage_base=stage_base)
-    if display_decision is None:
+    if not _supports_stage_display(stage_base):
         return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
-
-    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
-        if not _stage_display_ready_for_handoff(lineage_root, stage_base=stage_base):
-            return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
+    if not _stage_display_ready_for_handoff(lineage_root, stage_base=stage_base):
+        return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
 
     next_stage_decision = read_next_stage_transition_decision(lineage_root, stage_base=stage_base)
     if next_stage_decision is None:
@@ -2931,67 +3009,69 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
 
 def _display_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
-    display_decision = read_display_transition_decision(lineage_root, stage_base=stage_base)
-    if display_decision == "SKIP_DISPLAY":
-        return (
-            "DISPLAY_SKIPPED",
-            f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue past {stage_base}.",
-        )
-    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
+    if _supports_stage_display(stage_base):
         render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
         render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
         summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
         missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
+        retry_state = _read_stage_display_retry_state(lineage_root, stage_base=stage_base) or {}
+        attempt_count = int(retry_state.get("attempt_count", 0))
+        html_path = _stage_display_html_path(lineage_root, stage_base=stage_base)
         if render_status == "complete" and summary_status == "complete":
             return (
                 "DISPLAY_RENDER_COMPLETE",
-                f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue past {stage_base}.",
+                f"Display completed for {stage_base}. HTML: {html_path}. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to continue.",
             )
         if render_status == "complete" and summary_status != "complete":
             missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
             return (
                 "DISPLAY_RENDER_FAILED",
-                f"The {stage_base} display summary is incomplete ({missing_text}), so regenerate the handoff only after the frozen display inputs exist.",
+                f"The {stage_base} display summary is incomplete ({missing_text}), so the mandatory display phase is blocked.",
             )
         if render_status == "failed":
+            if attempt_count >= MANDATORY_DISPLAY_MAX_RETRIES:
+                if render_error:
+                    return (
+                        "DISPLAY_RETRY_EXHAUSTED",
+                        f"Mandatory display failed after {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} attempts for {stage_base}: {render_error}",
+                    )
+                return (
+                    "DISPLAY_RETRY_EXHAUSTED",
+                    f"Mandatory display failed after {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} attempts for {stage_base}.",
+                )
             if render_error:
                 return (
-                    "DISPLAY_RENDER_FAILED",
-                    f"Fix the {stage_base} display render failure ({render_error}), then rerun the native subagent display handoff.",
+                    "DISPLAY_RETRYING",
+                    f"Mandatory display retry {attempt_count + 1}/{MANDATORY_DISPLAY_MAX_RETRIES} will be prepared for {stage_base} after previous error: {render_error}",
                 )
             return (
-                "DISPLAY_RENDER_FAILED",
-                f"Fix the {stage_base} display render failure, then rerun the native subagent display handoff.",
+                "DISPLAY_RETRYING",
+                f"Mandatory display retry {attempt_count + 1}/{MANDATORY_DISPLAY_MAX_RETRIES} will be prepared for {stage_base}.",
             )
         if _stage_display_request_exists(lineage_root, stage_base=stage_base):
             return (
                 "DISPLAY_RENDER_PENDING",
-                f"Use any Codex session to consume the {stage_base} display request artifact and write the completion artifact before continuing.",
+                f"Mandatory display attempt {attempt_count}/{MANDATORY_DISPLAY_MAX_RETRIES} is in progress for {stage_base}. Waiting for HTML completion artifact.",
             )
         return (
             "DISPLAY_RENDER_PENDING",
-            f"Run with --display-stage to generate the {stage_base} display handoff artifact before continuing.",
-        )
-    if _supports_stage_display(stage_base):
-        return (
-            "DISPLAY_CONFIRMATION_PENDING",
-            "Run with --display-stage to render the stage summary, or --skip-display to continue without rendering it.",
+            f"Mandatory display is preparing the first render attempt for {stage_base}.",
         )
     return (
-        "DISPLAY_CONFIRMATION_PENDING",
-        "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+        "DISPLAY_NOT_IMPLEMENTED",
+        f"Mandatory display for {stage_base} is not implemented yet, so stage progression is blocked until display support exists.",
     )
 
 
 def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
-    display_decision = read_display_transition_decision(lineage_root, stage_base=stage_base)
     next_stage_base = NEXT_STAGE_BY_BASE[stage_base]
-    if display_decision == "DISPLAY_STAGE" and _supports_stage_display(stage_base):
+    if _supports_stage_display(stage_base):
         render_status = _stage_display_render_status(lineage_root, stage_base=stage_base)
         render_error = _stage_display_render_error(lineage_root, stage_base=stage_base)
         summary_status = _stage_display_summary_status(lineage_root, stage_base=stage_base)
         missing_inputs = _stage_display_missing_required_inputs(lineage_root, stage_base=stage_base)
+        html_path = _stage_display_html_path(lineage_root, stage_base=stage_base)
         if render_status != "complete" or summary_status != "complete":
             if render_status == "complete" and summary_status != "complete":
                 missing_text = ", ".join(missing_inputs) if missing_inputs else "missing required display inputs"
@@ -3002,21 +3082,16 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
             if render_error:
                 return (
                     "DISPLAY_RENDER_FAILED",
-                    f"Fix the {stage_base} display render failure ({render_error}), then rerun the native subagent display handoff before confirming the next stage.",
+                    f"Mandatory display for {stage_base} has not completed successfully ({render_error}).",
                 )
             return (
                 "DISPLAY_RENDER_PENDING",
-                f"Complete the {stage_base} native subagent display handoff before confirming the next stage.",
+                f"Mandatory display for {stage_base} must complete before next-stage confirmation.",
             )
-    if display_decision == "DISPLAY_STAGE" and stage_base not in DISPLAY_IMPLEMENTED_STAGE_BASES:
-        if next_stage_base is None:
-            return (
-                "DISPLAY_NOT_IMPLEMENTED",
-                f"Display for {stage_base} is not implemented yet. Run with --confirm-next-stage to mark the session complete.",
-            )
+    if stage_base not in DISPLAY_IMPLEMENTED_STAGE_BASES:
         return (
             "DISPLAY_NOT_IMPLEMENTED",
-            f"Display for {stage_base} is not implemented yet. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
+            f"Mandatory display for {stage_base} is not implemented yet, so next-stage confirmation is blocked.",
         )
     if next_stage_base is None:
         return (
@@ -3025,7 +3100,7 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
         )
     return (
         "NEXT_STAGE_CONFIRMATION_PENDING",
-        f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
+        f"Display completed. HTML: {html_path}. Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
     )
 
 
@@ -3430,13 +3505,6 @@ def _review_transition_approval_path(lineage_root: Path, stage_base: str) -> Pat
     if stage_dir is None:
         return None
     return stage_dir / REVIEW_TRANSITION_APPROVAL_FILE
-
-
-def _display_transition_decision_path(lineage_root: Path, stage_base: str) -> Path | None:
-    stage_dir = _stage_dir_for_stage_base(lineage_root, stage_base)
-    if stage_dir is None:
-        return None
-    return stage_dir / DISPLAY_TRANSITION_DECISION_FILE
 
 
 def _next_stage_transition_approval_path(lineage_root: Path, stage_base: str) -> Path | None:

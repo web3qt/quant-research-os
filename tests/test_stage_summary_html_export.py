@@ -6,8 +6,9 @@ from subprocess import run
 import sys
 
 from tests.lineage_program_support import write_fake_stage_provenance
-from tests.test_run_research_session_script import _write_display_decision, _write_yaml
+from tests.test_run_research_session_script import _write_yaml
 from tools.research_session_reflection import build_data_ready_reflection_payload
+from tools.stage_display_runtime import prepare_stage_display_handoff, write_stage_display_result
 from tools.stage_summary_html import build_subagent_render_prompt, render_data_ready_summary_html, write_subagent_bundle
 
 
@@ -39,6 +40,8 @@ def _build_signal_ready_confirmation_lineage(tmp_path: Path) -> tuple[Path, Path
         "rebuild_data_ready.py",
         "artifact_catalog.md",
         "field_dictionary.md",
+        "latest_review_pack.yaml",
+        "stage_gate_review.yaml",
         "stage_completion_certificate.yaml",
     ]:
         (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
@@ -50,8 +53,14 @@ def _build_signal_ready_confirmation_lineage(tmp_path: Path) -> tuple[Path, Path
         "topic_basket_state",
     ]:
         (data_ready_dir / name).mkdir()
-    _write_display_decision(data_ready_dir, stage="data_ready")
     write_fake_stage_provenance(lineage_root, "data_ready")
+    prepare_stage_display_handoff(lineage_root=lineage_root, stage_id="data_ready")
+    write_stage_display_result(
+        lineage_root=lineage_root,
+        stage_id="data_ready",
+        html="<!DOCTYPE html><html><body><h1>Data Ready Display</h1></body></html>",
+        rendered_by="test-renderer",
+    )
     return outputs_root, lineage_root
 
 
@@ -81,7 +90,6 @@ def test_payload_and_html_preserve_missing_evidence_markers(tmp_path: Path) -> N
     stage_dir.mkdir(parents=True)
     (stage_dir / "aligned_bars").mkdir()
     (stage_dir / "dataset_manifest.json").write_text("ok\n", encoding="utf-8")
-    _write_display_decision(stage_dir, stage="data_ready")
 
     payload = build_data_ready_reflection_payload(
         lineage_root=lineage_root,

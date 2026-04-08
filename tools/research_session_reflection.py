@@ -7,8 +7,6 @@ from pathlib import Path
 TIME_SERIES_SIGNAL_ROUTE = "time_series_signal"
 LEGACY_SIGNAL_READY_CONFIRMATION_STAGE = "signal_ready_confirmation_pending"
 DATA_READY_NEXT_STAGE_CONFIRMATION_STAGE = "data_ready_next_stage_confirmation_pending"
-DISPLAY_TRANSITION_DECISION_FILE = "display_transition_decision.yaml"
-
 DATA_READY_CORE_DIRS = (
     "aligned_bars",
     "rolling_stats",
@@ -93,13 +91,6 @@ def build_data_ready_reflection(
     stage_dir = lineage_root / "02_data_ready"
     if not stage_dir.exists():
         return None
-    if current_stage == DATA_READY_NEXT_STAGE_CONFIRMATION_STAGE:
-        display_decision_path = stage_dir / DISPLAY_TRANSITION_DECISION_FILE
-        if not display_decision_path.exists():
-            return None
-        if "DISPLAY_STAGE" not in display_decision_path.read_text(encoding="utf-8"):
-            return None
-
     return _build_data_ready_reflection_from_stage_dir(lineage_root=lineage_root, stage_dir=stage_dir)
 
 

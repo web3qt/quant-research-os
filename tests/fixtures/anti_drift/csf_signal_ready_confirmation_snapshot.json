@@ -20,9 +20,9 @@
     "csf_train_freeze"
   ],
   "blocking_reasons": [
-    "csf_data_ready display decision is still incomplete."
+    "csf_data_ready mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for csf_data_ready. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_signal_ready_confirmation"
   ],

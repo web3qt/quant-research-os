@@ -23,9 +23,9 @@
     "csf_signal_ready"
   ],
   "blocking_reasons": [
-    "mandate display decision is still incomplete."
+    "mandate mandatory display has not completed yet."
   ],
-  "lineage_transition": "Run with --display-stage to acknowledge the display step, or --skip-display to continue without rendering it.",
+  "lineage_transition": "Mandatory display attempt 1/3 is in progress for mandate. Waiting for HTML completion artifact.",
   "evidence_refs": [
     "tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation"
   ],
