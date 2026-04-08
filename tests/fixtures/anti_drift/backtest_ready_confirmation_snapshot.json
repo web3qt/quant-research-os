@@ -1,8 +1,10 @@
 {
   "fixture_id": "backtest-ready-confirmation",
-  "input_digest": "ceab89c6df44b0367a10438c4390dba1694baa3be40d85a53e5900f6a22b0b0f",
+  "input_digest": "896cd52fc276beade6f1264544ad236b3442030218cd0e10340439f0c1542907",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id backtest_ready_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "backtest_ready",
   "session_stage": "backtest_ready_confirmation_pending",

@@ -1,8 +1,10 @@
 {
   "fixture_id": "idea-intake-confirmation",
-  "input_digest": "899dac20d2eb15e23a52f08ce9a337ca5143f37707ed1077151bc4110681133f",
+  "input_digest": "9cc3e5935ddb64a68d870a395c30fa86a74798a0d6563d5b470872c4ddb64449",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "fresh_start",
+  "lineage_selection_reason": "raw_idea resolved to fresh lineage slug btc_leads_high_liquidity_alts_after_shock_events.",
   "route_skill": "qros-idea-intake-author",
   "stage_id": "idea_intake",
   "session_stage": "idea_intake_confirmation_pending",

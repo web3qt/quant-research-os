@@ -1,8 +1,10 @@
 {
   "fixture_id": "signal-ready-confirmation",
-  "input_digest": "d49d9aa39bf7de982d51f7245b3f6a7a31890e432adf00a4c756b7e59c9d4dd2",
+  "input_digest": "4fb4ff4e25d5be29ce19b857638a92feb72de90a8b58aacf68235f4667f6419f",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id signal_ready_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "signal_ready",
   "session_stage": "signal_ready_confirmation_pending",

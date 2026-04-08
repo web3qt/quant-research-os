@@ -1,8 +1,10 @@
 {
   "fixture_id": "test-evidence-retry-replay",
-  "input_digest": "36abffa568cc6c6187ccd8823908196bbf75018b8087276bf49515c18272afb4",
+  "input_digest": "39df40dcf8a42f799700aa783f34dfa74457b70ca733fbf98c9ef4b408d9d5b0",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "test_evidence",
   "session_stage": "test_evidence_review",

@@ -1,8 +1,10 @@
 {
   "fixture_id": "train-freeze-confirmation",
-  "input_digest": "c0ee01c42f37c4a83b74b5504145e11a7c7b1a39aabce3e8843713692910b1ff",
+  "input_digest": "b5a80d5a0279a73588c73aca642678de0ff32dddab771d20773ea3f4e922a452",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id train_freeze_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "train_calibration",
   "session_stage": "train_freeze_confirmation_pending",

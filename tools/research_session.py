@@ -395,6 +395,8 @@ MANDATORY_DISPLAY_MAX_RETRIES = 3
 class SessionContext:
     lineage_id: str
     lineage_root: Path
+    lineage_mode: str | None
+    lineage_selection_reason: str | None
     current_orchestrator: str
     current_stage: SessionStage
     current_route: str | None
@@ -637,10 +639,55 @@ def slugify_idea(raw_idea: str) -> str:
 
 
 def resolve_lineage_root(outputs_root: Path, lineage_id: str | None, raw_idea: str | None) -> Path:
+    selection = resolve_lineage_selection(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
+    if selection.resume_blocked:
+        raise ValueError(
+            f"raw_idea resolved to existing lineage {selection.lineage_id}; use explicit lineage_id to resume it"
+        )
+    return selection.lineage_root
+
+
+@dataclass(frozen=True)
+class LineageSelection:
+    lineage_root: Path
+    lineage_id: str
+    mode: str
+    reason: str
+    resume_blocked: bool = False
+
+
+def resolve_lineage_selection(outputs_root: Path, lineage_id: str | None, raw_idea: str | None) -> LineageSelection:
     if lineage_id:
-        return outputs_root / lineage_id
+        lineage_root = outputs_root / lineage_id
+        mode = "explicit_resume" if lineage_root.exists() and any(lineage_root.iterdir()) else "explicit_lineage_target"
+        reason = (
+            f"Explicit lineage_id {lineage_id} was provided, so qros-session is targeting that lineage directly."
+        )
+        return LineageSelection(
+            lineage_root=lineage_root,
+            lineage_id=lineage_id,
+            mode=mode,
+            reason=reason,
+        )
     if raw_idea:
-        return outputs_root / slugify_idea(raw_idea)
+        derived_lineage_id = slugify_idea(raw_idea)
+        lineage_root = outputs_root / derived_lineage_id
+        if lineage_root.exists() and any(lineage_root.iterdir()):
+            return LineageSelection(
+                lineage_root=lineage_root,
+                lineage_id=derived_lineage_id,
+                mode="resume_blocked_existing_slug",
+                reason=(
+                    f"raw_idea resolved to existing lineage {derived_lineage_id}, but explicit resume intent was not provided."
+                ),
+                resume_blocked=True,
+            )
+        return LineageSelection(
+            lineage_root=lineage_root,
+            lineage_id=derived_lineage_id,
+            mode="fresh_start",
+            reason=f"raw_idea resolved to fresh lineage slug {derived_lineage_id}.",
+        )
     raise ValueError("Either lineage_id or raw_idea must be provided")
 
 
@@ -1865,6 +1912,8 @@ def summarize_session_status(
     *,
     lineage_id: str,
     lineage_root: Path,
+    lineage_mode: str | None,
+    lineage_selection_reason: str | None,
     current_stage: SessionStage,
     current_route: str | None,
     artifacts_written: list[str],
@@ -1927,6 +1976,8 @@ def summarize_session_status(
     return SessionContext(
         lineage_id=lineage_id,
         lineage_root=lineage_root,
+        lineage_mode=lineage_mode,
+        lineage_selection_reason=lineage_selection_reason,
         current_orchestrator="qros-research-session",
         current_stage=current_stage,
         current_route=current_route,
@@ -1957,6 +2008,42 @@ def summarize_session_status(
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
+    )
+
+
+def _lineage_resume_blocked_status(*, selection: LineageSelection) -> SessionContext:
+    return SessionContext(
+        lineage_id=selection.lineage_id,
+        lineage_root=selection.lineage_root,
+        lineage_mode=selection.mode,
+        lineage_selection_reason=selection.reason,
+        current_orchestrator="qros-research-session",
+        current_stage="idea_intake_confirmation_pending",
+        current_route=None,
+        stage_status="awaiting_lineage_selection",
+        blocking_reason_code="LINEAGE_RESUME_BLOCKED",
+        current_skill="qros-research-session",
+        why_this_skill=(
+            "Current run started from raw_idea, but that slug already exists as an older lineage, "
+            "so qros-session blocked implicit resume."
+        ),
+        required_program_dir=None,
+        required_program_entrypoint=None,
+        program_contract_status="not_applicable",
+        provenance_status="not_applicable",
+        blocking_reason=(
+            f"Implicit resume of existing lineage {selection.lineage_id} is blocked until you explicitly choose to continue it."
+        ),
+        resume_hint=(
+            f"Rerun with --lineage-id {selection.lineage_id} to continue that lineage, or change the raw idea text to start a different branch."
+        ),
+        artifacts_written=[],
+        gate_status="LINEAGE_RESUME_BLOCKED",
+        next_action=(
+            f"Resume blocked for existing lineage {selection.lineage_id}. Use --lineage-id {selection.lineage_id} to continue it explicitly."
+        ),
+        why_now=[],
+        open_risks=[],
     )
 
 
@@ -2438,7 +2525,10 @@ def run_research_session(
     review_decision: ReviewTransitionDecision | None = None,
     next_stage_decision: NextStageTransitionDecision | None = None,
 ) -> SessionContext:
-    lineage_root = resolve_lineage_root(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
+    selection = resolve_lineage_selection(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
+    lineage_root = selection.lineage_root
+    if selection.resume_blocked:
+        return _lineage_resume_blocked_status(selection=selection)
     lineage_root.mkdir(parents=True, exist_ok=True)
 
     artifacts_written: list[str] = []
@@ -2625,6 +2715,8 @@ def run_research_session(
     return summarize_session_status(
         lineage_id=lineage_root.name,
         lineage_root=lineage_root,
+        lineage_mode=selection.mode,
+        lineage_selection_reason=selection.reason,
         current_stage=current_stage,
         current_route=current_route,
         artifacts_written=artifacts_written,

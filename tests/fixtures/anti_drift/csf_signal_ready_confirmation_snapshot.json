@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-signal-ready-confirmation",
-  "input_digest": "c5dec53e872913905f4e4728b7499e798b172383312ab64fbd97e6cccaeae3bd",
+  "input_digest": "392af37d207134852ec324ffa5deb8e4aa63d3a819e23217ecac3282b8a22780",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_signal_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "csf_signal_ready",
   "session_stage": "csf_signal_ready_confirmation_pending",

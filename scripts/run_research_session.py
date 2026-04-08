@@ -26,6 +26,7 @@ EXIT_CODES = {
     "DISPLAY_RETRY_EXHAUSTED": 2,
     "DISPLAY_NOT_IMPLEMENTED": 2,
     "NEXT_STAGE_CONFIRMATION_REQUIRED": 2,
+    "LINEAGE_RESUME_BLOCKED": 2,
     "STAGE_PROGRAM_MISSING": 3,
     "STAGE_PROGRAM_INVALID": 4,
     "PROGRAM_EXECUTION_FAILED": 5,
@@ -153,6 +154,10 @@ def _panel_lines(status) -> list[str]:
     ]
     if status.current_route is not None:
         lines.append(f"Research route: {status.current_route}")
+    if status.lineage_mode is not None:
+        lines.append(f"Lineage mode: {status.lineage_mode}")
+    if status.lineage_selection_reason is not None:
+        lines.append(f"Lineage selection: {status.lineage_selection_reason}")
     lines.extend(
         [
             f"Stage status: {status.stage_status}",
@@ -303,6 +308,10 @@ def main() -> int:
     print(f"💡 Why this skill: {status.why_this_skill}")
     if status.current_route is not None:
         print(f"🧪 Research route: {status.current_route}")
+    if status.lineage_mode is not None:
+        print(f"🧬 Lineage mode: {status.lineage_mode}")
+    if status.lineage_selection_reason is not None:
+        print(f"🧭 Lineage selection: {status.lineage_selection_reason}")
     print(f"🪜 Stage status: {status.stage_status}")
     print(f"⛔ Blocking reason code: {status.blocking_reason_code}")
     if status.required_program_dir is not None:

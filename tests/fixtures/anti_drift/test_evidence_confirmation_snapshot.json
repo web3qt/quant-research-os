@@ -1,8 +1,10 @@
 {
   "fixture_id": "test-evidence-confirmation",
-  "input_digest": "20f180d4d92bd3c829b449febf1b97ef558029c9ae0a4328bffbb7a7bfec14bc",
+  "input_digest": "6ee8bb817940a9c77e87a2953784b2b912fe75c02e2480e015dbc5c5bcd467c1",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id test_evidence_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "test_evidence",
   "session_stage": "test_evidence_confirmation_pending",

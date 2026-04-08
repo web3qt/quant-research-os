@@ -604,8 +604,90 @@ def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
     assert payload["current_stage"] == "idea_intake_confirmation_pending"
     assert payload["current_skill"] == "qros-idea-intake-author"
     assert payload["lineage_root"].endswith("btc_leads_high_liquidity_alts_after_shock_events")
+    assert payload["lineage_mode"] == "fresh_start"
+    assert "fresh lineage slug" in payload["lineage_selection_reason"]
     assert "reflection" not in payload
     assert "🧭" not in result.stdout
+
+
+def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_idea_in_cli(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--raw-idea",
+            "BTC leads ALTs",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    assert "📍 Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "🧬 Lineage mode: resume_blocked_existing_slug" in result.stdout
+    assert "Resume blocked for existing lineage btc_leads_alts" in result.stdout
+    assert "--lineage-id btc_leads_alts" in result.stdout
+
+
+def test_run_research_session_explicit_lineage_id_resume_is_visible_in_json(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "NEEDS_REFRAME",
+            "why": ["scope unclear"],
+            "approved_scope": {},
+        },
+    )
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    payload = json.loads(result.stdout)
+    assert payload["lineage_mode"] == "explicit_resume"
+    assert "Explicit lineage_id btc_leads_alts" in payload["lineage_selection_reason"]
 
 
 def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:

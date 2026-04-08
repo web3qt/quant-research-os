@@ -67,6 +67,8 @@ class CanonicalDecisionSnapshot:
     input_digest: str
     snapshot_version: str
     schema_version: str
+    lineage_mode: str | None
+    lineage_selection_reason: str | None
     route_skill: str
     stage_id: str
     session_stage: str
@@ -161,12 +163,16 @@ def canonical_snapshot_from_session_context(
                 context.lineage_id,
                 canonical_session_stage,
                 context.current_route,
+                context.lineage_mode,
+                context.lineage_selection_reason,
                 context.current_skill,
                 formal_decision,
             ]
         ),
         snapshot_version=SNAPSHOT_VERSION,
         schema_version=SCHEMA_VERSION,
+        lineage_mode=context.lineage_mode,
+        lineage_selection_reason=context.lineage_selection_reason,
         route_skill=context.current_skill,
         stage_id=session_stage_to_gate_stage(canonical_session_stage),
         session_stage=canonical_session_stage,

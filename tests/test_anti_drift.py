@@ -20,6 +20,8 @@ def test_canonical_snapshot_preserves_semantic_fields_for_review_stage() -> None
     status = summarize_session_status(
         lineage_id="btc_leads_alts",
         lineage_root=Path("/tmp/outputs/btc_leads_alts"),
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
         current_stage="data_ready_review",
         current_route="time_series_signal",
         artifacts_written=["02_data_ready/dataset_manifest.json"],
@@ -53,6 +55,8 @@ def test_canonical_snapshot_uses_review_verdict_for_failure_handling() -> None:
     status = summarize_session_status(
         lineage_id="btc_leads_alts",
         lineage_root=Path("/tmp/outputs/btc_leads_alts"),
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
         current_stage="test_evidence_review",
         current_route="time_series_signal",
         artifacts_written=["05_test_evidence/test_gate_table.csv"],

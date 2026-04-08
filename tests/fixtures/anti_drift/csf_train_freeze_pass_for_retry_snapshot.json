@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-train-freeze-pass-for-retry",
-  "input_digest": "63a2831fbdfa57816a309ef7e56a8708d7752278d1aef6f83abe52523d762671",
+  "input_digest": "43c00bb749cd42a235d4fdaa076df09eaf2822abd032f55a2135b309e7bc94ba",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_train_retry_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "csf_train_freeze",
   "session_stage": "csf_train_freeze_review",

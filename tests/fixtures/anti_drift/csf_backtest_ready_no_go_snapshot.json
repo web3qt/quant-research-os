@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-backtest-ready-no-go",
-  "input_digest": "6a9bd491fb59df93ee3e816f43267f829a7c7b224c215e9b3206a55fad8034e7",
+  "input_digest": "39c6bd85baa497627cf30dd663f517aed98d0c6af2e3284620e2ace8444a2ff8",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_backtest_no_go_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "csf_backtest_ready",
   "session_stage": "csf_backtest_ready_review",

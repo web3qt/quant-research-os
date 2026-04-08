@@ -154,6 +154,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 3. Auto-scaffold `00_idea_intake/` when it does not exist
 4. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
 5. 对于一个全新的 raw idea，必须先停在 `idea_intake_confirmation_pending`，不得把用户第一句话直接当成完整 qualification 结论
+6. 如果当前入口是 `raw_idea` 且没有显式 `lineage_id`，不得无声恢复另一条旧 lineage；只有用户明确给出 `lineage_id` 或明确表达“继续那条线”时，才允许 resume
 6. 先显式确认 `observation`
 7. 再显式确认 `primary hypothesis` 与 `counter-hypothesis`
 8. 再显式确认 `candidate_routes`、`recommended_route`、`route_risks`

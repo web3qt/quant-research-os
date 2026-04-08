@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-data-ready-child-lineage",
-  "input_digest": "857e034835e217c2246b3756a402646005fbdb1a0b4e59b1ea174b025a67ae9a",
+  "input_digest": "041b8f1f7f1e231678b18886b2e356e7b1215d2a3a433cdad002312ecf9703e7",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_data_child_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "csf_data_ready",
   "session_stage": "csf_data_ready_review",

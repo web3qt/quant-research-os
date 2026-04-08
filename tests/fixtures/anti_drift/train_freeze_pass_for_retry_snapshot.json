@@ -1,8 +1,10 @@
 {
   "fixture_id": "train-freeze-pass-for-retry",
-  "input_digest": "bbb850d91a6ddd6e1ed0061b3ca9ca3402156bbf64f624c3130dcb6c9c9d99f7",
+  "input_digest": "b21d7065da39d74a3515035b7e64f2a24677b50411f5a5f72c78369f6b817901",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id train_retry_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "train_calibration",
   "session_stage": "train_freeze_review",

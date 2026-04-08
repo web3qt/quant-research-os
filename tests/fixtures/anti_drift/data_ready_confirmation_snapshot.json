@@ -1,8 +1,10 @@
 {
   "fixture_id": "data-ready-confirmation",
-  "input_digest": "97054defb89fde5ac526001a0f6b69385a73ee2cd0cfb0ecca5e3d4c8ed900c5",
+  "input_digest": "b311629641e95ba5ac5b915499abe081c5ca89c925460c7c18397a94a9caaba7",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id mainline_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "data_ready",
   "session_stage": "data_ready_confirmation_pending",

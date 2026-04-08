@@ -1,8 +1,10 @@
 {
   "fixture_id": "holdout-validation-review-complete",
-  "input_digest": "11465f3fe7267a6ca2395043e09cca2c4a7e8be9c8a048b3cbd0721fea24dc73",
+  "input_digest": "ef6d61c1b55ccf954026faeca8017f3cd54ba1d5dacb8a0116898157fb682192",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id holdout_complete_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "holdout_validation",
   "session_stage": "holdout_validation_review_complete",

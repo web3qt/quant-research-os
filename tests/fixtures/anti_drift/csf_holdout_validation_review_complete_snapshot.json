@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-holdout-validation-review-complete",
-  "input_digest": "49881498cfec9bcfc8d0acfb0173057d89190d59ef2dfa073ebf87d2f91d20ea",
+  "input_digest": "6a4afe1404856e8567337eaae98487399e56ecc188fa032f2c80b4c2337017cb",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_holdout_complete_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "csf_holdout_validation",
   "session_stage": "csf_holdout_validation_review_complete",

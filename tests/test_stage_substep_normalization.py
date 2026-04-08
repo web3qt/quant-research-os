@@ -23,6 +23,8 @@ def test_failure_routing_and_snapshot_shape_stay_stable_for_new_substep_labels()
     status = summarize_session_status(
         lineage_id="btc_leads_alts",
         lineage_root=Path("/tmp/outputs/btc_leads_alts"),
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
         current_stage="data_ready_review_confirmation_pending",
         current_route="time_series_signal",
         artifacts_written=[],
@@ -49,6 +51,8 @@ def test_failure_routing_and_snapshot_shape_stay_stable_for_new_substep_labels()
         "input_digest",
         "snapshot_version",
         "schema_version",
+        "lineage_mode",
+        "lineage_selection_reason",
         "route_skill",
         "stage_id",
         "session_stage",

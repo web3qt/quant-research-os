@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-backtest-ready-confirmation",
-  "input_digest": "7fa6825a1be41b6176c72186418e6891f2132796ff95375e1867683104ddc5eb",
+  "input_digest": "1e36d143e932628d62004abbfd68fc9e936f5f028c451aca0b5cf9bf4894c4df",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_backtest_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "csf_backtest_ready",
   "session_stage": "csf_backtest_ready_confirmation_pending",

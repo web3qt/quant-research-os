@@ -1,8 +1,10 @@
 {
   "fixture_id": "backtest-ready-no-go",
-  "input_digest": "97a80b19b6a96d736f4357783070b04f7e5b682ab6ced1730210b7d742f62ea0",
+  "input_digest": "98f0f84312929f09f35501eab9653ad2f2c5695ef685a94b539b10de599059b7",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id backtest_no_go_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "backtest_ready",
   "session_stage": "backtest_ready_confirmation_pending",

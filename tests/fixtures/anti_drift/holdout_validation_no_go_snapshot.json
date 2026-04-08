@@ -1,8 +1,10 @@
 {
   "fixture_id": "holdout-validation-no-go",
-  "input_digest": "da70a8fb3fb5d8b40c4abadcc2fe1f2da8fa59ff7aa968987a1f6f6802f385c0",
+  "input_digest": "76489c7e8d12d929012f2ffd10810105da52f4bb9fe2c93966e328f45f5551a4",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id holdout_no_go_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "holdout_validation",
   "session_stage": "holdout_validation_review",

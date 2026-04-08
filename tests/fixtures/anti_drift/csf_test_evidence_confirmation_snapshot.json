@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-test-evidence-confirmation",
-  "input_digest": "cf4f8bb584dd57b06b854ca4a86f43d98828df7b28390e4a1709d7783e396b33",
+  "input_digest": "ee2af9eb673fdc0fcd4dfcb45323ffbb1bc364cb1cb824c7e16cbad5eef30e1a",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_test_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "csf_test_evidence",
   "session_stage": "csf_test_evidence_confirmation_pending",

@@ -1,8 +1,10 @@
 {
   "fixture_id": "mandate-review-replay",
-  "input_digest": "0ca4226bf566abff1e755a8dbdcea801c376a52a5c2892751602af59aff94620",
+  "input_digest": "2ec376e2965953510d4197f811992de981394d2a58fff4d2ded4e652ea314e8f",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-mandate-review",
   "stage_id": "mandate",
   "session_stage": "mandate_review_confirmation_pending",

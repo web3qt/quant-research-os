@@ -1,8 +1,10 @@
 {
   "fixture_id": "signal-ready-child-lineage",
-  "input_digest": "8a338c9717e4ebcbfa87d72df250e2146602c0cf47ed04b4d31b2348496eec52",
+  "input_digest": "f41acafe2ec20bdb8b9c5f3d2da56318784614a8934818473ec603e6ea7424b2",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id signal_child_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "signal_ready",
   "session_stage": "signal_ready_review",

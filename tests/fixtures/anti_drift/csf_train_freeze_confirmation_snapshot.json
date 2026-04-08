@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-train-freeze-confirmation",
-  "input_digest": "fbd2a2d6fc19b1ca7619abbde09924c681a6f5c3453293a588a4969e1433da1b",
+  "input_digest": "700f6c6bfb8aff5e6956d42c6ddffd4dbe98081bb742dd9f247543b52f9f716f",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_train_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-research-session",
   "stage_id": "csf_train_freeze",
   "session_stage": "csf_train_freeze_confirmation_pending",

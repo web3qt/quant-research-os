@@ -1,11 +1,13 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
 from tools.research_session import (
     detect_session_stage,
     run_research_session,
+    resolve_lineage_selection,
     resolve_lineage_root,
     slugify_idea,
     summarize_session_status,
@@ -741,6 +743,43 @@ def test_resolve_lineage_root_creates_slug_from_raw_idea(tmp_path: Path) -> None
     assert lineage_root == outputs_root / "btc_leads_alts"
 
 
+def test_resolve_lineage_selection_blocks_same_slug_raw_idea_when_lineage_exists(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    lineage_root.mkdir(parents=True)
+    (lineage_root / "01_mandate").mkdir()
+
+    selection = resolve_lineage_selection(outputs_root, lineage_id=None, raw_idea="BTC leads ALTs")
+
+    assert selection.lineage_root == lineage_root
+    assert selection.lineage_id == "btc_leads_alts"
+    assert selection.mode == "resume_blocked_existing_slug"
+    assert selection.resume_blocked is True
+
+
+def test_resolve_lineage_selection_marks_explicit_lineage_resume(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    lineage_root.mkdir(parents=True)
+    (lineage_root / "01_mandate").mkdir()
+
+    selection = resolve_lineage_selection(outputs_root, lineage_id="btc_leads_alts", raw_idea=None)
+
+    assert selection.lineage_root == lineage_root
+    assert selection.mode == "explicit_resume"
+    assert selection.resume_blocked is False
+
+
+def test_resolve_lineage_root_raises_for_existing_same_slug_raw_idea(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    lineage_root.mkdir(parents=True)
+    (lineage_root / "01_mandate").mkdir()
+
+    with pytest.raises(ValueError, match="use explicit lineage_id to resume it"):
+        resolve_lineage_root(outputs_root, lineage_id=None, raw_idea="BTC leads ALTs")
+
+
 def test_detect_session_stage_returns_idea_intake_when_lineage_missing(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
 
@@ -913,6 +952,60 @@ def test_run_research_session_stops_at_intake_confirmation_pending_for_new_linea
     assert status.current_stage == "idea_intake_confirmation_pending"
     assert status.gate_status == "IDEA_INTAKE_PENDING_CONFIRMATION"
     assert "--confirm-intake" in status.next_action
+    assert status.lineage_mode == "fresh_start"
+    assert "fresh lineage slug" in (status.lineage_selection_reason or "")
+
+
+def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_idea(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+
+    status = run_research_session(outputs_root=outputs_root, raw_idea="BTC leads ALTs")
+
+    assert status.lineage_id == "btc_leads_alts"
+    assert status.current_stage == "idea_intake_confirmation_pending"
+    assert status.lineage_mode == "resume_blocked_existing_slug"
+    assert status.blocking_reason_code == "LINEAGE_RESUME_BLOCKED"
+    assert "blocked implicit resume" in status.why_this_skill
+    assert "Resume blocked for existing lineage btc_leads_alts" in status.next_action
+    assert "--lineage-id btc_leads_alts" in status.resume_hint
+
+
+def test_run_research_session_explicit_lineage_id_resume_is_still_allowed(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "NEEDS_REFRAME",
+            "why": ["scope unclear"],
+            "approved_scope": {},
+        },
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.lineage_id == "btc_leads_alts"
+    assert status.lineage_mode == "explicit_resume"
+    assert status.current_stage == "idea_intake_confirmation_pending"
 
 
 def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exist(tmp_path: Path) -> None:
@@ -2097,6 +2190,8 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
     status = summarize_session_status(
         lineage_id="btc_leads_alts",
         lineage_root=lineage_root,
+        lineage_mode="fresh_start",
+        lineage_selection_reason="raw_idea resolved to fresh lineage slug btc_leads_alts.",
         current_stage="idea_intake",
         current_route=None,
         artifacts_written=["00_idea_intake/idea_brief.md"],
@@ -2106,6 +2201,8 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
 
     assert status.lineage_id == "btc_leads_alts"
     assert status.lineage_root == lineage_root
+    assert status.lineage_mode == "fresh_start"
+    assert status.lineage_selection_reason is not None
     assert status.current_orchestrator == "qros-research-session"
     assert status.current_stage == "idea_intake"
     assert status.artifacts_written == ["00_idea_intake/idea_brief.md"]
@@ -2127,6 +2224,8 @@ def test_summarize_session_status_review_complete_clears_blocking_reason(tmp_pat
     status = summarize_session_status(
         lineage_id="btc_leads_alts",
         lineage_root=lineage_root,
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
         current_stage="holdout_validation_review_complete",
         current_route="time_series_signal",
         artifacts_written=[],

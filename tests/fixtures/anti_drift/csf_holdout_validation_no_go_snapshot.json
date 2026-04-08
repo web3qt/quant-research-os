@@ -1,8 +1,10 @@
 {
   "fixture_id": "csf-holdout-validation-no-go",
-  "input_digest": "ddc8de8eb220e7128311d5364e201a4275a666c5594b764e8039fe2653da3a3a",
+  "input_digest": "ca27e9a8f2a04c4147491e56cdc6cf1ea982bcfa5cd5cd21f1fe116504a17d74",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id csf_holdout_no_go_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "csf_holdout_validation",
   "session_stage": "csf_holdout_validation_review",

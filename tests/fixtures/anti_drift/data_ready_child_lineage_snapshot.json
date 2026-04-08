@@ -1,8 +1,10 @@
 {
   "fixture_id": "data-ready-child-lineage",
-  "input_digest": "9a662786ecc586154c6a617500ade8f3a8cf40187f847d4b75264b883c47b4af",
+  "input_digest": "4f51de744d484b049a98d2962e5e938fc063516ac1890aa21f6b4287559cc1aa",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
+  "lineage_mode": "explicit_resume",
+  "lineage_selection_reason": "Explicit lineage_id data_ready_child_case was provided, so qros-session is targeting that lineage directly.",
   "route_skill": "qros-stage-failure-handler",
   "stage_id": "data_ready",
   "session_stage": "data_ready_review",
