@@ -6,13 +6,13 @@ from tools.research_session import session_stage_base_name, summarize_session_st
 
 def test_session_stage_base_name_supports_new_substep_suffixes() -> None:
     assert session_stage_base_name("data_ready_review_confirmation_pending") == "data_ready"
-    assert session_stage_base_name("signal_ready_display_confirmation_pending") == "signal_ready"
+    assert session_stage_base_name("signal_ready_display_pending") == "signal_ready"
     assert session_stage_base_name("csf_backtest_ready_next_stage_confirmation_pending") == "csf_backtest_ready"
 
 
 def test_session_stage_to_gate_stage_supports_new_substep_suffixes() -> None:
     assert session_stage_to_gate_stage("data_ready_review_confirmation_pending") == "data_ready"
-    assert session_stage_to_gate_stage("holdout_validation_display_confirmation_pending") == "holdout_validation"
+    assert session_stage_to_gate_stage("holdout_validation_display_pending") == "holdout_validation"
     assert (
         session_stage_to_gate_stage("csf_holdout_validation_next_stage_confirmation_pending")
         == "csf_holdout_validation"

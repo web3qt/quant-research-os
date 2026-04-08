@@ -14,6 +14,7 @@ from tools.stage_display_runtime import (
     load_stage_display_request,
     load_stage_display_result,
     prepare_stage_display_handoff,
+    resolve_stage_display_config,
     supported_stage_ids,
     write_stage_display_result,
     write_stage_display_report,
@@ -34,6 +35,9 @@ EXPECTED_SUPPORTED_STAGE_IDS = (
     "csf_test_evidence",
     "csf_backtest_ready",
     "csf_holdout_validation",
+)
+GENERIC_SUPPORTED_STAGE_IDS = tuple(
+    stage_id for stage_id in EXPECTED_SUPPORTED_STAGE_IDS if stage_id not in {"mandate", "csf_data_ready"}
 )
 
 
@@ -154,6 +158,24 @@ def _build_generic_signal_ready_lineage(tmp_path: Path) -> Path:
     (stage_dir / "stage_completion_certificate.yaml").write_text("stage_status: PASS\nfinal_verdict: PASS\n", encoding="utf-8")
     (stage_dir / "signal_contract.md").write_text("ok\n", encoding="utf-8")
     (stage_dir / "signal_gate_decision.md").write_text("ok\n", encoding="utf-8")
+    return lineage_root
+
+
+def _build_generic_stage_lineage(tmp_path: Path, *, stage_id: str) -> Path:
+    lineage_root = tmp_path / "outputs" / f"{stage_id}_lineage"
+    config = resolve_stage_display_config(stage_id)
+    stage_dir = lineage_root / config.stage_dir_name
+    stage_dir.mkdir(parents=True)
+    (stage_dir / "artifact_catalog.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("ok\n", encoding="utf-8")
+    (stage_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
+    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
+    (stage_dir / "stage_completion_certificate.yaml").write_text(
+        "stage_status: PASS\nfinal_verdict: PASS\n",
+        encoding="utf-8",
+    )
+    (stage_dir / f"{stage_id}_marker.txt").write_text("ok\n", encoding="utf-8")
     return lineage_root
 
 
@@ -364,6 +386,35 @@ def test_write_stage_display_result_writes_completion_artifact_from_html(tmp_pat
     assert result is not None
     assert result["status"] == "complete"
     assert (lineage_root / "reports" / "stage_display" / "csf_data_ready.summary.html").exists()
+
+
+@pytest.mark.parametrize("stage_id", GENERIC_SUPPORTED_STAGE_IDS)
+def test_prepare_and_complete_stage_display_for_every_generic_supported_stage(
+    tmp_path: Path,
+    stage_id: str,
+) -> None:
+    lineage_root = _build_generic_stage_lineage(tmp_path, stage_id=stage_id)
+
+    handoff = prepare_stage_display_handoff(lineage_root=lineage_root, stage_id=stage_id)
+    assert Path(handoff["structured_summary_path"]).exists()
+    assert Path(handoff["request_path"]).exists()
+    assert Path(handoff["prompt_path"]).exists()
+    summary = json.loads(Path(handoff["structured_summary_path"]).read_text(encoding="utf-8"))
+    assert summary["stage_id"] == stage_id
+    assert summary["supported_stage_ids"] == list(EXPECTED_SUPPORTED_STAGE_IDS)
+    assert summary["status"] == "complete"
+
+    result = write_stage_display_result(
+        lineage_root=lineage_root,
+        stage_id=stage_id,
+        html=f"<!DOCTYPE html><html><body><h1>{stage_id}</h1></body></html>",
+        rendered_by="visible-subagent",
+    )
+    assert result["status"] == "complete"
+    assert Path(handoff["html_path"]).exists()
+    loaded_result = load_stage_display_result(lineage_root=lineage_root, stage_id=stage_id)
+    assert loaded_result is not None
+    assert loaded_result["status"] == "complete"
 
 
 def test_unsupported_stage_fails_without_writing_partial_outputs(tmp_path: Path) -> None:

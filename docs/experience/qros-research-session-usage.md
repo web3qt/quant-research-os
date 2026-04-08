@@ -91,9 +91,9 @@ deterministic backend 的入口在克隆下来的仓库里：
 ```text
 Lineage: btc_leads_alts
 🧭 Current orchestrator: qros-research-session
-📍 Current stage: mandate_display_confirmation_pending
+📍 Current stage: mandate_display_pending
 🔨 Current active skill: qros-research-session
-💡 Why this skill: Current stage mandate_display_confirmation_pending is running the mandatory post-review display phase before progression can continue.
+💡 Why this skill: Current stage mandate_display_pending is running the mandatory post-review display phase before progression can continue.
 ⛔ Blocking reason: mandate mandatory display has not completed yet.
 ▶ Next action: Mandatory display attempt 1/3 is in progress for mandate. Waiting for HTML completion artifact.
 🔁 Resume hint: Rerun qros-session --lineage-id btc_leads_alts to continue the mandatory display phase for mandate.

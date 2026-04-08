@@ -35,7 +35,7 @@ _SESSION_STAGE_TO_GATE_STAGE = {
 
 _SESSION_STAGE_SUFFIXES = (
     "_review_confirmation_pending",
-    "_display_confirmation_pending",
+    "_display_pending",
     "_next_stage_confirmation_pending",
     "_confirmation_pending",
     "_review_complete",
@@ -93,10 +93,10 @@ def session_stage_to_gate_stage(session_stage: str) -> str:
 def canonicalize_snapshot_session_stage(session_stage: str, *, current_route: str | None) -> str:
     if session_stage.endswith("_review_confirmation_pending"):
         return session_stage
-    if session_stage.endswith("_display_confirmation_pending") or session_stage.endswith(
+    if session_stage.endswith("_display_pending") or session_stage.endswith(
         "_next_stage_confirmation_pending"
     ):
-        stage_base = session_stage.rsplit("_", 3)[0]
+        stage_base = session_stage_base_name(session_stage)
         if stage_base == "mandate" and current_route == "cross_sectional_factor":
             return "csf_data_ready_confirmation_pending"
         return _NEXT_STAGE_SNAPSHOT.get(stage_base, session_stage)

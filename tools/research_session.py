@@ -109,88 +109,88 @@ from tools.train_runtime import (
 SessionStage = Literal[
     "idea_intake",
     "idea_intake_confirmation_pending",
-    "mandate_display_confirmation_pending",
+    "mandate_display_pending",
     "mandate_next_stage_confirmation_pending",
     "mandate_confirmation_pending",
     "mandate_author",
     "mandate_review_confirmation_pending",
     "mandate_review",
-    "mandate_display_confirmation_pending",
+    "mandate_display_pending",
     "mandate_next_stage_confirmation_pending",
     "csf_data_ready_confirmation_pending",
     "csf_data_ready_author",
     "csf_data_ready_review_confirmation_pending",
     "csf_data_ready_review",
-    "csf_data_ready_display_confirmation_pending",
+    "csf_data_ready_display_pending",
     "csf_data_ready_next_stage_confirmation_pending",
     "csf_signal_ready_confirmation_pending",
     "csf_signal_ready_author",
     "csf_signal_ready_review_confirmation_pending",
     "csf_signal_ready_review",
-    "csf_signal_ready_display_confirmation_pending",
+    "csf_signal_ready_display_pending",
     "csf_signal_ready_next_stage_confirmation_pending",
     "csf_train_freeze_confirmation_pending",
     "csf_train_freeze_author",
     "csf_train_freeze_review_confirmation_pending",
     "csf_train_freeze_review",
-    "csf_train_freeze_display_confirmation_pending",
+    "csf_train_freeze_display_pending",
     "csf_train_freeze_next_stage_confirmation_pending",
     "csf_test_evidence_confirmation_pending",
     "csf_test_evidence_author",
     "csf_test_evidence_review_confirmation_pending",
     "csf_test_evidence_review",
-    "csf_test_evidence_display_confirmation_pending",
+    "csf_test_evidence_display_pending",
     "csf_test_evidence_next_stage_confirmation_pending",
     "csf_backtest_ready_confirmation_pending",
     "csf_backtest_ready_author",
     "csf_backtest_ready_review_confirmation_pending",
     "csf_backtest_ready_review",
-    "csf_backtest_ready_display_confirmation_pending",
+    "csf_backtest_ready_display_pending",
     "csf_backtest_ready_next_stage_confirmation_pending",
     "csf_holdout_validation_confirmation_pending",
     "csf_holdout_validation_author",
     "csf_holdout_validation_review_confirmation_pending",
     "csf_holdout_validation_review",
-    "csf_holdout_validation_display_confirmation_pending",
+    "csf_holdout_validation_display_pending",
     "csf_holdout_validation_next_stage_confirmation_pending",
     "csf_holdout_validation_review_complete",
-    "data_ready_display_confirmation_pending",
+    "data_ready_display_pending",
     "data_ready_next_stage_confirmation_pending",
     "data_ready_confirmation_pending",
     "data_ready_author",
     "data_ready_review_confirmation_pending",
     "data_ready_review",
-    "data_ready_display_confirmation_pending",
+    "data_ready_display_pending",
     "data_ready_next_stage_confirmation_pending",
     "signal_ready_confirmation_pending",
     "signal_ready_author",
     "signal_ready_review_confirmation_pending",
     "signal_ready_review",
-    "signal_ready_display_confirmation_pending",
+    "signal_ready_display_pending",
     "signal_ready_next_stage_confirmation_pending",
     "train_freeze_confirmation_pending",
     "train_freeze_author",
     "train_freeze_review_confirmation_pending",
     "train_freeze_review",
-    "train_freeze_display_confirmation_pending",
+    "train_freeze_display_pending",
     "train_freeze_next_stage_confirmation_pending",
     "test_evidence_confirmation_pending",
     "test_evidence_author",
     "test_evidence_review_confirmation_pending",
     "test_evidence_review",
-    "test_evidence_display_confirmation_pending",
+    "test_evidence_display_pending",
     "test_evidence_next_stage_confirmation_pending",
     "backtest_ready_confirmation_pending",
     "backtest_ready_author",
     "backtest_ready_review_confirmation_pending",
     "backtest_ready_review",
-    "backtest_ready_display_confirmation_pending",
+    "backtest_ready_display_pending",
     "backtest_ready_next_stage_confirmation_pending",
     "holdout_validation_confirmation_pending",
     "holdout_validation_author",
     "holdout_validation_review_confirmation_pending",
     "holdout_validation_review",
-    "holdout_validation_display_confirmation_pending",
+    "holdout_validation_display_pending",
     "holdout_validation_next_stage_confirmation_pending",
     "holdout_validation_review_complete",
 ]
@@ -374,7 +374,7 @@ ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
 SESSION_STAGE_RUNTIME_SUFFIXES = (
     "_next_stage_confirmation_pending",
-    "_display_confirmation_pending",
+    "_display_pending",
     "_review_confirmation_pending",
     "_confirmation_pending",
     "_review_complete",
@@ -430,88 +430,88 @@ class SessionContext:
 STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "idea_intake": "qros-idea-intake-author",
     "idea_intake_confirmation_pending": "qros-idea-intake-author",
-    "mandate_display_confirmation_pending": "qros-research-session",
+    "mandate_display_pending": "qros-research-session",
     "mandate_next_stage_confirmation_pending": "qros-research-session",
     "mandate_confirmation_pending": "qros-mandate-author",
     "mandate_author": "qros-mandate-author",
     "mandate_review_confirmation_pending": "qros-mandate-review",
     "mandate_review": "qros-mandate-review",
-    "mandate_display_confirmation_pending": "qros-research-session",
+    "mandate_display_pending": "qros-research-session",
     "mandate_next_stage_confirmation_pending": "qros-research-session",
     "csf_data_ready_confirmation_pending": "qros-csf-data-ready-author",
     "csf_data_ready_author": "qros-csf-data-ready-author",
     "csf_data_ready_review_confirmation_pending": "qros-csf-data-ready-review",
     "csf_data_ready_review": "qros-csf-data-ready-review",
-    "csf_data_ready_display_confirmation_pending": "qros-research-session",
+    "csf_data_ready_display_pending": "qros-research-session",
     "csf_data_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_signal_ready_confirmation_pending": "qros-csf-signal-ready-author",
     "csf_signal_ready_author": "qros-csf-signal-ready-author",
     "csf_signal_ready_review_confirmation_pending": "qros-csf-signal-ready-review",
     "csf_signal_ready_review": "qros-csf-signal-ready-review",
-    "csf_signal_ready_display_confirmation_pending": "qros-research-session",
+    "csf_signal_ready_display_pending": "qros-research-session",
     "csf_signal_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_train_freeze_confirmation_pending": "qros-csf-train-freeze-author",
     "csf_train_freeze_author": "qros-csf-train-freeze-author",
     "csf_train_freeze_review_confirmation_pending": "qros-csf-train-freeze-review",
     "csf_train_freeze_review": "qros-csf-train-freeze-review",
-    "csf_train_freeze_display_confirmation_pending": "qros-research-session",
+    "csf_train_freeze_display_pending": "qros-research-session",
     "csf_train_freeze_next_stage_confirmation_pending": "qros-research-session",
     "csf_test_evidence_confirmation_pending": "qros-csf-test-evidence-author",
     "csf_test_evidence_author": "qros-csf-test-evidence-author",
     "csf_test_evidence_review_confirmation_pending": "qros-csf-test-evidence-review",
     "csf_test_evidence_review": "qros-csf-test-evidence-review",
-    "csf_test_evidence_display_confirmation_pending": "qros-research-session",
+    "csf_test_evidence_display_pending": "qros-research-session",
     "csf_test_evidence_next_stage_confirmation_pending": "qros-research-session",
     "csf_backtest_ready_confirmation_pending": "qros-csf-backtest-ready-author",
     "csf_backtest_ready_author": "qros-csf-backtest-ready-author",
     "csf_backtest_ready_review_confirmation_pending": "qros-csf-backtest-ready-review",
     "csf_backtest_ready_review": "qros-csf-backtest-ready-review",
-    "csf_backtest_ready_display_confirmation_pending": "qros-research-session",
+    "csf_backtest_ready_display_pending": "qros-research-session",
     "csf_backtest_ready_next_stage_confirmation_pending": "qros-research-session",
     "csf_holdout_validation_confirmation_pending": "qros-csf-holdout-validation-author",
     "csf_holdout_validation_author": "qros-csf-holdout-validation-author",
     "csf_holdout_validation_review_confirmation_pending": "qros-csf-holdout-validation-review",
     "csf_holdout_validation_review": "qros-csf-holdout-validation-review",
-    "csf_holdout_validation_display_confirmation_pending": "qros-research-session",
+    "csf_holdout_validation_display_pending": "qros-research-session",
     "csf_holdout_validation_next_stage_confirmation_pending": "qros-research-session",
     "csf_holdout_validation_review_complete": "qros-research-session",
-    "data_ready_display_confirmation_pending": "qros-research-session",
+    "data_ready_display_pending": "qros-research-session",
     "data_ready_next_stage_confirmation_pending": "qros-research-session",
     "data_ready_confirmation_pending": "qros-data-ready-author",
     "data_ready_author": "qros-data-ready-author",
     "data_ready_review_confirmation_pending": "qros-data-ready-review",
     "data_ready_review": "qros-data-ready-review",
-    "data_ready_display_confirmation_pending": "qros-research-session",
+    "data_ready_display_pending": "qros-research-session",
     "data_ready_next_stage_confirmation_pending": "qros-research-session",
     "signal_ready_confirmation_pending": "qros-signal-ready-author",
     "signal_ready_author": "qros-signal-ready-author",
     "signal_ready_review_confirmation_pending": "qros-signal-ready-review",
     "signal_ready_review": "qros-signal-ready-review",
-    "signal_ready_display_confirmation_pending": "qros-research-session",
+    "signal_ready_display_pending": "qros-research-session",
     "signal_ready_next_stage_confirmation_pending": "qros-research-session",
     "train_freeze_confirmation_pending": "qros-train-freeze-author",
     "train_freeze_author": "qros-train-freeze-author",
     "train_freeze_review_confirmation_pending": "qros-train-freeze-review",
     "train_freeze_review": "qros-train-freeze-review",
-    "train_freeze_display_confirmation_pending": "qros-research-session",
+    "train_freeze_display_pending": "qros-research-session",
     "train_freeze_next_stage_confirmation_pending": "qros-research-session",
     "test_evidence_confirmation_pending": "qros-test-evidence-author",
     "test_evidence_author": "qros-test-evidence-author",
     "test_evidence_review_confirmation_pending": "qros-test-evidence-review",
     "test_evidence_review": "qros-test-evidence-review",
-    "test_evidence_display_confirmation_pending": "qros-research-session",
+    "test_evidence_display_pending": "qros-research-session",
     "test_evidence_next_stage_confirmation_pending": "qros-research-session",
     "backtest_ready_confirmation_pending": "qros-backtest-ready-author",
     "backtest_ready_author": "qros-backtest-ready-author",
     "backtest_ready_review_confirmation_pending": "qros-backtest-ready-review",
     "backtest_ready_review": "qros-backtest-ready-review",
-    "backtest_ready_display_confirmation_pending": "qros-research-session",
+    "backtest_ready_display_pending": "qros-research-session",
     "backtest_ready_next_stage_confirmation_pending": "qros-research-session",
     "holdout_validation_confirmation_pending": "qros-holdout-validation-author",
     "holdout_validation_author": "qros-holdout-validation-author",
     "holdout_validation_review_confirmation_pending": "qros-holdout-validation-review",
     "holdout_validation_review": "qros-holdout-validation-review",
-    "holdout_validation_display_confirmation_pending": "qros-research-session",
+    "holdout_validation_display_pending": "qros-research-session",
     "holdout_validation_next_stage_confirmation_pending": "qros-research-session",
     "holdout_validation_review_complete": "qros-research-session",
 }
@@ -1579,7 +1579,7 @@ def _invoke_stage_display(
 
 
 def _auto_progress_display(lineage_root: Path, *, current_stage: SessionStage) -> list[str]:
-    if not current_stage.endswith("_display_confirmation_pending"):
+    if not current_stage.endswith("_display_pending"):
         return []
 
     stage_base = _stage_base_name(current_stage)
@@ -2015,7 +2015,7 @@ def _why_this_skill(
         return (
             f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
         )
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         return f"Current stage {current_stage} is running the mandatory post-review display phase before progression can continue."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit approval before entering the downstream stage."
@@ -2027,7 +2027,7 @@ def _why_this_skill(
         if runtime_stage_status == "awaiting_author_fix":
             return f"Current stage {current_stage} has fixable adversarial findings, so {current_skill} is the active author-fix skill."
         return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         return f"Current stage {current_stage} is in the mandatory display phase, so {current_skill} is holding the orchestration gate."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit next-stage confirmation, so {current_skill} is holding the orchestration gate."
@@ -2047,7 +2047,7 @@ def _blocking_reason(
         return "Idea intake inputs or admission evidence are still incomplete."
     if current_stage.endswith("_review_confirmation_pending"):
         return f"{_stage_base_name(current_stage)} review entry is still waiting for explicit confirmation."
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         return f"{_stage_base_name(current_stage)} mandatory display has not completed yet."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         next_stage_base = NEXT_STAGE_BY_BASE.get(_stage_base_name(current_stage))
@@ -2093,7 +2093,7 @@ def _resume_hint(
             f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
             "to inspect updated status."
         )
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         return (
             f"Rerun qros-session --lineage-id {lineage_id} to continue the mandatory display phase for "
             f"{_stage_base_name(current_stage)}."
@@ -2111,10 +2111,10 @@ def _resume_hint(
     )
 
 
-def session_stage_base_name(current_stage: SessionStage) -> str:
+def session_stage_base_name(current_stage: SessionStage | str) -> str:
     for suffix in (
         "_review_confirmation_pending",
-        "_display_confirmation_pending",
+        "_display_pending",
         "_next_stage_confirmation_pending",
         "_confirmation_pending",
         "_author",
@@ -2335,7 +2335,7 @@ def _program_runtime_status(
             review_blocking_reason,
             review_next_action,
         )
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
         reason_code = {
             "DISPLAY_RENDER_PENDING": "DISPLAY_RENDER_PENDING",
@@ -2631,7 +2631,7 @@ def run_research_session(
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         artifacts_written.extend(
             _auto_progress_display(
                 lineage_root,
@@ -2821,9 +2821,9 @@ def _review_has_started(stage_dir: Path) -> bool:
 
 def _post_review_completion_stage(lineage_root: Path, *, stage_base: str) -> SessionStage:
     if not _supports_stage_display(stage_base):
-        return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
+        return f"{stage_base}_display_pending"  # type: ignore[return-value]
     if not _stage_display_ready_for_handoff(lineage_root, stage_base=stage_base):
-        return f"{stage_base}_display_confirmation_pending"  # type: ignore[return-value]
+        return f"{stage_base}_display_pending"  # type: ignore[return-value]
 
     next_stage_decision = read_next_stage_transition_decision(lineage_root, stage_base=stage_base)
     if next_stage_decision is None:
@@ -3128,7 +3128,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             "Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>",
         )
 
-    if current_stage.endswith("_display_confirmation_pending"):
+    if current_stage.endswith("_display_pending"):
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage.endswith("_next_stage_confirmation_pending"):
@@ -3158,7 +3158,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "mandate_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "mandate_display_confirmation_pending":
+    if current_stage == "mandate_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "mandate_next_stage_confirmation_pending":
@@ -3179,7 +3179,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_data_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_data_ready_display_confirmation_pending":
+    if current_stage == "csf_data_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_data_ready_next_stage_confirmation_pending":
@@ -3200,7 +3200,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "data_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "data_ready_display_confirmation_pending":
+    if current_stage == "data_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "data_ready_next_stage_confirmation_pending":
@@ -3221,7 +3221,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "signal_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "signal_ready_display_confirmation_pending":
+    if current_stage == "signal_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "signal_ready_next_stage_confirmation_pending":
@@ -3242,7 +3242,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_signal_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_signal_ready_display_confirmation_pending":
+    if current_stage == "csf_signal_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_signal_ready_next_stage_confirmation_pending":
@@ -3263,7 +3263,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "train_freeze_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "train_freeze_display_confirmation_pending":
+    if current_stage == "train_freeze_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "train_freeze_next_stage_confirmation_pending":
@@ -3284,7 +3284,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_train_freeze_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_train_freeze_display_confirmation_pending":
+    if current_stage == "csf_train_freeze_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_train_freeze_next_stage_confirmation_pending":
@@ -3305,7 +3305,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "test_evidence_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "test_evidence_display_confirmation_pending":
+    if current_stage == "test_evidence_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "test_evidence_next_stage_confirmation_pending":
@@ -3326,7 +3326,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_test_evidence_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_test_evidence_display_confirmation_pending":
+    if current_stage == "csf_test_evidence_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_test_evidence_next_stage_confirmation_pending":
@@ -3347,7 +3347,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "backtest_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "backtest_ready_display_confirmation_pending":
+    if current_stage == "backtest_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "backtest_ready_next_stage_confirmation_pending":
@@ -3368,7 +3368,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_backtest_ready_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_backtest_ready_display_confirmation_pending":
+    if current_stage == "csf_backtest_ready_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_backtest_ready_next_stage_confirmation_pending":
@@ -3395,7 +3395,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "holdout_validation_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "holdout_validation_display_confirmation_pending":
+    if current_stage == "holdout_validation_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     if current_stage == "csf_holdout_validation_confirmation_pending":
@@ -3419,7 +3419,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_holdout_validation_review":
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
-    if current_stage == "csf_holdout_validation_display_confirmation_pending":
+    if current_stage == "csf_holdout_validation_display_pending":
         return _display_gate_status_and_next_action(lineage_root, current_stage)
 
     return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"

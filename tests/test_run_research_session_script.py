@@ -1044,7 +1044,7 @@ def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_acti
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
     assert "⚠ Open risks:" not in result.stdout
     assert "rollback_target remains 00_idea_intake" not in result.stdout
 
@@ -1086,7 +1086,7 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
 
 
 def test_run_research_session_reports_data_ready_next_group_after_mandate_review_complete(
@@ -1129,7 +1129,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
 
     assert result.returncode == 2
     assert "🧭 Current orchestrator: qros-research-session" in result.stdout
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
     assert "🔨 Current active skill: qros-research-session" in result.stdout
     assert "⛔ Blocking reason: mandate mandatory display has not completed yet." in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for mandate." in result.stdout
@@ -1199,7 +1199,7 @@ def test_run_research_session_renders_mandate_display_before_next_stage_confirma
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
     assert "DISPLAY_RENDER_PENDING" in result.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.display_request.json").exists()
     assert (lineage_root / "reports" / "stage_display" / "mandate.display_prompt.txt").exists()
@@ -1285,7 +1285,7 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
     assert "DISPLAY_RENDER_PENDING" in result.stdout
     assert not (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.json").exists()
@@ -1324,7 +1324,7 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_render_fail
         cwd=repo_root,
     )
     assert rerun.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in rerun.stdout
+    assert "📍 Current stage: mandate_display_pending" in rerun.stdout
     assert "DISPLAY_RENDER_PENDING" in rerun.stdout
     assert "2/3" in rerun.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.display_retry_state.json").exists()
@@ -1450,7 +1450,7 @@ def test_run_research_session_blocks_after_mandate_display_retry_exhaustion(tmp_
     )
 
     assert exhausted.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in exhausted.stdout
+    assert "📍 Current stage: mandate_display_pending" in exhausted.stdout
     assert "DISPLAY_RETRY_EXHAUSTED" in exhausted.stdout
     assert "3/3" in exhausted.stdout
     assert render_error in exhausted.stdout
@@ -1500,7 +1500,7 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_display_pending" in result.stdout
     assert "DISPLAY_RENDER_PENDING" in result.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.display_request.json").exists()
 
@@ -1538,7 +1538,7 @@ def test_run_research_session_blocks_next_stage_when_mandate_display_summary_is_
         cwd=repo_root,
     )
     assert rerun.returncode == 2
-    assert "📍 Current stage: mandate_display_confirmation_pending" in rerun.stdout
+    assert "📍 Current stage: mandate_display_pending" in rerun.stdout
     assert "DISPLAY_RENDER_FAILED" in rerun.stdout
     assert "latest_review_pack.yaml, stage_gate_review.yaml" in rerun.stdout
     assert (lineage_root / "reports" / "stage_display" / "mandate.summary.html").exists()
@@ -1705,7 +1705,7 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: data_ready_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: data_ready_display_pending" in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for data_ready." in result.stdout
     assert "Data Ready Reflection:" not in result.stdout
 
@@ -1846,7 +1846,7 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: signal_ready_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: signal_ready_display_pending" in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for signal_ready." in result.stdout
 
 
@@ -1981,7 +1981,7 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: train_freeze_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: train_freeze_display_pending" in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for train_freeze." in result.stdout
 
 
@@ -2140,7 +2140,7 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: test_evidence_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: test_evidence_display_pending" in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for test_evidence." in result.stdout
 
 
@@ -2417,7 +2417,7 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: backtest_ready_display_confirmation_pending" in result.stdout
+    assert "📍 Current stage: backtest_ready_display_pending" in result.stdout
     assert "Mandatory display attempt 1/3 is in progress for backtest_ready." in result.stdout
 
 

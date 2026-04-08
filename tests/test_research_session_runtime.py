@@ -961,7 +961,7 @@ def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_ar
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
-    assert detect_session_stage(lineage_root) == "mandate_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_display_pending"
 
 
 def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_review_complete(
@@ -984,7 +984,7 @@ def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_revie
         (mandate_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
-    assert detect_session_stage(lineage_root) == "mandate_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_display_pending"
 
 
 def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Path) -> None:
@@ -1008,7 +1008,7 @@ def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Pat
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "mandate_display_confirmation_pending"
+    assert status.current_stage == "mandate_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for mandate." in status.next_action
 
 
@@ -1116,7 +1116,7 @@ def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closu
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
 
-    assert detect_session_stage(lineage_root) == "data_ready_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "data_ready_display_pending"
 
 
 def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_review_complete(
@@ -1152,7 +1152,7 @@ def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_
         (data_ready_dir / name).mkdir()
     write_fake_stage_provenance(lineage_root, "data_ready")
 
-    assert detect_session_stage(lineage_root) == "data_ready_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "data_ready_display_pending"
 
 
 def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: Path) -> None:
@@ -1189,7 +1189,7 @@ def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: P
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "data_ready_display_confirmation_pending"
+    assert status.current_stage == "data_ready_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for data_ready." in status.next_action
 
 
@@ -1288,7 +1288,7 @@ def test_detect_session_stage_returns_signal_ready_review_complete_when_closure_
     (signal_ready_dir / "params").mkdir()
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
-    assert detect_session_stage(lineage_root) == "signal_ready_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "signal_ready_display_pending"
 
 
 def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) -> None:
@@ -1314,7 +1314,7 @@ def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) ->
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "signal_ready_display_confirmation_pending"
+    assert status.current_stage == "signal_ready_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for signal_ready." in status.next_action
 
 
@@ -1396,7 +1396,7 @@ def test_detect_session_stage_returns_test_evidence_pending_when_train_freeze_cl
         (train_dir / name).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
-    assert detect_session_stage(lineage_root) == "train_freeze_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "train_freeze_display_pending"
 
 
 def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -> None:
@@ -1419,7 +1419,7 @@ def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "train_freeze_display_confirmation_pending"
+    assert status.current_stage == "train_freeze_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for train_freeze." in status.next_action
 
 
@@ -1507,7 +1507,7 @@ def test_detect_session_stage_returns_backtest_ready_pending_when_test_evidence_
     write_fake_stage_provenance(lineage_root, "test_evidence")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
-    assert detect_session_stage(lineage_root) == "test_evidence_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "test_evidence_display_pending"
 
 
 def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) -> None:
@@ -1534,7 +1534,7 @@ def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) 
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "test_evidence_display_confirmation_pending"
+    assert status.current_stage == "test_evidence_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for test_evidence." in status.next_action
 
 
@@ -1643,7 +1643,7 @@ def test_detect_session_stage_returns_backtest_ready_review_complete_when_closur
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
 
-    assert detect_session_stage(lineage_root) == "backtest_ready_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "backtest_ready_display_pending"
 
 
 def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Path) -> None:
@@ -1655,7 +1655,7 @@ def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Pa
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "backtest_ready_display_confirmation_pending"
+    assert status.current_stage == "backtest_ready_display_pending"
     assert "Mandatory display attempt 1/3 is in progress for backtest_ready." in status.next_action
 
 
@@ -1724,7 +1724,7 @@ def test_detect_session_stage_returns_holdout_validation_review_complete_when_cl
     (holdout_dir / "window_results").mkdir()
     write_fake_stage_provenance(lineage_root, "holdout_validation")
 
-    assert detect_session_stage(lineage_root) == "holdout_validation_display_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "holdout_validation_display_pending"
 
 
 def test_detect_session_stage_does_not_advance_on_retry_completion_certificate(tmp_path: Path) -> None:
@@ -1749,13 +1749,13 @@ def test_detect_session_stage_does_not_advance_on_retry_completion_certificate(t
 def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     cases = [
-        ("mandate", lineage_root / "01_mandate", "mandate_display_confirmation_pending"),
-        ("data_ready", lineage_root / "02_data_ready", "data_ready_display_confirmation_pending"),
-        ("signal_ready", lineage_root / "03_signal_ready", "signal_ready_display_confirmation_pending"),
-        ("train_freeze", lineage_root / "04_train_freeze", "train_freeze_display_confirmation_pending"),
-        ("test_evidence", lineage_root / "05_test_evidence", "test_evidence_display_confirmation_pending"),
-        ("backtest_ready", lineage_root / "06_backtest", "backtest_ready_display_confirmation_pending"),
-        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_display_confirmation_pending"),
+        ("mandate", lineage_root / "01_mandate", "mandate_display_pending"),
+        ("data_ready", lineage_root / "02_data_ready", "data_ready_display_pending"),
+        ("signal_ready", lineage_root / "03_signal_ready", "signal_ready_display_pending"),
+        ("train_freeze", lineage_root / "04_train_freeze", "train_freeze_display_pending"),
+        ("test_evidence", lineage_root / "05_test_evidence", "test_evidence_display_pending"),
+        ("backtest_ready", lineage_root / "06_backtest", "backtest_ready_display_pending"),
+        ("holdout_validation", lineage_root / "07_holdout", "holdout_validation_display_pending"),
     ]
 
     for stage, stage_dir, expected_stage in cases:
@@ -1789,9 +1789,9 @@ def test_detect_session_stage_routes_mainline_and_csf_through_display_confirmati
     csf_root = outputs_root / "csf_case"
 
     mainline_cases = [
-        ("data_ready", mainline_root / "02_data_ready", "data_ready_display_confirmation_pending"),
-        ("signal_ready", mainline_root / "03_signal_ready", "signal_ready_display_confirmation_pending"),
-        ("train_freeze", mainline_root / "04_train_freeze", "train_freeze_display_confirmation_pending"),
+        ("data_ready", mainline_root / "02_data_ready", "data_ready_display_pending"),
+        ("signal_ready", mainline_root / "03_signal_ready", "signal_ready_display_pending"),
+        ("train_freeze", mainline_root / "04_train_freeze", "train_freeze_display_pending"),
     ]
     for stage, stage_dir, expected in mainline_cases:
         _write_minimal_stage_outputs(stage_dir, stage=stage)
@@ -1813,15 +1813,15 @@ def test_detect_session_stage_routes_mainline_and_csf_through_display_confirmati
     )
     _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_fake_stage_provenance(csf_root, "mandate")
-    assert detect_session_stage(csf_root) == "mandate_display_confirmation_pending"
+    assert detect_session_stage(csf_root) == "mandate_display_pending"
 
     csf_cases = [
-        ("csf_data_ready", csf_root / "02_csf_data_ready", "csf_data_ready_display_confirmation_pending"),
-        ("csf_signal_ready", csf_root / "03_csf_signal_ready", "csf_signal_ready_display_confirmation_pending"),
-        ("csf_train_freeze", csf_root / "04_csf_train_freeze", "csf_train_freeze_display_confirmation_pending"),
-        ("csf_test_evidence", csf_root / "05_csf_test_evidence", "csf_test_evidence_display_confirmation_pending"),
-        ("csf_backtest_ready", csf_root / "06_csf_backtest_ready", "csf_backtest_ready_display_confirmation_pending"),
-        ("csf_holdout_validation", csf_root / "07_csf_holdout_validation", "csf_holdout_validation_display_confirmation_pending"),
+        ("csf_data_ready", csf_root / "02_csf_data_ready", "csf_data_ready_display_pending"),
+        ("csf_signal_ready", csf_root / "03_csf_signal_ready", "csf_signal_ready_display_pending"),
+        ("csf_train_freeze", csf_root / "04_csf_train_freeze", "csf_train_freeze_display_pending"),
+        ("csf_test_evidence", csf_root / "05_csf_test_evidence", "csf_test_evidence_display_pending"),
+        ("csf_backtest_ready", csf_root / "06_csf_backtest_ready", "csf_backtest_ready_display_pending"),
+        ("csf_holdout_validation", csf_root / "07_csf_holdout_validation", "csf_holdout_validation_display_pending"),
     ]
     for stage, stage_dir, expected in csf_cases:
         _write_minimal_stage_outputs(stage_dir, stage=stage)
@@ -1954,7 +1954,7 @@ def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handli
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "test_evidence_display_confirmation_pending"
+    assert status.current_stage == "test_evidence_display_pending"
     assert status.review_verdict == "PASS"
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
@@ -2020,7 +2020,7 @@ def test_run_research_session_clears_intake_open_risks_after_routing_into_csf_da
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="csf_case")
 
-    assert status.current_stage == "mandate_display_confirmation_pending"
+    assert status.current_stage == "mandate_display_pending"
     assert status.open_risks == []
 
 
