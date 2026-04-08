@@ -201,6 +201,17 @@ Data Ready Reflection:
 
 `--snapshot` 仍然输出 canonical anti-drift decision snapshot，不会附带 reflection 面板内容。
 
+如果你需要把流程级验证也跑成固定命令，而不是每次临时拼 pytest 文件列表，可以直接用：
+
+```bash
+python scripts/run_verification_tier.py --tier smoke
+python scripts/run_verification_tier.py --tier full-smoke
+```
+
+更细的分层说明见：
+
+- `docs/experience/qros-verification-tiers.md`
+
 例如，当 `data_ready` 已经 freeze 但本地程序还没补齐时，机读状态应明确给出 program gate：
 
 ```json

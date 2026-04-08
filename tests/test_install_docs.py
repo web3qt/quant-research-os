@@ -21,6 +21,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "qros-research-session help" in combined
     assert "~/.qros/bin/qros-session" in combined
     assert "~/.qros/bin/qros-review" in combined
+    assert "~/.qros/bin/qros-verify" in combined
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
     assert "Restart Codex" in combined
     assert "Uninstalling" in combined
@@ -35,6 +36,7 @@ def test_install_docs_reference_stage_field_guide() -> None:
     combined = "\n".join([readme, quickstart, session_usage])
 
     assert "stage-freeze-group-field-guide.md" in combined
+    assert "qros-verification-tiers.md" in combined
     assert "research_intent" in guide
     assert "scope_contract" in guide
     assert "delivery_contract" in guide

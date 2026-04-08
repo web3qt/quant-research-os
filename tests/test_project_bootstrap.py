@@ -9,6 +9,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("skills").exists()
     assert Path("bin/qros-session").exists()
     assert Path("bin/qros-review").exists()
+    assert Path("bin/qros-verify").exists()
     assert Path(".codex/INSTALL.md").exists()
     assert Path("tools/research_session.py").exists()
     assert Path("tools/review_skillgen/__init__.py").exists()
@@ -22,6 +23,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("scripts/update_review_governance_candidates.py").exists()
     assert Path("tools/install_runtime.py").exists()
     assert Path("scripts/run_research_session.py").exists()
+    assert Path("scripts/run_verification_tier.py").exists()
     assert Path("scripts/run_stage_review.py").exists()
     assert Path("scripts/scaffold_idea_intake.py").exists()
     assert Path("scripts/build_mandate_from_intake.py").exists()
@@ -50,6 +52,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("skills/qros-stage-display/SKILL.md").exists()
     assert Path("scripts/run_stage_display.py").exists()
     assert Path("tools/stage_display_runtime.py").exists()
+    assert Path("tools/verification_tiers.py").exists()
 
 
 def test_usage_doc_exists() -> None:
@@ -57,6 +60,7 @@ def test_usage_doc_exists() -> None:
     assert Path("docs/experience/closure-artifact-writer-usage.md").exists()
     assert Path("docs/experience/idea-intake-to-mandate-flow.md").exists()
     assert Path("docs/experience/qros-research-session-usage.md").exists()
+    assert Path("docs/experience/qros-verification-tiers.md").exists()
     assert Path("docs/experience/stage-freeze-group-field-guide.md").exists()
     assert Path("docs/experience/qros-stage-display-skill-usage.md").exists()
     assert Path("docs/governance/review-governance-decision-workflow.md").exists()

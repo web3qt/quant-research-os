@@ -107,7 +107,28 @@ qros-mandate-review
 如果你想看更细的实际运行行为、状态字段、stage gate 语义和恢复方式，可以继续读：
 
 - `docs/experience/qros-research-session-usage.md`
+- `docs/experience/qros-verification-tiers.md`
 - `docs/main-flow-sop/research_workflow_sop.md`
+
+## 验证分层
+
+QROS 现在把流程级验证分成：
+
+- `smoke`
+- `full-smoke`
+
+例如：
+
+```bash
+python scripts/run_verification_tier.py --tier smoke
+python scripts/run_verification_tier.py --tier full-smoke
+```
+
+如果已经按安装文档落好稳定 wrapper，也可以用：
+
+```bash
+~/.qros/bin/qros-verify --tier smoke
+```
 
 ## 安装后更新
 
