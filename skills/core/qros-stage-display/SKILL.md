@@ -750,6 +750,31 @@ v1 的重点是“展示什么”，不是“完整取数系统”。
 - interpretation questions
 - do/don’t rules
 
+## HTML Save Contract
+
+当用户明确要求“展示 / 总结某个覆盖阶段”且你实际生成 HTML 时，默认保存合同是：
+
+```text
+outputs/<lineage_id>/<stage_dir>/display/stage_display.html
+```
+
+### Save Behavior
+- 不同阶段天然落在不同 `stage_dir` 下，因此不同阶段会有不同 HTML 文件
+- 同一阶段重复生成时，**覆盖同一个** `stage_display.html`
+- 当前不要求保留 HTML 历史版本
+
+### Chat Response Behavior
+- 不要把整段 HTML 直接输出到聊天里
+- 聊天里只返回：
+  - 一个简短摘要
+  - 保存路径
+- 如果用户明确要求看源码或 HTML 片段，再按需引用局部内容
+
+### Save Discipline
+- 只有当用户明确要求展示时才生成并落盘
+- 不要把保存 HTML 重新变成 stage gate
+- 不要把这个保存动作伪装成 review closure 或 machine-readable governance proof
+
 ## Final Reminder
 
 当用户主动要求展示时，先判断：

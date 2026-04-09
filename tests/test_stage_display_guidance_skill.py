@@ -197,3 +197,15 @@ def test_stage_display_guidance_skill_defines_rendering_and_style_defaults() -> 
     assert "block 内容" in text
     assert "字段" in text
     assert "图表类型" in text
+
+
+def test_stage_display_guidance_skill_defines_html_save_contract() -> None:
+    text = _skill_text()
+    assert "## HTML Save Contract" in text
+    assert "outputs/<lineage_id>/<stage_dir>/display/stage_display.html" in text
+    assert "同一阶段重复生成时" in text
+    assert "**覆盖同一个** `stage_display.html`" in text
+    assert "不要把整段 HTML 直接输出到聊天里" in text
+    assert "聊天里只返回：" in text
+    assert "一个简短摘要" in text
+    assert "保存路径" in text
