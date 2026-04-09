@@ -45,6 +45,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("docs/governance/review-governance-decision-workflow.md").exists()
     assert skill_path("qros-idea-intake-author").exists()
     assert skill_path("qros-mandate-author").exists()
+    assert skill_path("qros-stage-display").exists()
     assert skill_path("qros-research-session").exists()
     assert skill_path("qros-stage-failure-handler").exists()
     assert skill_path("qros-train-freeze-author").exists()

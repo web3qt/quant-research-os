@@ -39,6 +39,8 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
+    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
+    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
     assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
     assert "qros-mandate-review" in manifest["installed_skills"]
     assert "qros-train-freeze-author" in manifest["installed_skills"]
@@ -63,6 +65,7 @@ def test_user_global_install_writes_skills_and_runtime_under_home(
     assert result.mode == "user-global"
     assert (home_root / ".codex" / "skills").exists()
     assert (home_root / ".qros" / "bin" / "qros-session").exists()
+    assert (home_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
     assert (home_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
     assert (home_root / ".qros").exists()
     assert (home_root / ".qros" / "install-manifest.json").exists()
@@ -141,6 +144,8 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
     result = install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
 
     assert "qros-research-session" in result.skills_written
+    assert result.skills_written.count("qros-stage-display") == 1
     assert (install_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
     assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
     assert not (install_root / ".codex" / "skills" / "mandate").exists()
