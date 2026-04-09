@@ -181,3 +181,19 @@ def test_stage_display_guidance_skill_does_not_restore_old_runtime_surface() -> 
     assert "run_stage_display.py" not in text
     assert "stage_display_runtime.py" not in text
     assert "mandatory post-review" not in text.lower()
+
+
+def test_stage_display_guidance_skill_defines_rendering_and_style_defaults() -> None:
+    text = _skill_text()
+    assert "## Rendering / Style Defaults" in text
+    assert "默认直接输出 `HTML`" in text
+    assert "`dashboard + 报告页结合`" in text
+    assert "`极简投研风`" in text
+    assert "`顺序阅读式`" in text
+    assert "roughly `1:1`" in text
+    assert "`Plotly + 自定义极简主题`" in text
+    assert "同一套 `极简投研风 HTML shell`" in text
+    assert "每个阶段只替换：" in text
+    assert "block 内容" in text
+    assert "字段" in text
+    assert "图表类型" in text

@@ -84,6 +84,60 @@ description: Public, user-triggered display guidance for mandate + CSF stages. U
 - `What evidence matters most`
 - `What the next stage inherits`
 
+## Rendering / Style Defaults
+
+### Default Output Medium
+- 默认直接输出 `HTML`
+
+### Page Positioning
+- 默认页面定位是：`dashboard + 报告页结合`
+- 不是纯 dashboard
+- 也不是纯长文报告
+
+### Visual Style
+- 默认风格：`极简投研风`
+- 白底 / 浅底
+- 高信息密度
+- 少装饰，靠标题层级、留白、强调色和信息结构区分重点
+
+### Layout
+- 默认布局：`顺序阅读式`
+- 从上到下按 section 展开
+- 图表穿插在各 section 中
+- 不采用“KPI 卡片先堆在最上面”的 dashboard-first 结构
+
+### Text / Chart Ratio
+- 默认图表与文字 roughly `1:1`
+- 不是“只有图表，文字只是脚注”
+- 也不是“长文报告里偶尔插一张图”
+
+### Default Chart Strategy
+- 默认允许正式图表库
+- 图表是主角之一，而不是只做静态附图
+- 默认图表库：`Plotly + 自定义极简主题`
+- Plotly 负责交互图表，主题层负责去掉默认工具面板感
+
+### Shared HTML Shell
+- 所有阶段共用同一套 `极简投研风 HTML shell`
+- 统一：
+  - 页面宽度
+  - section 标题层级
+  - 表格风格
+  - 图表卡片风格
+  - 风险 / warning / caveat 提示样式
+- 每个阶段只替换：
+  - block 内容
+  - 字段
+  - 图表类型
+
+### When To Downshift
+- 如果当前阶段证据更多是 contract / rule / boundary，而不是数值序列，优先：
+  - table
+  - matrix
+  - checklist
+  - schematic
+- 不要为了“像 dashboard”硬塞无意义图表
+
 ## Common Evidence Hints
 
 v1 的重点是“展示什么”，不是“完整取数系统”。
