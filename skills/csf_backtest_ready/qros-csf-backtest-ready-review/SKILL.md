@@ -3,13 +3,13 @@ name: qros-csf-backtest-ready-review
 description: Codex review skill for CSF Backtest Ready stage verification.
 ---
 
-# CSF Backtest Ready Review
+# CSF Backtest Ready 审查
 
-## Purpose
+## 用途
 
 将冻结后的因子分数映射成正式组合，并验证成本后的经济可行性
 
-## Shared Inputs
+## 共用输入
 
 - `docs/gates/workflow_stage_gates.yaml`
 - `docs/review-sop/review_checklist_master.yaml`
@@ -17,16 +17,16 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
 
-## Required Inputs
+## 必需输入
 
-Required inputs:
+必需输入:
 - 已冻结的 csf_test_evidence 输出
 - portfolio_expression 提案
 - cost / capacity 提案
 
-## Required Outputs
+## 必需输出
 
-Required outputs:
+必需输出:
 - portfolio_contract.yaml
 - portfolio_weight_panel.parquet
 - rebalance_ledger.csv
@@ -41,19 +41,19 @@ Required outputs:
 - artifact_catalog.md
 - field_dictionary.md
 
-## Formal Gate
+## 正式门禁
 
-Stage: CSF Backtest Ready
+阶段：CSF Backtest Ready
 
-Formal gate summary:
-Must pass all of:
+正式门禁摘要：
+必须全部满足：
 - 只消费 csf_selected_variants_test 中通过的 variants
 - 组合规则 machine-readable 冻结
 - 成本后结果仍具经济意义
 - 换手、容量、参与率分析完整
 - 组合结果不是极少数 name 或日期单独支撑
 - 组合表达与 mandate 冻结一致
-Must fail none of:
+以下任一情况都不得出现：
 - backtest 内重新挑选 variant
 - 改变 long/short cut 或权重规则却不回退
 - 只报 gross，不报 net after cost
@@ -61,9 +61,9 @@ Must fail none of:
 - 容量分析缺失
 - 结果只靠单一极端窗口或单一资产支撑
 
-## Checklist
+## 审查清单
 
-Stage checklist:
+阶段检查项：
 - [blocking] backtest 只消费 test 阶段冻结通过的 variant 与组合规则
 - [blocking] long_short_market_neutral 与 long_only_rank 的组合表达已冻结
 - [blocking] weight mapping、gross / net exposure、turnover、cost 和 capacity 口径已冻结
@@ -72,37 +72,37 @@ Stage checklist:
 - [blocking] 若为 regime_filter / combo_filter，target strategy compare 与 gated / ungated summary 已一并冻结
 - [reservation] name-level concentration、engine compare 和异常收益 sanity check 已保留
 
-## Audit-Only Items
+## 仅审计项
 
-Audit-only items:
+仅审计项:
 - 组合表达是否足够清晰
 - 成本假设是否解释充分
 
-## Closure Artifacts
+## Closure 产物
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Mandatory Adversarial Review Inputs
+## 强制对抗审查输入
 
 - `adversarial_review_request.yaml`
 - lineage-local stage program source under the runtime-declared `required_program_dir`
 - stage provenance in `program_execution_manifest.json`
 
-## Mandatory Adversarial Reviewer Contract
+## 强制对抗审查 Reviewer 合同
 
-You are the adversarial reviewer-agent lane, not the original author.
+你是 `adversarial reviewer-agent` 这条审查分支，不是原始 author。
 
-Before any closure artifacts can exist:
+在任何 closure artifacts 出现之前：
 
-1. Inspect `adversarial_review_request.yaml`
-2. Verify your reviewer identity differs from `author_identity`
-3. Perform source-code inspection of the lineage-local stage program in `required_program_dir` and its `required_program_entrypoint`
-4. Inspect the required artifacts and provenance named in the request
-5. Write `adversarial_review_result.yaml`
+1. 检查 `adversarial_review_request.yaml`
+2. 确认你的 reviewer identity 与 `author_identity` 不同
+3. 对 `required_program_dir` 和 `required_program_entrypoint` 执行源码检查（`source-code inspection`）
+4. 检查 request 中列出的必需 artifacts 与 provenance
+5. 写出 `adversarial_review_result.yaml`
 
-`adversarial_review_result.yaml` must include at least:
+`adversarial_review_result.yaml` 至少必须包含：
 
 - `review_cycle_id`
 - `reviewer_identity`
@@ -119,7 +119,7 @@ Before any closure artifacts can exist:
 - `info_findings`
 - `residual_risks`
 
-Allowed `review_loop_outcome` values:
+允许的 `review_loop_outcome` 取值：
 
 - `FIX_REQUIRED`
 - `CLOSURE_READY_PASS`
@@ -129,15 +129,15 @@ Allowed `review_loop_outcome` values:
 - `CLOSURE_READY_NO_GO`
 - `CLOSURE_READY_CHILD_LINEAGE`
 
-`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+`FIX_REQUIRED` 的含义是：退回 author 修复；不得允许 closure artifacts 出现。
 
-The closure-ready adverse verdict path includes `CLOSURE_READY_NO_GO`, `CLOSURE_READY_CHILD_LINEAGE`, and any equivalent closure-ready terminal failure outcome; these may proceed to deterministic closure writing and downstream failure routing.
+`closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome；这些结果可以继续进入 deterministic closure writing 与 downstream failure routing。
 
-## Optional Reviewer Findings File
+## 可选 Reviewer Findings 文件
 
-You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
+你也可以在当前 `stage_dir` 下额外创建 `review_findings.yaml`，用于保存面向人的说明和 rollback metadata。
 
-Minimum expected fields:
+最低建议字段：
 
 - `blocking_findings`
 - `reservation_findings`
@@ -147,9 +147,9 @@ Minimum expected fields:
 - `rollback_stage`
 - `allowed_modifications`
 
-Use reviewer findings for semantic judgment. Let the review engine handle the hard evidence checks and final artifact writing.
+`review_findings.yaml` 负责承载语义判断；hard evidence checks 与最终 closure artifacts 仍交给 review engine 处理。
 
-## Allowed Verdicts
+## 允许的 Verdict
 
 - `PASS`: 当前阶段目标已满足，无保留事项
 - `CONDITIONAL PASS`: 当前阶段主要目标满足，但存在必须明示的保留事项
@@ -162,33 +162,33 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
 - `DROP`: 不值得投入进一步研究预算，终止该想法
 
-## Rollback Rules
+## Rollback 规则
 
-- Default rollback stage: csf_backtest_ready
-- Allowed modification: 澄清文档表述
-- Allowed modification: 补全缺失 artifact
-- Allowed modification: 修正组合权重和成本假设
-- Must open child lineage when: portfolio_expression 大类变化
-- Must open child lineage when: 组合表达从截面切到别的研究问题
+- 默认 rollback stage：csf_backtest_ready
+- 允许修改：澄清文档表述
+- 允许修改：补全缺失 artifact
+- 允许修改：修正组合权重和成本假设
+- 以下情况必须开 child lineage：portfolio_expression 大类变化
+- 以下情况必须开 child lineage：组合表达从截面切到别的研究问题
 
-## Downstream Permissions
+## 下游权限
 
-- May advance to: csf_holdout_validation
-- Frozen output consumable by next stage: portfolio_contract.yaml
-- Frozen output consumable by next stage: portfolio_weight_panel.parquet
-- Frozen output consumable by next stage: csf_backtest_gate_table.csv
-- Next stage must not consume/re-estimate: 未冻结的权重搜索轨迹
+- 可进入下游阶段：csf_holdout_validation
+- 下游可直接消费的冻结产物：portfolio_contract.yaml
+- 下游可直接消费的冻结产物：portfolio_weight_panel.parquet
+- 下游可直接消费的冻结产物：csf_backtest_gate_table.csv
+- 下游不得消费 / 重估：未冻结的权重搜索轨迹
 
-## Verdict Flow
+## Verdict 流程
 
-1. Confirm current stage
-2. Load the stage contract
-3. Load the stage checklist
-4. Check required inputs and outputs
-5. Evaluate the formal gate first
-6. Inspect the lineage-local source code for this stage
-7. Record audit-only findings after that
-8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
-9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
-10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
-11. Review the generated closure artifacts
+1. 确认当前 stage
+2. 读取 stage contract
+3. 读取 stage checklist
+4. 检查 required inputs 与 outputs
+5. 先判断 formal gate
+6. 检查该阶段的 lineage-local 源码与程序实现
+7. 再记录 audit-only findings
+8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
+9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
+10. 只有结果达到 closure-ready，才运行 `~/.qros/bin/qros-review`
+11. 复核最终生成的 closure artifacts

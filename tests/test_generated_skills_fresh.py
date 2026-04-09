@@ -37,9 +37,8 @@ def test_generator_dry_run_reports_stale_outputs_when_generated_file_drifts(tmp_
     repo_root = Path(__file__).resolve().parents[1]
     temp_root = tmp_path / "output-root"
     try:
-        shutil.copytree(repo_root / ".agents", temp_root / ".agents")
         shutil.copytree(repo_root / "skills", temp_root / "skills")
-        skill_path = temp_root / ".agents" / "skills" / "qros-mandate-review" / "SKILL.md"
+        skill_path = temp_root / "skills" / "mandate" / "qros-mandate-review" / "SKILL.md"
         original = skill_path.read_text(encoding="utf-8")
         skill_path.write_text(original + "\n<!-- drift -->\n", encoding="utf-8")
 

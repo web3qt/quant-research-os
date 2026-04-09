@@ -3,13 +3,13 @@ name: qros-csf-holdout-validation-review
 description: Codex review skill for CSF Holdout Validation stage verification.
 ---
 
-# CSF Holdout Validation Review
+# CSF Holdout Validation 审查
 
-## Purpose
+## 用途
 
 在最后完全未参与设计的窗口里验证冻结方案是否仍然稳定
 
-## Shared Inputs
+## 共用输入
 
 - `docs/gates/workflow_stage_gates.yaml`
 - `docs/review-sop/review_checklist_master.yaml`
@@ -17,16 +17,16 @@ description: Codex review skill for CSF Holdout Validation stage verification.
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
 
-## Required Inputs
+## 必需输入
 
-Required inputs:
+必需输入:
 - 已冻结的 csf_backtest_ready 输出
 - 最终 holdout 窗口
 - regime shift 审计提案
 
-## Required Outputs
+## 必需输出
 
-Required outputs:
+必需输出:
 - csf_holdout_run_manifest.json
 - holdout_factor_diagnostics.parquet
 - holdout_test_compare.parquet
@@ -37,27 +37,27 @@ Required outputs:
 - artifact_catalog.md
 - field_dictionary.md
 
-## Formal Gate
+## 正式门禁
 
-Stage: CSF Holdout Validation
+阶段：CSF Holdout Validation
 
-Formal gate summary:
-Must pass all of:
+正式门禁摘要：
+必须全部满足：
 - 只复用冻结方案，不重估上游尺子
 - 主要方向未翻向
 - 退化可解释且未超过容忍边界
 - holdout 覆盖和 breadth 未塌到不可解释
 - regime shift 明显时，必须显式审计
-Must fail none of:
+以下任一情况都不得出现：
 - 在 holdout 调参
 - 在 holdout 改 bucket cut、neutralization、weight mapping
 - 主要证据翻向
 - 结果只靠极少数窗口支撑
 - regime shift 明显却没有审计结论
 
-## Checklist
+## 审查清单
 
-Stage checklist:
+阶段检查项：
 - [blocking] holdout 只复用冻结方案，不重新调参或改写组合规则
 - [blocking] holdout_factor_diagnostics 已记录 coverage、breadth、方向一致性和分桶稳定性
 - [blocking] holdout_test_compare 与 holdout_portfolio_compare 已生成
@@ -66,37 +66,37 @@ Stage checklist:
 - [blocking] 若主要证据退化，已区分 regime mismatch、样本问题和机制断裂
 - [reservation] 最终 holdout 结论、残留风险和后续 lineage 建议均已写明
 
-## Audit-Only Items
+## 仅审计项
 
-Audit-only items:
+仅审计项:
 - holdout 文字总结是否清楚
 - regime shift 解释是否足够完整
 
-## Closure Artifacts
+## Closure 产物
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Mandatory Adversarial Review Inputs
+## 强制对抗审查输入
 
 - `adversarial_review_request.yaml`
 - lineage-local stage program source under the runtime-declared `required_program_dir`
 - stage provenance in `program_execution_manifest.json`
 
-## Mandatory Adversarial Reviewer Contract
+## 强制对抗审查 Reviewer 合同
 
-You are the adversarial reviewer-agent lane, not the original author.
+你是 `adversarial reviewer-agent` 这条审查分支，不是原始 author。
 
-Before any closure artifacts can exist:
+在任何 closure artifacts 出现之前：
 
-1. Inspect `adversarial_review_request.yaml`
-2. Verify your reviewer identity differs from `author_identity`
-3. Perform source-code inspection of the lineage-local stage program in `required_program_dir` and its `required_program_entrypoint`
-4. Inspect the required artifacts and provenance named in the request
-5. Write `adversarial_review_result.yaml`
+1. 检查 `adversarial_review_request.yaml`
+2. 确认你的 reviewer identity 与 `author_identity` 不同
+3. 对 `required_program_dir` 和 `required_program_entrypoint` 执行源码检查（`source-code inspection`）
+4. 检查 request 中列出的必需 artifacts 与 provenance
+5. 写出 `adversarial_review_result.yaml`
 
-`adversarial_review_result.yaml` must include at least:
+`adversarial_review_result.yaml` 至少必须包含：
 
 - `review_cycle_id`
 - `reviewer_identity`
@@ -113,7 +113,7 @@ Before any closure artifacts can exist:
 - `info_findings`
 - `residual_risks`
 
-Allowed `review_loop_outcome` values:
+允许的 `review_loop_outcome` 取值：
 
 - `FIX_REQUIRED`
 - `CLOSURE_READY_PASS`
@@ -123,15 +123,15 @@ Allowed `review_loop_outcome` values:
 - `CLOSURE_READY_NO_GO`
 - `CLOSURE_READY_CHILD_LINEAGE`
 
-`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+`FIX_REQUIRED` 的含义是：退回 author 修复；不得允许 closure artifacts 出现。
 
-The closure-ready adverse verdict path includes `CLOSURE_READY_NO_GO`, `CLOSURE_READY_CHILD_LINEAGE`, and any equivalent closure-ready terminal failure outcome; these may proceed to deterministic closure writing and downstream failure routing.
+`closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome；这些结果可以继续进入 deterministic closure writing 与 downstream failure routing。
 
-## Optional Reviewer Findings File
+## 可选 Reviewer Findings 文件
 
-You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
+你也可以在当前 `stage_dir` 下额外创建 `review_findings.yaml`，用于保存面向人的说明和 rollback metadata。
 
-Minimum expected fields:
+最低建议字段：
 
 - `blocking_findings`
 - `reservation_findings`
@@ -141,9 +141,9 @@ Minimum expected fields:
 - `rollback_stage`
 - `allowed_modifications`
 
-Use reviewer findings for semantic judgment. Let the review engine handle the hard evidence checks and final artifact writing.
+`review_findings.yaml` 负责承载语义判断；hard evidence checks 与最终 closure artifacts 仍交给 review engine 处理。
 
-## Allowed Verdicts
+## 允许的 Verdict
 
 - `PASS`: 当前阶段目标已满足，无保留事项
 - `CONDITIONAL PASS`: 当前阶段主要目标满足，但存在必须明示的保留事项
@@ -156,32 +156,32 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
 - `DROP`: 不值得投入进一步研究预算，终止该想法
 
-## Rollback Rules
+## Rollback 规则
 
-- Default rollback stage: csf_holdout_validation
-- Allowed modification: 澄清文档表述
-- Allowed modification: 补全缺失 artifact
-- Allowed modification: 修正 holdout 审计说明
-- Must open child lineage when: holdout 表明研究语义已改变
-- Must open child lineage when: regime shift 解释要求重设研究问题
+- 默认 rollback stage：csf_holdout_validation
+- 允许修改：澄清文档表述
+- 允许修改：补全缺失 artifact
+- 允许修改：修正 holdout 审计说明
+- 以下情况必须开 child lineage：holdout 表明研究语义已改变
+- 以下情况必须开 child lineage：regime shift 解释要求重设研究问题
 
-## Downstream Permissions
+## 下游权限
 
-- May advance to: promotion_decision
-- Frozen output consumable by next stage: csf_holdout_gate_decision.md
-- Frozen output consumable by next stage: regime_shift_audit.json
-- Next stage must not consume/re-estimate: 未冻结的 holdout 调参结果
+- 可进入下游阶段：promotion_decision
+- 下游可直接消费的冻结产物：csf_holdout_gate_decision.md
+- 下游可直接消费的冻结产物：regime_shift_audit.json
+- 下游不得消费 / 重估：未冻结的 holdout 调参结果
 
-## Verdict Flow
+## Verdict 流程
 
-1. Confirm current stage
-2. Load the stage contract
-3. Load the stage checklist
-4. Check required inputs and outputs
-5. Evaluate the formal gate first
-6. Inspect the lineage-local source code for this stage
-7. Record audit-only findings after that
-8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
-9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
-10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
-11. Review the generated closure artifacts
+1. 确认当前 stage
+2. 读取 stage contract
+3. 读取 stage checklist
+4. 检查 required inputs 与 outputs
+5. 先判断 formal gate
+6. 检查该阶段的 lineage-local 源码与程序实现
+7. 再记录 audit-only findings
+8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
+9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
+10. 只有结果达到 closure-ready，才运行 `~/.qros/bin/qros-review`
+11. 复核最终生成的 closure artifacts

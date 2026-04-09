@@ -11,7 +11,7 @@ TEMPLATE_PATH = ROOT / "templates" / "skills" / "review-stage" / "SKILL.md.tmpl"
 def _render_simple_list(title: str, items: list[str]) -> str:
     lines = [f"{title}:"]
     if not items:
-        lines.append("- None")
+        lines.append("- 无")
         return "\n".join(lines)
     for item in items:
         lines.append(f"- {item}")
@@ -19,19 +19,19 @@ def _render_simple_list(title: str, items: list[str]) -> str:
 
 
 def _render_formal_gate(stage_contract: dict[str, Any]) -> str:
-    lines = [f"Stage: {stage_contract['stage_name']}"]
+    lines = [f"阶段：{stage_contract['stage_name']}"]
     lines.append("")
-    lines.append("Formal gate summary:")
+    lines.append("正式门禁摘要：")
 
     pass_items = stage_contract.get("formal_gate", {}).get("pass_all_of", [])
     fail_items = stage_contract.get("formal_gate", {}).get("fail_any_of", [])
 
     if pass_items:
-        lines.append("Must pass all of:")
+        lines.append("必须全部满足：")
         for item in pass_items:
             lines.append(f"- {item}")
     if fail_items:
-        lines.append("Must fail none of:")
+        lines.append("以下任一情况都不得出现：")
         for item in fail_items:
             lines.append(f"- {item}")
 
@@ -39,7 +39,7 @@ def _render_formal_gate(stage_contract: dict[str, Any]) -> str:
 
 
 def _render_checklist(stage_checks: list[dict[str, Any]]) -> str:
-    lines = ["Stage checklist:"]
+    lines = ["阶段检查项："]
     for check in stage_checks:
         severity = check.get("severity", "info")
         check_text = check.get("check", "")
@@ -48,7 +48,7 @@ def _render_checklist(stage_checks: list[dict[str, Any]]) -> str:
 
 
 def _render_audit_only(stage_contract: dict[str, Any]) -> str:
-    return _render_simple_list("Audit-only items", stage_contract.get("audit_only", []))
+    return _render_simple_list("仅审计项", stage_contract.get("audit_only", []))
 
 
 def _render_verdicts(gate_schema: dict[str, Any]) -> str:
@@ -61,11 +61,11 @@ def _render_verdicts(gate_schema: dict[str, Any]) -> str:
 
 def _render_rollback(stage_contract: dict[str, Any]) -> str:
     rollback = stage_contract.get("rollback_rules", {})
-    lines = [f"- Default rollback stage: {rollback.get('default_rollback_stage', 'unspecified')}"]
+    lines = [f"- 默认 rollback stage：{rollback.get('default_rollback_stage', '未指定')}"]
     for item in rollback.get("allowed_modifications", []):
-        lines.append(f"- Allowed modification: {item}")
+        lines.append(f"- 允许修改：{item}")
     for item in rollback.get("must_open_child_lineage_when", []):
-        lines.append(f"- Must open child lineage when: {item}")
+        lines.append(f"- 以下情况必须开 child lineage：{item}")
     return "\n".join(lines)
 
 
@@ -73,16 +73,16 @@ def _render_downstream(stage_contract: dict[str, Any]) -> str:
     downstream = stage_contract.get("downstream_permissions", {})
     lines = []
     for item in downstream.get("may_advance_to", []):
-        lines.append(f"- May advance to: {item}")
+        lines.append(f"- 可进入下游阶段：{item}")
     for item in downstream.get("frozen_outputs_consumable_by_next_stage", []):
-        lines.append(f"- Frozen output consumable by next stage: {item}")
+        lines.append(f"- 下游可直接消费的冻结产物：{item}")
     blocked = list(downstream.get("next_stage_must_not_consume", [])) + list(
         downstream.get("next_stage_must_not_reestimate", [])
     )
     for item in blocked:
-        lines.append(f"- Next stage must not consume/re-estimate: {item}")
+        lines.append(f"- 下游不得消费 / 重估：{item}")
     if not lines:
-        lines.append("- None specified")
+        lines.append("- 未指定")
     return "\n".join(lines)
 
 
@@ -101,11 +101,11 @@ def render_stage_skill(
         .replace("{{STAGE_PURPOSE}}", stage_contract["purpose"])
         .replace(
             "{{REQUIRED_INPUTS_BLOCK}}",
-            _render_simple_list("Required inputs", stage_contract.get("required_inputs", [])),
+            _render_simple_list("必需输入", stage_contract.get("required_inputs", [])),
         )
         .replace(
             "{{REQUIRED_OUTPUTS_BLOCK}}",
-            _render_simple_list("Required outputs", stage_contract.get("required_outputs", [])),
+            _render_simple_list("必需输出", stage_contract.get("required_outputs", [])),
         )
         .replace("{{FORMAL_GATE_BLOCK}}", _render_formal_gate(stage_contract))
         .replace("{{CHECKLIST_BLOCK}}", _render_checklist(stage_checks))

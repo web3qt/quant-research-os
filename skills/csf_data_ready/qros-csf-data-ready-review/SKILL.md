@@ -3,13 +3,13 @@ name: qros-csf-data-ready-review
 description: Codex review skill for CSF Data Ready stage verification.
 ---
 
-# CSF Data Ready Review
+# CSF Data Ready 审查
 
-## Purpose
+## 用途
 
 产出截面因子路线的 date x asset 面板底座、universe membership 和 eligibility mask
 
-## Shared Inputs
+## 共用输入
 
 - `docs/gates/workflow_stage_gates.yaml`
 - `docs/review-sop/review_checklist_master.yaml`
@@ -17,16 +17,16 @@ description: Codex review skill for CSF Data Ready stage verification.
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
 
-## Required Inputs
+## 必需输入
 
-Required inputs:
+必需输入:
 - mandate frozen outputs
 - 截面 universe 提案
 - 截面共享字段底座提案
 
-## Required Outputs
+## 必需输出
 
-Required outputs:
+必需输出:
 - panel_manifest.json
 - asset_universe_membership.parquet
 - cross_section_coverage.parquet
@@ -38,12 +38,12 @@ Required outputs:
 - artifact_catalog.md
 - field_dictionary.md
 
-## Formal Gate
+## 正式门禁
 
-Stage: CSF Data Ready
+阶段：CSF Data Ready
 
-Formal gate summary:
-Must pass all of:
+正式门禁摘要：
+必须全部满足：
 - 面板主键明确且唯一：date + asset
 - 截面覆盖可审计
 - universe membership 显式记录
@@ -51,7 +51,7 @@ Must pass all of:
 - 共享字段具备时间语义和缺失语义
 - 如允许 group_neutral，taxonomy 已冻结或显式版本化
 - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
-Must fail none of:
+以下任一情况都不得出现：
 - 只有资产时序表，没有显式截面面板合同
 - universe membership 无法按日期重建
 - eligibility 规则混在下游因子代码里
@@ -59,9 +59,9 @@ Must fail none of:
 - 分组中性化需要的 taxonomy 在下游临时补
 - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
 
-## Checklist
+## 审查清单
 
-Stage checklist:
+阶段检查项：
 - [blocking] 已形成显式的 date x asset 面板合同，而不是零散资产时序表
 - [blocking] universe membership 按日期显式记录且可重建
 - [blocking] eligibility_base_mask 作为独立底座冻结，未混入后续因子逻辑
@@ -71,37 +71,37 @@ Stage checklist:
 - [blocking] run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结
 - [reservation] 覆盖率波动、边缘样本或 taxonomy 版本切换均已明确记录在审查材料中
 
-## Audit-Only Items
+## 仅审计项
 
-Audit-only items:
+仅审计项:
 - 面板字段命名是否清楚
 - 共享字段说明是否便于 reviewer 追踪
 
-## Closure Artifacts
+## Closure 产物
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Mandatory Adversarial Review Inputs
+## 强制对抗审查输入
 
 - `adversarial_review_request.yaml`
 - lineage-local stage program source under the runtime-declared `required_program_dir`
 - stage provenance in `program_execution_manifest.json`
 
-## Mandatory Adversarial Reviewer Contract
+## 强制对抗审查 Reviewer 合同
 
-You are the adversarial reviewer-agent lane, not the original author.
+你是 `adversarial reviewer-agent` 这条审查分支，不是原始 author。
 
-Before any closure artifacts can exist:
+在任何 closure artifacts 出现之前：
 
-1. Inspect `adversarial_review_request.yaml`
-2. Verify your reviewer identity differs from `author_identity`
-3. Perform source-code inspection of the lineage-local stage program in `required_program_dir` and its `required_program_entrypoint`
-4. Inspect the required artifacts and provenance named in the request
-5. Write `adversarial_review_result.yaml`
+1. 检查 `adversarial_review_request.yaml`
+2. 确认你的 reviewer identity 与 `author_identity` 不同
+3. 对 `required_program_dir` 和 `required_program_entrypoint` 执行源码检查（`source-code inspection`）
+4. 检查 request 中列出的必需 artifacts 与 provenance
+5. 写出 `adversarial_review_result.yaml`
 
-`adversarial_review_result.yaml` must include at least:
+`adversarial_review_result.yaml` 至少必须包含：
 
 - `review_cycle_id`
 - `reviewer_identity`
@@ -118,7 +118,7 @@ Before any closure artifacts can exist:
 - `info_findings`
 - `residual_risks`
 
-Allowed `review_loop_outcome` values:
+允许的 `review_loop_outcome` 取值：
 
 - `FIX_REQUIRED`
 - `CLOSURE_READY_PASS`
@@ -128,15 +128,15 @@ Allowed `review_loop_outcome` values:
 - `CLOSURE_READY_NO_GO`
 - `CLOSURE_READY_CHILD_LINEAGE`
 
-`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+`FIX_REQUIRED` 的含义是：退回 author 修复；不得允许 closure artifacts 出现。
 
-The closure-ready adverse verdict path includes `CLOSURE_READY_NO_GO`, `CLOSURE_READY_CHILD_LINEAGE`, and any equivalent closure-ready terminal failure outcome; these may proceed to deterministic closure writing and downstream failure routing.
+`closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome；这些结果可以继续进入 deterministic closure writing 与 downstream failure routing。
 
-## Optional Reviewer Findings File
+## 可选 Reviewer Findings 文件
 
-You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
+你也可以在当前 `stage_dir` 下额外创建 `review_findings.yaml`，用于保存面向人的说明和 rollback metadata。
 
-Minimum expected fields:
+最低建议字段：
 
 - `blocking_findings`
 - `reservation_findings`
@@ -146,9 +146,9 @@ Minimum expected fields:
 - `rollback_stage`
 - `allowed_modifications`
 
-Use reviewer findings for semantic judgment. Let the review engine handle the hard evidence checks and final artifact writing.
+`review_findings.yaml` 负责承载语义判断；hard evidence checks 与最终 closure artifacts 仍交给 review engine 处理。
 
-## Allowed Verdicts
+## 允许的 Verdict
 
 - `PASS`: 当前阶段目标已满足，无保留事项
 - `CONDITIONAL PASS`: 当前阶段主要目标满足，但存在必须明示的保留事项
@@ -161,35 +161,35 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
 - `DROP`: 不值得投入进一步研究预算，终止该想法
 
-## Rollback Rules
+## Rollback 规则
 
-- Default rollback stage: csf_data_ready
-- Allowed modification: 澄清文档表述
-- Allowed modification: 补全缺失 artifact
-- Allowed modification: 修正截面面板主键与 membership 规则
-- Must open child lineage when: 面板主键改变
-- Must open child lineage when: universe 改变
-- Must open child lineage when: eligibility 语义改变
+- 默认 rollback stage：csf_data_ready
+- 允许修改：澄清文档表述
+- 允许修改：补全缺失 artifact
+- 允许修改：修正截面面板主键与 membership 规则
+- 以下情况必须开 child lineage：面板主键改变
+- 以下情况必须开 child lineage：universe 改变
+- 以下情况必须开 child lineage：eligibility 语义改变
 
-## Downstream Permissions
+## 下游权限
 
-- May advance to: csf_signal_ready
-- Frozen output consumable by next stage: panel_manifest.json
-- Frozen output consumable by next stage: asset_universe_membership.parquet
-- Frozen output consumable by next stage: cross_section_coverage.parquet
-- Frozen output consumable by next stage: eligibility_base_mask.parquet
-- Next stage must not consume/re-estimate: 未冻结的时序主线信号产物
+- 可进入下游阶段：csf_signal_ready
+- 下游可直接消费的冻结产物：panel_manifest.json
+- 下游可直接消费的冻结产物：asset_universe_membership.parquet
+- 下游可直接消费的冻结产物：cross_section_coverage.parquet
+- 下游可直接消费的冻结产物：eligibility_base_mask.parquet
+- 下游不得消费 / 重估：未冻结的时序主线信号产物
 
-## Verdict Flow
+## Verdict 流程
 
-1. Confirm current stage
-2. Load the stage contract
-3. Load the stage checklist
-4. Check required inputs and outputs
-5. Evaluate the formal gate first
-6. Inspect the lineage-local source code for this stage
-7. Record audit-only findings after that
-8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
-9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
-10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
-11. Review the generated closure artifacts
+1. 确认当前 stage
+2. 读取 stage contract
+3. 读取 stage checklist
+4. 检查 required inputs 与 outputs
+5. 先判断 formal gate
+6. 检查该阶段的 lineage-local 源码与程序实现
+7. 再记录 audit-only findings
+8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
+9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
+10. 只有结果达到 closure-ready，才运行 `~/.qros/bin/qros-review`
+11. 复核最终生成的 closure artifacts

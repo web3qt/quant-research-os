@@ -3,13 +3,13 @@ name: qros-signal-ready-review
 description: Codex review skill for Signal Ready stage verification.
 ---
 
-# Signal Ready Review
+# Signal Ready 审查
 
-## Purpose
+## 用途
 
 把 mandate 已冻结的表达式模板实例化成统一 schema 的正式信号层
 
-## Shared Inputs
+## 共用输入
 
 - `docs/gates/workflow_stage_gates.yaml`
 - `docs/review-sop/review_checklist_master.yaml`
@@ -17,16 +17,16 @@ description: Codex review skill for Signal Ready stage verification.
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`
 
-## Required Inputs
+## 必需输入
 
-Required inputs:
+必需输入:
 - mandate frozen outputs
 - data_ready frozen outputs
 - 已冻结的 signal expression template
 
-## Required Outputs
+## 必需输出
 
-Required outputs:
+必需输出:
 - param_manifest.csv
 - params/
 - signal_coverage.csv
@@ -38,26 +38,26 @@ Required outputs:
 - artifact_catalog.md
 - field_dictionary.md
 
-## Formal Gate
+## 正式门禁
 
-Stage: Signal Ready
+阶段：Signal Ready
 
-Formal gate summary:
-Must pass all of:
+正式门禁摘要：
+必须全部满足：
 - 已显式物化 baseline 或 declared search_batch 的全部 param_id
 - param_id 身份清晰且有 param_manifest
 - 正式 timeseries schema、参数元数据和时间语义已冻结
 - signal gate 文档已生成
 - required_outputs 全部存在，且 machine-readable artifact 都有 companion field documentation
-Must fail none of:
+以下任一情况都不得出现：
 - baseline 或 required param_id 物化失败
 - failed symbols 或 failed params 大于零
 - 下游才发现 signal contract 缺失或字段越层
 - 在 Train 阶段才首次引入未曾在 Signal Ready 物化过的 param_id
 
-## Checklist
+## 审查清单
 
-Stage checklist:
+阶段检查项：
 - [blocking] 信号字段合同已生成，字段 schema 固定
 - [blocking] param_id 身份已显式落地，并存在 param manifest
 - [blocking] timeseries 已落盘，且下游无需临时重算同名信号
@@ -66,37 +66,37 @@ Stage checklist:
 - [reservation] coverage / low_sample / pair_missing 等最小质量保留项已审计
 - [blocking] Train 阶段只能消费已在本阶段显式物化过的 param_id
 
-## Audit-Only Items
+## 仅审计项
 
-Audit-only items:
+仅审计项:
 - finite coverage、low_sample_rate、pair_missing_rate 等质量摘要
 - search batch 中非阻断性的稀疏参数组
 
-## Closure Artifacts
+## Closure 产物
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
 - `stage_completion_certificate.yaml`
 
-## Mandatory Adversarial Review Inputs
+## 强制对抗审查输入
 
 - `adversarial_review_request.yaml`
 - lineage-local stage program source under the runtime-declared `required_program_dir`
 - stage provenance in `program_execution_manifest.json`
 
-## Mandatory Adversarial Reviewer Contract
+## 强制对抗审查 Reviewer 合同
 
-You are the adversarial reviewer-agent lane, not the original author.
+你是 `adversarial reviewer-agent` 这条审查分支，不是原始 author。
 
-Before any closure artifacts can exist:
+在任何 closure artifacts 出现之前：
 
-1. Inspect `adversarial_review_request.yaml`
-2. Verify your reviewer identity differs from `author_identity`
-3. Perform source-code inspection of the lineage-local stage program in `required_program_dir` and its `required_program_entrypoint`
-4. Inspect the required artifacts and provenance named in the request
-5. Write `adversarial_review_result.yaml`
+1. 检查 `adversarial_review_request.yaml`
+2. 确认你的 reviewer identity 与 `author_identity` 不同
+3. 对 `required_program_dir` 和 `required_program_entrypoint` 执行源码检查（`source-code inspection`）
+4. 检查 request 中列出的必需 artifacts 与 provenance
+5. 写出 `adversarial_review_result.yaml`
 
-`adversarial_review_result.yaml` must include at least:
+`adversarial_review_result.yaml` 至少必须包含：
 
 - `review_cycle_id`
 - `reviewer_identity`
@@ -113,7 +113,7 @@ Before any closure artifacts can exist:
 - `info_findings`
 - `residual_risks`
 
-Allowed `review_loop_outcome` values:
+允许的 `review_loop_outcome` 取值：
 
 - `FIX_REQUIRED`
 - `CLOSURE_READY_PASS`
@@ -123,15 +123,15 @@ Allowed `review_loop_outcome` values:
 - `CLOSURE_READY_NO_GO`
 - `CLOSURE_READY_CHILD_LINEAGE`
 
-`FIX_REQUIRED` means: return the stage to the author for fixes; do not allow closure artifacts.
+`FIX_REQUIRED` 的含义是：退回 author 修复；不得允许 closure artifacts 出现。
 
-The closure-ready adverse verdict path includes `CLOSURE_READY_NO_GO`, `CLOSURE_READY_CHILD_LINEAGE`, and any equivalent closure-ready terminal failure outcome; these may proceed to deterministic closure writing and downstream failure routing.
+`closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome；这些结果可以继续进入 deterministic closure writing 与 downstream failure routing。
 
-## Optional Reviewer Findings File
+## 可选 Reviewer Findings 文件
 
-You may also create `review_findings.yaml` in the current `stage_dir` for human-readable detail and rollback metadata.
+你也可以在当前 `stage_dir` 下额外创建 `review_findings.yaml`，用于保存面向人的说明和 rollback metadata。
 
-Minimum expected fields:
+最低建议字段：
 
 - `blocking_findings`
 - `reservation_findings`
@@ -141,9 +141,9 @@ Minimum expected fields:
 - `rollback_stage`
 - `allowed_modifications`
 
-Use reviewer findings for semantic judgment. Let the review engine handle the hard evidence checks and final artifact writing.
+`review_findings.yaml` 负责承载语义判断；hard evidence checks 与最终 closure artifacts 仍交给 review engine 处理。
 
-## Allowed Verdicts
+## 允许的 Verdict
 
 - `PASS`: 当前阶段目标已满足，无保留事项
 - `CONDITIONAL PASS`: 当前阶段主要目标满足，但存在必须明示的保留事项
@@ -156,36 +156,36 @@ Use reviewer findings for semantic judgment. Let the review engine handle the ha
 - `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审
 - `DROP`: 不值得投入进一步研究预算，终止该想法
 
-## Rollback Rules
+## Rollback 规则
 
-- Default rollback stage: signal_ready
-- Allowed modification: signal 实现
-- Allowed modification: 字段命名
-- Allowed modification: 标签对齐
-- Allowed modification: companion docs
-- Must open child lineage when: 改变信号机制模板
-- Must open child lineage when: 改变字段分层边界
+- 默认 rollback stage：signal_ready
+- 允许修改：signal 实现
+- 允许修改：字段命名
+- 允许修改：标签对齐
+- 允许修改：companion docs
+- 以下情况必须开 child lineage：改变信号机制模板
+- 以下情况必须开 child lineage：改变字段分层边界
 
-## Downstream Permissions
+## 下游权限
 
-- May advance to: train_calibration
-- Frozen output consumable by next stage: param_manifest.csv
-- Frozen output consumable by next stage: params/
-- Frozen output consumable by next stage: signal_coverage.csv
-- Frozen output consumable by next stage: signal_fields_contract.md
-- Next stage must not consume/re-estimate: signal definition
-- Next stage must not consume/re-estimate: param identity space
+- 可进入下游阶段：train_calibration
+- 下游可直接消费的冻结产物：param_manifest.csv
+- 下游可直接消费的冻结产物：params/
+- 下游可直接消费的冻结产物：signal_coverage.csv
+- 下游可直接消费的冻结产物：signal_fields_contract.md
+- 下游不得消费 / 重估：signal definition
+- 下游不得消费 / 重估：param identity space
 
-## Verdict Flow
+## Verdict 流程
 
-1. Confirm current stage
-2. Load the stage contract
-3. Load the stage checklist
-4. Check required inputs and outputs
-5. Evaluate the formal gate first
-6. Inspect the lineage-local source code for this stage
-7. Record audit-only findings after that
-8. Save `adversarial_review_result.yaml` and, if useful, `review_findings.yaml`
-9. If outcome is `FIX_REQUIRED`, return to the author lane and stop before closure
-10. Only if the outcome is closure-ready, run `~/.qros/bin/qros-review`
-11. Review the generated closure artifacts
+1. 确认当前 stage
+2. 读取 stage contract
+3. 读取 stage checklist
+4. 检查 required inputs 与 outputs
+5. 先判断 formal gate
+6. 检查该阶段的 lineage-local 源码与程序实现
+7. 再记录 audit-only findings
+8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
+9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
+10. 只有结果达到 closure-ready，才运行 `~/.qros/bin/qros-review`
+11. 复核最终生成的 closure artifacts
