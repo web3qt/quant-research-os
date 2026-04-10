@@ -1,8 +1,9 @@
 .qoder/
 .worktrees/
-.omx/
+.omx/*
 __pycache__/
 *.pyc
 .venv/
 outputs/*
 governance/*
+.omc/*
