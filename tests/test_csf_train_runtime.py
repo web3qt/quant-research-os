@@ -6,6 +6,7 @@ from tools.csf_train_runtime import build_csf_train_freeze_from_signal_ready, sc
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -91,7 +92,8 @@ def _csf_train_freeze_draft(*, confirmed: bool) -> dict:
 
 def _prepare_csf_signal_ready_stage(lineage_root: Path) -> None:
     stage_dir = lineage_root / "03_csf_signal_ready"
-    stage_dir.mkdir(parents=True)
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in [
         "factor_panel.parquet",
         "factor_manifest.yaml",
@@ -104,7 +106,7 @@ def _prepare_csf_signal_ready_stage(lineage_root: Path) -> None:
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
 
 
 def test_scaffold_csf_train_freeze_creates_grouped_draft(tmp_path: Path) -> None:
@@ -113,7 +115,7 @@ def test_scaffold_csf_train_freeze_creates_grouped_draft(tmp_path: Path) -> None
 
     stage_dir = scaffold_csf_train_freeze(lineage_root)
 
-    draft = yaml.safe_load((stage_dir / "csf_train_freeze_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((stage_dir / "author" / "draft" / "csf_train_freeze_draft.yaml").read_text(encoding="utf-8"))
     assert stage_dir == lineage_root / "04_csf_train_freeze"
     assert set(draft["groups"]) == {
         "preprocess_contract",
@@ -130,22 +132,23 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_csf_signal_ready_stage(lineage_root)
     stage_dir = lineage_root / "04_csf_train_freeze"
     stage_dir.mkdir(parents=True)
-    _write_yaml(stage_dir / "csf_train_freeze_draft.yaml", _csf_train_freeze_draft(confirmed=True))
+    _write_yaml(stage_dir / "author" / "draft" / "csf_train_freeze_draft.yaml", _csf_train_freeze_draft(confirmed=True))
 
     built_dir = build_csf_train_freeze_from_signal_ready(lineage_root)
 
     assert built_dir == stage_dir
-    assert (stage_dir / "csf_train_freeze.yaml").exists()
-    assert (stage_dir / "train_factor_quality.parquet").exists()
-    assert (stage_dir / "train_variant_ledger.csv").exists()
-    assert (stage_dir / "train_variant_rejects.csv").exists()
-    assert (stage_dir / "train_bucket_diagnostics.parquet").exists()
-    assert (stage_dir / "train_neutralization_diagnostics.parquet").exists()
-    assert (stage_dir / "csf_train_contract.md").exists()
-    assert (stage_dir / "artifact_catalog.md").exists()
-    assert (stage_dir / "field_dictionary.md").exists()
+    formal_dir = stage_dir / "author" / "formal"
+    assert (formal_dir / "csf_train_freeze.yaml").exists()
+    assert (formal_dir / "train_factor_quality.parquet").exists()
+    assert (formal_dir / "train_variant_ledger.csv").exists()
+    assert (formal_dir / "train_variant_rejects.csv").exists()
+    assert (formal_dir / "train_bucket_diagnostics.parquet").exists()
+    assert (formal_dir / "train_neutralization_diagnostics.parquet").exists()
+    assert (formal_dir / "csf_train_contract.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()
 
-    freeze_payload = yaml.safe_load((stage_dir / "csf_train_freeze.yaml").read_text(encoding="utf-8"))
+    freeze_payload = yaml.safe_load((formal_dir / "csf_train_freeze.yaml").read_text(encoding="utf-8"))
     search_governance = freeze_payload["search_governance_contract"]
     assert search_governance["frozen_signal_contract_reference"] == "btc_shock_alt_fragility:v1"
     assert search_governance["train_governable_axes"] == [

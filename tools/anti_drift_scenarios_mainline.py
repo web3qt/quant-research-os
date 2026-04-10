@@ -5,6 +5,7 @@ from pathlib import Path
 from tools.anti_drift import CanonicalDecisionSnapshot, canonical_snapshot_from_session_context
 from tools.research_session import run_research_session
 from tools.anti_drift_scenarios_support import (
+    review_closure_path,
     prepare_mainline_backtest_ready_review_complete,
     prepare_mainline_data_ready_review_complete,
     prepare_mainline_mandate_review_complete,
@@ -101,8 +102,8 @@ def snapshot_holdout_validation_review_complete(outputs_root: Path) -> Canonical
     prepare_mainline_backtest_ready_review_complete(outputs_root / lineage_id)
     stage_dir = outputs_root / lineage_id / "07_holdout"
     write_minimal_stage_outputs(stage_dir, stage="holdout_validation")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_yaml(review_closure_path(stage_dir, "latest_review_pack.yaml"), {"status": "ok"})
+    write_yaml(review_closure_path(stage_dir, "stage_gate_review.yaml"), {"status": "ok"})
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
     return canonical_snapshot_from_session_context(

@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 HOLDOUT_VALIDATION_DRAFT_FILE = "holdout_validation_draft.yaml"
 HOLDOUT_VALIDATION_GROUP_ORDER = [
@@ -92,9 +94,9 @@ def _blank_holdout_validation_draft(
 def scaffold_holdout_validation(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     holdout_dir = lineage_root / "07_holdout"
-    holdout_dir.mkdir(parents=True, exist_ok=True)
+    layout = ensure_stage_author_layout(holdout_dir)
 
-    draft_path = holdout_dir / HOLDOUT_VALIDATION_DRAFT_FILE
+    draft_path = layout["author_draft_dir"] / HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
         selected_symbols, best_h = _load_backtest_context(lineage_root)
         _dump_yaml(
@@ -109,12 +111,16 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     mandate_dir = lineage_root / "01_mandate"
     backtest_dir = lineage_root / "06_backtest"
     holdout_dir = scaffold_holdout_validation(lineage_root)
+    mandate_formal_dir = ensure_stage_author_layout(mandate_dir)["author_formal_dir"]
+    backtest_formal_dir = ensure_stage_author_layout(backtest_dir)["author_formal_dir"]
+    holdout_layout = ensure_stage_author_layout(holdout_dir)
+    holdout_formal_dir = holdout_layout["author_formal_dir"]
 
     missing_inputs: list[str] = []
     for path in [
-        mandate_dir / "time_split.json",
-        backtest_dir / "backtest_frozen_config.json",
-        backtest_dir / "selected_strategy_combo.json",
+        mandate_formal_dir / "time_split.json",
+        backtest_formal_dir / "backtest_frozen_config.json",
+        backtest_formal_dir / "selected_strategy_combo.json",
     ]:
         if not path.exists():
             missing_inputs.append(str(path.relative_to(lineage_root)))
@@ -188,18 +194,18 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         "consumer_stage": consumer_stage,
         "field_doc_rule": field_doc_rule,
     }
-    (holdout_dir / "holdout_run_manifest.json").write_text(
+    (holdout_formal_dir / "holdout_run_manifest.json").write_text(
         json.dumps(run_manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
 
-    with (holdout_dir / "holdout_backtest_compare.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (holdout_formal_dir / "holdout_backtest_compare.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["view", "direction_flip_flag", "structure_status", "note"])
         writer.writerow(["single_window", "false", "stable_pending_review", direction_flip_rule])
         writer.writerow(["merged_window", "false", "stable_pending_review", explanatory_note])
 
-    results_dir = holdout_dir / "window_results"
+    results_dir = holdout_formal_dir / "window_results"
     results_dir.mkdir(exist_ok=True)
     for window_name in ("holdout_window_1", "holdout_merged"):
         window_dir = results_dir / window_name
@@ -229,7 +235,7 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
             encoding="utf-8",
         )
 
-    (holdout_dir / "holdout_gate_decision.md").write_text(
+    (holdout_formal_dir / "holdout_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Holdout Gate Decision",
@@ -247,7 +253,7 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (holdout_dir / "artifact_catalog.md").write_text(
+    (holdout_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -263,7 +269,7 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (holdout_dir / "field_dictionary.md").write_text(
+    (holdout_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -288,8 +294,8 @@ def build_holdout_validation_from_backtest(lineage_root: Path) -> Path:
 
 
 def _load_backtest_context(lineage_root: Path) -> tuple[list[str], str]:
-    config_path = lineage_root / "06_backtest" / "backtest_frozen_config.json"
-    selected_combo_path = lineage_root / "06_backtest" / "selected_strategy_combo.json"
+    config_path = lineage_root / "06_backtest" / "author" / "formal" / "backtest_frozen_config.json"
+    selected_combo_path = lineage_root / "06_backtest" / "author" / "formal" / "selected_strategy_combo.json"
     selected_symbols: list[str] = []
     best_h = ""
 
@@ -309,9 +315,8 @@ def _load_backtest_context(lineage_root: Path) -> tuple[list[str], str]:
 
 
 def _require_confirmed_freeze_groups(holdout_dir: Path) -> dict[str, Any]:
-    payload = (
-        yaml.safe_load((holdout_dir / HOLDOUT_VALIDATION_DRAFT_FILE).read_text(encoding="utf-8")) or {}
-    )
+    draft_path = ensure_stage_author_layout(holdout_dir)["author_draft_dir"] / HOLDOUT_VALIDATION_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     missing = [
         name for name in HOLDOUT_VALIDATION_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))

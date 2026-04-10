@@ -18,7 +18,7 @@ writer 会写 4 份文件。
 
 - `latest_review_pack.yaml`
 - `stage_gate_review.yaml`
-- `stage_completion_certificate.yaml`
+- `review/closure/stage_completion_certificate.yaml`
 
 写入当前 `lineage_root`：
 

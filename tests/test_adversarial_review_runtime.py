@@ -23,16 +23,19 @@ MANDATE_REQUIRED_OUTPUTS = [
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def _prepare_mandate_stage(tmp_path: Path) -> tuple[Path, Path]:
     lineage_root = tmp_path / "outputs" / "topic_a"
     stage_dir = lineage_root / "01_mandate"
-    stage_dir.mkdir(parents=True)
+    (stage_dir / "author" / "formal").mkdir(parents=True)
+    (stage_dir / "review" / "request").mkdir(parents=True)
+    (stage_dir / "review" / "result").mkdir(parents=True)
 
     for name in MANDATE_REQUIRED_OUTPUTS:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+        (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
 
     ensure_stage_program(lineage_root, "mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
@@ -48,7 +51,7 @@ def _write_adversarial_review_request(
     spec = STAGE_PROGRAM_SPECS[stage_key]
     lineage_id = stage_dir.parent.name
     _write_yaml(
-        stage_dir / "adversarial_review_request.yaml",
+        stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
             "review_cycle_id": "review-cycle-1",
             "lineage_id": lineage_id,
@@ -74,7 +77,7 @@ def _write_adversarial_review_result(
 ) -> None:
     spec = STAGE_PROGRAM_SPECS[stage_key]
     _write_yaml(
-        stage_dir / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
             "review_cycle_id": "review-cycle-1",
             "reviewer_identity": reviewer_identity,
@@ -105,9 +108,9 @@ def _prepare_review_runtime_case(
     write_fake_stage_provenance(lineage_root, stage_key)
     if stage_key.startswith("csf_"):
         mandate_dir = lineage_root / "01_mandate"
-        mandate_dir.mkdir(parents=True, exist_ok=True)
+        (mandate_dir / "author" / "formal").mkdir(parents=True, exist_ok=True)
         _write_yaml(
-            mandate_dir / "research_route.yaml",
+            mandate_dir / "author" / "formal" / "research_route.yaml",
             {
                 "research_route": "cross_sectional_factor",
                 "factor_role": "standalone_alpha",
@@ -121,7 +124,11 @@ def _prepare_review_runtime_case(
 
 def test_run_stage_review_rejects_self_review_from_runtime_contract(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
-    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -129,7 +136,7 @@ def test_run_stage_review_rejects_self_review_from_runtime_contract(tmp_path: Pa
         review_loop_outcome="CLOSURE_READY_PASS",
     )
     _write_yaml(
-        stage_dir / "review_findings.yaml",
+        stage_dir / "review" / "result" / "review_findings.yaml",
         {
             "reviewer_identity": "author-agent",
             "recommended_verdict": "PASS",
@@ -148,7 +155,11 @@ def test_run_stage_review_rejects_self_review_from_runtime_contract(tmp_path: Pa
 
 def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
-    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -156,7 +167,7 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
         review_loop_outcome="FIX_REQUIRED",
     )
     _write_yaml(
-        stage_dir / "review_findings.yaml",
+        stage_dir / "review" / "result" / "review_findings.yaml",
         {
             "reviewer_identity": "reviewer-agent",
             "recommended_verdict": "RETRY",
@@ -175,14 +186,18 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
     )
 
     assert payload["review_loop_outcome"] == "FIX_REQUIRED"
-    assert not (stage_dir / "latest_review_pack.yaml").exists()
-    assert not (stage_dir / "stage_gate_review.yaml").exists()
-    assert not (stage_dir / "stage_completion_certificate.yaml").exists()
+    assert not (stage_dir / "review" / "closure" / "latest_review_pack.yaml").exists()
+    assert not (stage_dir / "review" / "closure" / "stage_gate_review.yaml").exists()
+    assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
 
 
 def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
-    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -191,7 +206,7 @@ def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) 
         reviewer_mode="observer",
     )
     _write_yaml(
-        stage_dir / "review_findings.yaml",
+        stage_dir / "review" / "result" / "review_findings.yaml",
         {
             "reviewer_identity": "reviewer-agent",
             "recommended_verdict": "PASS",
@@ -210,7 +225,11 @@ def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) 
 
 def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
-    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -218,7 +237,7 @@ def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_
         review_loop_outcome="CLOSURE_READY_PASS",
     )
     _write_yaml(
-        stage_dir / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
             "review_cycle_id": "review-cycle-1",
             "reviewer_identity": "reviewer-agent",
@@ -233,7 +252,7 @@ def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_
         },
     )
     _write_yaml(
-        stage_dir / "review_findings.yaml",
+        stage_dir / "review" / "result" / "review_findings.yaml",
         {
             "reviewer_identity": "reviewer-agent",
             "recommended_verdict": "PASS",

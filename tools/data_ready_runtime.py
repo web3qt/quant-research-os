@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
+
 
 DATA_READY_FREEZE_DRAFT_FILE = "data_ready_freeze_draft.yaml"
 DATA_READY_REBUILD_SCRIPT = "rebuild_data_ready.py"
@@ -192,9 +194,11 @@ def _blank_data_ready_freeze_draft() -> dict[str, Any]:
 def scaffold_data_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     data_ready_dir = lineage_root / "02_data_ready"
-    data_ready_dir.mkdir(parents=True, exist_ok=True)
+    stage_context = build_stage_context(data_ready_dir)
+    draft_dir = stage_context["author_draft_dir"]
+    draft_dir.mkdir(parents=True, exist_ok=True)
 
-    draft_path = data_ready_dir / DATA_READY_FREEZE_DRAFT_FILE
+    draft_path = draft_dir / DATA_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_data_ready_freeze_draft())
     return data_ready_dir
@@ -204,6 +208,10 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = scaffold_data_ready(lineage_root)
+    mandate_formal_dir = build_stage_context(mandate_dir)["author_formal_dir"]
+    data_ready_context = build_stage_context(data_ready_dir)
+    data_ready_formal_dir = data_ready_context["author_formal_dir"]
+    data_ready_formal_dir.mkdir(parents=True, exist_ok=True)
 
     missing_mandate = [
         name
@@ -216,7 +224,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (mandate_dir / name).exists()
+        if not (mandate_formal_dir / name).exists()
     ]
     if missing_mandate:
         raise ValueError(f"mandate artifacts missing before data_ready build: {', '.join(missing_mandate)}")
@@ -257,13 +265,13 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir(exist_ok=True)
+        (data_ready_formal_dir / name).mkdir(exist_ok=True)
 
-    (data_ready_dir / "qc_report.parquet").write_text(
+    (data_ready_formal_dir / "qc_report.parquet").write_text(
         "first-wave data_ready 骨架的占位 qc 产物\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "dataset_manifest.json").write_text(
+    (data_ready_formal_dir / "dataset_manifest.json").write_text(
         json.dumps(
             {
                 "stage": "data_ready",
@@ -282,7 +290,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "validation_report.md").write_text(
+    (data_ready_formal_dir / "validation_report.md").write_text(
         "\n".join(
             [
                 "# 验证报告",
@@ -303,7 +311,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "data_contract.md").write_text(
+    (data_ready_formal_dir / "data_contract.md").write_text(
         "\n".join(
             [
                 "# 数据合同",
@@ -320,11 +328,11 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "dedupe_rule.md").write_text(
+    (data_ready_formal_dir / "dedupe_rule.md").write_text(
         f"# 去重规则\n\n- {dedupe_rule}\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "universe_summary.md").write_text(
+    (data_ready_formal_dir / "universe_summary.md").write_text(
         "\n".join(
             [
                 "# Universe 摘要",
@@ -338,11 +346,11 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "universe_exclusions.csv").write_text(
+    (data_ready_formal_dir / "universe_exclusions.csv").write_text(
         "symbol,reason\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "universe_exclusions.md").write_text(
+    (data_ready_formal_dir / "universe_exclusions.md").write_text(
         "\n".join(
             [
                 "# Universe 排除项",
@@ -354,7 +362,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "data_ready_gate_decision.md").write_text(
+    (data_ready_formal_dir / "data_ready_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Data Ready Gate Decision",
@@ -367,7 +375,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    rebuild_script_path = data_ready_dir / DATA_READY_REBUILD_SCRIPT
+    rebuild_script_path = data_ready_formal_dir / DATA_READY_REBUILD_SCRIPT
     rebuild_script_path.write_text(
         _render_rebuild_script(
             stage_label="data_ready",
@@ -378,7 +386,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     rebuild_script_path.chmod(0o755)
-    (data_ready_dir / "run_manifest.json").write_text(
+    (data_ready_formal_dir / "run_manifest.json").write_text(
         json.dumps(
             {
                 "stage": "data_ready",
@@ -408,7 +416,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "artifact_catalog.md").write_text(
+    (data_ready_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -435,7 +443,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (data_ready_dir / "field_dictionary.md").write_text(
+    (data_ready_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -464,7 +472,7 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
 
 
 def _require_confirmed_freeze_groups(data_ready_dir: Path) -> dict[str, Any]:
-    draft_path = data_ready_dir / DATA_READY_FREEZE_DRAFT_FILE
+    draft_path = build_stage_context(data_ready_dir)["author_draft_dir"] / DATA_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         raise ValueError(f"{DATA_READY_FREEZE_DRAFT_FILE} is required before data_ready build")
 

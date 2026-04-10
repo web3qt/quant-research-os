@@ -33,9 +33,9 @@
 
 运行 review 时，skills 预期当前 stage 至少具备下列证据输入中的相关部分：
 
-- `artifact_catalog.md`
-- `field_dictionary.md` 或 `*_fields.md`
-- `run_manifest.json`
+- `author/formal/artifact_catalog.md`
+- `author/formal/field_dictionary.md` 或 `author/formal/*_fields.md`
+- `author/formal/run_manifest.json`
 - stage-specific machine artifacts
 
 例如：
@@ -48,7 +48,7 @@
 
 第一版 review 执行闭环要求在当前 `stage_dir` 下提供：
 
-- `review_findings.yaml`
+- `review/result/review_findings.yaml`
 
 建议至少包含：
 
@@ -80,9 +80,9 @@
 
 review 结束后，skills 统一面向以下 closure artifacts：
 
-- `latest_review_pack.yaml`
-- `stage_gate_review.yaml`
-- `stage_completion_certificate.yaml`
+- `review/closure/latest_review_pack.yaml`
+- `review/closure/stage_gate_review.yaml`
+- `review/closure/stage_completion_certificate.yaml`
 
 ## Regenerating Skills
 

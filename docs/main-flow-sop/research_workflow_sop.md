@@ -103,6 +103,21 @@ Canonical program tree：
 
 每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`。共享 helper 只能作为库被 lineage-local entrypoint 调用，不能继续充当 framework-side completion fallback。
 
+阶段产物目录的 canonical layout：
+
+- `outputs/<lineage_id>/<stage>/author/draft/`
+- `outputs/<lineage_id>/<stage>/author/formal/`
+- `outputs/<lineage_id>/<stage>/review/request/`
+- `outputs/<lineage_id>/<stage>/review/result/`
+- `outputs/<lineage_id>/<stage>/review/closure/`
+- `outputs/<lineage_id>/<stage>/review/governance/`
+
+约束：
+
+- downstream stage 只允许消费 `author/formal/`
+- `artifact_catalog.md` 与 `field_dictionary.md` 归 `author/formal/`
+- `stage_completion_certificate.yaml` 只允许位于 `review/closure/`
+
 ### 3.2 Review governance-candidate lane
 
 在阶段级 `author -> adversarial reviewer -> deterministic closure` 闭环之上，还存在一条 **future-only governance-candidate lane**：

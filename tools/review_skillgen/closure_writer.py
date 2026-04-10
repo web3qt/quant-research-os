@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-from tools.review_skillgen.context_inference import infer_review_context
+from tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 
 
 def _resolve_context(
@@ -14,17 +14,12 @@ def _resolve_context(
     explicit_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if explicit_context is not None:
-        return {
-            "stage_dir": Path(explicit_context["stage_dir"]).resolve(),
-            "lineage_root": Path(explicit_context["lineage_root"]).resolve(),
-        }
+        context = build_stage_context(Path(explicit_context["stage_dir"]).resolve())
+        context["lineage_root"] = Path(explicit_context["lineage_root"]).resolve()
+        return context
 
     probe_path = cwd or Path.cwd()
-    inferred = infer_review_context(probe_path)
-    return {
-        "stage_dir": inferred["stage_dir"],
-        "lineage_root": inferred["lineage_root"],
-    }
+    return infer_review_context(probe_path)
 
 
 def _latest_review_pack(payload: dict[str, Any]) -> dict[str, Any]:
@@ -73,8 +68,10 @@ def write_closure_artifacts(
     context = _resolve_context(payload, cwd=cwd, explicit_context=explicit_context)
     stage_dir = context["stage_dir"]
     lineage_root = context["lineage_root"]
+    review_closure_dir = context["review_closure_dir"]
     stage_dir.mkdir(parents=True, exist_ok=True)
     lineage_root.mkdir(parents=True, exist_ok=True)
+    review_closure_dir.mkdir(parents=True, exist_ok=True)
 
     latest_review_pack = _latest_review_pack(payload)
     files = {
@@ -84,7 +81,7 @@ def write_closure_artifacts(
     }
 
     for filename, content in files.items():
-        output_path = stage_dir / filename
+        output_path = review_closure_dir / filename
         output_path.write_text(
             yaml.safe_dump(content, sort_keys=False, allow_unicode=True),
             encoding="utf-8",

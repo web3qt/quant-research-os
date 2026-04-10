@@ -15,7 +15,10 @@ def _write_yaml(path: Path, payload: dict) -> None:
 
 def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
     mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True, exist_ok=True)
+    mandate_formal_dir = mandate_dir / "author" / "formal"
+    mandate_review_closure_dir = mandate_dir / "review" / "closure"
+    mandate_formal_dir.mkdir(parents=True, exist_ok=True)
+    mandate_review_closure_dir.mkdir(parents=True, exist_ok=True)
     for name in [
         "mandate.md",
         "research_scope.md",
@@ -29,9 +32,14 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         "stage_gate_review.yaml",
         "stage_completion_certificate.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        target_dir = mandate_review_closure_dir if name in {
+            "latest_review_pack.yaml",
+            "stage_gate_review.yaml",
+            "stage_completion_certificate.yaml",
+        } else mandate_formal_dir
+        (target_dir / name).write_text("ok\n", encoding="utf-8")
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        mandate_formal_dir / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "standalone_alpha",
@@ -43,14 +51,14 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
         },
     )
     _write_yaml(
-        mandate_dir / "stage_completion_certificate.yaml",
+        mandate_review_closure_dir / "stage_completion_certificate.yaml",
         {
             "stage_status": "PASS",
             "final_verdict": "PASS",
         },
     )
     _write_yaml(
-        mandate_dir / "next_stage_transition_approval.yaml",
+        mandate_dir / "author" / "draft" / "next_stage_transition_approval.yaml",
         {
             "lineage_id": lineage_root.name,
             "stage_id": "mandate",
@@ -134,10 +142,10 @@ def test_run_research_session_auto_generates_and_runs_csf_data_ready_program(tmp
     lineage_root = outputs_root / "btc_alt"
     _prepare_mandate_ready_for_csf(lineage_root)
     stage_dir = lineage_root / "02_csf_data_ready"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-    _write_yaml(stage_dir / "csf_data_ready_freeze_draft.yaml", _confirmed_csf_data_ready_draft())
+    (stage_dir / "author" / "draft").mkdir(parents=True, exist_ok=True)
+    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _confirmed_csf_data_ready_draft())
     _write_yaml(
-        stage_dir / "data_ready_transition_approval.yaml",
+        stage_dir / "author" / "draft" / "data_ready_transition_approval.yaml",
         {
             "lineage_id": "btc_alt",
             "decision": "CONFIRM_DATA_READY",
@@ -151,8 +159,8 @@ def test_run_research_session_auto_generates_and_runs_csf_data_ready_program(tmp
 
     assert (lineage_root / "program/cross_sectional_factor/data_ready/stage_program.yaml").exists()
     assert (lineage_root / "program/cross_sectional_factor/data_ready/run_stage.py").exists()
-    assert (stage_dir / "panel_manifest.json").exists()
-    assert (stage_dir / "run_manifest.json").exists()
+    assert (stage_dir / "author" / "formal" / "panel_manifest.json").exists()
+    assert (stage_dir / "author" / "formal" / "run_manifest.json").exists()
     assert status.current_stage == "csf_data_ready_review_confirmation_pending"
 
 
@@ -177,10 +185,10 @@ def test_run_research_session_surfaces_invalid_generated_csf_program_without_adv
     lineage_root = outputs_root / "btc_alt"
     _prepare_mandate_ready_for_csf(lineage_root)
     stage_dir = lineage_root / "02_csf_data_ready"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-    _write_yaml(stage_dir / "csf_data_ready_freeze_draft.yaml", _confirmed_csf_data_ready_draft())
+    (stage_dir / "author" / "draft").mkdir(parents=True, exist_ok=True)
+    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _confirmed_csf_data_ready_draft())
     _write_yaml(
-        stage_dir / "data_ready_transition_approval.yaml",
+        stage_dir / "author" / "draft" / "data_ready_transition_approval.yaml",
         {
             "lineage_id": "btc_alt",
             "decision": "CONFIRM_DATA_READY",

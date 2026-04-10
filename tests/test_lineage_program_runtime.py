@@ -88,7 +88,8 @@ def test_stage_program_resolution_uses_route_aware_paths(tmp_path: Path) -> None
 def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_case"
     mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True)
+    mandate_formal_dir = mandate_dir / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True)
     for name, content in {
         "mandate.md": "# Mandate\n",
         "research_scope.md": "# Research Scope\n",
@@ -99,8 +100,8 @@ def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_p
         "artifact_catalog.md": "# Artifact Catalog\n",
         "field_dictionary.md": "# Field Dictionary\n",
     }.items():
-        (mandate_dir / name).write_text(content, encoding="utf-8")
-    _write_yaml(lineage_root / "02_data_ready" / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft())
+        (mandate_formal_dir / name).write_text(content, encoding="utf-8")
+    _write_yaml(lineage_root / "02_data_ready" / "author" / "draft" / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft())
     ensure_stage_program(lineage_root, "data_ready")
 
     inspection = inspect_stage_program(lineage_root, "data_ready", "time_series_signal")
@@ -148,8 +149,8 @@ def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_p
     assert provenance["authored_by_agent_role"] == "executor"
     assert provenance["authoring_session_id"] == "test-session"
     assert provenance["status"] == "success"
-    assert (result.stage_dir / "dataset_manifest.json").exists()
-    assert (result.stage_dir / "program_execution_manifest.json").exists()
+    assert (result.stage_dir / "author" / "formal" / "dataset_manifest.json").exists()
+    assert (result.stage_dir / "author" / "formal" / "program_execution_manifest.json").exists()
 def test_invoke_stage_if_admitted_supports_route_neutral_mandate_programs(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "case_mandate"
     intake_dir = lineage_root / "00_idea_intake"
@@ -229,4 +230,4 @@ def test_invoke_stage_if_admitted_supports_route_neutral_mandate_programs(tmp_pa
     assert provenance["program_dir"] == "program/mandate"
     assert provenance["stage_program_manifest_path"] == "program/mandate/stage_program.yaml"
     assert provenance["status"] == "success"
-    assert (lineage_root / "01_mandate" / "mandate.md").exists()
+    assert (lineage_root / "01_mandate" / "author" / "formal" / "mandate.md").exists()

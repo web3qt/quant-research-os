@@ -18,6 +18,23 @@ from tools.test_evidence_runtime import TEST_EVIDENCE_DRAFT_FILE
 from tools.train_runtime import TRAIN_FREEZE_DRAFT_FILE
 
 
+def author_formal_path(stage_dir: Path, name: str) -> Path:
+    return stage_dir / "author" / "formal" / name
+
+
+def author_draft_path(stage_dir: Path, name: str) -> Path:
+    return stage_dir / "author" / "draft" / name
+
+
+def review_closure_path(stage_dir: Path, name: str) -> Path:
+    return stage_dir / "review" / "closure" / name
+
+
+def write_review_closure_markers(stage_dir: Path) -> None:
+    write_yaml(review_closure_path(stage_dir, "latest_review_pack.yaml"), {"status": "ok"})
+    write_yaml(review_closure_path(stage_dir, "stage_gate_review.yaml"), {"status": "ok"})
+
+
 def write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
@@ -50,7 +67,8 @@ def write_program_execution_manifest(stage_dir: Path, *, stage: str) -> None:
         "authoring_session_id": "fixture-session",
         "status": "success",
     }
-    (stage_dir / "program_execution_manifest.json").write_text(
+    author_formal_path(stage_dir, "program_execution_manifest.json").parent.mkdir(parents=True, exist_ok=True)
+    author_formal_path(stage_dir, "program_execution_manifest.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -221,9 +239,10 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         ],
     }
 
-    stage_dir.mkdir(parents=True, exist_ok=True)
+    author_formal = author_formal_path(stage_dir, ".sentinel").parent
+    author_formal.mkdir(parents=True, exist_ok=True)
     for name in file_outputs[stage]:
-        target = stage_dir / name
+        target = author_formal_path(stage_dir, name)
         if "." not in target.name:
             target.mkdir(parents=True, exist_ok=True)
         else:
@@ -237,8 +256,11 @@ def write_stage_completion_certificate(
     stage_status: str = "PASS",
     final_verdict: str | None = None,
 ) -> None:
+    target_path = path
+    if path.name == "stage_completion_certificate.yaml" and path.parent.name != "closure":
+        target_path = review_closure_path(path.parent, path.name)
     write_yaml(
-        path,
+        target_path,
         {
             "stage_status": stage_status,
             "final_verdict": final_verdict or stage_status,
@@ -247,14 +269,17 @@ def write_stage_completion_certificate(
 
 
 def write_placeholder_draft(path: Path) -> None:
-    write_yaml(path, {"groups": {}})
+    target_path = path
+    if "author" not in path.parts or "draft" not in path.parts:
+        target_path = author_draft_path(path.parent, path.name)
+    write_yaml(target_path, {"groups": {}})
 
 
 def prepare_csf_mandate_review_complete(lineage_root: Path) -> None:
     stage_dir = lineage_root / "01_mandate"
     write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_yaml(
-        stage_dir / "research_route.yaml",
+        author_formal_path(stage_dir, "research_route.yaml"),
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "regime_filter",
@@ -265,8 +290,7 @@ def prepare_csf_mandate_review_complete(lineage_root: Path) -> None:
             "group_taxonomy_reference": "sector_bucket_v1",
         },
     )
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "02_csf_data_ready" / CSF_DATA_READY_FREEZE_DRAFT_FILE)
 
@@ -275,8 +299,7 @@ def prepare_csf_data_ready_review_complete(lineage_root: Path) -> None:
     prepare_csf_mandate_review_complete(lineage_root)
     stage_dir = lineage_root / "02_csf_data_ready"
     write_minimal_stage_outputs(stage_dir, stage="csf_data_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "03_csf_signal_ready" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE)
 
@@ -285,8 +308,7 @@ def prepare_csf_signal_ready_review_complete(lineage_root: Path) -> None:
     prepare_csf_data_ready_review_complete(lineage_root)
     stage_dir = lineage_root / "03_csf_signal_ready"
     write_minimal_stage_outputs(stage_dir, stage="csf_signal_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "04_csf_train_freeze" / CSF_TRAIN_FREEZE_DRAFT_FILE)
 
@@ -295,8 +317,7 @@ def prepare_csf_train_freeze_review_complete(lineage_root: Path) -> None:
     prepare_csf_signal_ready_review_complete(lineage_root)
     stage_dir = lineage_root / "04_csf_train_freeze"
     write_minimal_stage_outputs(stage_dir, stage="csf_train_freeze")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "05_csf_test_evidence" / CSF_TEST_EVIDENCE_DRAFT_FILE)
 
@@ -305,8 +326,7 @@ def prepare_csf_test_evidence_review_complete(lineage_root: Path) -> None:
     prepare_csf_train_freeze_review_complete(lineage_root)
     stage_dir = lineage_root / "05_csf_test_evidence"
     write_minimal_stage_outputs(stage_dir, stage="csf_test_evidence")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "06_csf_backtest_ready" / CSF_BACKTEST_READY_DRAFT_FILE)
 
@@ -315,8 +335,7 @@ def prepare_csf_backtest_ready_review_complete(lineage_root: Path) -> None:
     prepare_csf_test_evidence_review_complete(lineage_root)
     stage_dir = lineage_root / "06_csf_backtest_ready"
     write_minimal_stage_outputs(stage_dir, stage="csf_backtest_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "07_csf_holdout_validation" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE)
 
@@ -325,7 +344,7 @@ def prepare_mainline_mandate_review_complete(lineage_root: Path) -> None:
     stage_dir = lineage_root / "01_mandate"
     write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_yaml(
-        stage_dir / "research_route.yaml",
+        author_formal_path(stage_dir, "research_route.yaml"),
         {
             "research_route": "time_series_signal",
             "factor_role": "standalone_alpha",
@@ -336,8 +355,7 @@ def prepare_mainline_mandate_review_complete(lineage_root: Path) -> None:
             "group_taxonomy_reference": "",
         },
     )
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
 
 
@@ -345,8 +363,7 @@ def prepare_mainline_data_ready_review_complete(lineage_root: Path) -> None:
     prepare_mainline_mandate_review_complete(lineage_root)
     stage_dir = lineage_root / "02_data_ready"
     write_minimal_stage_outputs(stage_dir, stage="data_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "03_signal_ready" / SIGNAL_READY_FREEZE_DRAFT_FILE)
 
@@ -355,8 +372,7 @@ def prepare_mainline_signal_ready_review_complete(lineage_root: Path) -> None:
     prepare_mainline_data_ready_review_complete(lineage_root)
     stage_dir = lineage_root / "03_signal_ready"
     write_minimal_stage_outputs(stage_dir, stage="signal_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "04_train_freeze" / TRAIN_FREEZE_DRAFT_FILE)
 
@@ -365,8 +381,7 @@ def prepare_mainline_train_freeze_review_complete(lineage_root: Path) -> None:
     prepare_mainline_signal_ready_review_complete(lineage_root)
     stage_dir = lineage_root / "04_train_freeze"
     write_minimal_stage_outputs(stage_dir, stage="train_freeze")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "05_test_evidence" / TEST_EVIDENCE_DRAFT_FILE)
 
@@ -375,8 +390,7 @@ def prepare_mainline_test_evidence_review_complete(lineage_root: Path) -> None:
     prepare_mainline_train_freeze_review_complete(lineage_root)
     stage_dir = lineage_root / "05_test_evidence"
     write_minimal_stage_outputs(stage_dir, stage="test_evidence")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "06_backtest" / BACKTEST_READY_DRAFT_FILE)
 
@@ -385,7 +399,6 @@ def prepare_mainline_backtest_ready_review_complete(lineage_root: Path) -> None:
     prepare_mainline_test_evidence_review_complete(lineage_root)
     stage_dir = lineage_root / "06_backtest"
     write_minimal_stage_outputs(stage_dir, stage="backtest_ready")
-    write_yaml(stage_dir / "latest_review_pack.yaml", {"status": "ok"})
-    write_yaml(stage_dir / "stage_gate_review.yaml", {"status": "ok"})
+    write_review_closure_markers(stage_dir)
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_placeholder_draft(lineage_root / "07_holdout" / HOLDOUT_VALIDATION_DRAFT_FILE)

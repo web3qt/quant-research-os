@@ -9,6 +9,7 @@ from tools.csf_backtest_runtime import (
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -69,7 +70,8 @@ def _csf_backtest_ready_draft(*, confirmed: bool) -> dict:
 
 def _prepare_csf_test_stage(lineage_root: Path) -> None:
     stage_dir = lineage_root / "05_csf_test_evidence"
-    stage_dir.mkdir(parents=True)
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in [
         "rank_ic_timeseries.parquet",
         "rank_ic_summary.json",
@@ -86,15 +88,16 @@ def _prepare_csf_test_stage(lineage_root: Path) -> None:
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
-    (stage_dir / "csf_selected_variants_test.csv").write_text(
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    (formal_dir / "csf_selected_variants_test.csv").write_text(
         "variant_id,status\nbaseline_v1,selected\n",
         encoding="utf-8",
     )
     mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True, exist_ok=True)
+    mandate_formal_dir = mandate_dir / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True, exist_ok=True)
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        mandate_formal_dir / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "standalone_alpha",
@@ -109,7 +112,7 @@ def test_scaffold_csf_backtest_ready_creates_grouped_draft(tmp_path: Path) -> No
 
     stage_dir = scaffold_csf_backtest_ready(lineage_root)
 
-    draft = yaml.safe_load((stage_dir / "csf_backtest_ready_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((stage_dir / "author" / "draft" / "csf_backtest_ready_draft.yaml").read_text(encoding="utf-8"))
     assert stage_dir == lineage_root / "06_csf_backtest_ready"
     assert set(draft["groups"]) == {
         "portfolio_contract",
@@ -125,21 +128,22 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     _prepare_csf_test_stage(lineage_root)
     stage_dir = lineage_root / "06_csf_backtest_ready"
     stage_dir.mkdir(parents=True)
-    _write_yaml(stage_dir / "csf_backtest_ready_draft.yaml", _csf_backtest_ready_draft(confirmed=True))
+    _write_yaml(stage_dir / "author" / "draft" / "csf_backtest_ready_draft.yaml", _csf_backtest_ready_draft(confirmed=True))
 
     built_dir = build_csf_backtest_ready_from_test_evidence(lineage_root)
 
     assert built_dir == stage_dir
-    assert (stage_dir / "portfolio_contract.yaml").exists()
-    assert (stage_dir / "portfolio_weight_panel.parquet").exists()
-    assert (stage_dir / "rebalance_ledger.csv").exists()
-    assert (stage_dir / "turnover_capacity_report.parquet").exists()
-    assert (stage_dir / "cost_assumption_report.md").exists()
-    assert (stage_dir / "portfolio_summary.parquet").exists()
-    assert (stage_dir / "name_level_metrics.parquet").exists()
-    assert (stage_dir / "drawdown_report.json").exists()
-    assert (stage_dir / "target_strategy_compare.parquet").exists()
-    assert (stage_dir / "csf_backtest_gate_table.csv").exists()
-    assert (stage_dir / "csf_backtest_contract.md").exists()
-    assert (stage_dir / "artifact_catalog.md").exists()
-    assert (stage_dir / "field_dictionary.md").exists()
+    formal_dir = stage_dir / "author" / "formal"
+    assert (formal_dir / "portfolio_contract.yaml").exists()
+    assert (formal_dir / "portfolio_weight_panel.parquet").exists()
+    assert (formal_dir / "rebalance_ledger.csv").exists()
+    assert (formal_dir / "turnover_capacity_report.parquet").exists()
+    assert (formal_dir / "cost_assumption_report.md").exists()
+    assert (formal_dir / "portfolio_summary.parquet").exists()
+    assert (formal_dir / "name_level_metrics.parquet").exists()
+    assert (formal_dir / "drawdown_report.json").exists()
+    assert (formal_dir / "target_strategy_compare.parquet").exists()
+    assert (formal_dir / "csf_backtest_gate_table.csv").exists()
+    assert (formal_dir / "csf_backtest_contract.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()

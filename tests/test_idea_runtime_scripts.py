@@ -284,7 +284,7 @@ def test_build_mandate_from_intake_requires_go_to_mandate(tmp_path: Path) -> Non
 
     assert result.returncode != 0
     assert "GO_TO_MANDATE" in result.stderr
-    assert not (lineage_root / "01_mandate").exists()
+    assert not (lineage_root / "01_mandate" / "author" / "formal" / "mandate.md").exists()
 
 
 def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> None:
@@ -347,15 +347,16 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
 
     assert result.returncode == 0
     mandate_dir = lineage_root / "01_mandate"
-    assert (mandate_dir / "mandate.md").exists()
-    assert (mandate_dir / "research_scope.md").exists()
-    assert (mandate_dir / "time_split.json").exists()
-    assert (mandate_dir / "parameter_grid.yaml").exists()
-    assert (mandate_dir / "run_config.toml").exists()
-    assert (mandate_dir / "research_route.yaml").exists()
-    assert (mandate_dir / "artifact_catalog.md").exists()
-    assert (mandate_dir / "field_dictionary.md").exists()
-    route_payload = yaml.safe_load((mandate_dir / "research_route.yaml").read_text(encoding="utf-8"))
+    mandate_formal_dir = mandate_dir / "author" / "formal"
+    assert (mandate_formal_dir / "mandate.md").exists()
+    assert (mandate_formal_dir / "research_scope.md").exists()
+    assert (mandate_formal_dir / "time_split.json").exists()
+    assert (mandate_formal_dir / "parameter_grid.yaml").exists()
+    assert (mandate_formal_dir / "run_config.toml").exists()
+    assert (mandate_formal_dir / "research_route.yaml").exists()
+    assert (mandate_formal_dir / "artifact_catalog.md").exists()
+    assert (mandate_formal_dir / "field_dictionary.md").exists()
+    route_payload = yaml.safe_load((mandate_formal_dir / "research_route.yaml").read_text(encoding="utf-8"))
     assert route_payload["research_route"] == "cross_sectional_factor"
     assert route_payload["factor_role"] == "standalone_alpha"
     assert route_payload["factor_structure"] == "single_factor"
@@ -363,13 +364,13 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert route_payload["neutralization_policy"] == "group_neutral"
     assert route_payload["group_taxonomy_reference"] == "sector_bucket_v1"
     assert route_payload["excluded_routes"] == ["time_series_signal"]
-    assert "BTC drives price discovery for high-liquidity ALTs." in (mandate_dir / "mandate.md").read_text(
+    assert "BTC drives price discovery for high-liquidity ALTs." in (mandate_formal_dir / "mandate.md").read_text(
         encoding="utf-8"
     )
-    assert "数据来源: Binance UM futures klines" in (mandate_dir / "research_scope.md").read_text(
+    assert "数据来源: Binance UM futures klines" in (mandate_formal_dir / "research_scope.md").read_text(
         encoding="utf-8"
     )
-    assert 'data_source = "Binance UM futures klines"' in (mandate_dir / "run_config.toml").read_text(
+    assert 'data_source = "Binance UM futures klines"' in (mandate_formal_dir / "run_config.toml").read_text(
         encoding="utf-8"
     )
     assert "Built mandate artifacts" in result.stdout
@@ -418,7 +419,7 @@ def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(t
 
     assert result.returncode != 0
     assert "route_assessment" in result.stderr
-    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+    assert not (lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml").exists()
 
 
 def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_path: Path) -> None:
@@ -468,7 +469,7 @@ def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_pat
 
     assert result.returncode != 0
     assert "unsupported route: event_trigger" in result.stderr
-    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+    assert not (lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml").exists()
 
 
 def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Path) -> None:
@@ -518,7 +519,7 @@ def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Pa
 
     assert result.returncode != 0
     assert "excluded_routes" in result.stderr
-    assert not (lineage_root / "01_mandate" / "research_route.yaml").exists()
+    assert not (lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml").exists()
 
 
 def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
@@ -588,9 +589,12 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
     script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     mandate_dir = lineage_root / "01_mandate"
+    mandate_formal_dir = mandate_dir / "author" / "formal"
     data_ready_dir = lineage_root / "02_data_ready"
-    mandate_dir.mkdir(parents=True)
-    data_ready_dir.mkdir(parents=True)
+    data_ready_draft_dir = data_ready_dir / "author" / "draft"
+    data_ready_formal_dir = data_ready_dir / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True)
+    data_ready_draft_dir.mkdir(parents=True)
 
     for name, content in {
         "mandate.md": "# Mandate\n",
@@ -601,9 +605,9 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
         "artifact_catalog.md": "# Artifact Catalog\n",
         "field_dictionary.md": "# Field Dictionary\n",
     }.items():
-        (mandate_dir / name).write_text(content, encoding="utf-8")
+        (mandate_formal_dir / name).write_text(content, encoding="utf-8")
 
-    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+    _write_yaml(data_ready_draft_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
     ensure_stage_program(lineage_root, "data_ready")
 
     result = run(
@@ -615,16 +619,16 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
     )
 
     assert result.returncode == 0
-    assert (data_ready_dir / "aligned_bars").exists()
-    assert (data_ready_dir / "rolling_stats").exists()
-    assert (data_ready_dir / "pair_stats").exists()
-    assert (data_ready_dir / "benchmark_residual").exists()
-    assert (data_ready_dir / "topic_basket_state").exists()
-    assert (data_ready_dir / "dataset_manifest.json").exists()
-    assert (data_ready_dir / "data_contract.md").exists()
-    assert (data_ready_dir / "run_manifest.json").exists()
-    assert (data_ready_dir / "rebuild_data_ready.py").exists()
-    assert (data_ready_dir / "artifact_catalog.md").exists()
+    assert (data_ready_formal_dir / "aligned_bars").exists()
+    assert (data_ready_formal_dir / "rolling_stats").exists()
+    assert (data_ready_formal_dir / "pair_stats").exists()
+    assert (data_ready_formal_dir / "benchmark_residual").exists()
+    assert (data_ready_formal_dir / "topic_basket_state").exists()
+    assert (data_ready_formal_dir / "dataset_manifest.json").exists()
+    assert (data_ready_formal_dir / "data_contract.md").exists()
+    assert (data_ready_formal_dir / "run_manifest.json").exists()
+    assert (data_ready_formal_dir / "rebuild_data_ready.py").exists()
+    assert (data_ready_formal_dir / "artifact_catalog.md").exists()
     assert "Built data_ready artifacts" in result.stdout
 
 
@@ -633,9 +637,12 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
     script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     data_ready_dir = lineage_root / "02_data_ready"
+    data_ready_formal_dir = data_ready_dir / "author" / "formal"
     signal_ready_dir = lineage_root / "03_signal_ready"
-    data_ready_dir.mkdir(parents=True)
-    signal_ready_dir.mkdir(parents=True)
+    signal_ready_draft_dir = signal_ready_dir / "author" / "draft"
+    signal_ready_formal_dir = signal_ready_dir / "author" / "formal"
+    data_ready_formal_dir.mkdir(parents=True)
+    signal_ready_draft_dir.mkdir(parents=True)
 
     for name in [
         "qc_report.parquet",
@@ -650,7 +657,7 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (data_ready_formal_dir / name).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -658,9 +665,9 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+        (data_ready_formal_dir / name).mkdir()
 
-    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+    _write_yaml(signal_ready_draft_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
     ensure_stage_program(lineage_root, "signal_ready")
 
     result = run(
@@ -672,12 +679,12 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
     )
 
     assert result.returncode == 0
-    assert (signal_ready_dir / "param_manifest.csv").exists()
-    assert (signal_ready_dir / "params").exists()
-    assert (signal_ready_dir / "signal_coverage.csv").exists()
-    assert (signal_ready_dir / "signal_contract.md").exists()
-    assert (signal_ready_dir / "signal_fields_contract.md").exists()
-    assert (signal_ready_dir / "artifact_catalog.md").exists()
+    assert (signal_ready_formal_dir / "param_manifest.csv").exists()
+    assert (signal_ready_formal_dir / "params").exists()
+    assert (signal_ready_formal_dir / "signal_coverage.csv").exists()
+    assert (signal_ready_formal_dir / "signal_contract.md").exists()
+    assert (signal_ready_formal_dir / "signal_fields_contract.md").exists()
+    assert (signal_ready_formal_dir / "artifact_catalog.md").exists()
     assert "Built signal_ready artifacts" in result.stdout
 
 
@@ -686,9 +693,11 @@ def test_build_data_ready_from_mandate_requires_confirmed_freeze_groups(tmp_path
     script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     mandate_dir = lineage_root / "01_mandate"
+    mandate_formal_dir = mandate_dir / "author" / "formal"
     data_ready_dir = lineage_root / "02_data_ready"
-    mandate_dir.mkdir(parents=True)
-    data_ready_dir.mkdir(parents=True)
+    data_ready_draft_dir = data_ready_dir / "author" / "draft"
+    mandate_formal_dir.mkdir(parents=True)
+    data_ready_draft_dir.mkdir(parents=True)
 
     for name, content in {
         "mandate.md": "# Mandate\n",
@@ -699,9 +708,9 @@ def test_build_data_ready_from_mandate_requires_confirmed_freeze_groups(tmp_path
         "artifact_catalog.md": "# Artifact Catalog\n",
         "field_dictionary.md": "# Field Dictionary\n",
     }.items():
-        (mandate_dir / name).write_text(content, encoding="utf-8")
+        (mandate_formal_dir / name).write_text(content, encoding="utf-8")
 
-    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=False))
+    _write_yaml(data_ready_draft_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=False))
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
@@ -721,9 +730,11 @@ def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp
     script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     data_ready_dir = lineage_root / "02_data_ready"
+    data_ready_formal_dir = data_ready_dir / "author" / "formal"
     signal_ready_dir = lineage_root / "03_signal_ready"
-    data_ready_dir.mkdir(parents=True)
-    signal_ready_dir.mkdir(parents=True)
+    signal_ready_draft_dir = signal_ready_dir / "author" / "draft"
+    data_ready_formal_dir.mkdir(parents=True)
+    signal_ready_draft_dir.mkdir(parents=True)
 
     for name in [
         "qc_report.parquet",
@@ -738,7 +749,7 @@ def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (data_ready_formal_dir / name).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -746,9 +757,9 @@ def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+        (data_ready_formal_dir / name).mkdir()
 
-    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=False))
+    _write_yaml(signal_ready_draft_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=False))
 
     result = run(
         [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],

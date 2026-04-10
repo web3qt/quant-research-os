@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 BACKTEST_READY_DRAFT_FILE = "backtest_ready_draft.yaml"
 BACKTEST_READY_GROUP_ORDER = [
@@ -98,9 +100,9 @@ def _blank_backtest_ready_draft(
 def scaffold_backtest_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     backtest_dir = lineage_root / "06_backtest"
-    backtest_dir.mkdir(parents=True, exist_ok=True)
+    layout = ensure_stage_author_layout(backtest_dir)
 
-    draft_path = backtest_dir / BACKTEST_READY_DRAFT_FILE
+    draft_path = layout["author_draft_dir"] / BACKTEST_READY_DRAFT_FILE
     if not draft_path.exists():
         symbols, best_h = _load_test_selection(lineage_root)
         _dump_yaml(
@@ -114,11 +116,14 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     test_dir = lineage_root / "05_test_evidence"
     backtest_dir = scaffold_backtest_ready(lineage_root)
+    test_formal_dir = ensure_stage_author_layout(test_dir)["author_formal_dir"]
+    backtest_layout = ensure_stage_author_layout(backtest_dir)
+    backtest_formal_dir = backtest_layout["author_formal_dir"]
 
     missing_inputs: list[str] = []
     for path in [
-        test_dir / "frozen_spec.json",
-        test_dir / "selected_symbols_test.csv",
+        test_formal_dir / "frozen_spec.json",
+        test_formal_dir / "selected_symbols_test.csv",
     ]:
         if not path.exists():
             missing_inputs.append(str(path.relative_to(lineage_root)))
@@ -172,7 +177,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
     if upstream_best_h and best_h != upstream_best_h:
         raise ValueError("best_h must match the frozen test_evidence best_h")
 
-    (backtest_dir / "backtest_frozen_config.json").write_text(
+    (backtest_formal_dir / "backtest_frozen_config.json").write_text(
         json.dumps(
             {
                 "stage": "backtest_ready",
@@ -200,12 +205,12 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    with (backtest_dir / "strategy_combo_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (backtest_formal_dir / "strategy_combo_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["combo_id", "execution_rule", "portfolio_rule", "risk_overlay", "status"])
         writer.writerow(["baseline_combo_v1", entry_rule, position_sizing_rule, stop_or_kill_switch_rule, "selected"])
 
-    (backtest_dir / "selected_strategy_combo.json").write_text(
+    (backtest_formal_dir / "selected_strategy_combo.json").write_text(
         json.dumps(
             {
                 "combo_id": "baseline_combo_v1",
@@ -223,7 +228,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (backtest_dir / "capacity_review.md").write_text(
+    (backtest_formal_dir / "capacity_review.md").write_text(
         "\n".join(
             [
                 "# Capacity Review",
@@ -239,7 +244,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (backtest_dir / "backtest_gate_decision.md").write_text(
+    (backtest_formal_dir / "backtest_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Backtest Gate Decision",
@@ -255,7 +260,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (backtest_dir / "artifact_catalog.md").write_text(
+    (backtest_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -275,7 +280,7 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (backtest_dir / "field_dictionary.md").write_text(
+    (backtest_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -300,12 +305,13 @@ def build_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
 
 
 def backtest_ready_real_outputs_complete(backtest_dir: Path) -> bool:
-    compare_path = backtest_dir / "engine_compare.csv"
+    formal_dir = ensure_stage_author_layout(backtest_dir)["author_formal_dir"]
+    compare_path = formal_dir / "engine_compare.csv"
     if not compare_path.exists() or _engine_compare_is_placeholder(compare_path):
         return False
 
     for engine_name in ("vectorbt", "backtrader"):
-        engine_dir = backtest_dir / engine_name
+        engine_dir = formal_dir / engine_name
         if not _engine_dir_has_real_outputs(engine_dir):
             return False
     return True
@@ -359,8 +365,8 @@ def _engine_compare_is_placeholder(path: Path) -> bool:
 
 
 def _load_test_selection(lineage_root: Path) -> tuple[list[str], str]:
-    frozen_spec_path = lineage_root / "05_test_evidence" / "frozen_spec.json"
-    selected_symbols_path = lineage_root / "05_test_evidence" / "selected_symbols_test.csv"
+    frozen_spec_path = lineage_root / "05_test_evidence" / "author" / "formal" / "frozen_spec.json"
+    selected_symbols_path = lineage_root / "05_test_evidence" / "author" / "formal" / "selected_symbols_test.csv"
     best_h = ""
     selected_symbols: list[str] = []
 
@@ -384,7 +390,8 @@ def _load_test_selection(lineage_root: Path) -> tuple[list[str], str]:
 
 
 def _require_confirmed_freeze_groups(backtest_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((backtest_dir / BACKTEST_READY_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = ensure_stage_author_layout(backtest_dir)["author_draft_dir"] / BACKTEST_READY_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     missing = [name for name in BACKTEST_READY_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]
     if missing:

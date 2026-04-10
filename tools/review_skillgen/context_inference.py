@@ -57,24 +57,50 @@ STAGE_ALIASES = {
     "10_canary_prod": "canary_production",
 }
 
+REVIEW_SUBDIRS = {"request", "result", "closure", "governance"}
+
 
 def _normalize_stage_name(name: str) -> str | None:
     return STAGE_ALIASES.get(name)
+
+
+def build_stage_context(stage_root: Path) -> dict[str, Any]:
+    stage_root = stage_root.resolve()
+    normalized_stage = _normalize_stage_name(stage_root.name)
+    if normalized_stage is None:
+        raise ValueError(f"Could not infer review context from stage root: {stage_root}")
+
+    lineage_root = stage_root.parent
+    author_root = stage_root / "author"
+    review_root = stage_root / "review"
+    return {
+        "lineage_id": lineage_root.name,
+        "stage": normalized_stage,
+        "stage_dir": stage_root,
+        "stage_root": stage_root,
+        "lineage_root": lineage_root,
+        "author_dir": author_root,
+        "author_draft_dir": author_root / "draft",
+        "author_formal_dir": author_root / "formal",
+        "review_dir": review_root,
+        "review_request_dir": review_root / "request",
+        "review_result_dir": review_root / "result",
+        "review_closure_dir": review_root / "closure",
+        "review_governance_dir": review_root / "governance",
+    }
 
 
 def infer_review_context(path: Path) -> dict[str, Any]:
     candidate = path.resolve()
 
     for current in (candidate, *candidate.parents):
+        if current.name in REVIEW_SUBDIRS and current.parent.name == "review":
+            stage_root = current.parent.parent
+            if stage_root.parent.name != "outputs":
+                continue
+            return build_stage_context(stage_root)
+
         if current.parent.parent.name == "outputs":
-            normalized_stage = _normalize_stage_name(current.name)
-            if normalized_stage is None:
-                raise ValueError(f"Could not infer review context from path: {path}")
-            return {
-                "lineage_id": current.parent.name,
-                "stage": normalized_stage,
-                "stage_dir": current,
-                "lineage_root": current.parent,
-            }
+            return build_stage_context(current)
 
     raise ValueError(f"Could not infer review context from path: {path}")

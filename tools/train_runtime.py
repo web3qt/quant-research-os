@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 TRAIN_FREEZE_DRAFT_FILE = "train_freeze_draft.yaml"
 TRAIN_FREEZE_GROUP_ORDER = [
@@ -88,9 +90,9 @@ def _blank_train_freeze_draft(*, candidate_param_ids: list[str] | None = None) -
 def scaffold_train_freeze(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     train_dir = lineage_root / "04_train_freeze"
-    train_dir.mkdir(parents=True, exist_ok=True)
+    layout = ensure_stage_author_layout(train_dir)
 
-    draft_path = train_dir / TRAIN_FREEZE_DRAFT_FILE
+    draft_path = layout["author_draft_dir"] / TRAIN_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_train_freeze_draft(candidate_param_ids=_load_param_ids(lineage_root)))
     return train_dir
@@ -100,6 +102,11 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     signal_ready_dir = lineage_root / "03_signal_ready"
     train_dir = scaffold_train_freeze(lineage_root)
+    train_layout = ensure_stage_author_layout(train_dir)
+    signal_ready_layout = ensure_stage_author_layout(signal_ready_dir)
+    signal_ready_formal_dir = signal_ready_layout["author_formal_dir"]
+    train_draft_dir = train_layout["author_draft_dir"]
+    train_formal_dir = train_layout["author_formal_dir"]
 
     missing_signal_ready = [
         name
@@ -115,7 +122,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (signal_ready_dir / name).exists()
+        if not (signal_ready_formal_dir / name).exists()
     ]
     if missing_signal_ready:
         raise ValueError(
@@ -165,7 +172,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             f"rejected_param_ids must be drawn from candidate_param_ids: {', '.join(unknown_rejected)}"
         )
 
-    (train_dir / "train_thresholds.json").write_text(
+    (train_formal_dir / "train_thresholds.json").write_text(
         json.dumps(
             {
                 "stage": "train_calibration",
@@ -191,7 +198,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (train_dir / "train_quality.parquet").write_text(
+    (train_formal_dir / "train_quality.parquet").write_text(
         "\n".join(
             [
                 "governance-first train_freeze 阶段的占位 train-quality 产物",
@@ -205,7 +212,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    with (train_dir / "train_param_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (train_formal_dir / "train_param_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["param_id", "status", "selection_rule", "train_window_source", "notes"])
         for param_id in candidate_param_ids:
@@ -213,13 +220,13 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             note = coarse_to_fine_note if status == "kept" else reject_log_note
             writer.writerow([param_id, status, selection_rule, train_window_source, note])
 
-    with (train_dir / "train_rejects.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (train_formal_dir / "train_rejects.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["param_id", "reject_reason"])
         for param_id in rejected_param_ids:
             writer.writerow([param_id, reject_log_note])
 
-    (train_dir / "train_gate_decision.md").write_text(
+    (train_formal_dir / "train_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Train Gate Decision",
@@ -237,7 +244,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (train_dir / "artifact_catalog.md").write_text(
+    (train_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -254,7 +261,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (train_dir / "field_dictionary.md").write_text(
+    (train_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -279,7 +286,7 @@ def build_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
 
 
 def _load_param_ids(lineage_root: Path) -> list[str]:
-    manifest_path = lineage_root / "03_signal_ready" / "param_manifest.csv"
+    manifest_path = lineage_root / "03_signal_ready" / "author" / "formal" / "param_manifest.csv"
     if not manifest_path.exists():
         return []
 
@@ -297,7 +304,8 @@ def _load_param_ids(lineage_root: Path) -> list[str]:
 
 
 def _require_confirmed_freeze_groups(train_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((train_dir / TRAIN_FREEZE_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = ensure_stage_author_layout(train_dir)["author_draft_dir"] / TRAIN_FREEZE_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
 
     missing = [name for name in TRAIN_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]

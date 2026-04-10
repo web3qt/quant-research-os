@@ -6,6 +6,7 @@ from tools.train_runtime import build_train_freeze_from_signal_ready, scaffold_t
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -73,7 +74,8 @@ def _train_freeze_draft(*, confirmed: bool) -> dict:
 
 def _prepare_signal_ready_stage(lineage_root: Path) -> None:
     signal_ready_dir = lineage_root / "03_signal_ready"
-    signal_ready_dir.mkdir(parents=True)
+    formal_dir = signal_ready_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in [
         "signal_coverage.csv",
         "signal_coverage.md",
@@ -84,9 +86,9 @@ def _prepare_signal_ready_stage(lineage_root: Path) -> None:
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
-    (signal_ready_dir / "params").mkdir()
-    (signal_ready_dir / "param_manifest.csv").write_text(
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    (formal_dir / "params").mkdir()
+    (formal_dir / "param_manifest.csv").write_text(
         "\n".join(
             [
                 "param_id,scope,baseline_signal,parameter_values",
@@ -104,7 +106,7 @@ def test_scaffold_train_freeze_creates_grouped_draft_with_param_ids(tmp_path: Pa
 
     train_dir = scaffold_train_freeze(lineage_root)
 
-    draft = yaml.safe_load((train_dir / "train_freeze_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((train_dir / "author" / "draft" / "train_freeze_draft.yaml").read_text(encoding="utf-8"))
     assert train_dir == lineage_root / "04_train_freeze"
     assert set(draft["groups"]) == {
         "window_contract",
@@ -121,15 +123,16 @@ def test_build_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_signal_ready_stage(lineage_root)
     train_dir = lineage_root / "04_train_freeze"
     train_dir.mkdir(parents=True)
-    _write_yaml(train_dir / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
+    _write_yaml(train_dir / "author" / "draft" / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
 
     built_dir = build_train_freeze_from_signal_ready(lineage_root)
 
     assert built_dir == train_dir
-    assert (train_dir / "train_thresholds.json").exists()
-    assert (train_dir / "train_quality.parquet").exists()
-    assert (train_dir / "train_param_ledger.csv").exists()
-    assert (train_dir / "train_rejects.csv").exists()
-    assert (train_dir / "train_gate_decision.md").exists()
-    assert (train_dir / "artifact_catalog.md").exists()
-    assert (train_dir / "field_dictionary.md").exists()
+    formal_dir = train_dir / "author" / "formal"
+    assert (formal_dir / "train_thresholds.json").exists()
+    assert (formal_dir / "train_quality.parquet").exists()
+    assert (formal_dir / "train_param_ledger.csv").exists()
+    assert (formal_dir / "train_rejects.csv").exists()
+    assert (formal_dir / "train_gate_decision.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()

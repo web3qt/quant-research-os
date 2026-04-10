@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
+
 
 CSF_DATA_READY_FREEZE_DRAFT_FILE = "csf_data_ready_freeze_draft.yaml"
 CSF_DATA_READY_REBUILD_SCRIPT = "rebuild_csf_data_ready.py"
@@ -189,8 +191,9 @@ def _blank_csf_data_ready_freeze_draft() -> dict[str, Any]:
 def scaffold_csf_data_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     stage_dir = lineage_root / "02_csf_data_ready"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-    draft_path = stage_dir / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    draft_dir = build_stage_context(stage_dir)["author_draft_dir"]
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    draft_path = draft_dir / CSF_DATA_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_csf_data_ready_freeze_draft())
     return stage_dir
@@ -200,6 +203,9 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     mandate_dir = lineage_root / "01_mandate"
     stage_dir = scaffold_csf_data_ready(lineage_root)
+    mandate_formal_dir = build_stage_context(mandate_dir)["author_formal_dir"]
+    stage_formal_dir = build_stage_context(stage_dir)["author_formal_dir"]
+    stage_formal_dir.mkdir(parents=True, exist_ok=True)
 
     missing = [
         name
@@ -213,12 +219,12 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (mandate_dir / name).exists()
+        if not (mandate_formal_dir / name).exists()
     ]
     if missing:
         raise ValueError(f"mandate artifacts missing before csf_data_ready build: {', '.join(missing)}")
 
-    route_payload = yaml.safe_load((mandate_dir / "research_route.yaml").read_text(encoding="utf-8")) or {}
+    route_payload = yaml.safe_load((mandate_formal_dir / "research_route.yaml").read_text(encoding="utf-8")) or {}
     if str(route_payload.get("research_route", "")).strip() != "cross_sectional_factor":
         raise ValueError("research_route must be cross_sectional_factor before csf_data_ready build")
 
@@ -249,7 +255,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     runtime_root = _runtime_root()
     runtime_git_revision = _git_revision(runtime_root)
 
-    (stage_dir / "panel_manifest.json").write_text(
+    (stage_formal_dir / "panel_manifest.json").write_text(
         json.dumps(
             {
                 "stage": "csf_data_ready",
@@ -271,14 +277,14 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         "cross_section_coverage.parquet",
         "eligibility_base_mask.parquet",
     ]:
-        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
-    (stage_dir / "shared_feature_base").mkdir(exist_ok=True)
+        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+    (stage_formal_dir / "shared_feature_base").mkdir(exist_ok=True)
     if group_taxonomy_reference:
-        (stage_dir / "asset_taxonomy_snapshot.parquet").write_text(
+        (stage_formal_dir / "asset_taxonomy_snapshot.parquet").write_text(
             f"group_taxonomy_reference={group_taxonomy_reference}\n",
             encoding="utf-8",
         )
-    (stage_dir / "csf_data_contract.md").write_text(
+    (stage_formal_dir / "csf_data_contract.md").write_text(
         "\n".join(
             [
                 "# CSF 数据合同",
@@ -299,7 +305,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "csf_data_ready_gate_decision.md").write_text(
+    (stage_formal_dir / "csf_data_ready_gate_decision.md").write_text(
         "\n".join(
             [
                 "# CSF Data Ready Gate Decision",
@@ -312,7 +318,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    rebuild_script_path = stage_dir / CSF_DATA_READY_REBUILD_SCRIPT
+    rebuild_script_path = stage_formal_dir / CSF_DATA_READY_REBUILD_SCRIPT
     rebuild_script_path.write_text(
         _render_rebuild_script(
             stage_label="csf_data_ready",
@@ -323,7 +329,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     rebuild_script_path.chmod(0o755)
-    (stage_dir / "run_manifest.json").write_text(
+    (stage_formal_dir / "run_manifest.json").write_text(
         json.dumps(
             {
                 "stage": "csf_data_ready",
@@ -354,7 +360,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "artifact_catalog.md").write_text(
+    (stage_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -375,7 +381,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "field_dictionary.md").write_text(
+    (stage_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -402,7 +408,8 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
 
 
 def _require_confirmed_freeze_groups(stage_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((stage_dir / CSF_DATA_READY_FREEZE_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = build_stage_context(stage_dir)["author_draft_dir"] / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     missing = [name for name in CSF_DATA_READY_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]
     if missing:

@@ -7,12 +7,15 @@ import yaml
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def _prepare_mandate_stage(tmp_path: Path) -> Path:
     stage_dir = tmp_path / "outputs" / "topic_a" / "mandate"
-    stage_dir.mkdir(parents=True)
+    (stage_dir / "author" / "formal").mkdir(parents=True)
+    (stage_dir / "review" / "request").mkdir(parents=True)
+    (stage_dir / "review" / "result").mkdir(parents=True)
 
     for name in [
         "mandate.md",
@@ -24,10 +27,10 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         "field_dictionary.md",
         "run_manifest.json",
     ]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+        (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
 
     _write_yaml(
-        stage_dir / "adversarial_review_request.yaml",
+        stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
             "review_cycle_id": "cycle-1",
             "lineage_id": "topic_a",
@@ -50,7 +53,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         },
     )
     _write_yaml(
-        stage_dir / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
             "review_cycle_id": "cycle-1",
             "reviewer_identity": "reviewer-agent",
@@ -104,8 +107,8 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert result.returncode == 0
     assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
-    assert (stage_dir / "stage_completion_certificate.yaml").exists()
-    assert (stage_dir / "governance_signal.json").exists()
+    assert (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "review" / "governance" / "governance_signal.json").exists()
 
 
 def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) -> None:

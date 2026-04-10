@@ -96,7 +96,8 @@ def ensure_adversarial_review_request(
     program_hash: str | None = None,
     stage_invoked_at: str | None = None,
 ) -> dict[str, Any]:
-    request_path = stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    request_path.parent.mkdir(parents=True, exist_ok=True)
     review_cycle_id = build_review_cycle_id(
         lineage_id=lineage_id,
         stage=stage,

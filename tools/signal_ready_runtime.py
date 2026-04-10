@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
+
 
 SIGNAL_READY_FREEZE_DRAFT_FILE = "signal_ready_freeze_draft.yaml"
 SIGNAL_READY_FREEZE_GROUP_ORDER = [
@@ -77,9 +79,11 @@ def _blank_signal_ready_freeze_draft() -> dict[str, Any]:
 def scaffold_signal_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     signal_ready_dir = lineage_root / "03_signal_ready"
-    signal_ready_dir.mkdir(parents=True, exist_ok=True)
+    stage_context = build_stage_context(signal_ready_dir)
+    draft_dir = stage_context["author_draft_dir"]
+    draft_dir.mkdir(parents=True, exist_ok=True)
 
-    draft_path = signal_ready_dir / SIGNAL_READY_FREEZE_DRAFT_FILE
+    draft_path = draft_dir / SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_signal_ready_freeze_draft())
     return signal_ready_dir
@@ -89,6 +93,10 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     data_ready_dir = lineage_root / "02_data_ready"
     signal_ready_dir = scaffold_signal_ready(lineage_root)
+    data_ready_formal_dir = build_stage_context(data_ready_dir)["author_formal_dir"]
+    signal_ready_context = build_stage_context(signal_ready_dir)
+    signal_ready_formal_dir = signal_ready_context["author_formal_dir"]
+    signal_ready_formal_dir.mkdir(parents=True, exist_ok=True)
 
     missing_data_ready = [
         name
@@ -104,7 +112,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (data_ready_dir / name).exists()
+        if not (data_ready_formal_dir / name).exists()
     ]
     if missing_data_ready:
         raise ValueError(
@@ -136,24 +144,24 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     doc_artifacts = _string_list(delivery_contract.get("doc_artifacts", []))
     parameter_values = param_identity.get("parameter_values", {})
 
-    params_dir = signal_ready_dir / "params"
+    params_dir = signal_ready_formal_dir / "params"
     params_dir.mkdir(exist_ok=True)
     (params_dir / f"{param_id}.parquet").write_text(
         "baseline-only signal_ready 骨架的占位信号时序产物\n",
         encoding="utf-8",
     )
 
-    with (signal_ready_dir / "param_manifest.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (signal_ready_formal_dir / "param_manifest.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["param_id", "scope", "baseline_signal", "parameter_values"])
         writer.writerow([param_id, "baseline", baseline_signal, yaml.safe_dump(parameter_values, sort_keys=True).strip()])
 
-    with (signal_ready_dir / "signal_coverage.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (signal_ready_formal_dir / "signal_coverage.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["param_id", "coverage_rate", "low_sample_rate", "pair_missing_rate"])
         writer.writerow([param_id, "1.0", "0.0", "0.0"])
 
-    (signal_ready_dir / "signal_coverage.md").write_text(
+    (signal_ready_formal_dir / "signal_coverage.md").write_text(
         "\n".join(
             [
                 "# 信号覆盖",
@@ -165,7 +173,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "signal_coverage_summary.md").write_text(
+    (signal_ready_formal_dir / "signal_coverage_summary.md").write_text(
         "\n".join(
             [
                 "# 信号覆盖摘要",
@@ -178,7 +186,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "signal_contract.md").write_text(
+    (signal_ready_formal_dir / "signal_contract.md").write_text(
         "\n".join(
             [
                 "# 信号合同",
@@ -194,7 +202,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "signal_fields_contract.md").write_text(
+    (signal_ready_formal_dir / "signal_fields_contract.md").write_text(
         "\n".join(
             [
                 "# 信号字段合同",
@@ -209,7 +217,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "signal_gate_decision.md").write_text(
+    (signal_ready_formal_dir / "signal_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Signal Ready Gate Decision",
@@ -222,7 +230,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "artifact_catalog.md").write_text(
+    (signal_ready_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -241,7 +249,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (signal_ready_dir / "field_dictionary.md").write_text(
+    (signal_ready_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -264,7 +272,7 @@ def build_signal_ready_from_data_ready(lineage_root: Path) -> Path:
 
 
 def _require_confirmed_freeze_groups(signal_ready_dir: Path) -> dict[str, Any]:
-    draft_path = signal_ready_dir / SIGNAL_READY_FREEZE_DRAFT_FILE
+    draft_path = build_stage_context(signal_ready_dir)["author_draft_dir"] / SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         raise ValueError(f"{SIGNAL_READY_FREEZE_DRAFT_FILE} is required before signal_ready build")
 

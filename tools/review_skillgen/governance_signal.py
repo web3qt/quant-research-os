@@ -152,8 +152,11 @@ def build_governance_signal_bundle(
     policy = policy or load_review_governance_policy()
     emitted_at = review_result.get("review_completed_at") or _utcnow()
     review_cycle_started_at = request_payload.get("author_stage_invoked_at") or emitted_at
+    review_findings_path = stage_dir / "review_findings.yaml"
+    if stage_dir.name == "governance" and stage_dir.parent.name == "review":
+        review_findings_path = stage_dir.parent / "result" / "review_findings.yaml"
     source_artifacts = ["adversarial_review_request.yaml", "adversarial_review_result.yaml"]
-    if (stage_dir / "review_findings.yaml").exists():
+    if review_findings_path.exists():
         source_artifacts.append("review_findings.yaml")
     signals: list[dict[str, Any]] = []
     signals.extend(_normalize_signal_entries(blocking_findings, source_kind="blocking", source_artifacts=source_artifacts))

@@ -418,7 +418,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 
 在 review 阶段，session 现在会显式区分三类状态：
 
-- `awaiting_adversarial_review`：runtime 已发出 `adversarial_review_request.yaml`，等待独立 reviewer
+- `awaiting_adversarial_review`：runtime 已发出 `review/request/adversarial_review_request.yaml`，等待独立 reviewer
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须回到 author lane 修复
 - `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closure 写正式 closure artifacts
 

@@ -6,12 +6,15 @@ from tools.review_skillgen.review_engine import run_stage_review
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def _prepare_mandate_stage(tmp_path: Path) -> Path:
     stage_dir = tmp_path / "outputs" / "topic_a" / "mandate"
-    stage_dir.mkdir(parents=True)
+    (stage_dir / "author" / "formal").mkdir(parents=True)
+    (stage_dir / "review" / "request").mkdir(parents=True)
+    (stage_dir / "review" / "result").mkdir(parents=True)
 
     for name in [
         "mandate.md",
@@ -23,14 +26,14 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         "field_dictionary.md",
         "run_manifest.json",
     ]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+        (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
 
     return stage_dir
 
 
 def _write_review_request(stage_dir: Path, *, author_identity: str = "author-agent") -> None:
     _write_yaml(
-        stage_dir / "adversarial_review_request.yaml",
+        stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
             "review_cycle_id": "cycle-1",
             "lineage_id": "topic_a",
@@ -56,7 +59,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
 
 def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS", reviewer_identity: str = "reviewer-agent") -> None:
     _write_yaml(
-        stage_dir / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
             "review_cycle_id": "cycle-1",
             "reviewer_identity": reviewer_identity,
@@ -103,14 +106,14 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert payload["final_verdict"] == "PASS"
     assert payload["review_loop_outcome"] == "CLOSURE_READY_PASS"
     assert payload["blocking_findings"] == []
-    assert (stage_dir / "stage_completion_certificate.yaml").exists()
-    assert (stage_dir / "governance_signal.json").exists()
+    assert (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "review" / "governance" / "governance_signal.json").exists()
     assert payload["governance"]["appended_entries"]
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_stage(tmp_path)
-    (stage_dir / "parameter_grid.yaml").unlink()
+    (stage_dir / "author" / "formal" / "parameter_grid.yaml").unlink()
     _write_review_request(stage_dir)
     _write_review_result(stage_dir)
 
@@ -131,7 +134,7 @@ def test_run_stage_review_accepts_pass_for_retry_with_rollback_metadata(tmp_path
     _write_review_request(stage_dir)
     _write_review_result(stage_dir, outcome="CLOSURE_READY_PASS_FOR_RETRY")
     _write_yaml(
-        stage_dir / "review_findings.yaml",
+        stage_dir / "review" / "result" / "review_findings.yaml",
         {
             "recommended_verdict": "PASS FOR RETRY",
             "rollback_stage": "mandate",
@@ -187,6 +190,6 @@ def test_run_stage_review_fix_required_skips_closure_artifacts(tmp_path: Path) -
 
     assert payload["review_loop_outcome"] == "FIX_REQUIRED"
     assert payload["final_verdict"] is None
-    assert not (stage_dir / "stage_completion_certificate.yaml").exists()
-    assert (stage_dir / "governance_signal.json").exists()
+    assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
+    assert (stage_dir / "review" / "governance" / "governance_signal.json").exists()
     assert payload["governance"]["appended_entries"]

@@ -5,6 +5,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 CSF_SIGNAL_READY_FREEZE_DRAFT_FILE = "csf_signal_ready_freeze_draft.yaml"
 CSF_SIGNAL_READY_FREEZE_GROUP_ORDER = [
@@ -77,8 +79,8 @@ def _blank_csf_signal_ready_freeze_draft() -> dict[str, Any]:
 def scaffold_csf_signal_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     stage_dir = lineage_root / "03_csf_signal_ready"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-    draft_path = stage_dir / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+    layout = ensure_stage_author_layout(stage_dir)
+    draft_path = layout["author_draft_dir"] / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_csf_signal_ready_freeze_draft())
     return stage_dir
@@ -88,6 +90,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     upstream_dir = lineage_root / "02_csf_data_ready"
     stage_dir = scaffold_csf_signal_ready(lineage_root)
+    upstream_formal_dir = ensure_stage_author_layout(upstream_dir)["author_formal_dir"]
+    stage_formal_dir = ensure_stage_author_layout(stage_dir)["author_formal_dir"]
 
     missing = [
         name
@@ -100,7 +104,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (upstream_dir / name).exists()
+        if not (upstream_formal_dir / name).exists()
     ]
     if missing:
         raise ValueError(f"csf_data_ready artifacts missing before csf_signal_ready build: {', '.join(missing)}")
@@ -130,9 +134,9 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
 
-    (stage_dir / "factor_panel.parquet").write_text("占位 factor panel 载荷\n", encoding="utf-8")
+    (stage_formal_dir / "factor_panel.parquet").write_text("占位 factor panel 载荷\n", encoding="utf-8")
     _dump_yaml(
-        stage_dir / "factor_manifest.yaml",
+        stage_formal_dir / "factor_manifest.yaml",
         {
             "factor_id": factor_id,
             "factor_version": factor_version,
@@ -145,15 +149,15 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         },
     )
     _dump_yaml(
-        stage_dir / "component_factor_manifest.yaml",
+        stage_formal_dir / "component_factor_manifest.yaml",
         {
             "component_factor_ids": component_factor_ids,
             "score_combination_formula": score_combination_formula,
         },
     )
     for name in ["factor_coverage_report.parquet", "factor_group_context.parquet"]:
-        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
-    (stage_dir / "factor_contract.md").write_text(
+        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+    (stage_formal_dir / "factor_contract.md").write_text(
         "\n".join(
             [
                 "# 因子合同",
@@ -173,7 +177,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "factor_field_dictionary.md").write_text(
+    (stage_formal_dir / "factor_field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 因子字段字典",
@@ -188,7 +192,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "csf_signal_ready_gate_decision.md").write_text(
+    (stage_formal_dir / "csf_signal_ready_gate_decision.md").write_text(
         "\n".join(
             [
                 "# CSF Signal Ready Gate Decision",
@@ -200,7 +204,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "artifact_catalog.md").write_text(
+    (stage_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -219,7 +223,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "field_dictionary.md").write_text(
+    (stage_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -239,7 +243,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
 
 
 def _require_confirmed_freeze_groups(stage_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((stage_dir / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = ensure_stage_author_layout(stage_dir)["author_draft_dir"] / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     missing = [name for name in CSF_SIGNAL_READY_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]
     if missing:

@@ -12,12 +12,12 @@
 > - `lineage_change_control_sop_cn.md`
 >
 > 运行时正式产物应写为：
-> - `<stage>/stage_completion_certificate.yaml`
+> - `<stage>/review/closure/stage_completion_certificate.yaml`
 >
 > 其中：
 > - `latest_review_pack.yaml` 是 reviewer findings substrate
 > - `stage_gate_review.yaml` 是独立 reviewer proof
-> - `stage_completion_certificate.yaml` 是 machine-readable closure proof
+> - `review/closure/stage_completion_certificate.yaml` 是 machine-readable closure proof
 
 ---
 

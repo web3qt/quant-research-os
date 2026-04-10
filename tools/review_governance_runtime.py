@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
 from tools.review_skillgen.governance_signal import build_governance_signal_bundle, load_review_governance_policy
 
 
@@ -137,8 +138,9 @@ def record_review_governance(
     info_findings: list[str],
 ) -> dict[str, Any]:
     policy = load_review_governance_policy()
+    stage_context = build_stage_context(stage_dir)
     bundle = build_governance_signal_bundle(
-        stage_dir=stage_dir,
+        stage_dir=stage_context["review_governance_dir"],
         lineage_root=lineage_root,
         stage=stage,
         request_payload=request_payload,
@@ -185,7 +187,7 @@ def record_review_governance(
 
 
 def sync_review_governance_from_stage(*, stage_dir: Path, lineage_root: Path) -> dict[str, Any]:
-    signal_path = stage_dir / "governance_signal.json"
+    signal_path = build_stage_context(stage_dir)["review_governance_dir"] / "governance_signal.json"
     if not signal_path.exists():
         raise FileNotFoundError(signal_path)
     bundle = json.loads(signal_path.read_text(encoding="utf-8"))

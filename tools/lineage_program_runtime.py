@@ -12,6 +12,8 @@ from typing import Any, Literal, Sequence
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
+
 
 StageId = Literal[
     "mandate",
@@ -135,9 +137,16 @@ def stage_program_dir(lineage_root: Path, stage_id: StageId, route: RouteId) -> 
     return lineage_root.resolve() / stage_program_relative_dir(stage_id, route)
 
 
+def _author_formal_dir(stage_dir: Path) -> Path:
+    stage_dir = stage_dir.resolve()
+    if stage_dir.name == "formal" and stage_dir.parent.name == "author":
+        return stage_dir
+    return build_stage_context(stage_dir)["author_formal_dir"]
+
+
 
 def provenance_manifest_path(stage_dir: Path) -> Path:
-    return stage_dir / PROVENANCE_MANIFEST_FILE
+    return _author_formal_dir(stage_dir) / PROVENANCE_MANIFEST_FILE
 
 
 
@@ -317,13 +326,17 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
     lineage_root = lineage_root.resolve()
     validated = validate_stage_program(lineage_root, spec.stage_id, spec.route)
     stage_dir = lineage_root / spec.stage_dir_name
+    author_formal_dir = _author_formal_dir(stage_dir)
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
     command = _command_for_entrypoint(validated)
     env = {
         **os.environ,
         "QROS_LINEAGE_ROOT": str(lineage_root),
         "QROS_STAGE_ID": spec.stage_id,
         "QROS_STAGE_ROUTE": spec.route,
-        "QROS_STAGE_DIR": str(stage_dir),
+        "QROS_STAGE_ROOT": str(stage_dir),
+        "QROS_STAGE_DIR": str(author_formal_dir),
+        "QROS_AUTHOR_FORMAL_DIR": str(author_formal_dir),
         "QROS_PROGRAM_DIR": str(validated.program_dir),
     }
     result = subprocess.run(
@@ -340,7 +353,7 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
             stderr or f"Stage program exited with status {result.returncode}",
         )
 
-    missing_outputs = [name for name in spec.required_outputs if not (stage_dir / name).exists()]
+    missing_outputs = [name for name in spec.required_outputs if not (author_formal_dir / name).exists()]
     if missing_outputs:
         raise StageProgramRuntimeError(
             "OUTPUTS_INVALID",
@@ -365,7 +378,8 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
 
 
 def stage_outputs_complete(stage_dir: Path, required_outputs: Sequence[str]) -> bool:
-    if not all((stage_dir / name).exists() for name in required_outputs):
+    author_formal_dir = _author_formal_dir(stage_dir)
+    if not all((author_formal_dir / name).exists() for name in required_outputs):
         return False
     provenance = load_provenance_manifest(stage_dir)
     return provenance is not None

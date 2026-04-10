@@ -66,6 +66,12 @@
 - `stage_completion_certificate.yaml`
   machine-readable closure certificate，回答“为什么这一步已经可信关闭”。
 
+这些 closure artifacts 的 canonical 位置是：
+
+- `<stage>/review/closure/latest_review_pack.yaml`
+- `<stage>/review/closure/stage_gate_review.yaml`
+- `<stage>/review/closure/stage_completion_certificate.yaml`
+
 其中：
 
 - `review pack` 不是 formal gate decision

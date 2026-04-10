@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 TEST_EVIDENCE_DRAFT_FILE = "test_evidence_draft.yaml"
 TEST_EVIDENCE_GROUP_ORDER = [
@@ -99,9 +101,9 @@ def _blank_test_evidence_draft(
 def scaffold_test_evidence(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     test_dir = lineage_root / "05_test_evidence"
-    test_dir.mkdir(parents=True, exist_ok=True)
+    layout = ensure_stage_author_layout(test_dir)
 
-    draft_path = test_dir / TEST_EVIDENCE_DRAFT_FILE
+    draft_path = layout["author_draft_dir"] / TEST_EVIDENCE_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(
             draft_path,
@@ -120,15 +122,21 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     train_dir = lineage_root / "04_train_freeze"
     mandate_dir = lineage_root / "01_mandate"
     test_dir = scaffold_test_evidence(lineage_root)
+    data_ready_formal_dir = ensure_stage_author_layout(data_ready_dir)["author_formal_dir"]
+    signal_ready_formal_dir = ensure_stage_author_layout(signal_ready_dir)["author_formal_dir"]
+    train_formal_dir = ensure_stage_author_layout(train_dir)["author_formal_dir"]
+    mandate_formal_dir = ensure_stage_author_layout(mandate_dir)["author_formal_dir"]
+    test_layout = ensure_stage_author_layout(test_dir)
+    test_formal_dir = test_layout["author_formal_dir"]
 
     missing_inputs: list[str] = []
     for path in [
-        signal_ready_dir / "params",
-        signal_ready_dir / "param_manifest.csv",
-        train_dir / "train_thresholds.json",
-        train_dir / "train_param_ledger.csv",
-        data_ready_dir / "aligned_bars",
-        mandate_dir / "time_split.json",
+        signal_ready_formal_dir / "params",
+        signal_ready_formal_dir / "param_manifest.csv",
+        train_formal_dir / "train_thresholds.json",
+        train_formal_dir / "train_param_ledger.csv",
+        data_ready_formal_dir / "aligned_bars",
+        mandate_formal_dir / "time_split.json",
     ]:
         if not path.exists():
             missing_inputs.append(str(path.relative_to(lineage_root)))
@@ -182,7 +190,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
             "selected_param_ids must be drawn from train-kept param ids: " + ", ".join(unknown_param_ids)
         )
 
-    (test_dir / "report_by_h.parquet").write_text(
+    (test_formal_dir / "report_by_h.parquet").write_text(
         "\n".join(
             [
                 "governance-first test_evidence 阶段的占位 report_by_h 产物",
@@ -196,7 +204,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "symbol_summary.parquet").write_text(
+    (test_formal_dir / "symbol_summary.parquet").write_text(
         "\n".join(
             [
                 "governance-first test_evidence 阶段的占位 symbol_summary 产物",
@@ -209,7 +217,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "admissibility_report.parquet").write_text(
+    (test_formal_dir / "admissibility_report.parquet").write_text(
         "\n".join(
             [
                 "governance-first test_evidence 阶段的占位 admissibility 报告",
@@ -223,13 +231,13 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    with (test_dir / "test_gate_table.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (test_formal_dir / "test_gate_table.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["gate_type", "status", "note"])
         writer.writerow(["formal_gate", "PENDING_REVIEW", formal_gate_note])
         writer.writerow(["audit_gate", "PENDING_REVIEW", formal_vs_audit_boundary])
 
-    (test_dir / "crowding_review.md").write_text(
+    (test_formal_dir / "crowding_review.md").write_text(
         "\n".join(
             [
                 "# Crowding Review",
@@ -247,14 +255,14 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    with (test_dir / "selected_symbols_test.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (test_formal_dir / "selected_symbols_test.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["symbol", "param_id", "best_h"])
         for symbol in selected_symbols:
             for param_id in selected_param_ids:
                 writer.writerow([symbol, param_id, best_h])
 
-    (test_dir / "selected_symbols_test.parquet").write_text(
+    (test_formal_dir / "selected_symbols_test.parquet").write_text(
         "\n".join(
             [
                 "selected symbols 的占位 parquet 镜像",
@@ -267,7 +275,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "frozen_spec.json").write_text(
+    (test_formal_dir / "frozen_spec.json").write_text(
         json.dumps(
             {
                 "stage": "test_evidence",
@@ -293,7 +301,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "test_gate_decision.md").write_text(
+    (test_formal_dir / "test_gate_decision.md").write_text(
         "\n".join(
             [
                 "# Test Gate Decision",
@@ -310,7 +318,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "artifact_catalog.md").write_text(
+    (test_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -331,7 +339,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (test_dir / "field_dictionary.md").write_text(
+    (test_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -353,7 +361,7 @@ def build_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
 
 
 def _load_holding_horizons(lineage_root: Path) -> list[str]:
-    time_split_path = lineage_root / "01_mandate" / "time_split.json"
+    time_split_path = lineage_root / "01_mandate" / "author" / "formal" / "time_split.json"
     if not time_split_path.exists():
         return []
     payload = json.loads(time_split_path.read_text(encoding="utf-8"))
@@ -361,7 +369,7 @@ def _load_holding_horizons(lineage_root: Path) -> list[str]:
 
 
 def _load_train_param_ids(lineage_root: Path) -> list[str]:
-    ledger_path = lineage_root / "04_train_freeze" / "train_param_ledger.csv"
+    ledger_path = lineage_root / "04_train_freeze" / "author" / "formal" / "train_param_ledger.csv"
     if not ledger_path.exists():
         return []
 
@@ -382,7 +390,8 @@ def _load_train_param_ids(lineage_root: Path) -> list[str]:
 
 
 def _require_confirmed_freeze_groups(test_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((test_dir / TEST_EVIDENCE_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = ensure_stage_author_layout(test_dir)["author_draft_dir"] / TEST_EVIDENCE_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
 
     missing = [name for name in TEST_EVIDENCE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]

@@ -17,14 +17,14 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "stage_dir": Path("01_mandate"),
         "inputs": ["00_idea_intake/idea_gate_decision.yaml", "00_idea_intake/mandate_freeze_draft.yaml"],
         "outputs": [
-            "01_mandate/mandate.md",
-            "01_mandate/research_scope.md",
-            "01_mandate/research_route.yaml",
-            "01_mandate/time_split.json",
-            "01_mandate/parameter_grid.yaml",
-            "01_mandate/run_config.toml",
-            "01_mandate/artifact_catalog.md",
-            "01_mandate/field_dictionary.md",
+            "01_mandate/author/formal/mandate.md",
+            "01_mandate/author/formal/research_scope.md",
+            "01_mandate/author/formal/research_route.yaml",
+            "01_mandate/author/formal/time_split.json",
+            "01_mandate/author/formal/parameter_grid.yaml",
+            "01_mandate/author/formal/run_config.toml",
+            "01_mandate/author/formal/artifact_catalog.md",
+            "01_mandate/author/formal/field_dictionary.md",
         ],
     },
     "data_ready": {
@@ -34,8 +34,14 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "module": "tools.data_ready_runtime",
         "function": "build_data_ready_from_mandate",
         "stage_dir": Path("02_data_ready"),
-        "inputs": ["01_mandate/mandate.md", "02_data_ready/data_ready_freeze_draft.yaml"],
-        "outputs": ["02_data_ready/dataset_manifest.json", "02_data_ready/run_manifest.json"],
+        "inputs": [
+            "01_mandate/author/formal/mandate.md",
+            "02_data_ready/author/draft/data_ready_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "02_data_ready/author/formal/dataset_manifest.json",
+            "02_data_ready/author/formal/run_manifest.json",
+        ],
     },
     "signal_ready": {
         "stage_id": "signal_ready",
@@ -44,8 +50,14 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "module": "tools.signal_ready_runtime",
         "function": "build_signal_ready_from_data_ready",
         "stage_dir": Path("03_signal_ready"),
-        "inputs": ["02_data_ready/dataset_manifest.json", "03_signal_ready/signal_ready_freeze_draft.yaml"],
-        "outputs": ["03_signal_ready/param_manifest.csv", "03_signal_ready/signal_gate_decision.md"],
+        "inputs": [
+            "02_data_ready/author/formal/dataset_manifest.json",
+            "03_signal_ready/author/draft/signal_ready_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "03_signal_ready/author/formal/param_manifest.csv",
+            "03_signal_ready/author/formal/signal_gate_decision.md",
+        ],
     },
     "train_freeze": {
         "stage_id": "train_freeze",

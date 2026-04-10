@@ -15,7 +15,23 @@ from tools.research_session import (
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _stage_output_path(stage_dir: Path, name: str) -> Path:
+    if name in {"latest_review_pack.yaml", "stage_gate_review.yaml", "stage_completion_certificate.yaml"}:
+        path = stage_dir / "review" / "closure" / name
+    else:
+        path = stage_dir / "author" / "formal" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _stage_draft_path(stage_dir: Path, name: str) -> Path:
+    path = stage_dir / "author" / "draft" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _route_assessment() -> dict:
@@ -35,8 +51,11 @@ def _write_stage_completion_certificate(
     stage_status: str = "PASS",
     final_verdict: str | None = None,
 ) -> None:
+    target_path = path
+    if path.name == "stage_completion_certificate.yaml" and path.parent.name != "closure":
+        target_path = path.parent / "review" / "closure" / path.name
     _write_yaml(
-        path,
+        target_path,
         {
             "stage_status": stage_status,
             "final_verdict": final_verdict or stage_status,
@@ -51,7 +70,7 @@ def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
 
 def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
     _write_yaml(
-        stage_dir / "next_stage_transition_approval.yaml",
+        _stage_draft_path(stage_dir, "next_stage_transition_approval.yaml"),
         {
             "lineage_id": stage_dir.parent.name,
             "stage_id": stage,
@@ -72,7 +91,7 @@ def _write_adversarial_review_request(
     author_session_id: str = "test-session",
 ) -> None:
     _write_yaml(
-        stage_dir / "adversarial_review_request.yaml",
+        stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
             "review_cycle_id": f"{stage}-cycle-1",
             "lineage_id": stage_dir.parent.name,
@@ -96,7 +115,7 @@ def _write_adversarial_review_result(
     outcome: str,
 ) -> None:
     _write_yaml(
-        stage_dir / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
             "review_cycle_id": f"{stage}-cycle-1",
             "reviewer_identity": "reviewer-agent",
@@ -119,7 +138,8 @@ def _write_adversarial_review_result(
 
 
 def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
-    stage_dir.mkdir(parents=True, exist_ok=True)
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
 
     file_outputs: dict[str, list[str]] = {
         "mandate": [
@@ -295,11 +315,11 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
     }
 
     for name in file_outputs[stage]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
+        (author_formal_dir / name).write_text("ok\n", encoding="utf-8")
     for name in dir_outputs[stage]:
-        (stage_dir / name).mkdir()
+        (author_formal_dir / name).mkdir()
     if stage == "backtest_ready":
-        (stage_dir / "engine_compare.csv").write_text(
+        (author_formal_dir / "engine_compare.csv").write_text(
             "\n".join(
                 [
                     "engine,gross_return,net_return,max_drawdown,semantic_gap",
@@ -311,7 +331,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             encoding="utf-8",
         )
         for engine_name in ("vectorbt", "backtrader"):
-            engine_dir = stage_dir / engine_name
+            engine_dir = author_formal_dir / engine_name
             for name in (
                 "trades.parquet",
                 "symbol_metrics.parquet",
@@ -968,7 +988,7 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
 
     status = run_research_session(outputs_root=outputs_root, raw_idea="BTC leads ALTs")
 
@@ -1017,7 +1037,7 @@ def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exis
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
     assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
@@ -1040,7 +1060,7 @@ def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_ar
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
     assert detect_session_stage(lineage_root) == "mandate_next_stage_confirmation_pending"
@@ -1063,7 +1083,7 @@ def test_detect_session_stage_enters_data_ready_confirmation_after_mandate_revie
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
     assert detect_session_stage(lineage_root) == "mandate_next_stage_confirmation_pending"
@@ -1085,7 +1105,7 @@ def test_run_research_session_reports_next_data_ready_freeze_group(tmp_path: Pat
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
@@ -1113,12 +1133,12 @@ def test_detect_session_stage_returns_data_ready_author_when_explicitly_confirme
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_display_decision(mandate_dir, stage="mandate")
-    _write_yaml(data_ready_dir / "data_ready_freeze_draft.yaml", _data_ready_freeze_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(data_ready_dir, "data_ready_freeze_draft.yaml"), _data_ready_freeze_draft(confirmed=True))
     _write_yaml(
-        data_ready_dir / "data_ready_transition_approval.yaml",
+        _stage_draft_path(data_ready_dir, "data_ready_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_DATA_READY",
@@ -1151,7 +1171,7 @@ def test_detect_session_stage_returns_data_ready_review_when_outputs_exist(tmp_p
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(data_ready_dir, name)).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -1159,7 +1179,7 @@ def test_detect_session_stage_returns_data_ready_review_when_outputs_exist(tmp_p
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+            (_stage_output_path(data_ready_dir, name)).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "data_ready")
 
     assert detect_session_stage(lineage_root) == "data_ready_review_confirmation_pending"
@@ -1187,7 +1207,7 @@ def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closu
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(data_ready_dir, name)).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -1195,7 +1215,7 @@ def test_detect_session_stage_returns_signal_ready_pending_when_data_ready_closu
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+            (_stage_output_path(data_ready_dir, name)).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "data_ready")
 
     assert detect_session_stage(lineage_root) == "data_ready_next_stage_confirmation_pending"
@@ -1223,7 +1243,7 @@ def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(data_ready_dir, name)).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -1231,7 +1251,7 @@ def test_detect_session_stage_enters_signal_ready_confirmation_after_data_ready_
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+            (_stage_output_path(data_ready_dir, name)).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "data_ready")
 
     assert detect_session_stage(lineage_root) == "data_ready_next_stage_confirmation_pending"
@@ -1258,7 +1278,7 @@ def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: P
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(data_ready_dir, name)).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -1266,7 +1286,7 @@ def test_run_research_session_reports_next_signal_ready_freeze_group(tmp_path: P
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+            (_stage_output_path(data_ready_dir, name)).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "data_ready")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
@@ -1299,7 +1319,7 @@ def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confir
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (data_ready_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(data_ready_dir, name)).write_text("ok\n", encoding="utf-8")
     for name in [
         "aligned_bars",
         "rolling_stats",
@@ -1307,12 +1327,12 @@ def test_detect_session_stage_returns_signal_ready_author_when_explicitly_confir
         "benchmark_residual",
         "topic_basket_state",
     ]:
-        (data_ready_dir / name).mkdir()
+            (_stage_output_path(data_ready_dir, name)).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "data_ready")
     _write_display_decision(data_ready_dir, stage="data_ready")
-    _write_yaml(signal_ready_dir / "signal_ready_freeze_draft.yaml", _signal_ready_freeze_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(signal_ready_dir, "signal_ready_freeze_draft.yaml"), _signal_ready_freeze_draft(confirmed=True))
     _write_yaml(
-        signal_ready_dir / "signal_ready_transition_approval.yaml",
+        _stage_draft_path(signal_ready_dir, "signal_ready_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_SIGNAL_READY",
@@ -1341,8 +1361,8 @@ def test_detect_session_stage_returns_signal_ready_review_when_outputs_exist(tmp
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
-    (signal_ready_dir / "params").mkdir()
+        (_stage_output_path(signal_ready_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(signal_ready_dir, "params")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
     assert detect_session_stage(lineage_root) == "signal_ready_review_confirmation_pending"
@@ -1366,8 +1386,8 @@ def test_detect_session_stage_returns_signal_ready_review_complete_when_closure_
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
-    (signal_ready_dir / "params").mkdir()
+        (_stage_output_path(signal_ready_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(signal_ready_dir, "params")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
     assert detect_session_stage(lineage_root) == "signal_ready_next_stage_confirmation_pending"
@@ -1390,8 +1410,8 @@ def test_run_research_session_reports_next_train_freeze_group(tmp_path: Path) ->
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
-    (signal_ready_dir / "params").mkdir()
+        (_stage_output_path(signal_ready_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(signal_ready_dir, "params")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "signal_ready")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
@@ -1420,13 +1440,13 @@ def test_detect_session_stage_returns_train_freeze_author_when_explicitly_confir
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (signal_ready_dir / name).write_text("ok\n", encoding="utf-8")
-    (signal_ready_dir / "params").mkdir()
+        (_stage_output_path(signal_ready_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(signal_ready_dir, "params")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "signal_ready")
     _write_display_decision(signal_ready_dir, stage="signal_ready")
-    _write_yaml(train_dir / "train_freeze_draft.yaml", _train_freeze_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(train_dir, "train_freeze_draft.yaml"), _train_freeze_draft(confirmed=True))
     _write_yaml(
-        train_dir / "train_transition_approval.yaml",
+        _stage_draft_path(train_dir, "train_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_TRAIN_FREEZE",
@@ -1453,7 +1473,7 @@ def test_detect_session_stage_returns_train_freeze_review_when_outputs_exist(tmp
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (train_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(train_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
     assert detect_session_stage(lineage_root) == "train_freeze_review_confirmation_pending"
@@ -1475,7 +1495,7 @@ def test_detect_session_stage_returns_test_evidence_pending_when_train_freeze_cl
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (train_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(train_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
     assert detect_session_stage(lineage_root) == "train_freeze_next_stage_confirmation_pending"
@@ -1496,7 +1516,7 @@ def test_run_research_session_reports_next_test_evidence_group(tmp_path: Path) -
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (train_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(train_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
@@ -1523,12 +1543,12 @@ def test_detect_session_stage_returns_test_evidence_author_when_explicitly_confi
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (train_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(train_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "train_freeze")
     _write_display_decision(train_dir, stage="train_freeze")
-    _write_yaml(test_dir / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(test_dir, "test_evidence_draft.yaml"), _test_evidence_draft(confirmed=True))
     _write_yaml(
-        test_dir / "test_evidence_transition_approval.yaml",
+        _stage_draft_path(test_dir, "test_evidence_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_TEST_EVIDENCE",
@@ -1559,7 +1579,7 @@ def test_detect_session_stage_returns_test_evidence_review_when_outputs_exist(tm
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (test_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(test_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
     assert detect_session_stage(lineage_root) == "test_evidence_review_confirmation_pending"
@@ -1585,7 +1605,7 @@ def test_detect_session_stage_returns_backtest_ready_pending_when_test_evidence_
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (test_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(test_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
@@ -1611,7 +1631,7 @@ def test_run_research_session_reports_next_backtest_ready_group(tmp_path: Path) 
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (test_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(test_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
@@ -1642,12 +1662,12 @@ def test_detect_session_stage_returns_backtest_ready_author_when_explicitly_conf
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (test_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(test_dir, name)).write_text("ok\n", encoding="utf-8")
     write_fake_stage_provenance(lineage_root, "test_evidence")
     _write_display_decision(test_dir, stage="test_evidence")
-    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(backtest_dir, "backtest_ready_draft.yaml"), _backtest_ready_draft(confirmed=True))
     _write_yaml(
-        backtest_dir / "backtest_ready_transition_approval.yaml",
+        _stage_draft_path(backtest_dir, "backtest_ready_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_BACKTEST_READY",
@@ -1676,12 +1696,12 @@ def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_ar
     test_dir = lineage_root / "05_test_evidence"
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(test_dir, stage="test_evidence")
-    (test_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(test_dir / "stage_completion_certificate.yaml")
     _write_display_decision(test_dir, stage="test_evidence")
     backtest_dir.mkdir(parents=True)
-    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_yaml(_stage_draft_path(backtest_dir, "backtest_ready_draft.yaml"), _backtest_ready_draft(confirmed=True))
     _write_yaml(
-        backtest_dir / "backtest_ready_transition_approval.yaml",
+        _stage_draft_path(backtest_dir, "backtest_ready_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_BACKTEST_READY",
@@ -1699,10 +1719,10 @@ def test_detect_session_stage_keeps_backtest_ready_author_when_engine_outputs_ar
         "field_dictionary.md",
         "backtest_frozen_config.json",
     ]:
-        (backtest_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(backtest_dir, name)).write_text("ok\n", encoding="utf-8")
     for engine_name in ("vectorbt", "backtrader"):
-        engine_dir = backtest_dir / engine_name
-        engine_dir.mkdir()
+        engine_dir = _stage_output_path(backtest_dir, engine_name)
+        engine_dir.mkdir(parents=True, exist_ok=True)
         (engine_dir / "trades.parquet").write_text(
             f"placeholder trades artifact for {engine_name}\n",
             encoding="utf-8",
@@ -1723,7 +1743,7 @@ def test_detect_session_stage_returns_backtest_ready_review_complete_when_closur
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
-    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(backtest_dir / "stage_completion_certificate.yaml")
 
     assert detect_session_stage(lineage_root) == "backtest_ready_next_stage_confirmation_pending"
 
@@ -1733,7 +1753,7 @@ def test_run_research_session_reports_next_holdout_validation_group(tmp_path: Pa
     lineage_root = outputs_root / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
-    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(backtest_dir / "stage_completion_certificate.yaml")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
@@ -1749,14 +1769,14 @@ def test_detect_session_stage_returns_holdout_validation_author_when_explicitly_
     holdout_dir = lineage_root / "07_holdout"
     _write_minimal_stage_outputs(backtest_dir, stage="backtest_ready")
     holdout_dir.mkdir(parents=True)
-    (backtest_dir / "stage_completion_certificate.yaml").write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(backtest_dir / "stage_completion_certificate.yaml")
     _write_display_decision(backtest_dir, stage="backtest_ready")
     _write_yaml(
-        holdout_dir / "holdout_validation_draft.yaml",
+        _stage_draft_path(holdout_dir, "holdout_validation_draft.yaml"),
         _holdout_validation_draft(confirmed=True),
     )
     _write_yaml(
-        holdout_dir / "holdout_validation_transition_approval.yaml",
+        _stage_draft_path(holdout_dir, "holdout_validation_transition_approval.yaml"),
         {
             "lineage_id": "btc_leads_alts",
             "decision": "CONFIRM_HOLDOUT_VALIDATION",
@@ -1781,8 +1801,8 @@ def test_detect_session_stage_returns_holdout_validation_review_when_outputs_exi
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (holdout_dir / name).write_text("ok\n", encoding="utf-8")
-    (holdout_dir / "window_results").mkdir()
+        (_stage_output_path(holdout_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(holdout_dir, "window_results")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "holdout_validation")
 
     assert detect_session_stage(lineage_root) == "holdout_validation_review_confirmation_pending"
@@ -1802,8 +1822,8 @@ def test_detect_session_stage_returns_holdout_validation_review_complete_when_cl
         "field_dictionary.md",
         "stage_completion_certificate.yaml",
     ]:
-        (holdout_dir / name).write_text("ok\n", encoding="utf-8")
-    (holdout_dir / "window_results").mkdir()
+        (_stage_output_path(holdout_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(holdout_dir, "window_results")).mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, "holdout_validation")
 
     assert detect_session_stage(lineage_root) == "holdout_validation_next_stage_confirmation_pending"
@@ -1884,7 +1904,7 @@ def test_detect_session_stage_routes_mainline_and_csf_through_display_confirmati
     mandate_dir = csf_root / "01_mandate"
     _write_minimal_stage_outputs(mandate_dir, stage="mandate")
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        _stage_output_path(mandate_dir, "research_route.yaml"),
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "regime_filter",
@@ -2001,7 +2021,7 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
         mandate_dir = lineage_root / "01_mandate"
         mandate_dir.mkdir(parents=True, exist_ok=True)
         _write_yaml(
-            mandate_dir / "research_route.yaml",
+            _stage_output_path(mandate_dir, "research_route.yaml"),
             {
                 "research_route": "cross_sectional_factor",
                 "factor_role": "standalone_alpha",
@@ -2086,9 +2106,9 @@ def test_run_research_session_clears_intake_open_risks_after_routing_into_csf_da
         "latest_review_pack.yaml",
         "stage_gate_review.yaml",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        _stage_output_path(mandate_dir, "research_route.yaml"),
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "regime_filter",

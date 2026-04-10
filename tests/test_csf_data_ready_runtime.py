@@ -9,6 +9,7 @@ from tools.csf_data_ready_runtime import (
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -71,7 +72,8 @@ def _csf_data_ready_draft(*, confirmed: bool) -> dict:
 
 def _prepare_mandate_stage(lineage_root: Path) -> None:
     mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True)
+    formal_dir = mandate_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in [
         "mandate.md",
         "research_scope.md",
@@ -81,9 +83,9 @@ def _prepare_mandate_stage(lineage_root: Path) -> None:
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        formal_dir / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "standalone_alpha",
@@ -101,7 +103,7 @@ def test_scaffold_csf_data_ready_creates_grouped_draft(tmp_path: Path) -> None:
 
     stage_dir = scaffold_csf_data_ready(lineage_root)
 
-    draft = yaml.safe_load((stage_dir / "csf_data_ready_freeze_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml").read_text(encoding="utf-8"))
     assert stage_dir == lineage_root / "02_csf_data_ready"
     assert set(draft["groups"]) == {
         "panel_contract",
@@ -117,20 +119,21 @@ def test_build_csf_data_ready_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_mandate_stage(lineage_root)
     stage_dir = lineage_root / "02_csf_data_ready"
     stage_dir.mkdir(parents=True)
-    _write_yaml(stage_dir / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
 
     built_dir = build_csf_data_ready_from_mandate(lineage_root)
 
     assert built_dir == stage_dir
-    assert (stage_dir / "panel_manifest.json").exists()
-    assert (stage_dir / "asset_universe_membership.parquet").exists()
-    assert (stage_dir / "cross_section_coverage.parquet").exists()
-    assert (stage_dir / "eligibility_base_mask.parquet").exists()
-    assert (stage_dir / "shared_feature_base").exists()
-    assert (stage_dir / "asset_taxonomy_snapshot.parquet").exists()
-    assert (stage_dir / "csf_data_contract.md").exists()
-    assert (stage_dir / "csf_data_ready_gate_decision.md").exists()
-    assert (stage_dir / "run_manifest.json").exists()
-    assert (stage_dir / "rebuild_csf_data_ready.py").exists()
-    assert (stage_dir / "artifact_catalog.md").exists()
-    assert (stage_dir / "field_dictionary.md").exists()
+    formal_dir = stage_dir / "author" / "formal"
+    assert (formal_dir / "panel_manifest.json").exists()
+    assert (formal_dir / "asset_universe_membership.parquet").exists()
+    assert (formal_dir / "cross_section_coverage.parquet").exists()
+    assert (formal_dir / "eligibility_base_mask.parquet").exists()
+    assert (formal_dir / "shared_feature_base").exists()
+    assert (formal_dir / "asset_taxonomy_snapshot.parquet").exists()
+    assert (formal_dir / "csf_data_contract.md").exists()
+    assert (formal_dir / "csf_data_ready_gate_decision.md").exists()
+    assert (formal_dir / "run_manifest.json").exists()
+    assert (formal_dir / "rebuild_csf_data_ready.py").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()

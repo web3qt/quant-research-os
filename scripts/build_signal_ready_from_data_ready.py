@@ -24,7 +24,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _require_confirmed_freeze_groups(lineage_root: Path) -> None:
-    draft_path = lineage_root / "03_signal_ready" / "signal_ready_freeze_draft.yaml"
+    draft_path = lineage_root / "03_signal_ready" / "author" / "draft" / "signal_ready_freeze_draft.yaml"
     payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     unconfirmed = sorted(name for name, group in groups.items() if not group.get("confirmed"))

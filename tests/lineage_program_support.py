@@ -19,7 +19,7 @@ def ensure_stage_program(lineage_root: Path, stage_key: str) -> Path:
 
 def write_fake_stage_provenance(lineage_root: Path, stage_key: str) -> Path:
     spec = STAGE_PROGRAM_SPECS[stage_key]
-    stage_dir = lineage_root / spec["stage_dir"]
+    stage_dir = lineage_root / spec["stage_dir"] / "author" / "formal"
     stage_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage_id": spec["stage_id"],

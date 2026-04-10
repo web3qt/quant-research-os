@@ -7,6 +7,7 @@ from tools.backtest_runtime import build_backtest_ready_from_test_evidence, scaf
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -15,7 +16,9 @@ def _write_fake_parquet(path: Path) -> None:
 
 
 def _prepare_real_backtest_engine_outputs(backtest_dir: Path) -> None:
-    (backtest_dir / "engine_compare.csv").write_text(
+    formal_dir = backtest_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True, exist_ok=True)
+    (formal_dir / "engine_compare.csv").write_text(
         "\n".join(
             [
                 "engine,gross_return,net_return,max_drawdown,semantic_gap",
@@ -27,7 +30,7 @@ def _prepare_real_backtest_engine_outputs(backtest_dir: Path) -> None:
         encoding="utf-8",
     )
     for engine_name in ("vectorbt", "backtrader"):
-        engine_dir = backtest_dir / engine_name
+        engine_dir = formal_dir / engine_name
         engine_dir.mkdir(exist_ok=True)
         for name in (
             "trades.parquet",
@@ -102,12 +105,13 @@ def _backtest_ready_draft(*, confirmed: bool) -> dict:
 
 def _prepare_test_evidence_stage(lineage_root: Path) -> None:
     test_dir = lineage_root / "05_test_evidence"
-    test_dir.mkdir(parents=True)
-    (test_dir / "frozen_spec.json").write_text(
+    formal_dir = test_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    (formal_dir / "frozen_spec.json").write_text(
         '{"selected_symbols":["ETHUSDT","SOLUSDT"],"best_h":"30m"}\n',
         encoding="utf-8",
     )
-    (test_dir / "selected_symbols_test.csv").write_text(
+    (formal_dir / "selected_symbols_test.csv").write_text(
         "\n".join(
             [
                 "symbol,param_id,best_h",
@@ -126,7 +130,7 @@ def test_scaffold_backtest_ready_creates_grouped_draft(tmp_path: Path) -> None:
 
     backtest_dir = scaffold_backtest_ready(lineage_root)
 
-    draft = yaml.safe_load((backtest_dir / "backtest_ready_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((backtest_dir / "author" / "draft" / "backtest_ready_draft.yaml").read_text(encoding="utf-8"))
     assert backtest_dir == lineage_root / "06_backtest"
     assert set(draft["groups"]) == {
         "execution_policy",
@@ -143,21 +147,22 @@ def test_build_backtest_ready_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_test_evidence_stage(lineage_root)
     backtest_dir = lineage_root / "06_backtest"
     backtest_dir.mkdir(parents=True)
-    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_yaml(backtest_dir / "author" / "draft" / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
     _prepare_real_backtest_engine_outputs(backtest_dir)
 
     built_dir = build_backtest_ready_from_test_evidence(lineage_root)
 
     assert built_dir == backtest_dir
-    assert (backtest_dir / "engine_compare.csv").exists()
-    assert (backtest_dir / "vectorbt").exists()
-    assert (backtest_dir / "backtrader").exists()
-    assert (backtest_dir / "strategy_combo_ledger.csv").exists()
-    assert (backtest_dir / "capacity_review.md").exists()
-    assert (backtest_dir / "backtest_gate_decision.md").exists()
-    assert (backtest_dir / "artifact_catalog.md").exists()
-    assert (backtest_dir / "field_dictionary.md").exists()
-    assert (backtest_dir / "backtest_frozen_config.json").exists()
+    formal_dir = backtest_dir / "author" / "formal"
+    assert (formal_dir / "engine_compare.csv").exists()
+    assert (formal_dir / "vectorbt").exists()
+    assert (formal_dir / "backtrader").exists()
+    assert (formal_dir / "strategy_combo_ledger.csv").exists()
+    assert (formal_dir / "capacity_review.md").exists()
+    assert (formal_dir / "backtest_gate_decision.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()
+    assert (formal_dir / "backtest_frozen_config.json").exists()
 
 
 def test_build_backtest_ready_rejects_placeholder_engine_outputs(tmp_path: Path) -> None:
@@ -165,11 +170,11 @@ def test_build_backtest_ready_rejects_placeholder_engine_outputs(tmp_path: Path)
     _prepare_test_evidence_stage(lineage_root)
     backtest_dir = lineage_root / "06_backtest"
     backtest_dir.mkdir(parents=True)
-    _write_yaml(backtest_dir / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
+    _write_yaml(backtest_dir / "author" / "draft" / "backtest_ready_draft.yaml", _backtest_ready_draft(confirmed=True))
 
     for engine_name in ("vectorbt", "backtrader"):
-        engine_dir = backtest_dir / engine_name
-        engine_dir.mkdir()
+        engine_dir = backtest_dir / "author" / "formal" / engine_name
+        engine_dir.mkdir(parents=True)
         (engine_dir / "trades.parquet").write_text(
             f"placeholder trades artifact for {engine_name}\n",
             encoding="utf-8",
@@ -186,7 +191,7 @@ def test_build_backtest_ready_rejects_placeholder_engine_outputs(tmp_path: Path)
             f"placeholder portfolio summary artifact for {engine_name}\n",
             encoding="utf-8",
         )
-    (backtest_dir / "engine_compare.csv").write_text(
+    (backtest_dir / "author" / "formal" / "engine_compare.csv").write_text(
         "engine_a,engine_b,semantic_gap,note\nvectorbt,backtrader,false,placeholder\n",
         encoding="utf-8",
     )

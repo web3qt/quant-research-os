@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+from tools.stage_artifact_layout import ensure_stage_author_layout
+
 
 CSF_HOLDOUT_VALIDATION_DRAFT_FILE = "csf_holdout_validation_draft.yaml"
 CSF_HOLDOUT_VALIDATION_GROUP_ORDER = [
@@ -77,8 +79,8 @@ def _blank_csf_holdout_validation_draft() -> dict[str, Any]:
 def scaffold_csf_holdout_validation(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     stage_dir = lineage_root / "07_csf_holdout_validation"
-    stage_dir.mkdir(parents=True, exist_ok=True)
-    draft_path = stage_dir / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+    layout = ensure_stage_author_layout(stage_dir)
+    draft_path = layout["author_draft_dir"] / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
         _dump_yaml(draft_path, _blank_csf_holdout_validation_draft())
     return stage_dir
@@ -89,6 +91,9 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     upstream_dir = lineage_root / "06_csf_backtest_ready"
     mandate_dir = lineage_root / "01_mandate"
     stage_dir = scaffold_csf_holdout_validation(lineage_root)
+    upstream_formal_dir = ensure_stage_author_layout(upstream_dir)["author_formal_dir"]
+    mandate_formal_dir = ensure_stage_author_layout(mandate_dir)["author_formal_dir"]
+    stage_formal_dir = ensure_stage_author_layout(stage_dir)["author_formal_dir"]
 
     missing = [
         name
@@ -107,7 +112,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
-        if not (upstream_dir / name).exists()
+        if not (upstream_formal_dir / name).exists()
     ]
     if missing:
         raise ValueError(
@@ -139,11 +144,11 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     field_doc_rule = _required_draft_value(delivery_contract, "field_doc_rule")
 
     time_split = {}
-    time_split_path = mandate_dir / "time_split.json"
+    time_split_path = mandate_formal_dir / "time_split.json"
     if time_split_path.exists():
         time_split = json.loads(time_split_path.read_text(encoding="utf-8"))
 
-    (stage_dir / "csf_holdout_run_manifest.json").write_text(
+    (stage_formal_dir / "csf_holdout_run_manifest.json").write_text(
         json.dumps(
             {
                 "stage": "csf_holdout_validation",
@@ -165,10 +170,10 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         "holdout_test_compare.parquet",
         "holdout_portfolio_compare.parquet",
     ]:
-        (stage_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     for name in ["rolling_holdout_stability.json", "regime_shift_audit.json"]:
-        (stage_dir / name).write_text("{}\n", encoding="utf-8")
-    (stage_dir / "csf_holdout_gate_decision.md").write_text(
+        (stage_formal_dir / name).write_text("{}\n", encoding="utf-8")
+    (stage_formal_dir / "csf_holdout_gate_decision.md").write_text(
         "\n".join(
             [
                 "# CSF Holdout Gate Decision",
@@ -192,7 +197,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "artifact_catalog.md").write_text(
+    (stage_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
                 "# 产物清单",
@@ -210,7 +215,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (stage_dir / "field_dictionary.md").write_text(
+    (stage_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",
@@ -227,7 +232,8 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
 
 
 def _require_confirmed_freeze_groups(stage_dir: Path) -> dict[str, Any]:
-    payload = yaml.safe_load((stage_dir / CSF_HOLDOUT_VALIDATION_DRAFT_FILE).read_text(encoding="utf-8")) or {}
+    draft_path = ensure_stage_author_layout(stage_dir)["author_draft_dir"] / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
     groups = payload.get("groups", {})
     missing = [
         name for name in CSF_HOLDOUT_VALIDATION_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))

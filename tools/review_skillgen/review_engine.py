@@ -19,7 +19,7 @@ from tools.review_skillgen.adversarial_review_contract import (
 )
 from tools.review_skillgen.closure_models import build_review_payload
 from tools.review_skillgen.closure_writer import write_closure_artifacts
-from tools.review_skillgen.context_inference import infer_review_context
+from tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from tools.review_skillgen.review_findings import load_review_findings_if_present
 
@@ -152,7 +152,7 @@ def run_stage_review(
     reviewer_mode: str | None = None,
 ) -> dict[str, Any]:
     if explicit_context is not None:
-        inferred = infer_review_context(Path(explicit_context["stage_dir"]))
+        inferred = build_stage_context(Path(explicit_context["stage_dir"]))
         context = {
             **inferred,
             **explicit_context,
@@ -161,6 +161,9 @@ def run_stage_review(
         context = infer_review_context(cwd or Path.cwd())
     stage_dir = Path(context["stage_dir"]).resolve()
     lineage_root = Path(context["lineage_root"]).resolve()
+    author_formal_dir = Path(context["author_formal_dir"]).resolve()
+    review_request_dir = Path(context["review_request_dir"]).resolve()
+    review_result_dir = Path(context["review_result_dir"]).resolve()
     stage = context["stage"]
     lineage_id = context["lineage_id"]
 
@@ -169,8 +172,8 @@ def run_stage_review(
     stage_contract = gates["stages"][stage]
     stage_checks = checklist["stages"][stage]
 
-    request_path = stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
-    result_path = stage_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
+    request_path = review_request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
     request_payload = load_adversarial_review_request(request_path)
     runtime_identity = _runtime_identity(
         reviewer_identity=reviewer_identity,
@@ -185,13 +188,13 @@ def run_stage_review(
         result_payload=review_result,
         runtime_identity=runtime_identity,
     )
-    reviewer_findings = load_review_findings_if_present(stage_dir / "review_findings.yaml")
+    reviewer_findings = load_review_findings_if_present(review_result_dir / "review_findings.yaml")
 
-    missing_required_outputs = _check_required_outputs(stage_dir, stage_contract.get("required_outputs", []))
+    missing_required_outputs = _check_required_outputs(author_formal_dir, stage_contract.get("required_outputs", []))
     blocking_findings = [f"Missing required output: {item}" for item in missing_required_outputs]
-    blocking_findings.extend(_check_global_evidence(stage_dir, stage_checks))
+    blocking_findings.extend(_check_global_evidence(author_formal_dir, stage_checks))
 
-    auto_stage_blocking, auto_stage_reservations = _check_stage_evidence(stage_dir, stage_checks.get("checks", []))
+    auto_stage_blocking, auto_stage_reservations = _check_stage_evidence(author_formal_dir, stage_checks.get("checks", []))
     blocking_findings.extend(auto_stage_blocking)
 
     reservation_findings = list(auto_stage_reservations)
@@ -276,7 +279,7 @@ def run_stage_review(
         reservation_findings=reservation_findings,
         info_findings=info_findings,
     )
-    common_payload["governance_signal_path"] = "governance_signal.json"
+    common_payload["governance_signal_path"] = "review/governance/governance_signal.json"
     common_payload["governance_candidate_summary"] = {
         "ledger_entries_written": governance_result["ledger_entries_written"],
         "candidates_updated": governance_result["candidates_updated"],

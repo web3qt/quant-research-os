@@ -95,6 +95,7 @@ from tools.train_runtime import (
     TRAIN_FREEZE_GROUP_ORDER,
     scaffold_train_freeze,
 )
+from tools.review_skillgen.context_inference import build_stage_context
 
 
 SessionStage = Literal[
@@ -335,6 +336,34 @@ HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+
+
+def _stage_context(stage_dir: Path) -> dict[str, Path]:
+    return build_stage_context(stage_dir)
+
+
+def _author_formal_dir(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["author_formal_dir"]
+
+
+def _author_draft_dir(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["author_draft_dir"]
+
+
+def _review_request_path(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["review_request_dir"] / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+
+
+def _review_result_path(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["review_result_dir"] / ADVERSARIAL_REVIEW_RESULT_FILENAME
+
+
+def _review_findings_path(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["review_result_dir"] / "review_findings.yaml"
+
+
+def _review_closure_path(stage_dir: Path, name: str) -> Path:
+    return _stage_context(stage_dir)["review_closure_dir"] / name
 CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "csf_holdout_run_manifest.json",
     "holdout_factor_diagnostics.parquet",
@@ -828,7 +857,9 @@ def build_mandate_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_data_ready_scaffold(lineage_root: Path) -> list[str]:
     data_ready_dir = lineage_root / "02_data_ready"
-    if data_ready_dir.exists() and (data_ready_dir / DATA_READY_FREEZE_DRAFT_FILE).exists():
+    if data_ready_dir.exists() and (
+        data_ready_dir / "author" / "draft" / DATA_READY_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_data_ready(lineage_root)
@@ -846,7 +877,9 @@ def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "02_csf_data_ready"
-    if stage_dir.exists() and (stage_dir / CSF_DATA_READY_FREEZE_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_data_ready(lineage_root)
@@ -879,7 +912,9 @@ def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
     signal_ready_dir = lineage_root / "03_signal_ready"
-    if signal_ready_dir.exists() and (signal_ready_dir / SIGNAL_READY_FREEZE_DRAFT_FILE).exists():
+    if signal_ready_dir.exists() and (
+        signal_ready_dir / "author" / "draft" / SIGNAL_READY_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_signal_ready(lineage_root)
@@ -897,7 +932,9 @@ def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "03_csf_signal_ready"
-    if stage_dir.exists() and (stage_dir / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_signal_ready(lineage_root)
@@ -915,7 +952,9 @@ def build_csf_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
     train_dir = lineage_root / "04_train_freeze"
-    if train_dir.exists() and (train_dir / TRAIN_FREEZE_DRAFT_FILE).exists():
+    if train_dir.exists() and (
+        train_dir / "author" / "draft" / TRAIN_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_train_freeze(lineage_root)
@@ -933,7 +972,9 @@ def build_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "04_csf_train_freeze"
-    if stage_dir.exists() and (stage_dir / CSF_TRAIN_FREEZE_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_TRAIN_FREEZE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_train_freeze(lineage_root)
@@ -951,7 +992,9 @@ def build_csf_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
     test_dir = lineage_root / "05_test_evidence"
-    if test_dir.exists() and (test_dir / TEST_EVIDENCE_DRAFT_FILE).exists():
+    if test_dir.exists() and (
+        test_dir / "author" / "draft" / TEST_EVIDENCE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_test_evidence(lineage_root)
@@ -969,7 +1012,9 @@ def build_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "05_csf_test_evidence"
-    if stage_dir.exists() and (stage_dir / CSF_TEST_EVIDENCE_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_TEST_EVIDENCE_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_test_evidence(lineage_root)
@@ -987,7 +1032,9 @@ def build_csf_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
     backtest_dir = lineage_root / "06_backtest"
-    if backtest_dir.exists() and (backtest_dir / BACKTEST_READY_DRAFT_FILE).exists():
+    if backtest_dir.exists() and (
+        backtest_dir / "author" / "draft" / BACKTEST_READY_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_backtest_ready(lineage_root)
@@ -1005,7 +1052,9 @@ def build_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "06_csf_backtest_ready"
-    if stage_dir.exists() and (stage_dir / CSF_BACKTEST_READY_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_BACKTEST_READY_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_backtest_ready(lineage_root)
@@ -1023,7 +1072,9 @@ def build_csf_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
     holdout_dir = lineage_root / "07_holdout"
-    if holdout_dir.exists() and (holdout_dir / HOLDOUT_VALIDATION_DRAFT_FILE).exists():
+    if holdout_dir.exists() and (
+        holdout_dir / "author" / "draft" / HOLDOUT_VALIDATION_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_holdout_validation(lineage_root)
@@ -1041,7 +1092,9 @@ def build_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
 
 def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
     stage_dir = lineage_root / "07_csf_holdout_validation"
-    if stage_dir.exists() and (stage_dir / CSF_HOLDOUT_VALIDATION_DRAFT_FILE).exists():
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+    ).exists():
         return []
 
     scaffold_csf_holdout_validation(lineage_root)
@@ -1062,7 +1115,7 @@ def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
         return None
 
     mandate_dir = lineage_root / "01_mandate"
-    if not (mandate_dir / "review_findings.yaml").exists():
+    if not _review_findings_path(mandate_dir).exists():
         return None
 
     return run_stage_review(
@@ -1474,7 +1527,7 @@ def session_transition_summary(
 
 
 def current_research_route(lineage_root: Path) -> str | None:
-    mandate_route_path = lineage_root / "01_mandate" / "research_route.yaml"
+    mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if mandate_route_path.exists():
         route_payload = _read_yaml(mandate_route_path)
         route_value = str(route_payload.get("research_route", "")).strip()
@@ -1495,7 +1548,7 @@ def current_research_route(lineage_root: Path) -> str | None:
 
 
 def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
-    mandate_route_path = lineage_root / "01_mandate" / "research_route.yaml"
+    mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if not mandate_route_path.exists():
         return {
             "factor_role": None,
@@ -1527,7 +1580,7 @@ def next_mandate_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "02_data_ready" / DATA_READY_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "02_data_ready" / "author" / "draft" / DATA_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         return DATA_READY_FREEZE_GROUP_ORDER[0]
 
@@ -1540,7 +1593,9 @@ def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_data_ready_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "02_csf_data_ready" / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    draft_path = (
+        lineage_root / "02_csf_data_ready" / "author" / "draft" / CSF_DATA_READY_FREEZE_DRAFT_FILE
+    )
     if not draft_path.exists():
         return CSF_DATA_READY_FREEZE_GROUP_ORDER[0]
 
@@ -1553,7 +1608,7 @@ def next_csf_data_ready_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "03_signal_ready" / SIGNAL_READY_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "03_signal_ready" / "author" / "draft" / SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         return SIGNAL_READY_FREEZE_GROUP_ORDER[0]
 
@@ -1566,7 +1621,7 @@ def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_signal_ready_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "03_csf_signal_ready" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "03_csf_signal_ready" / "author" / "draft" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         return CSF_SIGNAL_READY_FREEZE_GROUP_ORDER[0]
 
@@ -1579,7 +1634,7 @@ def next_csf_signal_ready_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_train_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "04_train_freeze" / TRAIN_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "04_train_freeze" / "author" / "draft" / TRAIN_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         return TRAIN_FREEZE_GROUP_ORDER[0]
 
@@ -1592,7 +1647,7 @@ def next_train_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_train_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "04_csf_train_freeze" / CSF_TRAIN_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "04_csf_train_freeze" / "author" / "draft" / CSF_TRAIN_FREEZE_DRAFT_FILE
     if not draft_path.exists():
         return CSF_TRAIN_FREEZE_GROUP_ORDER[0]
 
@@ -1605,7 +1660,7 @@ def next_csf_train_freeze_group(lineage_root: Path) -> str | None:
 
 
 def next_test_evidence_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "05_test_evidence" / TEST_EVIDENCE_DRAFT_FILE
+    draft_path = lineage_root / "05_test_evidence" / "author" / "draft" / TEST_EVIDENCE_DRAFT_FILE
     if not draft_path.exists():
         return TEST_EVIDENCE_GROUP_ORDER[0]
 
@@ -1618,7 +1673,7 @@ def next_test_evidence_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_test_evidence_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "05_csf_test_evidence" / CSF_TEST_EVIDENCE_DRAFT_FILE
+    draft_path = lineage_root / "05_csf_test_evidence" / "author" / "draft" / CSF_TEST_EVIDENCE_DRAFT_FILE
     if not draft_path.exists():
         return CSF_TEST_EVIDENCE_GROUP_ORDER[0]
 
@@ -1631,7 +1686,7 @@ def next_csf_test_evidence_group(lineage_root: Path) -> str | None:
 
 
 def next_backtest_ready_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "06_backtest" / BACKTEST_READY_DRAFT_FILE
+    draft_path = lineage_root / "06_backtest" / "author" / "draft" / BACKTEST_READY_DRAFT_FILE
     if not draft_path.exists():
         return BACKTEST_READY_GROUP_ORDER[0]
 
@@ -1644,7 +1699,7 @@ def next_backtest_ready_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_backtest_ready_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "06_csf_backtest_ready" / CSF_BACKTEST_READY_DRAFT_FILE
+    draft_path = lineage_root / "06_csf_backtest_ready" / "author" / "draft" / CSF_BACKTEST_READY_DRAFT_FILE
     if not draft_path.exists():
         return CSF_BACKTEST_READY_GROUP_ORDER[0]
 
@@ -1657,7 +1712,7 @@ def next_csf_backtest_ready_group(lineage_root: Path) -> str | None:
 
 
 def next_holdout_validation_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "07_holdout" / HOLDOUT_VALIDATION_DRAFT_FILE
+    draft_path = lineage_root / "07_holdout" / "author" / "draft" / HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
         return HOLDOUT_VALIDATION_GROUP_ORDER[0]
 
@@ -1670,7 +1725,7 @@ def next_holdout_validation_group(lineage_root: Path) -> str | None:
 
 
 def next_csf_holdout_validation_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "07_csf_holdout_validation" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
+    draft_path = lineage_root / "07_csf_holdout_validation" / "author" / "draft" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
         return CSF_HOLDOUT_VALIDATION_GROUP_ORDER[0]
 
@@ -1962,7 +2017,7 @@ def _stage_dir_for_session_stage(lineage_root: Path, current_stage: SessionStage
 
 
 def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
-    result_path = stage_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
+    result_path = _review_result_path(stage_dir)
     if not result_path.exists():
         return None
     return load_adversarial_review_result(result_path)
@@ -1981,7 +2036,8 @@ def _ensure_review_request_for_stage(lineage_root: Path, current_stage: SessionS
     provenance = load_provenance_manifest(stage_dir)
     if provenance is None:
         return
-    if not all((stage_dir / output_name).exists() for output_name in spec.required_outputs):
+    author_formal_dir = _author_formal_dir(stage_dir)
+    if not all((author_formal_dir / output_name).exists() for output_name in spec.required_outputs):
         return
     author_identity = provenance.get("authored_by_agent_id")
     author_session_id = provenance.get("authoring_session_id")
@@ -2025,7 +2081,7 @@ def _review_substate(
     current_stage: SessionStage,
     lineage_root: Path,
 ) -> tuple[str, str, str, str]:
-    request_path = stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    request_path = _review_request_path(stage_dir)
     review_result = _load_adversarial_review_result_if_present(stage_dir)
     stage_base = _stage_base_name(current_stage)
     author_skill = STAGE_ACTIVE_SKILLS.get(f"{stage_base}_author", "qros-research-session")
@@ -2518,7 +2574,7 @@ def _csf_holdout_validation_outputs_complete(stage_dir: Path) -> bool:
 
 
 def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
-    payload = _read_yaml(stage_dir / "stage_completion_certificate.yaml")
+    payload = _read_yaml(_review_closure_path(stage_dir, "stage_completion_certificate.yaml"))
     if not payload:
         return True
 
@@ -2531,7 +2587,7 @@ def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
 
 
 def _review_verdict_from_stage_dir(stage_dir: Path) -> str | None:
-    certificate_path = stage_dir / "stage_completion_certificate.yaml"
+    certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
     if not certificate_path.exists():
         return None
 
@@ -2601,11 +2657,11 @@ def _review_or_post_review_stage(
 
 def _review_has_started(stage_dir: Path) -> bool:
     return any(
-        (stage_dir / name).exists()
-        for name in (
-            ADVERSARIAL_REVIEW_REQUEST_FILENAME,
-            ADVERSARIAL_REVIEW_RESULT_FILENAME,
-            "stage_completion_certificate.yaml",
+        path.exists()
+        for path in (
+            _review_request_path(stage_dir),
+            _review_result_path(stage_dir),
+            _review_closure_path(stage_dir, "stage_completion_certificate.yaml"),
         )
     )
 
@@ -2694,88 +2750,88 @@ def _next_stage_entry_state(lineage_root: Path, *, next_stage_base: str) -> Sess
 
 
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
-    if (mandate_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(mandate_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(mandate_dir)
-    return all((mandate_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(mandate_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
-    if (data_ready_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(data_ready_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(data_ready_dir)
-    return all((data_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(data_ready_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_data_ready_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
-    if (signal_ready_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(signal_ready_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(signal_ready_dir)
-    return all((signal_ready_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(signal_ready_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_signal_ready_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _train_freeze_closure_complete(train_dir: Path) -> bool:
-    if (train_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(train_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(train_dir)
-    return all((train_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(train_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_train_freeze_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _test_evidence_closure_complete(test_dir: Path) -> bool:
-    if (test_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(test_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(test_dir)
-    return all((test_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(test_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_test_evidence_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
-    if (backtest_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(backtest_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(backtest_dir)
-    return all((backtest_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(backtest_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_backtest_ready_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
-    if (holdout_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(holdout_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(holdout_dir)
-    return all((holdout_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(holdout_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
-    if (stage_dir / "stage_completion_certificate.yaml").exists():
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)
-    return all((stage_dir / name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
 
 
 def _review_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_dir = _stage_dir_for_session_stage(lineage_root, current_stage)
     if stage_dir is None:
         return "REVIEW_PENDING", "Complete the review workflow."
-    request_exists = (stage_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME).exists()
+    request_exists = _review_request_path(stage_dir).exists()
     review_result = _load_adversarial_review_result_if_present(stage_dir)
     if not request_exists or review_result is None:
         return (
@@ -3134,38 +3190,38 @@ def _approval_path(lineage_root: Path) -> Path:
 
 def _data_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "02_csf_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE
-    return lineage_root / "02_data_ready" / DATA_READY_TRANSITION_APPROVAL_FILE
+        return lineage_root / "02_csf_data_ready" / "author" / "draft" / DATA_READY_TRANSITION_APPROVAL_FILE
+    return lineage_root / "02_data_ready" / "author" / "draft" / DATA_READY_TRANSITION_APPROVAL_FILE
 
 
 def _signal_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "03_csf_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
-    return lineage_root / "03_signal_ready" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
+        return lineage_root / "03_csf_signal_ready" / "author" / "draft" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
+    return lineage_root / "03_signal_ready" / "author" / "draft" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
 
 
 def _train_freeze_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "04_csf_train_freeze" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
-    return lineage_root / "04_train_freeze" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
+        return lineage_root / "04_csf_train_freeze" / "author" / "draft" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
+    return lineage_root / "04_train_freeze" / "author" / "draft" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
 
 
 def _test_evidence_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "05_csf_test_evidence" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
-    return lineage_root / "05_test_evidence" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
+        return lineage_root / "05_csf_test_evidence" / "author" / "draft" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
+    return lineage_root / "05_test_evidence" / "author" / "draft" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
 
 
 def _backtest_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "06_csf_backtest_ready" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
-    return lineage_root / "06_backtest" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
+        return lineage_root / "06_csf_backtest_ready" / "author" / "draft" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
+    return lineage_root / "06_backtest" / "author" / "draft" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
 
 
 def _holdout_validation_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
-        return lineage_root / "07_csf_holdout_validation" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
-    return lineage_root / "07_holdout" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
+        return lineage_root / "07_csf_holdout_validation" / "author" / "draft" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
+    return lineage_root / "07_holdout" / "author" / "draft" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
 
 
 def _stage_dir_for_stage_base(lineage_root: Path, stage_base: str) -> Path | None:
@@ -3179,11 +3235,11 @@ def _review_transition_approval_path(lineage_root: Path, stage_base: str) -> Pat
     stage_dir = _stage_dir_for_stage_base(lineage_root, stage_base)
     if stage_dir is None:
         return None
-    return stage_dir / REVIEW_TRANSITION_APPROVAL_FILE
+    return _author_draft_dir(stage_dir) / REVIEW_TRANSITION_APPROVAL_FILE
 
 
 def _next_stage_transition_approval_path(lineage_root: Path, stage_base: str) -> Path | None:
     stage_dir = _stage_dir_for_stage_base(lineage_root, stage_base)
     if stage_dir is None:
         return None
-    return stage_dir / NEXT_STAGE_TRANSITION_APPROVAL_FILE
+    return _author_draft_dir(stage_dir) / NEXT_STAGE_TRANSITION_APPROVAL_FILE

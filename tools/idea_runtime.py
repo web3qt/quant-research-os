@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+from tools.review_skillgen.context_inference import build_stage_context
+
 
 MANDATE_FREEZE_DRAFT_FILE = "mandate_freeze_draft.yaml"
 MANDATE_FREEZE_GROUP_ORDER = [
@@ -180,6 +182,8 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
     intake_dir = lineage_root / "00_idea_intake"
     mandate_dir = lineage_root / "01_mandate"
+    mandate_context = build_stage_context(mandate_dir)
+    mandate_formal_dir = mandate_context["author_formal_dir"]
 
     gate_decision = yaml.safe_load((intake_dir / "idea_gate_decision.yaml").read_text(encoding="utf-8"))
 
@@ -187,7 +191,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         raise ValueError("idea_gate_decision verdict must be GO_TO_MANDATE before mandate build")
     route_assessment = _require_route_assessment(gate_decision)
 
-    mandate_dir.mkdir(parents=True, exist_ok=True)
+    mandate_formal_dir.mkdir(parents=True, exist_ok=True)
     freeze_groups = _require_confirmed_freeze_groups(intake_dir)
     research_intent = freeze_groups["research_intent"]["draft"]
     scope_contract = freeze_groups["scope_contract"]["draft"]
@@ -280,7 +284,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "confirmed mandate inputs missing: group_taxonomy_reference for group_neutral cross_sectional_factor route"
             )
 
-    (mandate_dir / "mandate.md").write_text(
+    (mandate_formal_dir / "mandate.md").write_text(
         "\n".join(
             [
                 "# Mandate",
@@ -343,7 +347,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
 
-    (mandate_dir / "research_scope.md").write_text(
+    (mandate_formal_dir / "research_scope.md").write_text(
         "\n".join(
             [
                 "# Research Scope",
@@ -362,7 +366,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     _dump_yaml(
-        mandate_dir / "research_route.yaml",
+        mandate_formal_dir / "research_route.yaml",
         {
             "research_route": research_route,
             "factor_role": factor_role,
@@ -381,7 +385,7 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         },
     )
 
-    (mandate_dir / "time_split.json").write_text(
+    (mandate_formal_dir / "time_split.json").write_text(
         json.dumps(
             {
                 "train": "",
@@ -399,13 +403,13 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         encoding="utf-8",
     )
     _dump_yaml(
-        mandate_dir / "parameter_grid.yaml",
+        mandate_formal_dir / "parameter_grid.yaml",
         {
             "parameters": [],
             "note": "在 mandate qualification 完成后补正式参数候选。",
         },
     )
-    (mandate_dir / "run_config.toml").write_text(
+    (mandate_formal_dir / "run_config.toml").write_text(
         "\n".join(
             [
                 'stage = "mandate"',
@@ -420,11 +424,11 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    (mandate_dir / "artifact_catalog.md").write_text(
+    (mandate_formal_dir / "artifact_catalog.md").write_text(
         "# 产物清单\n\n- mandate.md\n- research_scope.md\n- research_route.yaml\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
         encoding="utf-8",
     )
-    (mandate_dir / "field_dictionary.md").write_text(
+    (mandate_formal_dir / "field_dictionary.md").write_text(
         "\n".join(
             [
                 "# 字段字典",

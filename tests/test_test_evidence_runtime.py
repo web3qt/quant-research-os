@@ -6,6 +6,7 @@ from tools.test_evidence_runtime import build_test_evidence_from_train_freeze, s
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -79,18 +80,18 @@ def _prepare_upstream_stages(lineage_root: Path) -> None:
     signal_ready_dir = lineage_root / "03_signal_ready"
     train_dir = lineage_root / "04_train_freeze"
 
-    mandate_dir.mkdir(parents=True)
-    data_ready_dir.mkdir(parents=True)
-    signal_ready_dir.mkdir(parents=True)
-    train_dir.mkdir(parents=True)
+    (mandate_dir / "author" / "formal").mkdir(parents=True)
+    (data_ready_dir / "author" / "formal").mkdir(parents=True)
+    (signal_ready_dir / "author" / "formal").mkdir(parents=True)
+    (train_dir / "author" / "formal").mkdir(parents=True)
 
-    (mandate_dir / "time_split.json").write_text(
+    (mandate_dir / "author" / "formal" / "time_split.json").write_text(
         '{"train": "", "test": "", "holding_horizons": ["15m", "30m"]}\n',
         encoding="utf-8",
     )
-    (data_ready_dir / "aligned_bars").mkdir()
-    (signal_ready_dir / "params").mkdir()
-    (signal_ready_dir / "param_manifest.csv").write_text(
+    (data_ready_dir / "author" / "formal" / "aligned_bars").mkdir()
+    (signal_ready_dir / "author" / "formal" / "params").mkdir()
+    (signal_ready_dir / "author" / "formal" / "param_manifest.csv").write_text(
         "\n".join(
             [
                 "param_id,scope,baseline_signal,parameter_values",
@@ -100,8 +101,8 @@ def _prepare_upstream_stages(lineage_root: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
-    (train_dir / "train_thresholds.json").write_text('{"kept_param_ids":["baseline_v1"]}\n', encoding="utf-8")
-    (train_dir / "train_param_ledger.csv").write_text(
+    (train_dir / "author" / "formal" / "train_thresholds.json").write_text('{"kept_param_ids":["baseline_v1"]}\n', encoding="utf-8")
+    (train_dir / "author" / "formal" / "train_param_ledger.csv").write_text(
         "\n".join(
             [
                 "param_id,status,selection_rule,train_window_source,notes",
@@ -119,7 +120,7 @@ def test_scaffold_test_evidence_creates_grouped_draft(tmp_path: Path) -> None:
 
     test_dir = scaffold_test_evidence(lineage_root)
 
-    draft = yaml.safe_load((test_dir / "test_evidence_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((test_dir / "author" / "draft" / "test_evidence_draft.yaml").read_text(encoding="utf-8"))
     assert test_dir == lineage_root / "05_test_evidence"
     assert set(draft["groups"]) == {
         "window_contract",
@@ -136,19 +137,20 @@ def test_build_test_evidence_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_upstream_stages(lineage_root)
     test_dir = lineage_root / "05_test_evidence"
     test_dir.mkdir(parents=True)
-    _write_yaml(test_dir / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
+    _write_yaml(test_dir / "author" / "draft" / "test_evidence_draft.yaml", _test_evidence_draft(confirmed=True))
 
     built_dir = build_test_evidence_from_train_freeze(lineage_root)
 
     assert built_dir == test_dir
-    assert (test_dir / "report_by_h.parquet").exists()
-    assert (test_dir / "symbol_summary.parquet").exists()
-    assert (test_dir / "admissibility_report.parquet").exists()
-    assert (test_dir / "test_gate_table.csv").exists()
-    assert (test_dir / "crowding_review.md").exists()
-    assert (test_dir / "selected_symbols_test.csv").exists()
-    assert (test_dir / "selected_symbols_test.parquet").exists()
-    assert (test_dir / "frozen_spec.json").exists()
-    assert (test_dir / "test_gate_decision.md").exists()
-    assert (test_dir / "artifact_catalog.md").exists()
-    assert (test_dir / "field_dictionary.md").exists()
+    formal_dir = test_dir / "author" / "formal"
+    assert (formal_dir / "report_by_h.parquet").exists()
+    assert (formal_dir / "symbol_summary.parquet").exists()
+    assert (formal_dir / "admissibility_report.parquet").exists()
+    assert (formal_dir / "test_gate_table.csv").exists()
+    assert (formal_dir / "crowding_review.md").exists()
+    assert (formal_dir / "selected_symbols_test.csv").exists()
+    assert (formal_dir / "selected_symbols_test.parquet").exists()
+    assert (formal_dir / "frozen_spec.json").exists()
+    assert (formal_dir / "test_gate_decision.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()

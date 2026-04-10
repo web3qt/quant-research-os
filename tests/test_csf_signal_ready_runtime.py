@@ -9,6 +9,7 @@ from tools.csf_signal_ready_runtime import (
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -68,7 +69,8 @@ def _csf_signal_ready_draft(*, confirmed: bool) -> dict:
 
 def _prepare_csf_data_ready_stage(lineage_root: Path) -> None:
     stage_dir = lineage_root / "02_csf_data_ready"
-    stage_dir.mkdir(parents=True)
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in [
         "panel_manifest.json",
         "asset_universe_membership.parquet",
@@ -80,12 +82,13 @@ def _prepare_csf_data_ready_stage(lineage_root: Path) -> None:
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
-        (stage_dir / name).write_text("ok\n", encoding="utf-8")
-    (stage_dir / "shared_feature_base").mkdir()
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    (formal_dir / "shared_feature_base").mkdir()
     mandate_dir = lineage_root / "01_mandate"
-    mandate_dir.mkdir(parents=True, exist_ok=True)
+    mandate_formal_dir = mandate_dir / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True, exist_ok=True)
     _write_yaml(
-        mandate_dir / "research_route.yaml",
+        mandate_formal_dir / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
             "factor_role": "standalone_alpha",
@@ -103,7 +106,7 @@ def test_scaffold_csf_signal_ready_creates_grouped_draft(tmp_path: Path) -> None
 
     stage_dir = scaffold_csf_signal_ready(lineage_root)
 
-    draft = yaml.safe_load((stage_dir / "csf_signal_ready_freeze_draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load((stage_dir / "author" / "draft" / "csf_signal_ready_freeze_draft.yaml").read_text(encoding="utf-8"))
     assert stage_dir == lineage_root / "03_csf_signal_ready"
     assert set(draft["groups"]) == {
         "factor_identity",
@@ -119,18 +122,19 @@ def test_build_csf_signal_ready_writes_required_outputs(tmp_path: Path) -> None:
     _prepare_csf_data_ready_stage(lineage_root)
     stage_dir = lineage_root / "03_csf_signal_ready"
     stage_dir.mkdir(parents=True)
-    _write_yaml(stage_dir / "csf_signal_ready_freeze_draft.yaml", _csf_signal_ready_draft(confirmed=True))
+    _write_yaml(stage_dir / "author" / "draft" / "csf_signal_ready_freeze_draft.yaml", _csf_signal_ready_draft(confirmed=True))
 
     built_dir = build_csf_signal_ready_from_data_ready(lineage_root)
 
     assert built_dir == stage_dir
-    assert (stage_dir / "factor_panel.parquet").exists()
-    assert (stage_dir / "factor_manifest.yaml").exists()
-    assert (stage_dir / "component_factor_manifest.yaml").exists()
-    assert (stage_dir / "factor_coverage_report.parquet").exists()
-    assert (stage_dir / "factor_group_context.parquet").exists()
-    assert (stage_dir / "factor_contract.md").exists()
-    assert (stage_dir / "factor_field_dictionary.md").exists()
-    assert (stage_dir / "csf_signal_ready_gate_decision.md").exists()
-    assert (stage_dir / "artifact_catalog.md").exists()
-    assert (stage_dir / "field_dictionary.md").exists()
+    formal_dir = stage_dir / "author" / "formal"
+    assert (formal_dir / "factor_panel.parquet").exists()
+    assert (formal_dir / "factor_manifest.yaml").exists()
+    assert (formal_dir / "component_factor_manifest.yaml").exists()
+    assert (formal_dir / "factor_coverage_report.parquet").exists()
+    assert (formal_dir / "factor_group_context.parquet").exists()
+    assert (formal_dir / "factor_contract.md").exists()
+    assert (formal_dir / "factor_field_dictionary.md").exists()
+    assert (formal_dir / "csf_signal_ready_gate_decision.md").exists()
+    assert (formal_dir / "artifact_catalog.md").exists()
+    assert (formal_dir / "field_dictionary.md").exists()

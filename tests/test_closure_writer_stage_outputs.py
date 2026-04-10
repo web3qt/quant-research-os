@@ -30,9 +30,9 @@ def test_write_closure_artifacts_creates_stage_files(tmp_path: Path) -> None:
         explicit_context={"stage_dir": stage_dir, "lineage_root": stage_dir.parent},
     )
 
-    latest_review_pack = stage_dir / "latest_review_pack.yaml"
-    stage_gate_review = stage_dir / "stage_gate_review.yaml"
-    certificate = stage_dir / "stage_completion_certificate.yaml"
+    latest_review_pack = stage_dir / "review" / "closure" / "latest_review_pack.yaml"
+    stage_gate_review = stage_dir / "review" / "closure" / "stage_gate_review.yaml"
+    certificate = stage_dir / "review" / "closure" / "stage_completion_certificate.yaml"
 
     assert latest_review_pack.exists()
     assert stage_gate_review.exists()

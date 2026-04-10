@@ -33,9 +33,10 @@ def test_invalid_stage_program_rejects_shared_lib_escape(tmp_path: Path) -> None
 
 def test_stage_outputs_complete_requires_provenance(tmp_path: Path) -> None:
     stage_dir = tmp_path / "outputs" / "case_x" / "02_data_ready"
-    stage_dir.mkdir(parents=True)
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
     for name in ["aligned_bars", "qc_report.parquet", "dataset_manifest.json"]:
-        target = stage_dir / name
+        target = formal_dir / name
         if "." in name:
             target.write_text("ok\n", encoding="utf-8")
         else:

@@ -18,6 +18,7 @@ from tools.anti_drift_scenarios import (
     write_minimal_stage_outputs,
     write_stage_completion_certificate,
 )
+from tools.anti_drift_scenarios_support import review_closure_path
 from tools.research_session import run_research_session
 
 
@@ -318,8 +319,9 @@ def test_run_research_session_snapshot_matches_csf_holdout_review_complete_golde
     stage_dir = lineage_root / "07_csf_holdout_validation"
     write_minimal_stage_outputs(stage_dir, stage="csf_holdout_validation")
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
-    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
-    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
+    review_closure_path(stage_dir, "latest_review_pack.yaml").parent.mkdir(parents=True, exist_ok=True)
+    review_closure_path(stage_dir, "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
+    review_closure_path(stage_dir, "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
     snapshot = canonical_snapshot_from_session_context(
@@ -435,8 +437,9 @@ def test_run_research_session_snapshot_matches_holdout_review_complete_golden(tm
     stage_dir = lineage_root / "07_holdout"
     write_minimal_stage_outputs(stage_dir, stage="holdout_validation")
     write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
-    (stage_dir / "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
-    (stage_dir / "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
+    review_closure_path(stage_dir, "latest_review_pack.yaml").parent.mkdir(parents=True, exist_ok=True)
+    review_closure_path(stage_dir, "latest_review_pack.yaml").write_text("status: ok\n", encoding="utf-8")
+    review_closure_path(stage_dir, "stage_gate_review.yaml").write_text("status: ok\n", encoding="utf-8")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
     snapshot = canonical_snapshot_from_session_context(
