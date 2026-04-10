@@ -1,0 +1,60 @@
+<mxfile host="65bd71144e">
+    <diagram id="mandate-freeze-fields" name="Mandate Freeze Fields">
+        <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+
+                <mxCell id="2" value="Mandate Freeze 字段字典&#xa;先分类，再逐字段解释" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="40" width="540" height="90" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="3" value="这张图不是流程图，而是 `mandate` 阶段的字段解释图。它回答：哪些字段必须在 mandate 锁住、每个字段是什么意思、为什么不能下游再偷偷改。&#xa;读法：先按 4 类扫，再逐字段看解释。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="160" width="1340" height="94" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="10" value="研究路线定义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="300" width="960" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="research_route: 研究范式，决定这条线走横截面排序还是别的证据体系。&#xa;factor_role: 因子在策略里的职责，是 standalone_alpha 还是 filter。&#xa;factor_structure: 因子的结构身份，是 single_factor 还是 multi_factor_score。&#xa;portfolio_expression: 最终组合怎么表达，例如 long_short_market_neutral。&#xa;neutralization_policy: 去掉哪些共性暴露，例如 market beta 或 group 暴露。&#xa;target_strategy_reference: 若不是 standalone_alpha，说明该因子服务哪条目标策略。&#xa;group_taxonomy_reference: 若做 group neutral，说明后续分组、中性化、bucket 分析共用哪版 taxonomy。&#xa;excluded_routes: 明确不走哪些路线，防止失败后静默切换成 time_series_signal 之类的别的叙事。&#xa;主要落点: research_route.yaml / mandate.md / field_dictionary.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="376" width="960" height="308" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="20" value="数据与标签" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="300" width="960" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="data_source: 上游原始数据从哪里来，后续阶段必须复用同一来源。&#xa;bar_size: 全链路基础 bar 粒度，这里定 1m 就不能后面悄悄换 5m。&#xa;holding_horizons: 允许预测的 forward 窗口，例如 5m / 15m。&#xa;time_split.train: 训练窗，只能用来拟合和定阈值。&#xa;time_split.test: 测试窗，用来做独立样本检验，不能回写 train 规则。&#xa;time_split.backtest: 回测窗，用来做组合表达和容量评估。&#xa;time_split.holdout: 留出窗，最终的 out-of-sample 检验，不反哺前面设计。&#xa;label_time_semantics: 标签时间语义，定义 t0 是哪根事件 bar、未来收益从哪里开始算。&#xa;no_lookahead_guardrail: 反前视护栏，t0 之后信息只能做标签，不能进事件识别或特征。&#xa;主要落点: time_split.json / mandate.md / research_scope.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#0F766E;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="376" width="960" height="308" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="30" value="可调参数边界" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="730" width="960" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="btc_shock_return_z_threshold: “多大算 BTC shock”的阈值搜索范围。&#xa;event_cooldown_minutes: 相邻事件的冷却期，避免连续波动被重复记很多次。&#xa;pre_event_lookback_minutes: 事件前回看窗口，用来计算脆弱性或状态特征。&#xa;pre_event_vol_lookback_minutes: 估计预事件波动的窗口，用来标准化 shock 强度。&#xa;coverage_floor_3d: 事件前 3 天分钟数据最低覆盖率。&#xa;median_quote_volume_floor_3d: 事件前 3 天中位成交额门槛，用来过滤过度 illiquid 币。&#xa;beta_lookback_minutes: 估计共性市场 beta 的窗口长度。&#xa;ranking_bucket_count: 横截面评估分几桶，例如五分位或十分位。&#xa;winsor_pct: 极端值 winsor 比例上限，防止少数异常点主导结果。&#xa;这些字段的共同作用: 它们定义“允许搜索的边界”，而不是允许看完结果后无限扩参。&#xa;主要落点: parameter_grid.yaml" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="806" width="960" height="352" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="40" value="执行与治理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="730" width="960" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="implementation_stack: 允许用什么实现栈，以及职责如何切分。&#xa;parallelization_plan: 哪些步骤可以并行，例如按月份、horizon、参数切片并行。&#xa;non_rust_exceptions: 若默认偏 Rust，哪些环节允许例外；[] 表示无额外豁免。&#xa;crowding_distinctiveness_benchmark: 后面拿哪些简单 benchmark 做对比，避免把普通 beta / 流动性效应误判成独立 alpha。&#xa;capacity_review_liquidity_proxy: 容量审计用哪些流动性代理和参与率边界。&#xa;artifact_contract: 每阶段必须真正落地产物与 ledger，不能只交说明文档。&#xa;这一类字段的共同作用: 它们锁定执行约束和治理约束，防止研究线只在纸面上成立。&#xa;主要落点: run_config.toml / artifact_catalog.md / mandate.md / field_dictionary.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=12;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="806" width="960" height="352" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="50" value="这些字段最终会落到哪里" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="1210" width="1460" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="它们不会只存在于一份说明里，而是会分散落到正式 mandate 产物：&#xa;research_route.yaml / time_split.json / parameter_grid.yaml / run_config.toml / mandate.md / research_scope.md / artifact_catalog.md / field_dictionary.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#16A34A;fontSize=13;align=left;spacingLeft=10;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="1286" width="1460" height="110" as="geometry"/>
+                </mxCell>
+
+                <mxCell id="60" value="禁止事项" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="1430" width="1020" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="禁止：看过结果后再改题、改 universe、改 bar 粒度、扩参数边界、把占位文档当成正式 artifact。Mandate 锁的是研究合同，不是盈利结论。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#DC2626;fontSize=13;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="1500" width="1020" height="76" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
