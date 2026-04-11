@@ -14,7 +14,8 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - 从一个会话开始
 - 自动识别或创建 lineage
 - 自动判断当前 stage
-- 对每个 major stage 显式推进 `content-confirm -> author -> review-confirm -> review -> mandatory-display -> next-stage-confirm`
+- 对每个 major stage 显式推进 `content-confirm -> author -> review-confirm -> review -> next-stage-confirm`
+- `display` 现在是用户显式触发的 guidance，不是强制阶段，也不是 major stage 自动推进门
 - 只在缺关键信息或治理分歧时停下来问用户
 
 ## First-Wave Scope

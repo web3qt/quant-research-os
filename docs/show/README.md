@@ -49,7 +49,7 @@ flowchart LR
 
     C --> E["Runtime / Skills / Session"]
     E --> E1["统一入口: qros-research-session"]
-    E --> E2["按显式 gate 推进: content / review / display / next-stage"]
+    E --> E2["按显式 gate 推进: content / review / next-stage"]
     E --> E3["在当前 research repo 写入 outputs/<lineage_id>/ + program/"]
 
     D --> F["研究主流程推进"]

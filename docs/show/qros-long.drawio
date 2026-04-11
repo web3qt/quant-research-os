@@ -43,7 +43,7 @@
                 <mxCell id="14" value="统一入口&#xa;qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="1030" y="760" width="240" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="15" value="按显式 gate 推进&#xa;content / review / display / next-stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="15" value="按显式 gate 推进&#xa;content / review / next-stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="1310" y="760" width="280" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="16" value="在当前 research repo 写入&#xa;outputs/&lt;lineage_id&gt;/ + program/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;align=left;spacingLeft=10;" parent="1" vertex="1">
