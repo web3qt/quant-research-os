@@ -35,7 +35,7 @@
         <mxCell id="11" value="research_route&#xa;已冻结?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="1590" y="128" width="150" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="12" value="Mandate 额外冻结的路线身份&#xa;research_route&#xa;factor_role: standalone_alpha / regime_filter / combo_filter&#xa;factor_structure: single_factor / multi_factor_score&#xa;portfolio_expression: long_short_market_neutral / long_only_rank&#xa;neutralization_policy: none / market_beta_neutral / group_neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+        <mxCell id="12" value="Mandate 额外冻结的路线身份&#xa;research_route&#xa;factor_role: standalone_alpha / regime_filter / combo_filter&#xa;factor_structure: single_factor / multi_factor_score&#xa;portfolio_expression: standalone_alpha=&gt; long_short_market_neutral / long_only_rank / short_only_rank / benchmark_relative_long_only / group_relative_long_short；regime_filter=&gt; target_strategy_filter；combo_filter=&gt; target_strategy_filter / target_strategy_overlay&#xa;neutralization_policy: none / market_beta_neutral / group_neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
           <mxGeometry x="1210" y="260" width="440" height="150" as="geometry"/>
         </mxCell>
         <mxCell id="13" value="02_data_ready&#xa;共享底层数据、对齐、QC、universe admission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">

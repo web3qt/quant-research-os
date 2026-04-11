@@ -522,6 +522,226 @@ def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Pa
     assert not (lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml").exists()
 
 
+def test_build_mandate_from_intake_accepts_extended_standalone_alpha_portfolio_expressions(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+
+    for portfolio_expression in [
+        "short_only_rank",
+        "benchmark_relative_long_only",
+        "group_relative_long_short",
+    ]:
+        lineage_root = tmp_path / portfolio_expression / "outputs" / "btc_alt_transmission_v1"
+        intake_dir = lineage_root / "00_idea_intake"
+        intake_dir.mkdir(parents=True)
+
+        draft_payload = _mandate_freeze_draft(confirmed=True)
+        draft_payload["groups"]["research_intent"]["draft"]["portfolio_expression"] = portfolio_expression
+
+        _write_yaml(
+            intake_dir / "idea_gate_decision.yaml",
+            {
+                "idea_id": "btc_alt_transmission_v1",
+                "verdict": "GO_TO_MANDATE",
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
+                "approved_scope": {
+                    "market": "Binance perpetual",
+                    "data_source": "Binance UM futures klines",
+                    "universe": "top liquidity alts",
+                    "bar_size": "5m",
+                },
+                "required_reframe_actions": [],
+                "rollback_target": "00_idea_intake",
+            },
+        )
+        _write_yaml(
+            intake_dir / "scope_canvas.yaml",
+            {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "instrument_type": "perpetual",
+                "universe": "top liquidity alts",
+                "bar_size": "5m",
+                "holding_horizons": ["15m", "30m", "60m"],
+                "target_task": "event-driven relative return study",
+                "excluded_scope": ["low liquidity tails"],
+                "budget_days": 10,
+                "max_iterations": 3,
+            },
+        )
+        (intake_dir / "research_question_set.md").write_text(
+            "# Research Questions\n\n- Does BTC shock lead ALT follow-through?\n",
+            encoding="utf-8",
+        )
+        (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: btc_alt_transmission_v1\n", encoding="utf-8")
+        _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft_payload)
+        ensure_stage_program(lineage_root, "mandate")
+
+        result = run(
+            [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+
+        assert result.returncode == 0, result.stderr
+        route_payload = yaml.safe_load(
+            (lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml").read_text(encoding="utf-8")
+        )
+        assert route_payload["portfolio_expression"] == portfolio_expression
+
+
+def test_build_mandate_from_intake_accepts_filter_and_overlay_expressions_for_non_standalone_roles(
+    tmp_path: Path,
+) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+
+    cases = [
+        ("regime_filter", "target_strategy_filter"),
+        ("combo_filter", "target_strategy_filter"),
+        ("combo_filter", "target_strategy_overlay"),
+    ]
+
+    for factor_role, portfolio_expression in cases:
+        lineage_root = tmp_path / f"{factor_role}-{portfolio_expression}" / "outputs" / "btc_alt_transmission_v1"
+        intake_dir = lineage_root / "00_idea_intake"
+        intake_dir.mkdir(parents=True)
+
+        draft_payload = _mandate_freeze_draft(confirmed=True)
+        draft_payload["groups"]["research_intent"]["draft"]["factor_role"] = factor_role
+        draft_payload["groups"]["research_intent"]["draft"]["portfolio_expression"] = portfolio_expression
+        draft_payload["groups"]["research_intent"]["draft"]["target_strategy_reference"] = "trend_combo_v1"
+
+        _write_yaml(
+            intake_dir / "idea_gate_decision.yaml",
+            {
+                "idea_id": "btc_alt_transmission_v1",
+                "verdict": "GO_TO_MANDATE",
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
+                "approved_scope": {
+                    "market": "Binance perpetual",
+                    "data_source": "Binance UM futures klines",
+                    "universe": "top liquidity alts",
+                    "bar_size": "5m",
+                },
+                "required_reframe_actions": [],
+                "rollback_target": "00_idea_intake",
+            },
+        )
+        _write_yaml(
+            intake_dir / "scope_canvas.yaml",
+            {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "instrument_type": "perpetual",
+                "universe": "top liquidity alts",
+                "bar_size": "5m",
+                "holding_horizons": ["15m", "30m", "60m"],
+                "target_task": "event-driven relative return study",
+                "excluded_scope": ["low liquidity tails"],
+                "budget_days": 10,
+                "max_iterations": 3,
+            },
+        )
+        (intake_dir / "research_question_set.md").write_text(
+            "# Research Questions\n\n- Does BTC shock lead ALT follow-through?\n",
+            encoding="utf-8",
+        )
+        (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: btc_alt_transmission_v1\n", encoding="utf-8")
+        _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft_payload)
+        ensure_stage_program(lineage_root, "mandate")
+
+        result = run(
+            [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+
+def test_build_mandate_from_intake_rejects_invalid_factor_role_and_portfolio_expression_pairs(
+    tmp_path: Path,
+) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+
+    cases = [
+        ("standalone_alpha", "target_strategy_filter"),
+        ("standalone_alpha", "target_strategy_overlay"),
+        ("regime_filter", "target_strategy_overlay"),
+        ("regime_filter", "long_short_market_neutral"),
+        ("combo_filter", "long_only_rank"),
+    ]
+
+    for factor_role, portfolio_expression in cases:
+        lineage_root = tmp_path / f"invalid-{factor_role}-{portfolio_expression}" / "outputs" / "btc_alt_transmission_v1"
+        intake_dir = lineage_root / "00_idea_intake"
+        intake_dir.mkdir(parents=True)
+
+        draft_payload = _mandate_freeze_draft(confirmed=True)
+        draft_payload["groups"]["research_intent"]["draft"]["factor_role"] = factor_role
+        draft_payload["groups"]["research_intent"]["draft"]["portfolio_expression"] = portfolio_expression
+        draft_payload["groups"]["research_intent"]["draft"]["target_strategy_reference"] = "trend_combo_v1"
+
+        _write_yaml(
+            intake_dir / "idea_gate_decision.yaml",
+            {
+                "idea_id": "btc_alt_transmission_v1",
+                "verdict": "GO_TO_MANDATE",
+                "why": ["variables are observable"],
+                "route_assessment": _route_assessment(),
+                "approved_scope": {
+                    "market": "Binance perpetual",
+                    "data_source": "Binance UM futures klines",
+                    "universe": "top liquidity alts",
+                    "bar_size": "5m",
+                },
+                "required_reframe_actions": [],
+                "rollback_target": "00_idea_intake",
+            },
+        )
+        _write_yaml(
+            intake_dir / "scope_canvas.yaml",
+            {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "instrument_type": "perpetual",
+                "universe": "top liquidity alts",
+                "bar_size": "5m",
+                "holding_horizons": ["15m", "30m", "60m"],
+                "target_task": "event-driven relative return study",
+                "excluded_scope": ["low liquidity tails"],
+                "budget_days": 10,
+                "max_iterations": 3,
+            },
+        )
+        (intake_dir / "research_question_set.md").write_text(
+            "# Research Questions\n\n- Does BTC shock lead ALT follow-through?\n",
+            encoding="utf-8",
+        )
+        (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: btc_alt_transmission_v1\n", encoding="utf-8")
+        _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft_payload)
+        ensure_stage_program(lineage_root, "mandate")
+
+        result = run(
+            [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+
+        assert result.returncode != 0
+        assert "portfolio_expression" in result.stderr
+
+
 def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "build_mandate_from_intake.py"

@@ -382,7 +382,7 @@ stages:
           - "portfolio_contract.yaml"
       - id: "CSF-BACKTEST-002"
         severity: "blocking"
-        check: "long_short_market_neutral 与 long_only_rank 的组合表达已冻结"
+        check: "portfolio_expression 已冻结且与 factor_role 匹配：standalone_alpha 使用独立组合表达；regime_filter 只允许 target_strategy_filter；combo_filter 只允许 target_strategy_filter / target_strategy_overlay"
         evidence:
           - "portfolio_contract.yaml"
           - "csf_backtest_contract.md"

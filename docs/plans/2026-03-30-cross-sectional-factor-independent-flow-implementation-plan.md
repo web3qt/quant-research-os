@@ -88,7 +88,7 @@ Split formal gate semantics between `standalone_alpha` and `regime_filter | comb
 
 **Step 5: Write `05_csf_backtest_ready` SOP**
 
-Describe `long_short_market_neutral` and `long_only_rank` only, with machine-readable portfolio contracts.
+Describe the full role-aware `portfolio_expression` set, with machine-readable portfolio contracts and explicit role constraints.
 
 **Step 6: Write `06_csf_holdout_validation` SOP**
 

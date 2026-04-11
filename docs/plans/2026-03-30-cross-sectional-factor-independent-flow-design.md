@@ -106,7 +106,10 @@ research_route = cross_sectional_factor
 - `research_route = cross_sectional_factor`
 - `factor_role = standalone_alpha | regime_filter | combo_filter`
 - `factor_structure = single_factor | multi_factor_score`
-- `portfolio_expression = long_short_market_neutral | long_only_rank`
+- `portfolio_expression` 按角色冻结：
+  - `standalone_alpha = long_short_market_neutral | long_only_rank | short_only_rank | benchmark_relative_long_only | group_relative_long_short`
+  - `regime_filter = target_strategy_filter`
+  - `combo_filter = target_strategy_filter | target_strategy_overlay`
 - `neutralization_policy = none | market_beta_neutral | group_neutral`
 
 这些字段不是实现细节，而是研究身份的一部分。
@@ -358,10 +361,19 @@ research_route = cross_sectional_factor
 
 ### Supported Portfolio Expressions
 
-第一版只正式支持：
+当前正式集合按角色区分：
 
-- `long_short_market_neutral`
-- `long_only_rank`
+- `standalone_alpha`
+  - `long_short_market_neutral`
+  - `long_only_rank`
+  - `short_only_rank`
+  - `benchmark_relative_long_only`
+  - `group_relative_long_short`
+- `regime_filter`
+  - `target_strategy_filter`
+- `combo_filter`
+  - `target_strategy_filter`
+  - `target_strategy_overlay`
 
 ### Frozen Portfolio Fields
 
@@ -378,8 +390,10 @@ research_route = cross_sectional_factor
 
 额外字段：
 
-- `long_bucket_definition / short_bucket_definition / dollar_neutral_rule / beta_neutral_tolerance / group_neutral_overlay` for `long_short_market_neutral`
-- `long_selection_cut / cash_policy / concentration_cap_rule` for `long_only_rank`
+- `long_bucket_definition / short_bucket_definition / dollar_neutral_rule / beta_neutral_tolerance / group_neutral_overlay` for independent long/short expressions
+- `long_selection_cut / cash_policy / concentration_cap_rule` for long-only expressions
+- `filter_gate_rule / target_strategy_reference` for `target_strategy_filter`
+- `overlay_mapping_rule / target_strategy_reference` for `target_strategy_overlay`
 
 ### Required Artifacts
 

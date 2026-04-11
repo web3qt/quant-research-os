@@ -35,10 +35,19 @@
 
 ## 2. 支持的组合表达
 
-第一版只正式支持：
+第一版正式支持以下组合表达，并要求与 `factor_role` 匹配：
 
-- `long_short_market_neutral`
-- `long_only_rank`
+- `standalone_alpha`
+  - `long_short_market_neutral`
+  - `long_only_rank`
+  - `short_only_rank`
+  - `benchmark_relative_long_only`
+  - `group_relative_long_short`
+- `regime_filter`
+  - `target_strategy_filter`
+- `combo_filter`
+  - `target_strategy_filter`
+  - `target_strategy_overlay`
 
 ---
 

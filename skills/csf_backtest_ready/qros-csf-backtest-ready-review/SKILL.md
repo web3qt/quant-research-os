@@ -65,7 +65,7 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 
 阶段检查项：
 - [blocking] backtest 只消费 test 阶段冻结通过的 variant 与组合规则
-- [blocking] long_short_market_neutral 与 long_only_rank 的组合表达已冻结
+- [blocking] portfolio_expression 已冻结且与 factor_role 匹配：standalone_alpha 只能使用独立组合表达，regime_filter 只允许 target_strategy_filter，combo_filter 只允许 target_strategy_filter / target_strategy_overlay
 - [blocking] weight mapping、gross / net exposure、turnover、cost 和 capacity 口径已冻结
 - [blocking] 净收益、回撤和资金曲线基于正式资金记账口径
 - [blocking] 未在 backtest 中重新挑选 variant、重估权重或改写组合规则

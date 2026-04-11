@@ -147,3 +147,28 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert (formal_dir / "csf_backtest_contract.md").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+
+
+def test_build_csf_backtest_ready_accepts_new_standalone_alpha_expression(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _prepare_csf_test_stage(lineage_root)
+    mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    _write_yaml(
+        mandate_route_path,
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "portfolio_expression": "group_relative_long_short",
+        },
+    )
+    stage_dir = lineage_root / "06_csf_backtest_ready"
+    stage_dir.mkdir(parents=True)
+    draft_payload = _csf_backtest_ready_draft(confirmed=True)
+    draft_payload["groups"]["portfolio_contract"]["draft"]["portfolio_expression"] = "group_relative_long_short"
+    _write_yaml(stage_dir / "author" / "draft" / "csf_backtest_ready_draft.yaml", draft_payload)
+
+    built_dir = build_csf_backtest_ready_from_test_evidence(lineage_root)
+
+    formal_dir = built_dir / "author" / "formal"
+    payload = yaml.safe_load((formal_dir / "portfolio_contract.yaml").read_text(encoding="utf-8"))
+    assert payload["portfolio_expression"] == "group_relative_long_short"

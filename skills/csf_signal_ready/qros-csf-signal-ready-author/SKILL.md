@@ -64,7 +64,19 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 `factor_structure` 必须在 `single_factor | multi_factor_score` 中二选一。
 
 ### 投组合表达必须显式
-`portfolio_expression` 必须冻结为 `long_short_market_neutral` 或 `long_only_rank`，不得留空。
+`portfolio_expression` 必须显式冻结，且必须符合角色约束，不得留空：
+
+- `standalone_alpha` 允许：
+  - `long_short_market_neutral`
+  - `long_only_rank`
+  - `short_only_rank`
+  - `benchmark_relative_long_only`
+  - `group_relative_long_short`
+- `regime_filter` 只允许：
+  - `target_strategy_filter`
+- `combo_filter` 只允许：
+  - `target_strategy_filter`
+  - `target_strategy_overlay`
 
 ### 中性化策略必须显式
 `neutralization_policy` 必须冻结为 `none | market_beta_neutral | group_neutral`，并且 group taxonomy 若启用必须版本化。

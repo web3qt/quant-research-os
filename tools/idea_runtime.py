@@ -22,7 +22,15 @@ SUPPORTED_RESEARCH_ROUTES = {
 }
 SUPPORTED_FACTOR_ROLES = {"standalone_alpha", "regime_filter", "combo_filter"}
 SUPPORTED_FACTOR_STRUCTURES = {"single_factor", "multi_factor_score"}
-SUPPORTED_PORTFOLIO_EXPRESSIONS = {"long_short_market_neutral", "long_only_rank"}
+SUPPORTED_PORTFOLIO_EXPRESSIONS = {
+    "long_short_market_neutral",
+    "long_only_rank",
+    "short_only_rank",
+    "benchmark_relative_long_only",
+    "group_relative_long_short",
+    "target_strategy_filter",
+    "target_strategy_overlay",
+}
 SUPPORTED_NEUTRALIZATION_POLICIES = {"none", "market_beta_neutral", "group_neutral"}
 
 
@@ -275,6 +283,10 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             raise ValueError(
                 "confirmed mandate inputs missing CSF identity fields: " + ", ".join(missing_csf_identity)
             )
+        _validate_csf_portfolio_expression_role_pair(
+            factor_role=factor_role,
+            portfolio_expression=portfolio_expression,
+        )
         if factor_role in {"regime_filter", "combo_filter"} and not target_strategy_reference:
             raise ValueError(
                 "confirmed mandate inputs missing: target_strategy_reference for filter/combo cross_sectional_factor route"
@@ -566,3 +578,28 @@ def _optional_string(value: object) -> str:
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _validate_csf_portfolio_expression_role_pair(
+    *,
+    factor_role: str,
+    portfolio_expression: str,
+) -> None:
+    allowed_by_role = {
+        "standalone_alpha": {
+            "long_short_market_neutral",
+            "long_only_rank",
+            "short_only_rank",
+            "benchmark_relative_long_only",
+            "group_relative_long_short",
+        },
+        "regime_filter": {"target_strategy_filter"},
+        "combo_filter": {"target_strategy_filter", "target_strategy_overlay"},
+    }
+    allowed = allowed_by_role.get(factor_role, set())
+    if portfolio_expression not in allowed:
+        raise ValueError(
+            "confirmed mandate inputs portfolio_expression "
+            f"{portfolio_expression!r} is not allowed for factor_role {factor_role!r}; "
+            f"allowed values: {', '.join(sorted(allowed))}"
+        )

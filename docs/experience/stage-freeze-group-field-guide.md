@@ -36,7 +36,7 @@
 | `research_route` | 后续采用哪套证据体系推进，如 `time_series_signal` 或 `cross_sectional_factor` | 它决定后续 stage contract 和 review 逻辑 | 把它当流程标签随便改 |
 | `factor_role` | 在 CSF 路线里，该因子在组合中的角色 | 后面组合表达必须和这里一致 | 没走 CSF 还硬填，或角色含糊不清 |
 | `factor_structure` | 因子的结构身份，如单因子还是组合因子 | 后面 train/test/backtest 要知道研究对象是一个因子还是一个结构 | 用口语化描述代替结构定义 |
-| `portfolio_expression` | 因子最终如何表达成组合，如 `long_short_market_neutral` | 防止后面把同一因子换成不同组合表达 | 不写表达方式，只说“后面再看” |
+| `portfolio_expression` | 因子最终如何表达成组合或如何服务目标策略，如 `long_short_market_neutral`、`group_relative_long_short`、`target_strategy_filter` | 防止后面把同一因子换成不同组合表达或偷偷改成策略过滤器 | 不写表达方式，只说“后面再看” |
 | `neutralization_policy` | 因子或组合用什么口径中性化 | 后面收益解释和风险暴露解释都依赖它 | 混合多个中性化口径 |
 | `target_strategy_reference` | 如果研究是为某条目标策略服务，这里记录目标引用 | 防止后面把 exploratory 研究伪装成某策略验证 | 明明是 standalone idea 还硬挂策略名 |
 | `group_taxonomy_reference` | 行业/分组/桶的正式分类引用 | 后续中性化、分组收益和 bucket 解释都要复用同一 taxonomy | 只写“按行业分组”而不给正式引用 |
@@ -643,7 +643,7 @@
 
 | 字段 | 含义 | 为什么需要 | 不该怎么填 |
 | --- | --- | --- | --- |
-| `portfolio_expression` | 正式组合表达，如 `long_short_market_neutral` | backtest 必须复用上游冻结的表达方式 | 写成和上游不一致的表达 |
+| `portfolio_expression` | 正式组合表达或目标策略消费方式，如 `long_short_market_neutral`、`benchmark_relative_long_only`、`target_strategy_overlay` | backtest 必须复用上游冻结的表达方式，不能把独立组合和目标策略过滤混成一类 | 写成和上游不一致的表达 |
 | `selection_rule` | 多空/选股的正式规则 | 决定组合到底如何从排序结果映射成持仓 | 不写选股规则 |
 | `weight_mapping_rule` | 分数如何映射成权重 | 权重规则改变就不是同一组合合同 | 写成“按分数分配”但不具体 |
 | `gross_exposure_rule` | 总敞口规则 | 组合收益、风险和容量解释依赖它 | 不写 gross 约束 |

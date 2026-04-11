@@ -127,6 +127,25 @@ flowchart TB
     class Q,R future;
 ```
 
+## Stage Artifact Map
+
+新增一个 draw.io 文件，专门讲：
+
+- 每个阶段先看什么
+- 每个阶段生成什么文件
+- 这些文件分别是干嘛的
+
+文件：
+
+- `docs/show/qros-stage-artifact-map.drawio`
+
+阅读方式：
+
+1. 先看 `Mainline` 页：共享前置 + time-series 主线
+2. 再看 `CSF` 页：cross_sectional_factor 分支
+3. 每页左侧说明框先解释常见文件类型是干嘛的
+4. 每个阶段都先从 `artifact_catalog.md` 和 `field_dictionary.md` 进入，再看 gate / contract 文档，最后看核心 machine artifacts
+
 ## 它怎么运转
 
 研究从 `idea_intake` 开始。这个阶段先确认 observation、hypothesis、scope、data source、route assessment 和 kill criteria，目标不是立刻给出结果，而是判断这个想法是否具备正式研究资格。

@@ -62,8 +62,17 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ### 组合表达必须显式
 `portfolio_expression` 必须已经在上游冻结，并在本阶段被正确消费：
-- `long_short_market_neutral`
-- `long_only_rank`
+- `standalone_alpha`：
+  - `long_short_market_neutral`
+  - `long_only_rank`
+  - `short_only_rank`
+  - `benchmark_relative_long_only`
+  - `group_relative_long_short`
+- `regime_filter`：
+  - `target_strategy_filter`
+- `combo_filter`：
+  - `target_strategy_filter`
+  - `target_strategy_overlay`
 
 ### 组合台账必须有理由
 `strategy_combo_ledger.csv` 中每条组合配置记录必须包含非空的 `selection_rationale` 字段。
