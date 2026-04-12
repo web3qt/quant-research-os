@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="idea-mandate-contracts" name="Idea Intake and Mandate Contracts">
-        <mxGraphModel dx="843" dy="475" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="727" dy="122" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -137,83 +137,139 @@
         </mxGraphModel>
     </diagram>
     <diagram id="PVJ6pTMgvOj_nVhjS6fO" name="csf_data_ready">
-        <mxGraphModel dx="843" dy="475" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="cdr_label" value="csf_data_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_label" value="csf_data_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="20" y="120" width="180" height="56" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_definition" value="把 mandate 冻结的研究范围&#xa;真正物化成可复用的截面 panel / membership /&#xa;eligibility / shared feature base" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_definition" value="把 mandate 冻结的研究范围&#xa;真正物化成可复用的截面 panel / membership /&#xa;eligibility / shared feature base" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="560" height="78" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_panel_contract" value="panel_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_panel_contract" value="panel_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="130" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_panel_note" value="panel_primary_key = date × asset&#xa;cross_section_time_key / asset_key /&#xa;universe_membership_rule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+                <mxCell id="cdr_panel_note" value="&lt;div&gt;讲清楚横截面面板，共享底座字段&lt;/div&gt;panel_primary_key = date × asset&lt;br&gt;universe_membership_rule （每个时间点，某个资产是否属于universe的判定规则）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
                     <mxGeometry x="760" y="115" width="620" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_taxonomy_contract" value="taxonomy_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_taxonomy_contract" value="taxonomy_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="240" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_taxonomy_note" value="group_taxonomy_reference&#xa;group_mapping_rule / taxonomy_note&#xa;如果后面会做 group_neutral，必须现在版本化" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+                <mxCell id="cdr_taxonomy_note" value="&lt;br&gt;如果后面会做 group_neutral，必须现在版本化，比如按照板块，类别" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
                     <mxGeometry x="760" y="225" width="620" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_eligibility_contract" value="eligibility_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_eligibility_contract" value="eligibility_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="350" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_eligibility_note" value="eligibility_base_rule&#xa;coverage_floor_rule / mask_audit_note&#xa;基础准入问题和因子缺失必须分层" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+                <mxCell id="cdr_eligibility_note" value="&lt;div&gt;基础可研究规则制定&lt;/div&gt;eligibility_base_rule （比如流动性）&lt;br&gt;coverage_floor_rule&amp;nbsp; （某天整个横截面很稀疏，如何处理，比如丢弃之类）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
                     <mxGeometry x="760" y="335" width="620" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_shared_feature_base" value="shared_feature_base" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" vertex="1" parent="1">
+                <mxCell id="cdr_shared_feature_base" value="shared_feature_base" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="460" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_shared_feature_note" value="shared_feature_outputs / shared_feature_note&#xa;这里只沉淀共享 panel 特征底座&#xa;不能提前写 thesis-specific factor logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+                <mxCell id="cdr_shared_feature_note" value="这里只沉淀共享 panel 特征底座&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
                     <mxGeometry x="760" y="445" width="620" height="92" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" vertex="1" parent="1">
-                    <mxGeometry x="450" y="575" width="220" height="54" as="geometry"/>
-                </mxCell>
-                <mxCell id="cdr_delivery_note" value="machine_artifacts&#xa;consumer_stage = csf_signal_ready&#xa;frozen_inputs_note" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-                    <mxGeometry x="760" y="560" width="620" height="82" as="geometry"/>
-                </mxCell>
-                <mxCell id="cdr_guardrail_note" value="下游护栏&#xa;signal_ready 只能消费 formal panel base&#xa;不得重建 panel / membership / eligibility / time semantics&#xa;placeholder / 空目录 / 只有说明文档都不算完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4FCE3;strokeColor=#16A34A;fontColor=#15803D;fontStyle=1;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-                    <mxGeometry x="1470" y="190" width="440" height="170" as="geometry"/>
-                </mxCell>
-                <mxCell id="cdr_outputs_note" value="真实交付&#xa;panel_manifest.json&#xa;asset_universe_membership.parquet&#xa;cross_section_coverage.parquet&#xa;eligibility_base_mask.parquet&#xa;shared_feature_base/&#xa;asset_taxonomy_snapshot.parquet（按需）&#xa;csf_data_contract.md / run_manifest.json / rebuild_csf_data_ready.py&#xa;artifact_catalog.md / field_dictionary.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4FCE3;strokeColor=#16A34A;fontColor=#15803D;fontStyle=1;fontSize=13;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
-                    <mxGeometry x="1470" y="470" width="440" height="240" as="geometry"/>
-                </mxCell>
-                <mxCell id="cdr_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_what" target="cdr_definition">
+                <mxCell id="cdr_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_what" target="cdr_definition" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_process_to_panel" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_process" target="cdr_panel_contract">
+                <mxCell id="cdr_edge_process_to_panel" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_process" target="cdr_panel_contract" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_panel_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_panel_contract" target="cdr_panel_note">
+                <mxCell id="cdr_edge_panel_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_panel_contract" target="cdr_panel_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_taxonomy_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_taxonomy_contract" target="cdr_taxonomy_note">
+                <mxCell id="cdr_edge_taxonomy_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_taxonomy_contract" target="cdr_taxonomy_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_eligibility_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_eligibility_contract" target="cdr_eligibility_note">
+                <mxCell id="cdr_edge_eligibility_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_eligibility_contract" target="cdr_eligibility_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_shared_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_shared_feature_base" target="cdr_shared_feature_note">
+                <mxCell id="cdr_edge_shared_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cdr_shared_feature_base" target="cdr_shared_feature_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_delivery_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" edge="1" parent="1" source="cdr_delivery_contract" target="cdr_delivery_note">
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="90nI2IjqNbBVoiRDJWzf" name="csf_signal_ready">
+        <mxGraphModel dx="947" dy="357" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="csr_label" value="csf_signal_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="120" width="190" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_definition" value="把 csf_data_ready 的共享 panel 底座&#xa;进一步冻结成正式 factor identity / panel semantics /&#xa;factor expression，供 train/test/backtest 复用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="18" width="700" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_factor_identity" value="factor_identity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="145" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_factor_identity_note" value="factor_id：正式因子身份 ID&lt;br&gt;factor_version：lineage 内版本号&lt;br&gt;factor_direction：因子方向解释&lt;br&gt;factor_structure：single_factor 或多组件结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="230" width="420" height="178" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_panel_contract" value="panel_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="930" y="145" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_panel_contract_note" value="panel_primary_key：factor panel 主键&lt;br&gt;as_of_semantics：截面值何时冻结可见&lt;br&gt;coverage_contract：每个截面的最低 coverage 要求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="230" width="420" height="178" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_factor_expression" value="factor_expression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="500" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_factor_expression_note" value="raw_factor_fields：直接依赖的原始字段&lt;br&gt;derived_factor_fields：中间派生字段&lt;br&gt;final_score_field：正式排序分数字段&lt;br&gt;missing_value_policy：因子层缺失处理规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="585" width="420" height="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_context_contract" value="context_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="930" y="500" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_context_note" value="group_context_fields：复用的上下文字段&lt;br&gt;component_factor_ids：多因子组件 ID 列表&lt;br&gt;score_combination_formula：组件合成最终分数的公式" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="585" width="420" height="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_note_mask_boundary" value="coverage / missing / eligibility&#xa;要分层，不要混写" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="230" width="320" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_note_expression_boundary" value="signal_ready 冻结正式 factor expression&#xa;train 不应在下游重定义它" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="585" width="320" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_what" target="csr_definition" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_delivery_to_guardrail" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;dashed=1;strokeColor=#16A34A;" edge="1" parent="1" source="cdr_delivery_contract" target="cdr_guardrail_note">
+                <mxCell id="csr_edge_process_to_factor_identity" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_factor_identity" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_edge_delivery_to_outputs" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#16A34A;" edge="1" parent="1" source="cdr_delivery_contract" target="cdr_outputs_note">
+                <mxCell id="csr_edge_process_to_panel_contract" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_panel_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_process_to_factor_expression" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_factor_expression" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_process_to_context_contract" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_context_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_factor_identity_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_factor_identity" target="csr_factor_identity_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_panel_contract_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_panel_contract" target="csr_panel_contract_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_factor_expression_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_factor_expression" target="csr_factor_expression_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_edge_context_contract_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_context_contract" target="csr_context_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
             </root>
