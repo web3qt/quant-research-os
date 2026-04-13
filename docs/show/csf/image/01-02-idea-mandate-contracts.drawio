@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="idea-mandate-contracts" name="Idea Intake and Mandate Contracts">
-        <mxGraphModel dx="727" dy="122" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -137,7 +137,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="PVJ6pTMgvOj_nVhjS6fO" name="csf_data_ready">
-        <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -199,7 +199,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="90nI2IjqNbBVoiRDJWzf" name="csf_signal_ready">
-        <mxGraphModel dx="947" dy="357" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -270,6 +270,386 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="csr_edge_context_contract_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_context_contract" target="csr_context_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="csf-train-freeze-contracts" name="csf_train_freeze">
+        <mxGraphModel dx="3773" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="ctf_label" value="csf_train_freeze" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="-2" y="85" width="210" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_definition" value="把 csf_signal_ready 已冻结的 factor contract&#xa;进一步收敛成 train 期必须复用的 preprocess / neutralization /&#xa;ranking bucket / rebalance 尺子，并明确 signal 后不可再动的 axis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_preprocess_contract" value="preprocess_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="130" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_preprocess_note" value="winsorize_policy：正式截尾/截断规则&lt;br&gt;standardize_policy：按什么截面标准化&lt;br&gt;missing_fill_policy：因子缺失值如何处理&lt;br&gt;coverage_floor_rule：低 coverage 截面怎么处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="115" width="620" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_neutralization_contract" value="neutralization_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="245" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_neutralization_note" value="neutralization_policy：正式中性化策略&lt;br&gt;beta_estimation_window：若做 beta 中性化的估计窗&lt;br&gt;group_taxonomy_reference：group-neutral 依赖的 taxonomy 版本&lt;br&gt;residualization_formula：残差口径公式" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="230" width="620" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_ranking_bucket_contract" value="ranking_bucket_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="365" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_ranking_bucket_note" value="ranking_scope：在什么范围内做截面排序&lt;br&gt;bucket_schema：分桶方式，例如 quintile / decile&lt;br&gt;quantile_count：正式桶数&lt;br&gt;min_names_per_bucket：每桶最少名字数" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="350" width="620" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_rebalance_contract" value="rebalance_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="485" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_rebalance_note" value="rebalance_frequency：多久调仓一次&lt;br&gt;signal_lag_rule：score freeze 后多久才允许交易&lt;br&gt;holding_period_rule：每次持有多久&lt;br&gt;overlap_policy：相邻持仓是否允许重叠" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="470" width="620" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="605" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_delivery_note" value="machine_artifacts：正式交付 csf_train_freeze.yaml、train_quality.parquet、train_variant_ledger.csv、train_rejects.csv&lt;br&gt;consumer_stage：下游固定是 csf_test_evidence&lt;br&gt;reuse_constraints：test 只能复用 train 尺子，不得重估或偷改 train 规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="590" width="700" height="118" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_note_boundary" value="train 只冻结 preprocess / neutralization / bucket / rebalance 尺子&#xa;不是重新定义 factor expression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="210" width="340" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_note_signal_guardrail" value="signal_ready 后禁止再动 raw_factor_fields / derived_factor_fields /&#xa;score_combination_formula / transform 这些轴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="350" width="340" height="106" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_note_governance" value="csf_train_freeze.yaml 必须写&#xa;frozen_signal_contract_reference /&#xa;train_governable_axes /&#xa;non_governable_axes_after_signal /&#xa;non_governable_axis_reject_rule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="520" width="360" height="138" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_note_variant_ledger" value="所有 kept / rejected variants 都要留身份和原因&#xa;非法改 signal 轴的 variant 必须 reject，并说明应重开 csf_signal_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="690" width="360" height="106" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_what" target="ctf_definition" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_process_to_preprocess" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_process" target="ctf_preprocess_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_process_to_neutralization" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_process" target="ctf_neutralization_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_process_to_ranking_bucket" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_process" target="ctf_ranking_bucket_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_process_to_rebalance" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_process" target="ctf_rebalance_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_process_to_delivery" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_process" target="ctf_delivery_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_preprocess_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_preprocess_contract" target="ctf_preprocess_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_neutralization_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_neutralization_contract" target="ctf_neutralization_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_ranking_bucket_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_ranking_bucket_contract" target="ctf_ranking_bucket_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_rebalance_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_rebalance_contract" target="ctf_rebalance_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctf_edge_delivery_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_delivery_contract" target="ctf_delivery_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="csf-test-evidence-contracts" name="csf_test_evidence">
+        <mxGraphModel dx="1273" dy="399" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="cte_label" value="csf_test_evidence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="120" width="210" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_definition" value="把 csf_train_freeze 已冻结的 train 尺子&#xa;拿到独立样本上做正式证据确认，并冻结可进入 backtest 的&#xa;selected variants / frozen spec；这里是证据层，不是交易层" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_window_contract" value="window_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="130" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_window_note" value="test_window_source：正式 test 窗来源&lt;br&gt;train_reuse_note：test 如何复用 train 规则&lt;br&gt;subperiod_rule：子区间稳定性怎么检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="115" width="620" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_variant_contract" value="variant_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="235" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_variant_note" value="selected_variant_ids：test 正式评估的变体 ID&lt;br&gt;selection_rule：哪些对象能进入正式 gate&lt;br&gt;multiple_testing_note：禁止 test 再扩搜索，必须保留全量 ledger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="220" width="660" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_evidence_contract" value="evidence_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="355" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_evidence_note" value="primary_evidence_contract：正式主证据类型&lt;br&gt;factor_role：standalone_alpha 或 regime_filter / combo_filter&lt;br&gt;role_specific_note：当前角色的专属 gate 边界" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="340" width="620" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_audit_contract" value="audit_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="475" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_audit_note" value="breadth_rule：覆盖宽度要求&lt;br&gt;flip_rule：方向翻转何时升级处理&lt;br&gt;coverage_note：coverage 失败是 blocking，不是只做说明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="460" width="620" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="590" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_delivery_note" value="machine_artifacts：test 统计、admissibility、factor_selection、selected_factor_spec、test_gate_table 等正式交付物&lt;br&gt;consumer_stage：下游固定是 csf_backtest_ready&lt;br&gt;frozen_spec_note：backtest 只能消费 test-admitted variants / frozen spec" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="575" width="700" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_note_role_split" value="standalone_alpha 与 regime_filter / combo_filter&#xa;证据语义必须分流；不能拿同一套 gate 硬套" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="180" width="360" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_note_formal_gate" value="formal gate 看的是独立样本证据：&#xa;standalone_alpha 看 Rank IC / bucket spread / monotonicity；&#xa;filter/combo 看 gated vs ungated 改善，不看 backtest PnL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="305" width="390" height="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_note_admissibility" value="admissibility 锁定谁能进入 backtest，&#xa;但不等于“交易层已经胜利”；不能把 test 直接写成 backtest ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="470" width="390" height="106" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_note_guardrails" value="不得新增未冻结 variant，不得在 test 重估 train 尺子，&#xa;不得只保留通过者；multiple testing 与 coverage 痕迹都必须保留" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="620" width="390" height="106" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_what" target="cte_definition" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_process_to_window" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_process" target="cte_window_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_process_to_variant" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_process" target="cte_variant_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_process_to_evidence" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_process" target="cte_evidence_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_process_to_audit" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_process" target="cte_audit_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_process_to_delivery" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_process" target="cte_delivery_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_window_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_window_contract" target="cte_window_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_variant_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_variant_contract" target="cte_variant_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_evidence_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_evidence_contract" target="cte_evidence_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_audit_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_audit_contract" target="cte_audit_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cte_edge_delivery_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cte_delivery_contract" target="cte_delivery_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="csf-backtest-ready-contracts" name="csf_backtest_ready">
+        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="cbr_label" value="csf_backtest_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="120" width="220" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_definition" value="把 csf_test_evidence 已准入的 factor / variant&#xa;映射成正式组合合同、执行口径、风险边界和诊断要求；&#xa;这里冻结的是组合表达与净成本后可行性，不是重写上游因子结论" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="18" width="860" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_portfolio_contract" value="portfolio_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="130" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_portfolio_note" value="portfolio_expression：正式组合表达或 target strategy 消费方式&lt;br&gt;selection_rule：从排序结果映射成持仓的规则&lt;br&gt;weight_mapping_rule：score 如何映射成权重&lt;br&gt;gross_exposure_rule：总敞口约束" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="115" width="680" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_execution_contract" value="execution_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="250" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_execution_note" value="rebalance_execution_lag：调仓信号与执行之间的 lag&lt;br&gt;turnover_budget_rule：换手预算规则&lt;br&gt;cost_model：正式成本模型&lt;br&gt;capacity_model：正式容量模型" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="235" width="620" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_risk_contract" value="risk_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="370" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_risk_note" value="max_name_weight_rule：单名字权重上限&lt;br&gt;net_exposure_rule：净敞口边界&lt;br&gt;group_neutral_overlay：若启用 group-neutral 的 overlay 引用&lt;br&gt;target_strategy_reference：是否对照目标策略" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="355" width="660" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_diagnostic_contract" value="diagnostic_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="490" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_diagnostic_note" value="required_diagnostics：必须生成的诊断项清单&lt;br&gt;after_cost_rule：formal gate 是否按净成本结果判定&lt;br&gt;name_level_rule：单名字主导时如何处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="475" width="620" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="605" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_delivery_note" value="machine_artifacts：portfolio_contract.yaml、portfolio_weight_panel.parquet、rebalance_ledger.csv、turnover_capacity_report.parquet、cost_assumption_report.md、portfolio_summary.parquet、name_level_metrics.parquet、drawdown_report.json、csf_backtest_gate_table.csv 等&lt;br&gt;consumer_stage：下游固定是 csf_holdout_validation&lt;br&gt;frozen_config_note：holdout 只能复用这套组合合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="590" width="860" height="128" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_note_expression" value="portfolio_expression 必须显式继承上游冻结语义：&#xa;独立组合、target_strategy_filter、target_strategy_overlay 不能混写" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="180" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_note_no_reselect" value="backtest 不得重新选择 factor，也不得重估 train 尺子；&#xa;这里只把 test-admitted variants 映射成正式组合" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="320" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_note_cost_capacity" value="after-cost、turnover、capacity 和 name-level diagnostics&#xa;必须真实落盘；不能只报 gross summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="460" width="390" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_note_holdout" value="holdout 将只消费这里冻结好的 portfolio contract / 权重输出 /&#xa;成本与容量口径，不应再发明另一套组合规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="590" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_what" target="cbr_definition" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_process_to_portfolio" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_process" target="cbr_portfolio_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_process_to_execution" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_process" target="cbr_execution_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_process_to_risk" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_process" target="cbr_risk_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_process_to_diagnostic" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_process" target="cbr_diagnostic_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_process_to_delivery" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_process" target="cbr_delivery_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_portfolio_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_portfolio_contract" target="cbr_portfolio_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_execution_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_execution_contract" target="cbr_execution_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_risk_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_risk_contract" target="cbr_risk_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_diagnostic_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_diagnostic_contract" target="cbr_diagnostic_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cbr_edge_delivery_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="cbr_delivery_contract" target="cbr_delivery_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="csf-holdout-validation-contracts" name="csf_holdout_validation">
+        <mxGraphModel dx="1273" dy="399" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="chv_label" value="csf_holdout_validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#F59E0B;fontColor=#B45309;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="120" width="250" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_definition" value="把 csf_backtest_ready 已冻结的组合方案&#xa;拿到最终 untouched holdout window 上验证；这里只能解释验证结果、drift 和失败治理，&#xa;不能回写 factor、variant 或组合参数" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_window_contract" value="window_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="130" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_window_note" value="holdout_window_source：正式 untouched holdout source&lt;br&gt;reuse_rule：holdout 只能复用哪些上游合同&lt;br&gt;drift_scope：holdout 与哪些 prior windows 做对比" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="115" width="660" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_reuse_contract" value="reuse_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="245" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_reuse_note" value="backtest_contract_source：复用哪一版 portfolio contract&lt;br&gt;test_contract_source：复用哪一版 test 准入来源&lt;br&gt;variant_reuse_rule：holdout 是否允许改 selected variants&lt;br&gt;no_reestimate_rule：holdout 是否允许重估任何参数" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="230" width="700" height="108" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_stability_contract" value="stability_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="370" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_stability_note" value="direction_flip_rule：方向翻转何时升级处理&lt;br&gt;coverage_rule：覆盖塌缩时如何处理&lt;br&gt;regime_shift_rule：regime shift 如何审计与解释" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="355" width="620" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_failure_governance" value="failure_governance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="485" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_failure_note" value="retryable_conditions：哪些失败可重跑&lt;br&gt;child_lineage_trigger：哪些情况必须开 child lineage&lt;br&gt;rollback_boundary：当前线最多能回改到哪" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="470" width="620" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="600" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_delivery_note" value="machine_artifacts：holdout_run_manifest、holdout_factor_diagnostics、holdout_test_compare、holdout_portfolio_compare、rolling_holdout_stability、regime_shift_audit、holdout_gate_decision 等正式交付物&lt;br&gt;consumer_stage：下游固定是 promotion_decision&lt;br&gt;field_doc_rule：每个机器文件都必须带 companion field doc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="585" width="860" height="118" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_note_not_extension" value="holdout 不是 backtest 延长段；它验证的是最终 untouched window，&#xa;不能把 holdout 与 backtest 合并成一条绩效曲线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="180" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_note_forbidden_changes" value="holdout 禁止改参数、改 factor 选择、改组合规则或重估任何上游尺子；&#xa;只能复用已冻结 inputs 并解释结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="320" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_note_drift" value="direction flip、coverage collapse、regime shift 都必须有显式解释；&#xa;rolling OOS 一致性差时，最高只能 CONDITIONAL PASS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="460" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_note_child_lineage" value="holdout 失败后不能一路偷偷改回 signal/train；&#xa;需要按 failure governance 明确走 retry、rollback 或 child lineage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1500" y="600" width="390" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_what" target="chv_definition" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_process_to_window" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_process" target="chv_window_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_process_to_reuse" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_process" target="chv_reuse_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_process_to_stability" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_process" target="chv_stability_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_process_to_failure" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_process" target="chv_failure_governance" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_process_to_delivery" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_process" target="chv_delivery_contract" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_window_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_window_contract" target="chv_window_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_reuse_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_reuse_contract" target="chv_reuse_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_stability_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_stability_contract" target="chv_stability_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_failure_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_failure_governance" target="chv_failure_note" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="chv_edge_delivery_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="chv_delivery_contract" target="chv_delivery_note" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
             </root>

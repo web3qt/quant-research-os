@@ -58,6 +58,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 不得在 test 窗里重估 train thresholds、whitelist 或 best_h
 
 - 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+- 对 machine-readable 字段名、文件名、枚举值、命令、schema key 和上下游契约引用，保持英文或既有约定，不得为了中文化破坏契约。
+- 对 hypothesis、counter-hypothesis、why、risk、evidence、uncertainty、kill reason、summary、rationale 等解释性内容，默认先判断是否适合中文；适合则优先用中文表达。
+- 只有在英文表达更精确、需要与固定术语或上下游契约严格对齐、或用户明确要求英文时，才保留英文。
 
 ## Gate Discipline
 

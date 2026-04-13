@@ -15,6 +15,13 @@ REQUIRED_SUBSTRINGS = (
     "不要求回填历史代码",
 )
 
+LANGUAGE_GUIDANCE_SUBSTRINGS = (
+    "machine-readable 字段名",
+    "解释性内容",
+    "适合则优先用中文表达",
+    "用户明确要求英文",
+)
+
 AUTHOR_SKILL_NAMES = (
     "qros-idea-intake-author",
     "qros-mandate-author",
@@ -50,6 +57,13 @@ def test_author_skill_comment_contract_keeps_required_substrings_complete() -> N
         repo_text = skill_text(skill_name)
         repo_hits = {needle for needle in REQUIRED_SUBSTRINGS if needle in repo_text}
         assert repo_hits == set(REQUIRED_SUBSTRINGS)
+
+
+def test_author_skill_language_guidance_substrings_exist_in_grouped_source_tree() -> None:
+    for skill_name in AUTHOR_SKILL_NAMES:
+        repo_text = skill_text(skill_name)
+        for needle in LANGUAGE_GUIDANCE_SUBSTRINGS:
+            assert needle in repo_text, f"{needle} missing in {skill_path(skill_name)}"
 
 
 def test_excluded_skill_surfaces_do_not_pick_up_the_contract_marker() -> None:
