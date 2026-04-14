@@ -12,11 +12,11 @@
   - Referee
   - Portfolio Review
 - depends_on:
-  - docs/all-sops/workflow_stage_gates.yaml
-  - docs/all-sops/第四层-check/review_checklist_master.yaml
-  - docs/all-sops/第四层-check/stage_completion_standard_cn.md
-  - docs/all-sops/第二层-阶段失败 sop/05_backtest_failure_sop_cn.md
-  - docs/all-sops/第二层-阶段失败 sop/lineage_change_control_sop_cn.md
+  - contracts/stages/workflow_stage_gates.yaml
+  - contracts/review/review_checklist_master.yaml
+  - docs/review-sop/stage_completion_standard_cn.md
+  - docs/fail-sop/05_backtest_failure_sop_cn.md
+  - docs/fail-sop/lineage_change_control_sop_cn.md
 
 ---
 
@@ -63,9 +63,9 @@
 
 ## 3. 必读顺序
 
-1. `docs/all-sops/workflow_stage_gates.yaml`
-2. `docs/all-sops/第四层-check/review_checklist_master.yaml`
-3. `docs/all-sops/第四层-check/stage_completion_standard_cn.md`
+1. `contracts/stages/workflow_stage_gates.yaml`
+2. `contracts/review/review_checklist_master.yaml`
+3. `docs/review-sop/stage_completion_standard_cn.md`
 4. 当前 backtest 的 gate 文档、review 文档、关键脚本与关键输出
 5. 若当前 backtest 已失败或存在治理问题，再读：
    - `05_backtest_failure_sop_cn.md`
@@ -299,7 +299,7 @@ Reservation 不能被伪装成 `PASS`，只能支持：
 - 不允许把新机制包成原机制的研究成功。
 - 针对某个具体研究分支的审计记录，必须写在对应的
   `research/<family>/<lineage_or_strategy>/...` 目录下，不进入项目级
-  `docs/all-sops/第四层-check/`。
+  `docs/review-sop/`。
 
 ---
 

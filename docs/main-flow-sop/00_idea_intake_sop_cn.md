@@ -521,4 +521,4 @@ Mandate 阶段只消费以下 Intake 输出：
 | Schema 示例 | `docs/intake-sop/examples/` | 填写示例参考 |
 | Intake 流程指南 | `docs/experience/idea-intake-to-mandate-flow.md` | 用户视角的操作指南 |
 | Mandate SOP | `docs/main-flow-sop/00_mandate_sop_cn.md` | 下游阶段执行合同 |
-| Mandate 失败 SOP | `docs/all-sops/第二层-阶段失败 sop/00_mandate_failure_sop_cn.md` | 尚未建立 |
+| Mandate 失败 SOP | `docs/fail-sop/00_mandate_failure_sop_cn.md` | 尚未建立 |

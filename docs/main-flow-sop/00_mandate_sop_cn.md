@@ -31,8 +31,8 @@ Depends On:
 |------|------|-----------------|
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其 §4.1 的执行展开 |
 | `workflow_stage_gates.yaml` | Gate contract 真值 | 本 SOP 的 gate 规则必须与 YAML 一致；如有冲突，以 YAML 为准 |
-| `第二层-阶段失败 sop/` | 各阶段失败处置 | Mandate 失败后的回退纪律参考该层（注：专属 mandate failure SOP 尚未建立） |
-| `第四层-check/` | 审查模板 | 提供 Mandate gate 审查的具体检查模板 |
+| `docs/fail-sop/` | 各阶段失败处置 | Mandate 失败后的回退纪律参考该层（注：专属 mandate failure SOP 尚未建立） |
+| `docs/review-sop/` | 审查模板 | 提供 Mandate gate 审查的具体检查模板 |
 
 ---
 
@@ -563,10 +563,10 @@ must_open_child_lineage_when:
 
 ## 9.3 关联失败 SOP
 
-Mandate 阶段目前尚无专属的失败处置 SOP（即 `第二层-阶段失败 sop/` 下没有 `00_mandate_failure_sop_cn.md`）。当 Mandate gate 触发失败时，按上述 9.1-9.2 的规则处理。
+Mandate 阶段目前尚无专属的失败处置 SOP（即 `docs/fail-sop/` 下没有 `00_mandate_failure_sop_cn.md`）。当 Mandate gate 触发失败时，按上述 9.1-9.2 的规则处理。
 
 如果后续建立了专属的 mandate failure SOP，应放置在：
-`docs/all-sops/第二层-阶段失败 sop/00_mandate_failure_sop_cn.md`
+`docs/fail-sop/00_mandate_failure_sop_cn.md`
 
 ---
 
@@ -648,10 +648,10 @@ Companion field doc 是本阶段的强制要求，不是可选项：
 
 | 文档 | 路径 | 用途 |
 |------|------|------|
-| 主流程 SOP | `docs/all-sops/第一层-主流程sop/research_workflow_sop.md` | 全流程解释层，Mandate 的上下文 |
-| Gate YAML | `docs/all-sops/workflow_stage_gates.yaml` | Gate contract 真值 |
-| Data Ready 失败 SOP | `docs/all-sops/第二层-阶段失败 sop/01_data_ready_failure_sop_cn.md` | 下一阶段的失败处置 |
-| Signal Ready 失败 SOP | `docs/all-sops/第二层-阶段失败 sop/02_signal_ready_failure_sop_cn.md` | 信号阶段失败处置 |
-| Lineage 变更控制 | `docs/all-sops/第二层-阶段失败 sop/lineage_change_control_sop_cn.md` | 子谱系开立流程 |
-| 审查模板 | `docs/all-sops/第四层-check/review_checklist_master.yaml` | Gate 审查检查模板 |
-| Mandate 失败 SOP | `docs/all-sops/第二层-阶段失败 sop/00_mandate_failure_sop_cn.md` | **尚未建立** |
+| 主流程 SOP | `docs/main-flow-sop/research_workflow_sop.md` | 全流程解释层，Mandate 的上下文 |
+| Gate YAML | `contracts/stages/workflow_stage_gates.yaml` | Gate contract 真值 |
+| Data Ready 失败 SOP | `docs/fail-sop/01_data_ready_failure_sop_cn.md` | 下一阶段的失败处置 |
+| Signal Ready 失败 SOP | `docs/fail-sop/02_signal_ready_failure_sop_cn.md` | 信号阶段失败处置 |
+| Lineage 变更控制 | `docs/fail-sop/lineage_change_control_sop_cn.md` | 子谱系开立流程 |
+| 审查模板 | `contracts/review/review_checklist_master.yaml` | Gate 审查检查模板 |
+| Mandate 失败 SOP | `docs/fail-sop/00_mandate_failure_sop_cn.md` | **尚未建立** |

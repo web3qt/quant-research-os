@@ -14,8 +14,8 @@
   - Referee
   - Portfolio Review
 - depends_on:
-  - docs/all-sops/第一层-主流程sop/research_workflow_sop.md
-  - docs/all-sops/workflow_stage_gates.yaml
+  - docs/main-flow-sop/research_workflow_sop.md
+  - contracts/stages/workflow_stage_gates.yaml
   - 01_data_ready_failure_sop
   - 02_signal_ready_failure_sop
   - 03_train_freeze_failure_sop
@@ -57,7 +57,7 @@
 
 ## 1.1 关闭工件三件套
 
-`第四层-check` 的正式关闭依赖三类工件，各自职责不同，不得混用：
+正式 review 关闭依赖三类工件，各自职责不同，不得混用：
 
 - `latest_review_pack.yaml`
   reviewer findings 的聚合件，记录 reviewer 看到了什么、反对了什么、还缺什么。
@@ -151,7 +151,7 @@
 ## 5.1 `Contract Pass`
 
 ### 定义
-该阶段在 `docs/all-sops/workflow_stage_gates.yaml` 和对应 stage guide 中要求的 formal 输入、formal 输出、formal 文档、formal gate 产物均已完整交付。
+该阶段在 `contracts/stages/workflow_stage_gates.yaml` 和对应 stage guide 中要求的 formal 输入、formal 输出、formal 文档、formal gate 产物均已完整交付。
 
 ### 最低检查项
 - `required_inputs` 完整
@@ -519,7 +519,7 @@
 
 本规范不替代：
 
-- `docs/all-sops/workflow_stage_gates.yaml`
+- `contracts/stages/workflow_stage_gates.yaml`
 - 各阶段 failure SOP
 - `lineage_change_control_sop`
 
@@ -531,7 +531,7 @@
 
 推荐使用顺序：
 
-1. 先读 `docs/all-sops/workflow_stage_gates.yaml`
+1. 先读 `contracts/stages/workflow_stage_gates.yaml`
 2. 再检查阶段 artifacts 与 gate 文档
 3. 再按本规范做六联检查
 4. 若失败，进入对应 failure SOP

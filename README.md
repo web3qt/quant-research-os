@@ -201,7 +201,7 @@ QROS runtime 只负责：
 
 ### 维护者 / 扩展技能的人
 
-这时才需要系统理解 `skills/`、`tools/`、`docs/gates/`、`tests/` 之间的关系。
+这时才需要系统理解 `skills/`、`tools/`、`contracts/`、`tests/` 之间的关系。
 
 ## 快速开始
 
@@ -324,6 +324,7 @@ git pull && ./setup --host codex --mode user-global
 
 ## 延伸阅读
 
+- [文档导航](docs/README.md)
 - [Claude Code 安装说明](.claude/INSTALL.md)
 - [Codex 安装说明](docs/experience/installation.md)
 - [QROS for Codex](docs/README.codex.md)

@@ -31,8 +31,8 @@ Depends On:
 |------|------|-----------------|
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其 §4.10 的执行展开 |
 | `workflow_stage_gates.yaml` | Gate contract 真值 | 本 SOP 的 gate 规则必须与 YAML 一致；如有冲突，以 YAML 为准 |
-| `第二层-阶段失败 sop/` | 各阶段失败处置 | 本阶段无独立失败 SOP |
-| `第四层-check/` | 审查模板 | 提供 Canary / Production gate 审查的具体检查模板 |
+| `docs/fail-sop/` | 各阶段失败处置 | 本阶段无独立失败 SOP |
+| `docs/review-sop/` | 审查模板 | 提供 Canary / Production gate 审查的具体检查模板 |
 
 ---
 
@@ -315,10 +315,10 @@ Canary / Production 依赖以下前序阶段的 frozen output：
 
 | 文档 | 位置 | 说明 |
 |------|------|------|
-| `research_workflow_sop.md` | `第一层-主流程sop/` | 全流程 SOP，本阶段对应 §4.10 |
+| `research_workflow_sop.md` | `docs/main-flow-sop/` | 全流程 SOP，本阶段对应 §4.10 |
 | `workflow_stage_gates.yaml` | 项目根目录 / 配置目录 | Gate contract 真值来源 |
-| `08_shadow_admission_sop_cn.md` | `第一层-主流程sop/` | 上游阶段 SOP |
-| `07_shadow_failure_sop_cn.md` | `第二层-阶段失败 sop/` | Shadow 失败处置 SOP |
+| `08_shadow_admission_sop_cn.md` | `docs/main-flow-sop/` | 上游阶段 SOP |
+| `07_shadow_failure_sop_cn.md` | `docs/fail-sop/` | Shadow 失败处置 SOP |
 | `artifact_catalog.md` | 各研究线目录 | Artifact 清单模板 |
 | `field_dictionary.md` | 各研究线目录 | 字段定义模板 |
 

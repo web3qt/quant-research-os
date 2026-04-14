@@ -30,8 +30,8 @@ Depends On:
 |------|------|-----------------|
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其 §4.8 的执行展开 |
 | `workflow_stage_gates.yaml` | Gate contract 真值 | 本 SOP 的 gate 规则必须与 YAML 一致；如有冲突，以 YAML 为准 |
-| `第二层-阶段失败 sop/` | 各阶段失败处置 | Promotion Decision 无独立失败 SOP，回退在本阶段内部处理 |
-| `第四层-check/` | 审查模板 | 提供 Promotion Decision gate 审查的具体检查模板 |
+| `docs/fail-sop/` | 各阶段失败处置 | Promotion Decision 无独立失败 SOP，回退在本阶段内部处理 |
+| `docs/review-sop/` | 审查模板 | 提供 Promotion Decision gate 审查的具体检查模板 |
 
 ---
 
@@ -280,9 +280,9 @@ Promotion Decision 的结论是**组织级**的，不是研究员个人的。即
 
 | 文档 | 位置 | 说明 |
 |------|------|------|
-| `research_workflow_sop.md` | `第一层-主流程sop/` | 全流程 SOP，本阶段对应 §4.8 |
+| `research_workflow_sop.md` | `docs/main-flow-sop/` | 全流程 SOP，本阶段对应 §4.8 |
 | `workflow_stage_gates.yaml` | 项目根目录 / 配置目录 | Gate contract 真值来源 |
-| `08_shadow_admission_sop_cn.md` | `第一层-主流程sop/` | 下游阶段 SOP |
+| `08_shadow_admission_sop_cn.md` | `docs/main-flow-sop/` | 下游阶段 SOP |
 | `artifact_catalog.md` | 各研究线目录 | Artifact 清单模板 |
 | `field_dictionary.md` | 各研究线目录 | 字段定义模板 |
 

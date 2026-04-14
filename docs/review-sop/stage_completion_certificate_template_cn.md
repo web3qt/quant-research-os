@@ -5,7 +5,7 @@
 > **“为什么我们相信这一步已经完成且可信。”**
 >
 > 本模板应与以下文档一起使用：
-> - `docs/all-sops/workflow_stage_gates.yaml`
+> - `contracts/stages/workflow_stage_gates.yaml`
 > - `stage_completion_standard_cn.md`
 > - `review_checklist_master.yaml`
 > - 对应阶段的 failure SOP

@@ -12,13 +12,13 @@ The review governance lane may:
 - open or update `governance/candidates/*.yaml`
 
 The lane may not:
-- edit `docs/gates/workflow_stage_gates.yaml`
+- edit `contracts/stages/workflow_stage_gates.yaml`
 - regenerate active skills/templates as policy
 - bless regression baselines automatically
 
 ## Future-only boundary
 
-Only review cycles at or after `docs/gates/review_governance_policy.yaml: rollout_started_at` are counted.
+Only review cycles at or after `contracts/governance/review_governance_policy.yaml: rollout_started_at` are counted.
 Historical pre-rollout lineages remain historical evidence only; they are not backfilled into the governance ledger.
 
 ## Candidate classes and priority
@@ -41,7 +41,7 @@ Example:
 decision_id: decision-2026-04-03-example
 candidate_id: review-governance-abc123def4567890
 decision_outcome: approved
-planned_repo_change: docs/gates/workflow_stage_gates.yaml + tests/...
+planned_repo_change: contracts/stages/workflow_stage_gates.yaml + tests/...
 ---
 
 Rationale for why this candidate should become planned repo work.

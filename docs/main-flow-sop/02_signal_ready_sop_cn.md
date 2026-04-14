@@ -559,13 +559,13 @@ Machine artifact 没有 companion docs 等同于未产出。`param_manifest.csv`
 
 | 文档 | 路径 | 关系 |
 |---|---|---|
-| 研究 Workflow 总指南 | `第一层-主流程sop/research_workflow_sop.md` | 上层规范 |
-| 阶段 Gate Contract | `workflow_stage_gates.yaml` | Gate 真值 |
-| Mandate SOP | `第一层-主流程sop/00_mandate_sop.md`（如适用） | 上游阶段 |
-| Data Ready SOP | `第一层-主流程sop/01_data_ready_sop.md`（如适用） | 上游阶段 |
-| Signal Ready 失败处置 SOP | `第二层-阶段失败 sop/02_signal_ready_failure_sop_cn.md` | 失败处置 |
-| Train Calibration SOP | `第一层-主流程sop/03_train_calibration_sop.md`（如适用） | 下游阶段 |
+| 研究 Workflow 总指南 | `docs/main-flow-sop/research_workflow_sop.md` | 上层规范 |
+| 阶段 Gate Contract | `contracts/stages/workflow_stage_gates.yaml` | Gate 真值 |
+| Mandate SOP | `docs/main-flow-sop/00_mandate_sop_cn.md`（如适用） | 上游阶段 |
+| Data Ready SOP | `docs/main-flow-sop/01_data_ready_sop_cn.md`（如适用） | 上游阶段 |
+| Signal Ready 失败处置 SOP | `docs/fail-sop/02_signal_ready_failure_sop_cn.md` | 失败处置 |
+| Train Calibration SOP | `docs/main-flow-sop/03_train_calibration_sop_cn.md`（如适用） | 下游阶段 |
 
 ---
 
-*本文档与 `workflow_stage_gates.yaml` 存在表述差异时，以 `workflow_stage_gates.yaml` 为准。*
+*本文档与 `contracts/stages/workflow_stage_gates.yaml` 存在表述差异时，以该 YAML 为准。*
