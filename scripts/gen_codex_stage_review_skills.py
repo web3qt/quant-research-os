@@ -13,8 +13,8 @@ from tools.review_skillgen.render import render_stage_skill
 
 
 DRY_RUN = "--dry-run" in sys.argv[1:]
-GATE_SCHEMA_PATH = ROOT / "docs" / "gates" / "workflow_stage_gates.yaml"
-CHECKLIST_SCHEMA_PATH = ROOT / "docs" / "review-sop" / "review_checklist_master.yaml"
+GATE_SCHEMA_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
+CHECKLIST_SCHEMA_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
 REVIEW_SKILLS = {
     "mandate": "qros-mandate-review",
     "data_ready": "qros-data-ready-review",

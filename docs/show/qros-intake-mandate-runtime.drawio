@@ -1,0 +1,579 @@
+<mxfile host="65bd71144e">
+    <diagram id="qros-intake-mandate-runtime" name="Idea Intake Runtime">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="QROS 00 到 01 的 runtime 时序&#xa;idea_intake -&gt; mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                    <mxGeometry x="830" y="30" width="700" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="教学版：只保留关键时序。&#xa;`lineage program` 在 intake 不介入，从 mandate 开始才变成硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="145" width="1800" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-user" value="User" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#F8FAFC;strokeColor=#94A3B8;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="260" width="240" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-agent" value="Agent" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="260" width="280" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-skill" value="Skill" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#ECFDF5;strokeColor=#16A34A;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="260" width="300" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-runtime" value="Runtime" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="260" width="360" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-outputs" value="outputs/&lt;lineage_id&gt;" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#F5F3FF;strokeColor=#7C3AED;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="260" width="560" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="lane-program" value="lineage program" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#FCE7F3;strokeColor=#BE185D;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="1950" y="260" width="520" height="1500" as="geometry"/>
+                </mxCell>
+                <mxCell id="u1" value="1. 提 raw idea&#xa;`qros-research-session ...`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="330" width="200" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="a1" value="命中统一入口，&#xa;调用 `qros-session`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="330" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="规则：brand-new raw idea&#xa;必须先走 `idea_intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="330" width="260" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="r1" value="检测 / 创建 lineage，&#xa;判断当前 stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="330" width="320" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="o1" value="如果 `00_idea_intake/` 不存在，&#xa;先 scaffold intake 骨架" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="330" width="520" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="p1" value="此时不介入。&#xa;intake 还没有 stage-program 硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1970" y="330" width="480" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="o2" value="初始骨架：&#xa;`idea_brief.md`&#xa;`intake_interview.md`&#xa;`observation_hypothesis_map.md`&#xa;`research_question_set.md`&#xa;`scope_canvas.yaml`&#xa;`qualification_scorecard.yaml`&#xa;`idea_gate_decision.yaml`&#xa;`mandate_freeze_draft.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="455" width="520" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="u2" value="2. 回答 interview&#xa;并确认已问清关键问题" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="740" width="200" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="a2" value="agent 逐项问 + 回显 summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="720" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="必须问清：&#xa;observation / hypothesis / route / data / kill criteria" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="710" width="260" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="r2" value="没有 `CONFIRM_IDEA_INTAKE` 之前，&#xa;阶段保持 `idea_intake_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="710" width="320" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="a3" value="3. agent 调 `--confirm-intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="880" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="r3" value="写 intake approval artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="870" width="320" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="o3" value="`00_idea_intake/idea_intake_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="870" width="520" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a4" value="4. 现在才正式补：&#xa;`qualification_scorecard.yaml`&#xa;`idea_gate_decision.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="1010" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="r4" value="如果 verdict 不是 `GO_TO_MANDATE`，&#xa;runtime 仍留在 `idea_intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="1010" width="320" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="r5" value="只有 verdict = `GO_TO_MANDATE` 且 route assessment 合法，&#xa;才进入 `mandate_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="1140" width="320" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="o4" value="此时 outputs 的关键事实是：&#xa;interview 已确认，gate verdict 已写出。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="1080" width="520" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="u3" value="5. 回答 grouped freeze：&#xa;research_intent / scope / data / execution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="1310" width="200" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="a5" value="agent 继续 mandate bridge 对话" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="1310" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="`qros-mandate-author` 驱动 4 组 freeze：&#xa;`research_intent` / `scope_contract` / `data_contract` / `execution_contract`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="1290" width="260" height="114" as="geometry"/>
+                </mxCell>
+                <mxCell id="o5" value="这时更新的还是桥接草稿：&#xa;`00_idea_intake/mandate_freeze_draft.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="1310" width="520" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="u4" value="6. 用户明确回答：&#xa;`是否确认进入 mandate？` -&gt; 是" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="1480" width="200" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="a6" value="agent 调 `--confirm-mandate`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="1480" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="r6" value="写 mandate approval，&#xa;检查所有 freeze group 是否已完成，&#xa;然后进入 `mandate_author`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="1460" width="320" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="o6" value="写入：&#xa;`00_idea_intake/mandate_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="1470" width="520" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="a7" value="7. agent 触发&#xa;`build_mandate_from_intake()`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="1620" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="r7" value="runtime 真正生成 `01_mandate/author/formal/`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="1620" width="320" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="o7" value="正式产物：&#xa;`mandate.md` / `research_scope.md` / `research_route.yaml` / `time_split.json` / `parameter_grid.yaml` / `run_config.toml` / `artifact_catalog.md` / `field_dictionary.md`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="1600" width="520" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="p2" value="从 `mandate` 开始，`lineage-local stage program` 才是硬门。&#xa;后面阶段会要求 `outputs/&lt;lineage_id&gt;/program/...` + `program_execution_manifest.json`。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1970" y="1600" width="480" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="summary" value="一句话：`idea_intake` 阶段是 agent + skill 主导提问，runtime 负责 scaffold / 状态推进 / gate 检测；&#xa;而 `mandate` 之后，runtime 还会额外要求 stage program / provenance / outputs 的硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EEFC;strokeColor=#4A6FA5;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="1735" width="2100" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="u1" target="a1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a1" target="s1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a1" target="r1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r1" target="o1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="o1" target="p1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="u2" target="a2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a2" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="s2" target="r2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a3" target="r3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r3" target="o3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a4" target="r4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r4" target="o4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="o4" target="r5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r5" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="u3" target="a5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a5" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="s3" target="o5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="u4" target="a6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a6" target="r6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r6" target="o6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="a7" target="r7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="r7" target="o7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="o7" target="p2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="qros-standard-stage-runtime" name="Standard Stage Runtime">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="sst-title" value="QROS 标准阶段模板时序&#xa;data_ready / signal_ready / train_freeze / test / backtest / holdout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=22;" parent="1" vertex="1">
+                    <mxGeometry x="680" y="30" width="900" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-sub" value="这一页讲 mandate 之后的大多数阶段共用骨架。&#xa;差别主要在 freeze group 和 required outputs，不在时序本身。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="145" width="1800" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-user" value="User" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#F8FAFC;strokeColor=#94A3B8;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="260" width="220" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-agent" value="Agent" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="260" width="260" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-skill" value="Skill" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#ECFDF5;strokeColor=#16A34A;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="260" width="280" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-runtime" value="Runtime" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="260" width="320" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-outputs" value="outputs / program / review" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#F5F3FF;strokeColor=#7C3AED;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="1220" y="260" width="620" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-state" value="状态" style="swimlane;whiteSpace=wrap;html=1;horizontal=0;startSize=36;fillColor=#FCE7F3;strokeColor=#BE185D;fontStyle=1;fontSize=17;" parent="1" vertex="1">
+                    <mxGeometry x="1860" y="260" width="520" height="1320" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-u1" value="1. 用户确认当前阶段的 freeze content" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="330" width="180" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-a1" value="agent 调 `--confirm-&lt;stage&gt;`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="330" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-s1" value="author skill 已经问完 grouped freeze，&#xa;现在只差显式 approval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="330" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-r1" value="runtime 写 transition approval，进入 `&lt;stage&gt;_author`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="330" width="280" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-o1" value="author/draft/&#xa;`*_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1240" y="330" width="580" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-st1" value="current_stage = `&lt;stage&gt;_author`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1880" y="330" width="480" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-a2" value="2. agent 触发 build / invoke" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="470" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-r2" value="runtime 检查：&#xa;program dir 存在吗？&#xa;stage_program.yaml 合法吗？" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="450" width="280" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-o2" value="需要：&#xa;`outputs/&lt;lineage&gt;/program/...`&#xa;`stage_program.yaml`&#xa;entrypoint + README.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1240" y="450" width="580" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-st2" value="不满足时：&#xa;`awaiting_stage_program` 或 `awaiting_program_validation`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1880" y="450" width="480" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-r3" value="3. program 合法后执行 entrypoint，&#xa;校验 provenance + required outputs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="620" width="280" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-o3" value="author/formal/&#xa;formal artifacts&#xa;+ `program_execution_manifest.json`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1240" y="620" width="580" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-st3" value="失败时：&#xa;`PROGRAM_EXECUTION_FAILED` / `PROVENANCE_MISSING` / `OUTPUTS_INVALID`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1880" y="620" width="480" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-u2" value="4. 用户确认进入 formal review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="800" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-a3" value="agent 调 `--confirm-review`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="800" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-r4" value="runtime 进入 `&lt;stage&gt;_review`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="800" width="280" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-o4" value="review/request + review/result + review/closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1240" y="800" width="580" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-r5" value="5. review verdict 决定后续：&#xa;PASS / CONDITIONAL PASS -&gt; 正常推进&#xa;其他 verdict -&gt; 失败分流" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="940" width="280" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-st4" value="通过后：`*_next_stage_confirmation_pending`&#xa;失败后：切 failure handling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1880" y="940" width="480" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-note1" value="关键点 1：绝大多数阶段的时序都长这样，差别主要在 freeze groups 和 required outputs。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="1120" width="980" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-note2" value="关键点 2：placeholder、空目录、contract-only 文档不会让 runtime 放行到下一阶段。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1330" y="1120" width="1020" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-u1" target="sst-a1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-a1" target="sst-s1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-a1" target="sst-r1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-r1" target="sst-o1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-o1" target="sst-st1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-a2" target="sst-r2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-r2" target="sst-o2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-o2" target="sst-st2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-r3" target="sst-o3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-o3" target="sst-st3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-u2" target="sst-a3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-a3" target="sst-r4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-r4" target="sst-o4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-o4" target="sst-r5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sst-e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="sst-r5" target="sst-st4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="qros-review-failure-routing" name="Review Failure Routing">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="rfr-title" value="QROS review 失败分流图" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="40" width="560" height="84" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-sub" value="这页讲 review verdict 为什么不是普通 debug。&#xa;一旦命中失败类 verdict，正常阶段推进必须立刻停下。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="150" width="1480" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-start" value="1. 进入 `&lt;stage&gt;_review`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="280" width="260" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-check" value="2. reviewer + runtime 一起看：&#xa;formal gate / required outputs / provenance / closure inputs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="400" width="440" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-decision" value="review verdict" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1050" y="560" width="220" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-pass" value="PASS / CONDITIONAL PASS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="760" width="320" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-pass2" value="写 review closure：&#xa;`latest_review_pack.yaml`&#xa;`stage_gate_review.yaml`&#xa;`stage_completion_certificate.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="900" width="540" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-pass3" value="进入 `*_next_stage_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="1080" width="380" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-fail" value="PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1480" y="760" width="520" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-fail2" value="runtime 立刻标记：&#xa;`requires_failure_handling = true`&#xa;`blocking_reason_code = FAILURE_HANDLER_REQUIRED`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1460" y="900" width="560" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-fail3" value="切到 `qros-stage-failure-handler`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1540" y="1060" width="400" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-fail4" value="failure handler 决定下一步：&#xa;retry / rollback / child lineage / no-go" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="1490" y="1200" width="500" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-note1" value="关键点 1：这些 verdict 不是“再修一修继续 review”，而是治理分流信号。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="1320" width="900" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-note2" value="关键点 2：一旦命中失败类 verdict，正常阶段推进必须停下，不能继续写 `*_next_stage_confirmation_pending`。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="1320" width="900" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="rfr-start" target="rfr-check" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="rfr-check" target="rfr-decision" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e3" value="通过" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="rfr-decision" target="rfr-pass" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="rfr-pass" target="rfr-pass2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;" parent="1" source="rfr-pass2" target="rfr-pass3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e6" value="失败类 verdict" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="rfr-decision" target="rfr-fail" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="rfr-fail" target="rfr-fail2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="rfr-fail2" target="rfr-fail3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rfr-e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="rfr-fail3" target="rfr-fail4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="qros-csf-route-switch" name="CSF Route Switch">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="csf-title" value="QROS 路线切换图&#xa;mandate review 之后怎么进 CSF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="40" width="720" height="84" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-sub" value="这页讲的不是阶段细节，而是：为什么 mandate review closure 之后，CSF 不能继续默认为 mainline。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="150" width="1620" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-a" value="1. 先完成：&#xa;idea_intake -&gt; mandate -&gt; mandate review closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="300" width="420" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-b" value="2. runtime 不会直接跳到 data_ready author。&#xa;必须先进入 next-stage confirmation。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="300" width="440" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-c" value="3. 看 `01_mandate/author/formal/research_route.yaml`" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1460" y="275" width="280" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-main" value="time_series_signal&#xa;进入 mainline：&#xa;`data_ready_confirmation_pending`&#xa;-&gt; `data_ready` -&gt; `signal_ready` -&gt; ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="560" width="420" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-route" value="cross_sectional_factor&#xa;进入独立 CSF 链：&#xa;`csf_data_ready_confirmation_pending`&#xa;-&gt; `csf_data_ready` -&gt; `csf_signal_ready` -&gt; ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1240" y="560" width="460" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-note1" value="关键点 1：CSF 不是 mainline 的一个小变体，而是 mandate 之后切出去的独立链。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="820" width="700" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-note2" value="关键点 2：如果 `research_route = cross_sectional_factor`，runtime 不应该静默继续默认 `data_ready -&gt; signal_ready`。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="820" width="840" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-note3" value="关键点 3：切到 CSF 后，grouped freeze 名称也会换成 CSF-specific 版本，例如 `panel_contract`、`factor_identity`、`preprocess_contract`。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="930" width="960" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="csf-a" target="csf-b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="csf-b" target="csf-c" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-e3" value="time_series_signal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#2563EB;fontSize=13;" parent="1" source="csf-c" target="csf-main" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="csf-e4" value="cross_sectional_factor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#7C3AED;fontSize=13;" parent="1" source="csf-c" target="csf-route" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="qros-stage-program-hard-gate" name="Stage Program Hard Gate">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1800" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="spg-title" value="QROS mandate 之后的硬门&#xa;stage program / provenance / outputs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="40" width="820" height="84" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-sub" value="这页讲 runtime 为什么会卡在 `awaiting_stage_program`、`awaiting_program_validation`、`awaiting_program_execution`。&#xa;适用于 mandate 之后的所有可执行阶段。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="150" width="1780" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-start" value="freeze approval 已完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1040" y="280" width="260" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d1" value="program dir 存在？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="410" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-miss" value="`awaiting_stage_program`&#xa;`STAGE_PROGRAM_MISSING`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="430" width="320" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-check1" value="需要：&#xa;`outputs/&lt;lineage&gt;/program/...`&#xa;`stage_program.yaml`&#xa;entrypoint + README.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="560" width="400" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d2" value="manifest 合法？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="620" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-invalid" value="`awaiting_program_validation`&#xa;`STAGE_PROGRAM_INVALID`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1860" y="640" width="360" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d3" value="执行成功？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="830" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-fail" value="`awaiting_program_execution`&#xa;`PROGRAM_EXECUTION_FAILED`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="850" width="340" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d4" value="provenance 在吗？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="1040" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-prov" value="`PROVENANCE_MISSING`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1860" y="1060" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-prov2" value="要求：`author/formal/program_execution_manifest.json`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1760" y="1160" width="500" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d5" value="required outputs 有效？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="1250" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-out" value="`OUTPUTS_INVALID`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FECACA;strokeColor=#DC2626;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="1270" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-out2" value="关键提醒：空目录、placeholder、contract-only 文档都不算 outputs 成立" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="1360" width="540" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-d6" value="review closure 完成？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="1460" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-review" value="`awaiting_review_closure`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1860" y="1480" width="320" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-ok" value="review_complete&#xa;可以进入下一阶段确认" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="1640" width="380" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-note" value="一句话：mandate 之后，QROS 不再只看“文档写了没”，而是看 program、provenance、formal outputs 和 review closure 是否一起成立。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EEFC;strokeColor=#4A6FA5;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="1725" width="1500" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="spg-start" target="spg-d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e2" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="spg-d1" target="spg-miss" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="spg-miss" target="spg-check1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e4" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d1" target="spg-d2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e5" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="spg-d2" target="spg-invalid" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e6" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d2" target="spg-d3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e7" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="spg-d3" target="spg-fail" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e8" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d3" target="spg-d4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e9" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="spg-d4" target="spg-prov" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="spg-prov" target="spg-prov2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e11" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d4" target="spg-d5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e12" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;fontSize=13;" parent="1" source="spg-d5" target="spg-out" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#DC2626;" parent="1" source="spg-out" target="spg-out2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e14" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d5" target="spg-d6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e15" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#BE185D;fontSize=13;" parent="1" source="spg-d6" target="spg-review" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="spg-e16" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#16A34A;fontSize=13;" parent="1" source="spg-d6" target="spg-ok" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

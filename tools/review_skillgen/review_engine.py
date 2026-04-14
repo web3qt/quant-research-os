@@ -25,8 +25,8 @@ from tools.review_skillgen.review_findings import load_review_findings_if_presen
 
 
 ROOT = Path(__file__).resolve().parents[2]
-GATES_PATH = ROOT / "docs" / "gates" / "workflow_stage_gates.yaml"
-CHECKLIST_PATH = ROOT / "docs" / "review-sop" / "review_checklist_master.yaml"
+GATES_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
+CHECKLIST_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
 
 
 def _find_stage_file(stage_dir: Path, patterns: list[str]) -> Path | None:

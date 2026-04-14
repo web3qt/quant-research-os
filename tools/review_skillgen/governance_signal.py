@@ -11,7 +11,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_POLICY_PATH = ROOT / "docs" / "gates" / "review_governance_policy.yaml"
+DEFAULT_POLICY_PATH = ROOT / "contracts" / "governance" / "review_governance_policy.yaml"
 GOVERNANCE_SIGNAL_FILENAME = "governance_signal.json"
 DEFAULT_CANDIDATE_PRIORITY = ["hard_gate", "template_constraint", "regression_test"]
 

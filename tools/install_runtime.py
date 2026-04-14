@@ -21,9 +21,7 @@ SKILLS_SOURCE_DIR = Path("skills")
 RUNTIME_TREE_NAMES = ("bin", "scripts", "tools", "templates")
 DOC_TREE_NAMES = (
     "docs/experience",
-    "docs/gates",
-    "docs/check-sop",
-    "docs/intake-sop",
+    "contracts",
 )
 
 

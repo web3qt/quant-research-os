@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
-    <diagram id="idea-mandate-contracts" name="Idea Intake and Mandate Contracts">
-        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+    <diagram id="idea-mandate-contracts" name="Idea Intake and Mandate Freeze Groups">
+        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -13,7 +13,7 @@
                 <mxCell id="idea_fuzzy_to_researchable" value="模糊想法变可研究&#xa;问题" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="190" height="56" as="geometry"/>
                 </mxCell>
-                <mxCell id="idea_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="idea_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="210" y="134" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="idea_observation" value="observation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -40,7 +40,7 @@
                 <mxCell id="mandate_definition" value="把上述想法冻结成后续阶段&#xa;必须服从的正式研究合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=17;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="490" y="352" width="330" height="74" as="geometry"/>
                 </mxCell>
-                <mxCell id="mandate_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="mandate_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="540" width="180" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="research_intent" value="research_intent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -137,7 +137,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="PVJ6pTMgvOj_nVhjS6fO" name="csf_data_ready">
-        <mxGraphModel dx="1273" dy="529" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -150,7 +150,7 @@
                 <mxCell id="cdr_definition" value="把 mandate 冻结的研究范围&#xa;真正物化成可复用的截面 panel / membership /&#xa;eligibility / shared feature base" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="560" height="78" as="geometry"/>
                 </mxCell>
-                <mxCell id="cdr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="cdr_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="cdr_panel_contract" value="panel_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -199,7 +199,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="90nI2IjqNbBVoiRDJWzf" name="csf_signal_ready">
-        <mxGraphModel dx="1273" dy="529" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -209,74 +209,56 @@
                 <mxCell id="csr_what" value="1.是什么" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="20" width="170" height="56" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_definition" value="把 csf_data_ready 的共享 panel 底座&#xa;进一步冻结成正式 factor identity / panel semantics /&#xa;factor expression，供 train/test/backtest 复用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="csr_definition" value="把 `02_csf_data_ready` 的截面底座&#xa;正式冻结成因子合同，让后面的 train / test / backtest 都只能复用这一版因子身份与角色语义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="700" height="82" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="csr_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_process_hint" value="左边是 freeze group，右边是这组在冻结什么。&#xa;这页不是流程图，所以不再用箭头强调顺序。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontSize=13;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="210" y="230" width="170" height="110" as="geometry"/>
                 </mxCell>
                 <mxCell id="csr_factor_identity" value="factor_identity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="145" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_factor_identity_note" value="factor_id：正式因子身份 ID&lt;br&gt;factor_version：lineage 内版本号&lt;br&gt;factor_direction：因子方向解释&lt;br&gt;factor_structure：single_factor 或多组件结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="410" y="230" width="420" height="178" as="geometry"/>
+                <mxCell id="csr_factor_identity_note" value="factor_id：正式因子身份 ID&lt;br&gt;factor_version：lineage 内版本号&lt;br&gt;factor_direction：因子方向解释(高分是好是坏)&lt;br&gt;factor_structure：single_factor 或多组件结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="230" width="420" height="138" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_panel_contract" value="panel_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="csr_factor_role_contract" value="factor_role_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="930" y="145" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_panel_contract_note" value="panel_primary_key：factor panel 主键&lt;br&gt;as_of_semantics：截面值何时冻结可见&lt;br&gt;coverage_contract：每个截面的最低 coverage 要求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="890" y="230" width="420" height="178" as="geometry"/>
+                <mxCell id="csr_factor_role_contract_note" value="这组在冻结“它扮演什么角色”。&lt;br&gt;factor_role：standalone_alpha / regime_filter / combo_filter&lt;br&gt;portfolio_expression：这个角色允许消费的正式组合表达" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="230" width="420" height="138" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_factor_expression" value="factor_expression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
-                    <mxGeometry x="450" y="500" width="220" height="54" as="geometry"/>
+                <mxCell id="csr_factor_structure_contract" value="factor_structure_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="470" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_factor_expression_note" value="raw_factor_fields：直接依赖的原始字段&lt;br&gt;derived_factor_fields：中间派生字段&lt;br&gt;final_score_field：正式排序分数字段&lt;br&gt;missing_value_policy：因子层缺失处理规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="410" y="585" width="420" height="198" as="geometry"/>
+                <mxCell id="csr_factor_structure_contract_note" value="这组在冻结“它是什么结构”。&lt;br&gt;factor_structure：single_factor 或 multi_factor_score&lt;br&gt;如果是多因子，这里要把组合方式定成确定性的，不留到 train 再学权重" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="555" width="420" height="158" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_context_contract" value="context_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
-                    <mxGeometry x="930" y="500" width="220" height="54" as="geometry"/>
+                <mxCell id="csr_neutralization_policy" value="neutralization_policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="930" y="470" width="220" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_context_note" value="group_context_fields：复用的上下文字段&lt;br&gt;component_factor_ids：多因子组件 ID 列表&lt;br&gt;score_combination_formula：组件合成最终分数的公式" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="890" y="585" width="420" height="198" as="geometry"/>
+                <mxCell id="csr_neutralization_policy_note" value="这组在冻结“后面如何处理中性化语义”。&lt;br&gt;neutralization_policy：none / market_beta_neutral / group_neutral&lt;br&gt;若启用 group_neutral，这里必须带出 taxonomy 版本依赖" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="555" width="420" height="158" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_delivery_contract" value="delivery_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                    <mxGeometry x="690" y="820" width="220" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="csr_delivery_note" value="这组在冻结“下游到底能拿走什么”。&lt;br&gt;正式产物至少包括 factor_panel / factor_manifest / factor_coverage&lt;br&gt;consumer_stage：锁定下游为 csf_train_freeze，防止 train 偷改因子合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="905" width="420" height="138" as="geometry"/>
                 </mxCell>
                 <mxCell id="csr_note_mask_boundary" value="coverage / missing / eligibility&#xa;要分层，不要混写" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="230" width="320" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="csr_note_expression_boundary" value="signal_ready 冻结正式 factor expression&#xa;train 不应在下游重定义它" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="1380" y="585" width="320" height="88" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_what" target="csr_definition" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_process_to_factor_identity" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_factor_identity" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_process_to_panel_contract" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_panel_contract" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_process_to_factor_expression" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_factor_expression" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_process_to_context_contract" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_process" target="csr_context_contract" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_factor_identity_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_factor_identity" target="csr_factor_identity_note" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_panel_contract_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_panel_contract" target="csr_panel_contract_note" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_factor_expression_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_factor_expression" target="csr_factor_expression_note" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="csr_edge_context_contract_to_note" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="csr_context_contract" target="csr_context_note" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="csr_note_real_groups" value="这页按真实 freeze groups 画。&#xa;目的不是列全字段，而是让读者一眼看出：skill 实际是怎么分组确认的" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="1380" y="380" width="320" height="88" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
     </diagram>
     <diagram id="csf-train-freeze-contracts" name="csf_train_freeze">
-        <mxGraphModel dx="3773" dy="444" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="3773" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -289,7 +271,7 @@
                 <mxCell id="ctf_definition" value="把 csf_signal_ready 已冻结的 factor contract&#xa;进一步收敛成 train 期必须复用的 preprocess / neutralization /&#xa;ranking bucket / rebalance 尺子，并明确 signal 后不可再动的 axis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
                 </mxCell>
-                <mxCell id="ctf_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="ctf_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="ctf_preprocess_contract" value="preprocess_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -359,7 +341,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-test-evidence-contracts" name="csf_test_evidence">
-        <mxGraphModel dx="1273" dy="444" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -372,7 +354,7 @@
                 <mxCell id="cte_definition" value="把 csf_train_freeze 已冻结的 train 尺子&#xa;拿到独立样本上做正式证据确认，并冻结可进入 backtest 的&#xa;selected variants / frozen spec；这里是证据层，不是交易层" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
                 </mxCell>
-                <mxCell id="cte_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="cte_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="cte_window_contract" value="window_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -454,7 +436,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-backtest-ready-contracts" name="csf_backtest_ready">
-        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -467,7 +449,7 @@
                 <mxCell id="cbr_definition" value="把 csf_test_evidence 已准入的 factor / variant&#xa;映射成正式组合合同、执行口径、风险边界和诊断要求；&#xa;这里冻结的是组合表达与净成本后可行性，不是重写上游因子结论" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="860" height="82" as="geometry"/>
                 </mxCell>
-                <mxCell id="cbr_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="cbr_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="cbr_portfolio_contract" value="portfolio_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">
@@ -549,7 +531,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-holdout-validation-contracts" name="csf_holdout_validation">
-        <mxGraphModel dx="1273" dy="399" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -562,7 +544,7 @@
                 <mxCell id="chv_definition" value="把 csf_backtest_ready 已冻结的组合方案&#xa;拿到最终 untouched holdout window 上验证；这里只能解释验证结果、drift 和失败治理，&#xa;不能回写 factor、variant 或组合参数" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="450" y="18" width="840" height="82" as="geometry"/>
                 </mxCell>
-                <mxCell id="chv_process" value="2.流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
+                <mxCell id="chv_process" value="2.冻结物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D75D8;fontColor=#1D4ED8;fontStyle=1;fontSize=16;fontFamily=Comic Sans MS;" parent="1" vertex="1">
                     <mxGeometry x="220" y="145" width="170" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="chv_window_contract" value="window_contract" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE8A3;strokeColor=#F59E0B;fontColor=#D97706;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;" parent="1" vertex="1">

@@ -24,10 +24,10 @@
 
 这些 skills 的规则来源固定为：
 
-- `docs/gates/workflow_stage_gates.yaml`
-- `docs/check-sop/review_checklist_master.yaml`
+- `contracts/stages/workflow_stage_gates.yaml`
+- `contracts/review/review_checklist_master.yaml`
 
-如果 formal gate、checklist 或 verdict 规则变化，应更新这两份文件后重新生成 skills。
+如果 formal gate、checklist 或 verdict 规则变化，应更新这两份 contract 真值后重新生成 skills。
 
 ## Evidence Inputs
 

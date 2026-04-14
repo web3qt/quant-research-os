@@ -7,3 +7,6 @@ __pycache__/
 outputs/*
 governance/*
 .omc/*
+.omx/
+.claude/
+.claude-plugin/

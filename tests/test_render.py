@@ -3,8 +3,8 @@ from tools.review_skillgen.render import render_stage_skill
 
 
 def test_render_stage_skill_includes_stage_specific_contract() -> None:
-    gates = load_gate_schema("docs/gates/workflow_stage_gates.yaml")
-    checklist = load_checklist_schema("docs/review-sop/review_checklist_master.yaml")
+    gates = load_gate_schema("contracts/stages/workflow_stage_gates.yaml")
+    checklist = load_checklist_schema("contracts/review/review_checklist_master.yaml")
 
     text = render_stage_skill(
         stage_key="mandate",
@@ -18,8 +18,8 @@ def test_render_stage_skill_includes_stage_specific_contract() -> None:
     assert "latest_review_pack.yaml" in text
     assert "time_split.json" in text
     assert "PASS FOR RETRY" in text
-    assert "Default rollback stage: mandate" in text
-    assert "Audit-only items" in text
+    assert "默认 rollback stage：mandate" in text
+    assert "仅审计项" in text
     assert "专题样板写法是否足够清楚" in text
     assert "review_findings.yaml" in text
     assert "~/.qros/bin/qros-review" in text

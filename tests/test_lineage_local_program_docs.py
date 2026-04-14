@@ -19,7 +19,7 @@ def test_lineage_local_program_contract_is_documented_in_entry_docs() -> None:
 
 
 def test_lineage_local_program_gate_truth_is_present_in_gate_yaml() -> None:
-    gates = yaml.safe_load(Path("docs/gates/workflow_stage_gates.yaml").read_text(encoding="utf-8"))
+    gates = yaml.safe_load(Path("contracts/stages/workflow_stage_gates.yaml").read_text(encoding="utf-8"))
 
     global_rule_ids = {rule["id"] for rule in gates["global_rules"]}
     assert "lineage_local_program_required_for_executable_stages" in global_rule_ids

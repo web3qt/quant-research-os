@@ -11,8 +11,8 @@ description: Codex review skill for CSF Holdout Validation stage verification.
 
 ## 共用输入
 
-- `docs/gates/workflow_stage_gates.yaml`
-- `docs/review-sop/review_checklist_master.yaml`
+- `contracts/stages/workflow_stage_gates.yaml`
+- `contracts/review/review_checklist_master.yaml`
 - `artifact_catalog.md`
 - `field_dictionary.md` or `*_fields.md`
 - `run_manifest.json`

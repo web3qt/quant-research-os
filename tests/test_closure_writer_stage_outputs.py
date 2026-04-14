@@ -19,8 +19,8 @@ def test_write_closure_artifacts_creates_stage_files(tmp_path: Path) -> None:
         rollback_stage="mandate",
         allowed_modifications=["clarify wording"],
         downstream_permissions=["data_ready"],
-        contract_source="docs/gates/workflow_stage_gates.yaml",
-        checklist_source="docs/check-sop/review_checklist_master.yaml",
+        contract_source="contracts/stages/workflow_stage_gates.yaml",
+        checklist_source="contracts/review/review_checklist_master.yaml",
         required_outputs_checked={"expected": ["mandate.md"], "missing": []},
         evidence_summary={"recommended_gate_doc": "mandate.md"},
     )
@@ -47,7 +47,7 @@ def test_write_closure_artifacts_creates_stage_files(tmp_path: Path) -> None:
     assert gate_payload["stage_status"] == "PASS"
     assert gate_payload["rollback_stage"] == "mandate"
     assert gate_payload["reviewer_identity"] == "codex"
-    assert gate_payload["contract_source"] == "docs/gates/workflow_stage_gates.yaml"
+    assert gate_payload["contract_source"] == "contracts/stages/workflow_stage_gates.yaml"
 
     certificate_payload = yaml.safe_load(certificate.read_text(encoding="utf-8"))
     assert certificate_payload["allowed_modifications"] == ["clarify wording"]

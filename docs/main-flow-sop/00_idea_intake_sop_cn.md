@@ -13,8 +13,8 @@ Audience:
 
 Depends On:
 - `research_workflow_sop`
-- `docs/intake-sop/qualification_scorecard_schema.yaml`
-- `docs/intake-sop/idea_gate_decision_schema.yaml`
+- `contracts/intake/qualification_scorecard_schema.yaml`
+- `contracts/intake/idea_gate_decision_schema.yaml`
 
 ---
 
@@ -31,8 +31,8 @@ Depends On:
 | 文档 | 角色 | 本 SOP 如何使用 |
 |------|------|-----------------|
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其前置阶段的执行展开 |
-| `qualification_scorecard_schema.yaml` | Scorecard 字段真值 | 本 SOP 的评分维度必须与 schema 一致 |
-| `idea_gate_decision_schema.yaml` | Gate decision 字段真值 | 本 SOP 的 gate 词汇必须与 schema 一致 |
+| `contracts/intake/qualification_scorecard_schema.yaml` | Scorecard 字段真值 | 本 SOP 的评分维度必须与 schema 一致 |
+| `contracts/intake/idea_gate_decision_schema.yaml` | Gate decision 字段真值 | 本 SOP 的 gate 词汇必须与 schema 一致 |
 | `00_mandate_sop_cn.md` | Mandate 执行合同 | Idea Intake 的下游消费者，本阶段产出是其输入 |
 
 ---
@@ -516,8 +516,8 @@ Mandate 阶段只消费以下 Intake 输出：
 | 文档 | 路径 | 用途 |
 |------|------|------|
 | 主流程 SOP | `docs/main-flow-sop/research_workflow_sop.md` | 全流程解释层，Idea Intake 的上下文 |
-| Qualification Scorecard Schema | `docs/intake-sop/qualification_scorecard_schema.yaml` | Scorecard 字段真值 |
-| Idea Gate Decision Schema | `docs/intake-sop/idea_gate_decision_schema.yaml` | Gate decision 字段真值 |
+| Qualification Scorecard Schema | `contracts/intake/qualification_scorecard_schema.yaml` | Scorecard 字段真值 |
+| Idea Gate Decision Schema | `contracts/intake/idea_gate_decision_schema.yaml` | Gate decision 字段真值 |
 | Schema 示例 | `docs/intake-sop/examples/` | 填写示例参考 |
 | Intake 流程指南 | `docs/experience/idea-intake-to-mandate-flow.md` | 用户视角的操作指南 |
 | Mandate SOP | `docs/main-flow-sop/00_mandate_sop_cn.md` | 下游阶段执行合同 |

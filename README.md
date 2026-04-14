@@ -83,11 +83,11 @@ QROS 是按三层设计的，理解这一点最重要。
 
 #### Contract 层
 
-`docs/gates/workflow_stage_gates.yaml` 是 machine-readable gate truth。  
+`contracts/stages/workflow_stage_gates.yaml` 是 machine-readable gate truth。  
 `docs/main-flow-sop/research_workflow_sop.md` 和各阶段 `*_sop_cn.md` 是解释层。  
 `docs/experience/stage-freeze-group-field-guide.md` 是 grouped freeze 字段说明层。
 
-冲突时以 `workflow_stage_gates.yaml` 为准。
+冲突时以 `contracts/stages/workflow_stage_gates.yaml` 为准。
 
 #### Verification 层
 
@@ -173,7 +173,7 @@ QROS runtime 只负责：
 - `skills/`：author / failure / orchestrator 技能源文件
 - `tools/`：阶段 runtime、lineage program gate、install runtime、verification
 - `scripts/`：稳定 CLI wrapper 和确定性入口
-- `docs/gates/`：machine-readable stage gate truth
+- `contracts/`：machine-readable contract truth，供 runtime、review engine 和 skill 生成直接读取
 - `docs/main-flow-sop/`：阶段解释和操作规范
 - `docs/experience/`：安装、上手、字段说明、使用路径
 - `docs/show/`：面向教学和展示的图稿

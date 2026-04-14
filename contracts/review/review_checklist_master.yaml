@@ -12,7 +12,7 @@ owner:
   - "Referee"
 depends_on:
   - "docs/main-flow-sop/research_workflow_sop.md"
-  - "docs/gates/workflow_stage_gates.yaml"
+  - "contracts/stages/workflow_stage_gates.yaml"
   - "docs/main-flow-sop/00_mandate_sop_cn.md"
   - "docs/main-flow-sop/01_csf_data_ready_sop_cn.md"
   - "docs/main-flow-sop/02_csf_signal_ready_sop_cn.md"
@@ -26,11 +26,11 @@ depends_on:
 meta:
   purpose: >
     为所有正式研究阶段提供统一、machine-readable 的 reviewer 检查表。
-    该文件不替代 docs/gates/workflow_stage_gates.yaml 的 formal contract，而是把“如何审查阶段是否可信完成”
+    该文件不替代 contracts/stages/workflow_stage_gates.yaml 的 formal contract，而是把“如何审查阶段是否可信完成”
     标准化，供人工 reviewer、agent reviewer、CI 检查脚本和 gate 工具统一消费。
   usage_order:
     - "先识别当前 stage"
-    - "读取 docs/gates/workflow_stage_gates.yaml 中该 stage 的 formal contract"
+    - "读取 contracts/stages/workflow_stage_gates.yaml 中该 stage 的 formal contract"
     - "核对 required_inputs / required_outputs / formal_gate / verdict_rules / rollback_rules"
     - "再读取本文件对应 stage 的 review checklist"
     - "先判断 blocking issues，再判断 reservations"
@@ -49,7 +49,7 @@ global_checks:
   - id: "GLOBAL-001"
     title: "formal contract referenced"
     severity: "blocking"
-    check: "当前 stage 的 docs/gates/workflow_stage_gates.yaml contract 已被明确引用"
+    check: "当前 stage 的 contracts/stages/workflow_stage_gates.yaml contract 已被明确引用"
     evidence:
       - "stage gate 文档"
       - "review notes"

@@ -13,7 +13,7 @@ from tools.review_skillgen.loaders import load_gate_schema
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GATE_SCHEMA_PATH = ROOT / "docs" / "gates" / "workflow_stage_gates.yaml"
+GATE_SCHEMA_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
 SNAPSHOT_VERSION = "v1"
 SCHEMA_VERSION = "workflow_stage_gates@v1"
 

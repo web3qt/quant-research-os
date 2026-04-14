@@ -126,7 +126,7 @@ def test_list_skill_dirs_rejects_duplicate_flattened_skill_names(tmp_path: Path)
 def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo_root = tmp_path / "repo"
     shutil.copytree(Path.cwd() / "skills", repo_root / "skills")
-    for name in ("bin", "scripts", "tools", "templates", "docs/experience", "docs/gates", "docs/check-sop", "docs/intake-sop"):
+    for name in ("bin", "scripts", "tools", "templates", "docs/experience", "contracts"):
         source = Path.cwd() / name
         destination = repo_root / name
         if source.is_dir():
