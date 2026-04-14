@@ -137,7 +137,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="PVJ6pTMgvOj_nVhjS6fO" name="csf_data_ready">
-        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="529" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -199,7 +199,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="90nI2IjqNbBVoiRDJWzf" name="csf_signal_ready">
-        <mxGraphModel dx="1273" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="529" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -276,7 +276,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-train-freeze-contracts" name="csf_train_freeze">
-        <mxGraphModel dx="3773" dy="474" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="3773" dy="444" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -322,18 +322,6 @@
                 <mxCell id="ctf_delivery_note" value="machine_artifacts：正式交付 csf_train_freeze.yaml、train_quality.parquet、train_variant_ledger.csv、train_rejects.csv&lt;br&gt;consumer_stage：下游固定是 csf_test_evidence&lt;br&gt;reuse_constraints：test 只能复用 train 尺子，不得重估或偷改 train 规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontColor=#9A3412;fontSize=14;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
                     <mxGeometry x="760" y="590" width="700" height="118" as="geometry"/>
                 </mxCell>
-                <mxCell id="ctf_note_boundary" value="train 只冻结 preprocess / neutralization / bucket / rebalance 尺子&#xa;不是重新定义 factor expression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="1500" y="210" width="340" height="94" as="geometry"/>
-                </mxCell>
-                <mxCell id="ctf_note_signal_guardrail" value="signal_ready 后禁止再动 raw_factor_fields / derived_factor_fields /&#xa;score_combination_formula / transform 这些轴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="1500" y="350" width="340" height="106" as="geometry"/>
-                </mxCell>
-                <mxCell id="ctf_note_governance" value="csf_train_freeze.yaml 必须写&#xa;frozen_signal_contract_reference /&#xa;train_governable_axes /&#xa;non_governable_axes_after_signal /&#xa;non_governable_axis_reject_rule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="1500" y="520" width="360" height="138" as="geometry"/>
-                </mxCell>
-                <mxCell id="ctf_note_variant_ledger" value="所有 kept / rejected variants 都要留身份和原因&#xa;非法改 signal 轴的 variant 必须 reject，并说明应重开 csf_signal_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;fontSize=15;fontFamily=Comic Sans MS;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;" parent="1" vertex="1">
-                    <mxGeometry x="1500" y="690" width="360" height="106" as="geometry"/>
-                </mxCell>
                 <mxCell id="ctf_edge_what_to_definition" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#F59E0B;" parent="1" source="ctf_what" target="ctf_definition" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
@@ -371,7 +359,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-test-evidence-contracts" name="csf_test_evidence">
-        <mxGraphModel dx="1273" dy="399" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="444" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
