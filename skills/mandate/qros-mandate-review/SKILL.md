@@ -9,6 +9,17 @@ description: Codex review skill for Mandate stage verification.
 
 冻结研究主问题、时间边界、universe、字段层级和参数边界
 
+## 共享审查协议
+
+执行本 stage review 前，必须先阅读并遵守 `docs/guides/qros-review-shared-protocol.md`。
+
+该共享审查协议统一定义：
+
+- adversarial reviewer-agent 合同
+- `adversarial_review_request.yaml` / `adversarial_review_result.yaml` / closure artifacts 要求
+- `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
+- 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
+
 ## 共用输入
 
 - `contracts/stages/workflow_stage_gates.yaml`
@@ -72,87 +83,7 @@ description: Codex review skill for Mandate stage verification.
 - 专题样板写法是否足够清楚
 - 字段命名是否优雅或便于新成员阅读
 
-## Closure 产物
-
-- `latest_review_pack.yaml`
-- `stage_gate_review.yaml`
-- `stage_completion_certificate.yaml`
-
-## 强制对抗审查输入
-
-- `adversarial_review_request.yaml`
-- lineage-local stage program source under the runtime-declared `required_program_dir`
-- stage provenance in `program_execution_manifest.json`
-
-## 强制对抗审查 Reviewer 合同
-
-你是 `adversarial reviewer-agent` 这条审查分支，不是原始 author。
-
-在任何 closure artifacts 出现之前：
-
-1. 检查 `adversarial_review_request.yaml`
-2. 确认你的 reviewer identity 与 `author_identity` 不同
-3. 对 `required_program_dir` 和 `required_program_entrypoint` 执行源码检查（`source-code inspection`）
-4. 检查 request 中列出的必需 artifacts 与 provenance
-5. 写出 `adversarial_review_result.yaml`
-
-`adversarial_review_result.yaml` 至少必须包含：
-
-- `review_cycle_id`
-- `reviewer_identity`
-- `reviewer_role`
-- `reviewer_session_id`
-- `reviewer_mode: adversarial`
-- `review_loop_outcome`
-- `reviewed_program_dir`
-- `reviewed_program_entrypoint`
-- `reviewed_artifact_paths`
-- `reviewed_provenance_paths`
-- `blocking_findings`
-- `reservation_findings`
-- `info_findings`
-- `residual_risks`
-
-允许的 `review_loop_outcome` 取值：
-
-- `FIX_REQUIRED`
-- `CLOSURE_READY_PASS`
-- `CLOSURE_READY_CONDITIONAL_PASS`
-- `CLOSURE_READY_PASS_FOR_RETRY`
-- `CLOSURE_READY_RETRY`
-- `CLOSURE_READY_NO_GO`
-- `CLOSURE_READY_CHILD_LINEAGE`
-
-`FIX_REQUIRED` 的含义是：退回 author 修复；不得允许 closure artifacts 出现。
-
-`closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome；这些结果可以继续进入 deterministic closure writing 与 downstream failure routing。
-
-## 可选 Reviewer Findings 文件
-
-你也可以在当前 `stage_dir` 下额外创建 `review_findings.yaml`，用于保存面向人的说明和 rollback metadata。
-
-最低建议字段：
-
-- `blocking_findings`
-- `reservation_findings`
-- `info_findings`
-- `residual_risks`
-- `recommended_verdict`
-- `rollback_stage`
-- `allowed_modifications`
-
-`review_findings.yaml` 负责承载语义判断；hard evidence checks 与最终 closure artifacts 仍交给 review engine 处理。
-
-## 允许的 Verdict
-
-- `PASS`: 当前阶段目标已满足，无保留事项
-- `CONDITIONAL PASS`: 当前阶段主要目标满足，但存在必须明示的保留事项
-- `PASS FOR RETRY`: 允许按既定 rollback 范围受控重试，未完成前不得继续晋级
-- `RETRY`: 当前阶段失败，但失败原因仍属于受控可修复问题
-- `NO-GO`: 组织上不支持继续推进当前方案
-- `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
-
-## Rollback 规则
+## 本阶段 Rollback 规则
 
 - 默认 rollback stage：mandate
 - 允许修改：澄清文档表述
@@ -163,7 +94,7 @@ description: Codex review skill for Mandate stage verification.
 - 以下情况必须开 child lineage：time split 改变
 - 以下情况必须开 child lineage：机制模板改变
 
-## 下游权限
+## 本阶段下游权限
 
 - 可进入下游阶段：data_ready
 - 可进入下游阶段：csf_data_ready
@@ -174,16 +105,8 @@ description: Codex review skill for Mandate stage verification.
 - 下游不得消费 / 重估：backtest results
 - 下游不得消费 / 重估：holdout results
 
-## Verdict 流程
+## 执行顺序
 
-1. 确认当前 stage
-2. 读取 stage contract
-3. 读取 stage checklist
-4. 检查 required inputs 与 outputs
-5. 先判断 formal gate
-6. 检查该阶段的 lineage-local 源码与程序实现
-7. 再记录 audit-only findings
-8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
-9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
-10. 只有结果达到 closure-ready，才运行 `./.qros/bin/qros-review`
-11. 复核最终生成的 closure artifacts
+1. 先按共享审查协议完成 shared review loop
+2. 再用本 skill 的 formal gate、checklist 和 audit-only 规则做 stage-specific 判定
+3. 若 verdict 需要 rollback 或 downstream 解释，以本文件的 stage-specific 规则为准

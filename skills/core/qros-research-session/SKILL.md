@@ -169,9 +169,7 @@ The agent may record a human-confirmed decision. It may not invent one, and it m
 
 ## Language Discipline
 
-- 在各阶段 authoring、grouped confirmation、summary 和解释性说明中，对 machine-readable 字段名、文件名、枚举值、命令、schema key 和上下游契约引用保持英文或既有约定，不得为了中文化破坏契约。
-- 对 hypothesis、counter-hypothesis、why、risk、evidence、uncertainty、kill reason、summary、rationale 等解释性内容，默认先判断是否适合中文；适合则优先用中文表达。
-- 只有在英文表达更精确、需要与固定术语或上下游契约严格对齐、或用户明确要求英文时，才保留英文。
+- 统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外语言口径。
 
 ## Working Rules
 

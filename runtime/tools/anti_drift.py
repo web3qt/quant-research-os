@@ -203,5 +203,12 @@ def semantic_projection(
     snapshot: CanonicalDecisionSnapshot | Mapping[str, Any],
 ) -> dict[str, Any]:
     payload = snapshot.to_dict() if isinstance(snapshot, CanonicalDecisionSnapshot) else dict(snapshot)
-    ignored = {"fixture_id", "input_digest", "snapshot_version", "schema_version", "evidence_refs"}
+    ignored = {
+        "fixture_id",
+        "input_digest",
+        "snapshot_version",
+        "schema_version",
+        "evidence_refs",
+        "lineage_selection_reason",
+    }
     return {key: payload[key] for key in sorted(payload) if key not in ignored}

@@ -19,6 +19,8 @@ EXPECTED_REVIEW_SKILLS = [
     "qros-csf-holdout-validation-review",
 ]
 
+SHARED_PROTOCOL_PATH = "docs/guides/qros-review-shared-protocol.md"
+
 
 def test_generator_writes_mainline_and_csf_review_skills(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
@@ -53,7 +55,7 @@ def test_generator_writes_mainline_and_csf_review_skills(tmp_path: Path) -> None
         assert path.exists(), skill_name
 
 
-def test_generated_review_skill_template_contains_adversarial_contract_language(tmp_path: Path) -> None:
+def test_generated_review_skill_template_references_shared_protocol(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     output_root = tmp_path / "generated"
 
@@ -70,9 +72,18 @@ def test_generated_review_skill_template_contains_adversarial_contract_language(
         encoding="utf-8"
     )
 
-    assert "adversarial reviewer-agent" in skill_text
-    assert "adversarial_review_request.yaml" in skill_text
-    assert "adversarial_review_result.yaml" in skill_text
-    assert "source-code inspection" in skill_text
-    assert "FIX_REQUIRED" in skill_text
-    assert "closure-ready adverse verdict" in skill_text
+    assert SHARED_PROTOCOL_PATH in skill_text
+    assert "共享审查协议" in skill_text
+    assert "## 强制对抗审查 Reviewer 合同" not in skill_text
+
+
+def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> None:
+    protocol_path = Path(SHARED_PROTOCOL_PATH)
+    content = protocol_path.read_text(encoding="utf-8")
+
+    assert protocol_path.exists()
+    assert "adversarial reviewer-agent" in content
+    assert "adversarial_review_request.yaml" in content
+    assert "adversarial_review_result.yaml" in content
+    assert "FIX_REQUIRED" in content
+    assert "closure-ready adverse verdict" in content

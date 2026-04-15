@@ -36,6 +36,8 @@ python runtime/scripts/run_verification_tier.py --tier smoke
 - CSF route routing
 - `csf_data_ready_author` auto-program seam
 - reflection chain
+- anti-drift metamorphic semantics
+- closure writer inferred-context path contract
 - anti-drift snapshot export 与 replay
 
 运行命令：

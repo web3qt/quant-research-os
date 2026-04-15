@@ -21,7 +21,7 @@ def test_write_closure_artifacts_can_infer_context_from_cwd(tmp_path: Path) -> N
 
     write_closure_artifacts(payload, cwd=nested_dir)
 
-    gate_payload = yaml.safe_load((stage_dir / "stage_gate_review.yaml").read_text(encoding="utf-8"))
+    gate_payload = yaml.safe_load((stage_dir / "review" / "closure" / "stage_gate_review.yaml").read_text(encoding="utf-8"))
     assert gate_payload["stage"] == "signal_ready"
     assert gate_payload["final_verdict"] == "PASS FOR RETRY"
 

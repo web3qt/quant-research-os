@@ -71,6 +71,8 @@ def test_run_verification_tier_script_supports_dry_run_json() -> None:
     assert payload["command"][0] == sys.executable
     assert payload["command"][1:3] == ["-m", "pytest"]
     assert "tests/test_anti_drift_replay.py" in payload["tests"]
+    assert "tests/test_anti_drift_metamorphic.py" in payload["tests"]
+    assert "tests/test_closure_writer_context_modes.py" in payload["tests"]
 
 
 def test_qros_verify_wrapper_exists_and_is_executable() -> None:

@@ -4,6 +4,7 @@ from runtime.tools.anti_drift import (
     SCHEMA_VERSION,
     SNAPSHOT_VERSION,
     canonical_snapshot_from_session_context,
+    semantic_projection,
     session_stage_to_gate_stage,
 )
 from runtime.tools.research_session import summarize_session_status
@@ -81,3 +82,33 @@ def test_canonical_snapshot_uses_review_verdict_for_failure_handling() -> None:
     assert snapshot.failure_class == "REPRO_FAIL"
     assert snapshot.severity == "FAIL-SOFT"
     assert snapshot.blocking_reasons == ("Normal progression is blocked by review verdict RETRY.",)
+
+
+def test_semantic_projection_ignores_lineage_selection_metadata() -> None:
+    status_a = summarize_session_status(
+        lineage_id="btc_leads_alts_a",
+        lineage_root=Path("/tmp/outputs/btc_leads_alts_a"),
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts_a was provided, so qros-session is targeting that lineage directly.",
+        current_stage="data_ready_review_confirmation_pending",
+        current_route="time_series_signal",
+        artifacts_written=["02_data_ready/dataset_manifest.json"],
+        gate_status="REVIEW_PENDING",
+        next_action="Write review_findings.yaml and run data_ready review",
+    )
+    status_b = summarize_session_status(
+        lineage_id="btc_leads_alts_b",
+        lineage_root=Path("/tmp/outputs/btc_leads_alts_b"),
+        lineage_mode="explicit_resume",
+        lineage_selection_reason="Explicit lineage_id btc_leads_alts_b was provided, so qros-session is targeting that lineage directly.",
+        current_stage="data_ready_review_confirmation_pending",
+        current_route="time_series_signal",
+        artifacts_written=["02_data_ready/dataset_manifest.json"],
+        gate_status="REVIEW_PENDING",
+        next_action="Write review_findings.yaml and run data_ready review",
+    )
+
+    projection_a = canonical_snapshot_from_session_context(status_a, fixture_id="lineage-a")
+    projection_b = canonical_snapshot_from_session_context(status_b, fixture_id="lineage-b")
+
+    assert semantic_projection(projection_a) == semantic_projection(projection_b)

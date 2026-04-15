@@ -51,16 +51,6 @@ def _render_audit_only(stage_contract: dict[str, Any]) -> str:
     return _render_simple_list("仅审计项", stage_contract.get("audit_only", []))
 
 
-def _render_verdicts(gate_schema: dict[str, Any]) -> str:
-    lines = []
-    status_vocabulary = gate_schema.get("status_vocabulary", {})
-    for verdict in gate_schema.get("review_closure_vocabulary", ()):
-        meta = status_vocabulary.get(verdict, {})
-        meaning = meta.get("meaning", "")
-        lines.append(f"- `{verdict}`: {meaning}")
-    return "\n".join(lines)
-
-
 def _render_rollback(stage_contract: dict[str, Any]) -> str:
     rollback = stage_contract.get("rollback_rules", {})
     lines = [f"- 默认 rollback stage：{rollback.get('default_rollback_stage', '未指定')}"]
@@ -112,7 +102,6 @@ def render_stage_skill(
         .replace("{{FORMAL_GATE_BLOCK}}", _render_formal_gate(stage_contract))
         .replace("{{CHECKLIST_BLOCK}}", _render_checklist(stage_checks))
         .replace("{{AUDIT_ONLY_BLOCK}}", _render_audit_only(stage_contract))
-        .replace("{{VERDICT_BLOCK}}", _render_verdicts(gate_schema))
         .replace("{{ROLLBACK_BLOCK}}", _render_rollback(stage_contract))
         .replace("{{DOWNSTREAM_BLOCK}}", _render_downstream(stage_contract))
     )

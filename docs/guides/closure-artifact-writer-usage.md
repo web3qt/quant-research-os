@@ -16,8 +16,8 @@ writer 会写 4 份文件。
 
 写入当前 `stage_dir`：
 
-- `latest_review_pack.yaml`
-- `stage_gate_review.yaml`
+- `review/closure/latest_review_pack.yaml`
+- `review/closure/stage_gate_review.yaml`
 - `review/closure/stage_completion_certificate.yaml`
 
 写入当前 `lineage_root`：

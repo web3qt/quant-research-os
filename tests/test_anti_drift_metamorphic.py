@@ -11,14 +11,15 @@ from runtime.tools.research_session import run_research_session
 
 
 def test_idea_intake_confirmation_semantics_are_stable_across_equivalent_raw_ideas(tmp_path: Path) -> None:
-    outputs_root = tmp_path / "outputs"
+    outputs_root_a = tmp_path / "outputs_a"
+    outputs_root_b = tmp_path / "outputs_b"
 
     status_a = run_research_session(
-        outputs_root=outputs_root,
+        outputs_root=outputs_root_a,
         raw_idea="BTC leads high-liquidity alts after shock events",
     )
     status_b = run_research_session(
-        outputs_root=outputs_root,
+        outputs_root=outputs_root_b,
         raw_idea="BTC leads high liquidity alts after shock events!!!",
     )
 
