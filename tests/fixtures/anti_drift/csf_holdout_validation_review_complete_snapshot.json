@@ -28,7 +28,7 @@
   ],
   "lineage_transition": "Run with --confirm-next-stage to mark the session complete.",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_csf.py::csf_holdout_validation_review_complete"
+    "runtime/tools/anti_drift_scenarios_csf.py::csf_holdout_validation_review_complete"
   ],
   "failure_class": null,
   "severity": null

@@ -221,7 +221,7 @@ def _signal_ready_freeze_draft(*, confirmed: bool) -> dict:
 
 def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "scaffold_idea_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "scaffold_idea_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
 
     result = run(
@@ -255,7 +255,7 @@ def test_scaffold_idea_intake_creates_stage_templates(tmp_path: Path) -> None:
 
 def test_build_mandate_from_intake_requires_go_to_mandate(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -289,7 +289,7 @@ def test_build_mandate_from_intake_requires_go_to_mandate(tmp_path: Path) -> Non
 
 def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -378,7 +378,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
 
 def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -424,7 +424,7 @@ def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(t
 
 def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -474,7 +474,7 @@ def test_build_mandate_from_intake_rejects_unsupported_recommended_route(tmp_pat
 
 def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -524,7 +524,7 @@ def test_build_mandate_from_intake_rejects_excluded_routes_mismatch(tmp_path: Pa
 
 def test_build_mandate_from_intake_accepts_extended_standalone_alpha_portfolio_expressions(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
 
     for portfolio_expression in [
         "short_only_rank",
@@ -597,7 +597,7 @@ def test_build_mandate_from_intake_accepts_filter_and_overlay_expressions_for_no
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
 
     cases = [
         ("regime_filter", "target_strategy_filter"),
@@ -670,7 +670,7 @@ def test_build_mandate_from_intake_rejects_invalid_factor_role_and_portfolio_exp
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
 
     cases = [
         ("standalone_alpha", "target_strategy_filter"),
@@ -744,7 +744,7 @@ def test_build_mandate_from_intake_rejects_invalid_factor_role_and_portfolio_exp
 
 def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)
@@ -806,7 +806,7 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
 
 def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_data_ready_from_mandate.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     mandate_dir = lineage_root / "01_mandate"
     mandate_formal_dir = mandate_dir / "author" / "formal"
@@ -854,7 +854,7 @@ def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Pa
 
 def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_signal_ready_from_data_ready.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     data_ready_dir = lineage_root / "02_data_ready"
     data_ready_formal_dir = data_ready_dir / "author" / "formal"
@@ -910,7 +910,7 @@ def test_build_signal_ready_from_data_ready_creates_signal_ready_artifacts(tmp_p
 
 def test_build_data_ready_from_mandate_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_data_ready_from_mandate.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_data_ready_from_mandate.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     mandate_dir = lineage_root / "01_mandate"
     mandate_formal_dir = mandate_dir / "author" / "formal"
@@ -947,7 +947,7 @@ def test_build_data_ready_from_mandate_requires_confirmed_freeze_groups(tmp_path
 
 def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_signal_ready_from_data_ready.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_signal_ready_from_data_ready.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     data_ready_dir = lineage_root / "02_data_ready"
     data_ready_formal_dir = data_ready_dir / "author" / "formal"
@@ -996,7 +996,7 @@ def test_build_signal_ready_from_data_ready_requires_confirmed_freeze_groups(tmp
 
 def test_build_mandate_from_intake_requires_confirmed_freeze_groups(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "build_mandate_from_intake.py"
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
     lineage_root = tmp_path / "outputs" / "btc_alt_transmission_v1"
     intake_dir = lineage_root / "00_idea_intake"
     intake_dir.mkdir(parents=True)

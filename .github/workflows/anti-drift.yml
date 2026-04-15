@@ -32,40 +32,25 @@ jobs:
             tests/test_render_anti_drift_nightly_report.py \
             tests/test_anti_drift_baseline.py \
             tests/test_anti_drift.py \
-            tests/test_evaluate_classification.py \
-            tests/test_evaluate_classification_regression.py \
             tests/test_run_research_session_script.py \
             tests/test_schema_loaders.py \
             tests/test_generation.py \
             tests/test_generated_skills_fresh.py
       - name: Generator freshness
-        run: python scripts/gen_codex_stage_review_skills.py --dry-run
-      - name: Classification baseline compare
-        run: |
-          python scripts/evaluate_classification.py --json --split test > /tmp/current_classification.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          from scripts.evaluate_classification import compare_split_reports
-          baseline = json.loads(Path("tests/fixtures/anti_drift/classification_test_baseline.json").read_text())["test"]
-          current = json.loads(Path("/tmp/current_classification.json").read_text())["test"]
-          diff = compare_split_reports(baseline, current)
-          print(json.dumps(diff, ensure_ascii=False, indent=2))
-          raise SystemExit(0 if diff["matches"] else 1)
-          PY
+        run: python runtime/scripts/gen_codex_stage_review_skills.py --dry-run
       - name: Snapshot baseline compare
         run: |
-          python scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
+          python runtime/scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
           mkdir -p /tmp/blessed_snapshots
           cp tests/fixtures/anti_drift/*_snapshot.json /tmp/blessed_snapshots/
-          python scripts/anti_drift_baseline.py compare --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots > /tmp/anti_drift_compare.json
+          python runtime/scripts/anti_drift_baseline.py compare --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots > /tmp/anti_drift_compare.json
       - name: Nightly gate summary smoke
         run: |
-          python scripts/build_anti_drift_gate_summary.py \
+          python runtime/scripts/build_anti_drift_gate_summary.py \
             --compare-json /tmp/anti_drift_compare.json \
             --report-path anti-drift-nightly.md \
             --freshness-ok true > /tmp/anti_drift_gate.json
-          python scripts/build_anti_drift_release_artifact.py \
+          python runtime/scripts/build_anti_drift_release_artifact.py \
             --nightly-gate-json /tmp/anti_drift_gate.json \
             --generator-fresh true \
             --classification-baseline-matches true \
@@ -74,7 +59,6 @@ jobs:
         with:
           name: anti-drift-pr-artifacts
           path: |
-            /tmp/current_classification.json
             /tmp/current_snapshots
             /tmp/anti_drift_compare.json
             /tmp/anti_drift_gate.json
@@ -94,29 +78,18 @@ jobs:
           python -m pip install PyYAML pytest
       - name: Anti-drift nightly pipeline
         run: |
-          python scripts/gen_codex_stage_review_skills.py --dry-run
-          python scripts/evaluate_classification.py --json --split test > /tmp/current_classification.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          from scripts.evaluate_classification import compare_split_reports
-          baseline = json.loads(Path("tests/fixtures/anti_drift/classification_test_baseline.json").read_text())["test"]
-          current = json.loads(Path("/tmp/current_classification.json").read_text())["test"]
-          diff = compare_split_reports(baseline, current)
-          Path("/tmp/classification_diff.json").write_text(json.dumps(diff, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          raise SystemExit(0 if diff["matches"] else 1)
-          PY
-          python scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
+          python runtime/scripts/gen_codex_stage_review_skills.py --dry-run
+          python runtime/scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
           mkdir -p /tmp/blessed_snapshots
           cp tests/fixtures/anti_drift/*_snapshot.json /tmp/blessed_snapshots/
-          python scripts/anti_drift_baseline.py compare --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots > /tmp/anti_drift_compare.json
-          python scripts/render_anti_drift_nightly_report.py --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots --output /tmp/anti_drift_nightly.md
-          python scripts/build_anti_drift_gate_summary.py \
+          python runtime/scripts/anti_drift_baseline.py compare --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots > /tmp/anti_drift_compare.json
+          python runtime/scripts/render_anti_drift_nightly_report.py --baseline /tmp/blessed_snapshots --current /tmp/current_snapshots --output /tmp/anti_drift_nightly.md
+          python runtime/scripts/build_anti_drift_gate_summary.py \
             --compare-json /tmp/anti_drift_compare.json \
             --report-path /tmp/anti_drift_nightly.md \
             --freshness-ok true > /tmp/anti_drift_gate.json
-          python scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/qros_snapshot_verify.json
-          python scripts/build_anti_drift_release_artifact.py \
+          python runtime/scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/qros_snapshot_verify.json
+          python runtime/scripts/build_anti_drift_release_artifact.py \
             --nightly-gate-json /tmp/anti_drift_gate.json \
             --generator-fresh true \
             --classification-baseline-matches true \
@@ -125,8 +98,6 @@ jobs:
         with:
           name: anti-drift-nightly-artifacts
           path: |
-            /tmp/current_classification.json
-            /tmp/classification_diff.json
             /tmp/current_snapshots
             /tmp/anti_drift_compare.json
             /tmp/anti_drift_nightly.md

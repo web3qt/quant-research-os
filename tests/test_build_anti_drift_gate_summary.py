@@ -1,4 +1,4 @@
-from scripts.build_anti_drift_gate_summary import build_gate_summary
+from runtime.scripts.build_anti_drift_gate_summary import build_gate_summary
 
 
 def test_build_gate_summary_passes_clean_compare() -> None:

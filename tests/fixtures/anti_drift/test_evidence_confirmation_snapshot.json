@@ -30,7 +30,7 @@
   ],
   "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter test_evidence.",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation"
+    "runtime/tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation"
   ],
   "failure_class": null,
   "severity": null

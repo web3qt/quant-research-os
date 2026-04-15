@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.review_engine import run_stage_review
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

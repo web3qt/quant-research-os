@@ -27,7 +27,7 @@
   ],
   "lineage_transition": "Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_mainline.py::mandate_review"
+    "runtime/tools/anti_drift_scenarios_mainline.py::mandate_review"
   ],
   "failure_class": null,
   "severity": null

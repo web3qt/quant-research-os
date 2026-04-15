@@ -13,8 +13,8 @@ LEGACY_DOC_TOKENS = (
 LIVE_DOC_FILES = (
     Path("README.md"),
     *sorted(Path("docs/governance").glob("*.md")),
-    *sorted(Path("docs/main-flow-sop").glob("*.md")),
-    *sorted(Path("docs/review-sop").glob("*.md")),
+    *sorted(Path("docs/sop/main-flow").glob("*.md")),
+    *sorted(Path("docs/sop/review").glob("*.md")),
 )
 
 
@@ -36,5 +36,5 @@ def test_docs_index_exists_and_points_to_current_truth_layers() -> None:
     assert "contracts/stages/workflow_stage_gates.yaml" in content
     assert "contracts/review/review_checklist_master.yaml" in content
     assert "contracts/governance/review_governance_policy.yaml" in content
-    assert "docs/plans/" in content
+    assert "docs/archive/plans/" in content
     assert "不是当前运行时真值" in content

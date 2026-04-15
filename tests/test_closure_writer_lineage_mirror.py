@@ -2,8 +2,8 @@ from pathlib import Path
 
 import yaml
 
-from tools.review_skillgen.closure_models import build_review_payload
-from tools.review_skillgen.closure_writer import write_closure_artifacts
+from runtime.tools.review_skillgen.closure_models import build_review_payload
+from runtime.tools.review_skillgen.closure_writer import write_closure_artifacts
 
 
 def test_write_closure_artifacts_mirrors_latest_review_pack_to_lineage_root(tmp_path: Path) -> None:

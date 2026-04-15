@@ -27,7 +27,7 @@
   ],
   "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter csf_train_freeze.",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_csf.py::csf_train_freeze_confirmation"
+    "runtime/tools/anti_drift_scenarios_csf.py::csf_train_freeze_confirmation"
   ],
   "failure_class": null,
   "severity": null

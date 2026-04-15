@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from tests.lineage_program_support import ensure_stage_program
-from tools.lineage_program_runtime import StageProgramRuntimeError, inspect_stage_program, stage_outputs_complete, validate_stage_program
+from runtime.tools.lineage_program_runtime import StageProgramRuntimeError, inspect_stage_program, stage_outputs_complete, validate_stage_program
 
 
 def test_missing_stage_program_reports_missing_contract(tmp_path: Path) -> None:

@@ -8,7 +8,7 @@ import sys
 
 def test_generator_dry_run_reports_fresh_outputs() -> None:
     result = run(
-        [sys.executable, "scripts/gen_codex_stage_review_skills.py", "--dry-run"],
+        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--dry-run"],
         cwd=Path(__file__).resolve().parents[1],
         check=False,
         capture_output=True,
@@ -45,7 +45,7 @@ def test_generator_dry_run_reports_stale_outputs_when_generated_file_drifts(tmp_
         result = run(
             [
                 sys.executable,
-                "scripts/gen_codex_stage_review_skills.py",
+                "runtime/scripts/gen_codex_stage_review_skills.py",
                 "--dry-run",
                 "--output-root",
                 str(temp_root),

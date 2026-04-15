@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import run
 import sys
 
-from tools.verification_tiers import (
+from runtime.tools.verification_tiers import (
     FULL_SMOKE_EXTRA_TEST_PATHS,
     SMOKE_TEST_PATHS,
     SUPPORTED_VERIFICATION_TIERS,
@@ -36,7 +36,7 @@ def test_pytest_command_uses_quiet_pytest_invocation() -> None:
 
 def test_run_verification_tier_script_lists_tiers_as_json() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script = repo_root / "scripts" / "run_verification_tier.py"
+    script = repo_root / "runtime" / "scripts" / "run_verification_tier.py"
 
     result = run(
         [sys.executable, str(script), "--tier", "smoke", "--list", "--json"],
@@ -55,7 +55,7 @@ def test_run_verification_tier_script_lists_tiers_as_json() -> None:
 
 def test_run_verification_tier_script_supports_dry_run_json() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script = repo_root / "scripts" / "run_verification_tier.py"
+    script = repo_root / "runtime" / "scripts" / "run_verification_tier.py"
 
     result = run(
         [sys.executable, str(script), "--tier", "full-smoke", "--dry-run", "--json"],
@@ -74,6 +74,6 @@ def test_run_verification_tier_script_supports_dry_run_json() -> None:
 
 
 def test_qros_verify_wrapper_exists_and_is_executable() -> None:
-    wrapper = Path("bin/qros-verify")
+    wrapper = Path("runtime/bin/qros-verify")
     assert wrapper.exists()
     assert wrapper.stat().st_mode & 0o111

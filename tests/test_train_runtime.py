@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.train_runtime import build_train_freeze_from_signal_ready, scaffold_train_freeze
+from runtime.tools.train_runtime import build_train_freeze_from_signal_ready, scaffold_train_freeze
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

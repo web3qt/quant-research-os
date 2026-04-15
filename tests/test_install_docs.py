@@ -3,9 +3,9 @@ from pathlib import Path
 
 def test_install_docs_reference_supported_commands() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
-    installation = Path("docs/experience/installation.md").read_text(encoding="utf-8")
-    quickstart = Path("docs/experience/quickstart-codex.md").read_text(encoding="utf-8")
-    session_usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
+    installation = Path("docs/guides/installation.md").read_text(encoding="utf-8")
+    quickstart = Path("docs/guides/quickstart-codex.md").read_text(encoding="utf-8")
+    session_usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
     codex_guide = Path("docs/README.codex.md").read_text(encoding="utf-8")
 
     combined = "\n".join([readme, installation, quickstart, session_usage, codex_guide])
@@ -29,9 +29,9 @@ def test_install_docs_reference_supported_commands() -> None:
 
 def test_install_docs_reference_stage_field_guide() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
-    quickstart = Path("docs/experience/quickstart-codex.md").read_text(encoding="utf-8")
-    session_usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
-    guide = Path("docs/experience/stage-freeze-group-field-guide.md").read_text(encoding="utf-8")
+    quickstart = Path("docs/guides/quickstart-codex.md").read_text(encoding="utf-8")
+    session_usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    guide = Path("docs/guides/stage-freeze-group-field-guide.md").read_text(encoding="utf-8")
 
     combined = "\n".join([readme, quickstart, session_usage])
 

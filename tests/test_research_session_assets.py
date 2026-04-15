@@ -61,7 +61,7 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
 
 
 def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
-    usage_path = Path("docs/experience/qros-research-session-usage.md")
+    usage_path = Path("docs/guides/qros-research-session-usage.md")
     content = usage_path.read_text(encoding="utf-8")
 
     assert usage_path.exists()

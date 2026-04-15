@@ -34,7 +34,7 @@
   ],
   "lineage_transition": "Enter failure handling for data_ready via qros-stage-failure-handler",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_failure.py::data_ready_child_lineage"
+    "runtime/tools/anti_drift_scenarios_failure.py::data_ready_child_lineage"
   ],
   "failure_class": null,
   "severity": null

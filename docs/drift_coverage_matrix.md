@@ -32,5 +32,5 @@ This document records which test lane owns each drift class and what objective b
 
 1. Expand content-aware replay fixtures beyond the current snapshot smoke tests.
 2. Add broader semantic goldens to the nightly lane.
-3. Operationalize nightly diff reports and baseline promotion using `scripts/anti_drift_baseline.py` plus `docs/anti_drift_baseline_promotion_protocol.md`.
+3. Operationalize nightly diff reports and baseline promotion using `runtime/scripts/anti_drift_baseline.py` plus `docs/anti_drift_baseline_promotion_protocol.md`.
 4. Raise CSF path coverage to parity with the mainline route.

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.review_skillgen.context_inference import infer_review_context
+from runtime.tools.review_skillgen.context_inference import infer_review_context
 
 
 def test_infer_review_context_from_outputs_tree() -> None:

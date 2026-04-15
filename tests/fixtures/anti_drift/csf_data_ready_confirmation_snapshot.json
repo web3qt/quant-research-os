@@ -29,7 +29,7 @@
   ],
   "lineage_transition": "Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter data_ready.",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation"
+    "runtime/tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation"
   ],
   "failure_class": null,
   "severity": null

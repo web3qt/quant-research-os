@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
-from tools.research_session import (
+from runtime.tools.research_session import (
     detect_session_stage,
     run_research_session,
     resolve_lineage_selection,

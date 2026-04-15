@@ -1,6 +1,6 @@
 import pytest
 
-from tools.review_skillgen.closure_models import ALLOWED_VERDICTS, build_review_payload
+from runtime.tools.review_skillgen.closure_models import ALLOWED_VERDICTS, build_review_payload
 
 
 def test_build_review_payload_requires_stage_and_verdict() -> None:

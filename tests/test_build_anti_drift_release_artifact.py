@@ -1,4 +1,4 @@
-from scripts.build_anti_drift_release_artifact import build_release_artifact
+from runtime.scripts.build_anti_drift_release_artifact import build_release_artifact
 
 
 def test_build_release_artifact_passes_when_all_inputs_green() -> None:

@@ -1,4 +1,4 @@
-from tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 
 
 def test_gate_schema_contains_first_wave_stages() -> None:

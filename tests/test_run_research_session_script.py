@@ -533,7 +533,7 @@ def _holdout_validation_draft(*, confirmed: bool) -> dict:
 
 def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
 
     result = run(
@@ -561,7 +561,7 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
 
 def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
 
     result = run(
@@ -594,7 +594,7 @@ def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
 
 def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_idea_in_cli(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -635,7 +635,7 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
 
 def test_run_research_session_explicit_lineage_id_resume_is_visible_in_json(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -674,7 +674,7 @@ def test_run_research_session_explicit_lineage_id_resume_is_visible_in_json(tmp_
 
 def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
 
     result = run(
@@ -701,14 +701,14 @@ def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
     assert payload["session_stage"] == "idea_intake_confirmation_pending"
     assert payload["formal_decision"] == "IDEA_INTAKE_PENDING_CONFIRMATION"
     assert "artifact_catalog.md" in payload["required_artifacts"]
-    assert "scripts/run_research_session.py" in payload["evidence_refs"]
+    assert "runtime/scripts/run_research_session.py" in payload["evidence_refs"]
     assert "🧭" not in result.stdout
     assert "Data Ready Reflection" not in result.stdout
 
 
 def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -763,7 +763,7 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
 
 def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -793,7 +793,7 @@ def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Pat
 
 def test_run_research_session_confirm_intake_advances_to_mandate_confirmation_when_gate_ready(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -843,7 +843,7 @@ def test_run_research_session_confirm_intake_advances_to_mandate_confirmation_wh
 
 def test_run_research_session_requires_route_assessment_before_mandate_pending(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -903,7 +903,7 @@ def test_run_research_session_requires_route_assessment_before_mandate_pending(t
 
 def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     intake_dir = lineage_root / "00_idea_intake"
@@ -984,7 +984,7 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
 
 def test_run_research_session_reports_mandate_review_when_review_pending(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1025,7 +1025,7 @@ def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_acti
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "csf_case"
     intake_dir = lineage_root / "00_idea_intake"
@@ -1103,7 +1103,7 @@ def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_acti
 
 def test_run_research_session_reports_mandate_review_complete_when_closure_exists(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1145,7 +1145,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1192,7 +1192,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
 
 def test_run_research_session_builds_data_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1294,7 +1294,7 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1357,7 +1357,7 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
 
 def test_run_research_session_builds_signal_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     data_ready_dir = lineage_root / "02_data_ready"
@@ -1454,7 +1454,7 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     signal_ready_dir = lineage_root / "03_signal_ready"
@@ -1497,7 +1497,7 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
 
 def test_run_research_session_builds_train_freeze_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     signal_ready_dir = lineage_root / "03_signal_ready"
@@ -1592,7 +1592,7 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     train_dir = lineage_root / "04_train_freeze"
@@ -1632,7 +1632,7 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
 
 def test_run_research_session_builds_test_evidence_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"
@@ -1747,7 +1747,7 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     test_dir = lineage_root / "05_test_evidence"
@@ -1791,7 +1791,7 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
 
 def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     test_dir = lineage_root / "05_test_evidence"
@@ -1845,7 +1845,7 @@ def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engin
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     test_dir = lineage_root / "05_test_evidence"
@@ -1927,7 +1927,7 @@ def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engin
 
 def test_run_research_session_builds_backtest_ready_only_after_explicit_confirmation(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     test_dir = lineage_root / "05_test_evidence"
@@ -2029,7 +2029,7 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     backtest_dir = lineage_root / "06_backtest"
@@ -2070,7 +2070,7 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
     tmp_path: Path,
 ) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "run_research_session.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     mandate_dir = lineage_root / "01_mandate"

@@ -3,9 +3,9 @@ from pathlib import Path
 import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
-from tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
-from tools.research_session import run_research_session
-from tools.stage_program_scaffold import materialize_stage_program
+from runtime.tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
+from runtime.tools.research_session import run_research_session
+from runtime.tools.stage_program_scaffold import materialize_stage_program
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -179,7 +179,7 @@ def test_run_research_session_surfaces_invalid_generated_csf_program_without_adv
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    import tools.research_session as research_session
+    import runtime.tools.research_session as research_session
 
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_alt"

@@ -87,7 +87,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
 def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     stage_dir = _prepare_mandate_stage(tmp_path)
-    script_path = repo_root / "scripts" / "run_stage_review.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
 
     result = run(
         [sys.executable, str(script_path)],
@@ -114,7 +114,7 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
 def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     stage_dir = _prepare_mandate_stage(tmp_path)
-    script_path = repo_root / "scripts" / "run_stage_review.py"
+    script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
 
     result = run(
         [

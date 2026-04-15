@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.review_skillgen.review_findings import load_review_findings
+from runtime.tools.review_skillgen.review_findings import load_review_findings
 
 
 def test_load_review_findings_normalizes_defaults(tmp_path: Path) -> None:

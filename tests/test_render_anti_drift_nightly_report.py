@@ -1,4 +1,4 @@
-from scripts.render_anti_drift_nightly_report import render_markdown_report
+from runtime.scripts.render_anti_drift_nightly_report import render_markdown_report
 from pathlib import Path
 from subprocess import run
 import sys
@@ -47,7 +47,7 @@ def test_render_markdown_report_lists_changed_fields() -> None:
 
 def test_render_anti_drift_nightly_report_cli_runs_from_repo_root(tmp_path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "render_anti_drift_nightly_report.py"
+    script_path = repo_root / "runtime" / "scripts" / "render_anti_drift_nightly_report.py"
     baseline = tmp_path / "baseline"
     current = tmp_path / "current"
     output = tmp_path / "nightly.md"

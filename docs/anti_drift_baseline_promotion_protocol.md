@@ -26,7 +26,7 @@ Any changed baseline must go through:
 Examples:
 
 ```bash
-python scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/current_snapshot.json
+python runtime/scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/current_snapshot.json
 ```
 
 ### 2. Compare against blessed baseline
@@ -34,7 +34,7 @@ python scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify 
 Use the baseline management tool:
 
 ```bash
-python scripts/anti_drift_baseline.py compare --baseline tests/fixtures/anti_drift --current /tmp/current_snapshots
+python runtime/scripts/anti_drift_baseline.py compare --baseline tests/fixtures/anti_drift --current /tmp/current_snapshots
 ```
 
 If `matches=false`, the current branch is blocked until the delta is either fixed or explicitly promoted.
@@ -42,7 +42,7 @@ If `matches=false`, the current branch is blocked until the delta is either fixe
 For nightly human-readable summaries, render a markdown report:
 
 ```bash
-python scripts/render_anti_drift_nightly_report.py \
+python runtime/scripts/render_anti_drift_nightly_report.py \
   --baseline tests/fixtures/anti_drift \
   --current /tmp/current_snapshots \
   --output /tmp/anti_drift_nightly_report.md
@@ -64,7 +64,7 @@ Required review questions:
 Promotion command:
 
 ```bash
-python scripts/anti_drift_baseline.py promote \
+python runtime/scripts/anti_drift_baseline.py promote \
   --current /tmp/current_snapshots \
   --baseline tests/fixtures/anti_drift \
   --label anti-drift-<date>-<reason> \
@@ -77,8 +77,8 @@ This writes a `baseline_manifest.json` alongside the promoted payloads.
 
 - PRs may introduce new goldens or changed baselines only with explicit review.
 - Nightly regression compares current payloads against blessed baselines.
-- Nightly regression should also emit a machine-readable gate artifact via `scripts/build_anti_drift_gate_summary.py`.
-- Release assembly should consume the nightly gate artifact via `scripts/build_anti_drift_release_artifact.py`.
+- Nightly regression should also emit a machine-readable gate artifact via `runtime/scripts/build_anti_drift_gate_summary.py`.
+- Release assembly should consume the nightly gate artifact via `runtime/scripts/build_anti_drift_release_artifact.py`.
 - The repository CI entrypoint for this flow is `.github/workflows/anti-drift.yml`.
 - Release is blocked if:
   - current payloads differ from blessed baselines without explicit promotion

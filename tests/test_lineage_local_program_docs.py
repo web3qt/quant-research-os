@@ -5,11 +5,10 @@ import yaml
 
 def test_lineage_local_program_contract_is_documented_in_entry_docs() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
-    readme_en = Path("README_EN.md").read_text(encoding="utf-8")
-    usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
-    workflow = Path("docs/main-flow-sop/research_workflow_sop.md").read_text(encoding="utf-8")
+    usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    workflow = Path("docs/sop/main-flow/research_workflow_sop.md").read_text(encoding="utf-8")
 
-    combined = "\n".join([readme, readme_en, usage, workflow])
+    combined = "\n".join([readme, usage, workflow])
 
     assert "outputs/<lineage_id>/program/" in combined
     assert "stage_program.yaml" in combined
@@ -44,7 +43,7 @@ def test_lineage_local_program_gate_truth_is_present_in_gate_yaml() -> None:
 
 
 def test_session_usage_documents_program_gate_status_fields() -> None:
-    usage = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
+    usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
 
     assert "awaiting_stage_program" in usage
     assert "STAGE_PROGRAM_MISSING" in usage

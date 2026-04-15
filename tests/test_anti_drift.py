@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from tools.anti_drift import (
+from runtime.tools.anti_drift import (
     SCHEMA_VERSION,
     SNAPSHOT_VERSION,
     canonical_snapshot_from_session_context,
     session_stage_to_gate_stage,
 )
-from tools.research_session import summarize_session_status
+from runtime.tools.research_session import summarize_session_status
 
 
 def test_session_stage_to_gate_stage_normalizes_runtime_suffixes() -> None:

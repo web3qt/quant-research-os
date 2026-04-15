@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from tools.anti_drift import canonical_snapshot_from_session_context, diff_snapshot
-from tools.anti_drift_scenarios import (
+from runtime.tools.anti_drift import canonical_snapshot_from_session_context, diff_snapshot
+from runtime.tools.anti_drift_scenarios import (
     prepare_csf_backtest_ready_review_complete,
     prepare_csf_mandate_review_complete,
     prepare_csf_data_ready_review_complete,
@@ -18,8 +18,8 @@ from tools.anti_drift_scenarios import (
     write_minimal_stage_outputs,
     write_stage_completion_certificate,
 )
-from tools.anti_drift_scenarios_support import review_closure_path
-from tools.research_session import run_research_session
+from runtime.tools.anti_drift_scenarios_support import review_closure_path
+from runtime.tools.research_session import run_research_session
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "anti_drift"
@@ -37,7 +37,7 @@ def test_run_research_session_snapshot_matches_mandate_review_golden(tmp_path: P
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="mandate-review-replay",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::mandate_review",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::mandate_review",),
     )
 
     assert diff_snapshot(_load_golden("mandate_review_snapshot.json"), snapshot) == {}
@@ -54,7 +54,7 @@ def test_run_research_session_snapshot_matches_failure_handler_golden(tmp_path: 
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="test-evidence-retry-replay",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::test_evidence_retry",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::test_evidence_retry",),
     )
 
     assert diff_snapshot(_load_golden("test_evidence_retry_snapshot.json"), snapshot) == {}
@@ -73,7 +73,7 @@ def test_run_research_session_snapshot_matches_train_freeze_pass_for_retry_golde
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="train-freeze-pass-for-retry",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::train_freeze_pass_for_retry",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::train_freeze_pass_for_retry",),
     )
 
     assert diff_snapshot(_load_golden("train_freeze_pass_for_retry_snapshot.json"), snapshot) == {}
@@ -92,7 +92,7 @@ def test_run_research_session_snapshot_matches_backtest_ready_no_go_golden(tmp_p
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="backtest-ready-no-go",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::backtest_ready_no_go",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::backtest_ready_no_go",),
     )
 
     assert diff_snapshot(_load_golden("backtest_ready_no_go_snapshot.json"), snapshot) == {}
@@ -111,7 +111,7 @@ def test_run_research_session_snapshot_matches_data_ready_child_lineage_golden(t
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="data-ready-child-lineage",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::data_ready_child_lineage",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::data_ready_child_lineage",),
     )
 
     assert diff_snapshot(_load_golden("data_ready_child_lineage_snapshot.json"), snapshot) == {}
@@ -130,7 +130,7 @@ def test_run_research_session_snapshot_matches_signal_ready_child_lineage_golden
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="signal-ready-child-lineage",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::signal_ready_child_lineage",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::signal_ready_child_lineage",),
     )
 
     assert diff_snapshot(_load_golden("signal_ready_child_lineage_snapshot.json"), snapshot) == {}
@@ -149,7 +149,7 @@ def test_run_research_session_snapshot_matches_csf_train_freeze_pass_for_retry_g
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-train-freeze-pass-for-retry",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::csf_train_freeze_pass_for_retry",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::csf_train_freeze_pass_for_retry",),
     )
 
     assert diff_snapshot(_load_golden("csf_train_freeze_pass_for_retry_snapshot.json"), snapshot) == {}
@@ -168,7 +168,7 @@ def test_run_research_session_snapshot_matches_csf_backtest_ready_no_go_golden(t
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-backtest-ready-no-go",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::csf_backtest_ready_no_go",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::csf_backtest_ready_no_go",),
     )
 
     assert diff_snapshot(_load_golden("csf_backtest_ready_no_go_snapshot.json"), snapshot) == {}
@@ -187,7 +187,7 @@ def test_run_research_session_snapshot_matches_csf_data_ready_child_lineage_gold
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-data-ready-child-lineage",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::csf_data_ready_child_lineage",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::csf_data_ready_child_lineage",),
     )
 
     assert diff_snapshot(_load_golden("csf_data_ready_child_lineage_snapshot.json"), snapshot) == {}
@@ -206,7 +206,7 @@ def test_run_research_session_snapshot_matches_holdout_validation_no_go_golden(t
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="holdout-validation-no-go",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::holdout_validation_no_go",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::holdout_validation_no_go",),
     )
 
     assert diff_snapshot(_load_golden("holdout_validation_no_go_snapshot.json"), snapshot) == {}
@@ -225,7 +225,7 @@ def test_run_research_session_snapshot_matches_csf_holdout_validation_no_go_gold
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-holdout-validation-no-go",
-        evidence_refs=("tools/anti_drift_scenarios_failure.py::csf_holdout_validation_no_go",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_failure.py::csf_holdout_validation_no_go",),
     )
 
     assert diff_snapshot(_load_golden("csf_holdout_validation_no_go_snapshot.json"), snapshot) == {}
@@ -241,7 +241,7 @@ def test_run_research_session_snapshot_matches_csf_confirmation_golden(tmp_path:
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-data-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_data_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("csf_data_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -257,7 +257,7 @@ def test_run_research_session_snapshot_matches_csf_signal_ready_confirmation_gol
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-signal-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_signal_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_signal_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("csf_signal_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -273,7 +273,7 @@ def test_run_research_session_snapshot_matches_csf_train_freeze_confirmation_gol
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-train-freeze-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_train_freeze_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_train_freeze_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("csf_train_freeze_confirmation_snapshot.json"), snapshot) == {}
@@ -289,7 +289,7 @@ def test_run_research_session_snapshot_matches_csf_test_evidence_confirmation_go
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-test-evidence-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_test_evidence_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_test_evidence_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("csf_test_evidence_confirmation_snapshot.json"), snapshot) == {}
@@ -305,7 +305,7 @@ def test_run_research_session_snapshot_matches_csf_backtest_ready_confirmation_g
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-backtest-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_backtest_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("csf_backtest_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -327,7 +327,7 @@ def test_run_research_session_snapshot_matches_csf_holdout_review_complete_golde
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="csf-holdout-validation-review-complete",
-        evidence_refs=("tools/anti_drift_scenarios_csf.py::csf_holdout_validation_review_complete",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_csf.py::csf_holdout_validation_review_complete",),
     )
 
     assert diff_snapshot(_load_golden("csf_holdout_validation_review_complete_snapshot.json"), snapshot) == {}
@@ -343,7 +343,7 @@ def test_run_research_session_snapshot_matches_idea_intake_confirmation_golden(t
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="idea-intake-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::idea_intake_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::idea_intake_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("idea_intake_confirmation_snapshot.json"), snapshot) == {}
@@ -359,7 +359,7 @@ def test_run_research_session_snapshot_matches_mainline_data_ready_confirmation_
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="data-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::data_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::data_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("data_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -375,7 +375,7 @@ def test_run_research_session_snapshot_matches_signal_ready_confirmation_golden(
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="signal-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::signal_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("signal_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -391,7 +391,7 @@ def test_run_research_session_snapshot_matches_train_freeze_confirmation_golden(
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="train-freeze-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::train_freeze_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::train_freeze_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("train_freeze_confirmation_snapshot.json"), snapshot) == {}
@@ -407,7 +407,7 @@ def test_run_research_session_snapshot_matches_test_evidence_confirmation_golden
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="test-evidence-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::test_evidence_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("test_evidence_confirmation_snapshot.json"), snapshot) == {}
@@ -423,7 +423,7 @@ def test_run_research_session_snapshot_matches_backtest_ready_confirmation_golde
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="backtest-ready-confirmation",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::backtest_ready_confirmation",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::backtest_ready_confirmation",),
     )
 
     assert diff_snapshot(_load_golden("backtest_ready_confirmation_snapshot.json"), snapshot) == {}
@@ -445,7 +445,7 @@ def test_run_research_session_snapshot_matches_holdout_review_complete_golden(tm
     snapshot = canonical_snapshot_from_session_context(
         status,
         fixture_id="holdout-validation-review-complete",
-        evidence_refs=("tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete",),
+        evidence_refs=("runtime/tools/anti_drift_scenarios_mainline.py::holdout_validation_review_complete",),
     )
 
     assert diff_snapshot(_load_golden("holdout_validation_review_complete_snapshot.json"), snapshot) == {}

@@ -1,7 +1,5 @@
 # 🛠 Quant Research OS | 量化研究操作系统
 
-[English](README_EN.md) | 中文
-
 QROS 是一个面向 agent 的阶段式研究治理框架。它不替你发明 alpha，也不替某条具体研究线代存真实业务代码。它做的事是把研究从“聊天里的想法”推进成一条**可审查、可复现、可追溯**的 research lineage，并用 freeze、review、formal artifacts、failure routing 和 lineage discipline 约束这条线如何被定义、推进、否决和重开。
 
 如果你只想知道一句话版本：
@@ -10,27 +8,49 @@ QROS 是一个面向 agent 的阶段式研究治理框架。它不替你发明 a
 - **普通使用者的入口不是几十个 skill，而是一个：`qros-research-session`。**
 - **真实研究产物不写在这个仓库里，而写在当前 active research repo 的 `outputs/<lineage_id>/` 下。**
 
+## Codex 用户怎么开始
+
+当前明确维护和文档化的宿主只有 `Codex`。
+
+如果你本身就在 `Codex` 里工作，最短安装入口可以直接写成：
+
+```text
+Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
+```
+
+安装完成后，在 Codex 里直接开始：
+
+```text
+qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
+qros-research-session help
+```
+
 ## 当前主流程阶段图
 
 ```text
-00_idea_intake -> 00_mandate
+00_idea_intake -> 01_mandate
 ├─ time_series_signal
-│  -> 01_data_ready
-│  -> 02_signal_ready
-│  -> 03_train_freeze
-│  -> 04_test_evidence
-│  -> 05_backtest_ready
-│  -> 06_holdout_validation
+│  -> 02_data_ready
+│  -> 03_signal_ready
+│  -> 04_train_freeze
+│  -> 05_test_evidence
+│  -> 06_backtest_ready
+│  -> 07_holdout_validation
 └─ cross_sectional_factor
-   -> 01_csf_data_ready
-   -> 02_csf_signal_ready
-   -> 03_csf_train_freeze
-   -> 04_csf_test_evidence
-   -> 05_csf_backtest_ready
-   -> 06_csf_holdout_validation
+   -> 02_csf_data_ready
+   -> 03_csf_signal_ready
+   -> 04_csf_train_freeze
+   -> 05_csf_test_evidence
+   -> 06_csf_backtest_ready
+   -> 07_csf_holdout_validation
 ```
 
 QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage discipline。研究真正落地时，agent 必须在当前 research repo 中生成和维护正式产物。
+
+当前 single-entry `qros-research-session` 的实际编排边界是：
+
+- 一直推进到 `holdout_validation review`
+- 不继续进入 `promotion_decision / shadow / canary` 这些后续治理阶段
 
 ## 这项目是怎么设计的
 
@@ -41,13 +61,13 @@ QROS 是按三层设计的，理解这一点最重要。
 1. **框架源仓**
    也就是你现在看到的这个 repo。这里放 workflow、skills、runtime、schema、SOP、测试。
 2. **安装后的技能与运行时**
-   安装后，Codex 从 `~/.codex/skills/qros-*` 发现技能，从 `~/.qros/` 使用稳定 wrapper 和 runtime 资产。
+   安装后，Codex 从 `~/.codex/skills/qros-*` 发现技能；`~/.qros/` 保留稳定 wrapper 和 runtime 资产，主要用于调试、恢复和 deterministic 验证。
 3. **真实研究仓**
    某条研究线真正的 formal artifacts、lineage-local stage program、review closure，都应写到当前 research repo 的 `outputs/<lineage_id>/` 下。
 
 这三个层是故意分开的。框架仓负责制度，研究仓负责事实。
 
-### 2. 四个核心设计层
+### 2. 五个核心设计层
 
 #### Skill 层
 
@@ -61,15 +81,27 @@ QROS 是按三层设计的，理解这一点最重要。
 
 #### Runtime 层
 
-`tools/` 和 `scripts/` 里放的是 deterministic runtime。
+当前仓库已经把运行时实现收拢到 `runtime/`：
+
+- `runtime/bin/`
+- `runtime/scripts/`
+- `runtime/tools/`
+- `runtime/hooks/`
+
+其中：
+
+- `runtime/bin/` 是稳定入口
+- `runtime/scripts/` 是命令行 wrapper
+- `runtime/tools/` 是 deterministic runtime 本体
+- `runtime/hooks/` 是运行期辅助
 
 关键入口包括：
 
-- `tools/research_session.py`
-- `tools/*_runtime.py`
-- `tools/lineage_program_runtime.py`
-- `scripts/run_research_session.py`
-- `scripts/run_verification_tier.py`
+- `runtime/tools/research_session.py`
+- `runtime/tools/*_runtime.py`
+- `runtime/tools/lineage_program_runtime.py`
+- `runtime/scripts/run_research_session.py`
+- `runtime/scripts/run_verification_tier.py`
 
 这一层负责：
 
@@ -84,8 +116,8 @@ QROS 是按三层设计的，理解这一点最重要。
 #### Contract 层
 
 `contracts/stages/workflow_stage_gates.yaml` 是 machine-readable gate truth。  
-`docs/main-flow-sop/research_workflow_sop.md` 和各阶段 `*_sop_cn.md` 是解释层。  
-`docs/experience/stage-freeze-group-field-guide.md` 是 grouped freeze 字段说明层。
+`docs/sop/main-flow/research_workflow_sop.md` 和各阶段 `*_sop_cn.md` 是解释层。  
+`docs/guides/stage-freeze-group-field-guide.md` 是 grouped freeze 字段说明层。
 
 冲突时以 `contracts/stages/workflow_stage_gates.yaml` 为准。
 
@@ -101,15 +133,39 @@ QROS 是按三层设计的，理解这一点最重要。
 例如：
 
 ```bash
-python scripts/run_verification_tier.py --tier smoke
-python scripts/run_verification_tier.py --tier full-smoke
+python runtime/scripts/run_verification_tier.py --tier smoke
+python runtime/scripts/run_verification_tier.py --tier full-smoke
 ```
 
-如果已经按安装文档落好稳定 wrapper，也可以用：
+如果需要 deterministic 调试或手工验证，也可以用：
 
 ```bash
 ~/.qros/bin/qros-verify --tier smoke
 ```
+
+#### Instruction / Harness 层
+
+`harness/` 不是业务示例目录，也不是给普通使用者上手主流程用的 demo。
+
+它的职责是服务根 `AGENTS.md`，用于：
+
+- 演示分层 `AGENTS.md` 地图应该如何组织
+- 验证从不同子目录启动 Codex 时，哪些 instruction files 会被实际读取
+- 给文档、skills、tools、tests 这几类目录提供 instruction 近场化写法样例
+
+所以 `harness/` 更接近一个 **instruction-system support subtree**，而不是一个“功能例子”。
+
+### 2.5 当前顶层
+
+- `contracts/`：代码直接读取的真值层
+- `skills/`：agent 行为层
+- `runtime/bin/ + runtime/scripts/ + runtime/tools/ + runtime/hooks/`：运行时实现层
+- `templates/`：生成模板层
+- `docs/`：解释层
+- `tests/`：验证层
+- `harness/`：服务根 `AGENTS.md` 的 instruction support 层
+
+目录分层现在已经和这套语义对齐，不再只是“语义上先分层”的过渡态。
 
 ### 3. 单入口，而不是全技能直用
 
@@ -132,7 +188,7 @@ qros-research-session help
 
 如果你第一次看到 `research_intent`、`scope_contract`、`window_contract`、`delivery_contract` 这类 group 名，先看：
 
-- `docs/experience/stage-freeze-group-field-guide.md`
+- `docs/guides/stage-freeze-group-field-guide.md`
 
 ### 4. 从 mandate 开始的硬门
 
@@ -171,14 +227,17 @@ QROS runtime 只负责：
 你不需要一次看完所有内容，但最好知道每个目录在干什么：
 
 - `skills/`：author / failure / orchestrator 技能源文件
-- `tools/`：阶段 runtime、lineage program gate、install runtime、verification
-- `scripts/`：稳定 CLI wrapper 和确定性入口
+- `runtime/bin/`：稳定用户入口
+- `runtime/scripts/`：命令行 wrapper
+- `runtime/tools/`：runtime 本体、gate 校验、program/provenance 处理
+- `runtime/hooks/`：运行期辅助
 - `contracts/`：machine-readable contract truth，供 runtime、review engine 和 skill 生成直接读取
-- `docs/main-flow-sop/`：阶段解释和操作规范
-- `docs/experience/`：安装、上手、字段说明、使用路径
-- `docs/show/`：面向教学和展示的图稿
+- `docs/sop/main-flow/`：阶段解释和操作规范
+- `docs/guides/`：安装、上手、字段说明、使用路径
+- `docs/visuals/`：面向教学和展示的图稿
 - `templates/`：技能或 review 生成模板
 - `tests/`：bootstrap、安装、技能、runtime、anti-drift、stage flow 回归测试
+- `harness/`：服务根 `AGENTS.md` 的 instruction / orchestration 支撑子树，用于分层 AGENTS 演示与验证
 
 ## 谁需要懂到什么程度
 
@@ -191,28 +250,11 @@ QROS runtime 只负责：
 - 知道 agent 会在 grouped freeze 上停下来问
 - 知道正式产物要写进当前 research repo
 
-### 组内带教 / 熟练使用者
-
-建议再理解：
-
-- 每个 major stage 的 freeze groups 在问什么
-- review 阶段为什么会卡住
-- failure handling 什么时候介入
-
 ### 维护者 / 扩展技能的人
 
-这时才需要系统理解 `skills/`、`tools/`、`contracts/`、`tests/` 之间的关系。
+这时才需要系统理解 `skills/`、`runtime/tools/`、`contracts/`、`tests/` 之间的关系。
 
 ## 快速开始
-
-### Claude Code
-
-```text
-/plugin marketplace add web3qt/quant-research-os
-/plugin install quant-research-os@qros
-```
-
-安装后在新会话中提及量化研究想法，QROS 会自动激活。
 
 ### Codex
 
@@ -232,26 +274,12 @@ cd ~/workspace/quant-research-os
 
 ## 用户如何真正开始使用
 
-安装完成后，按这 4 步走即可：
+安装完成后，实际入口很简单：
 
-1. 运行：
-
-```bash
-./setup --host codex --mode user-global
-```
-
+1. 运行 `./setup --host codex --mode user-global`
 2. 重启 Codex
-3. 在新会话里直接输入：
-
-```text
-qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
-```
-
-4. 如果想先看说明：
-
-```text
-qros-research-session help
-```
+3. 在新会话里直接输入 `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+4. 如果想先看说明，就输入 `qros-research-session help`
 
 如果你想直接验证安装是否正常，也可以运行：
 
@@ -261,14 +289,14 @@ qros-research-session help
 
 ## 日常使用
 
-正常使用时，直接在研究仓里通过 skill 名称进入：
+正常使用时，直接在 Codex 里通过 skill 名称进入：
 
 ```text
 qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
-qros-mandate-review
+qros-research-session help
 ```
 
-如果要做手动诊断或恢复，可以直接调用稳定 wrapper：
+如果要做手动诊断、恢复或直接验证 runtime 行为，再调用稳定 wrapper：
 
 ```bash
 ~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
@@ -277,9 +305,9 @@ qros-mandate-review
 
 如果你想看更细的实际运行行为、状态字段、stage gate 语义和恢复方式，可以继续读：
 
-- `docs/experience/qros-research-session-usage.md`
-- `docs/experience/qros-verification-tiers.md`
-- `docs/main-flow-sop/research_workflow_sop.md`
+- `docs/guides/qros-research-session-usage.md`
+- `docs/guides/qros-verification-tiers.md`
+- `docs/sop/main-flow/research_workflow_sop.md`
 
 ## 当前关键制度变化
 
@@ -293,11 +321,7 @@ qros-mandate-review
 
 ## 运行时布局
 
-**插件安装（Claude Code）:**
-
-插件系统自动管理 skill 发现和 hook 注入。
-
-**手动安装（Codex / 通用）:**
+**Codex 安装：**
 
 ```text
 ~/.codex/skills/qros-*
@@ -308,13 +332,7 @@ Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qro
 
 ## 安装后更新
 
-**Claude Code:**
-
-```text
-/plugin update quant-research-os
-```
-
-**手动安装:**
+**Codex：**
 
 ```bash
 git pull && ./setup --host codex --mode user-global
@@ -325,16 +343,15 @@ git pull && ./setup --host codex --mode user-global
 ## 延伸阅读
 
 - [文档导航](docs/README.md)
-- [Claude Code 安装说明](.claude/INSTALL.md)
-- [Codex 安装说明](docs/experience/installation.md)
+- [QROS 工作原理：两层运行时架构](docs/guides/how-qros-works.md) — 宿主 AI Runtime 与 QROS Python Runtime 如何协作
+- [Codex 安装说明](docs/guides/installation.md)
 - [QROS for Codex](docs/README.codex.md)
-- [Codex 快速开始](docs/experience/quickstart-codex.md)
-- [QROS 统一研究会话说明](docs/experience/qros-research-session-usage.md)
-- [阶段冻结字段说明](docs/experience/stage-freeze-group-field-guide.md)
+- [Codex 快速开始](docs/guides/quickstart-codex.md)
+- [QROS 统一研究会话说明](docs/guides/qros-research-session-usage.md)
+- [阶段冻结字段说明](docs/guides/stage-freeze-group-field-guide.md)
 
 ## 常见问题
 
-- Claude Code 看不到技能：确认已执行 `/plugin install web3qt/quant-research-os`，重启会话
 - Codex 看不到技能：确认 `~/.codex/skills/` 里存在 `qros-*`
-- 感觉安装内容过旧：Claude Code 执行 `/plugin update quant-research-os`；手动安装执行 `git pull && ./setup --host codex --mode user-global`，然后重启 Codex
+- 感觉安装内容过旧：执行 `git pull && ./setup --host codex --mode user-global`，然后重启 Codex
 - 不确定安装是否正常：新开会话，输入 “帮我研究一个量化策略” 测试自动触发

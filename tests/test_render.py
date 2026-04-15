@@ -1,5 +1,5 @@
-from tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
-from tools.review_skillgen.render import render_stage_skill
+from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_skillgen.render import render_stage_skill
 
 
 def test_render_stage_skill_includes_stage_specific_contract() -> None:

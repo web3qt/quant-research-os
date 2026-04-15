@@ -30,7 +30,7 @@
   ],
   "lineage_transition": "Enter failure handling for test_evidence via qros-stage-failure-handler",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_failure.py::test_evidence_retry"
+    "runtime/tools/anti_drift_scenarios_failure.py::test_evidence_retry"
   ],
   "failure_class": null,
   "severity": null

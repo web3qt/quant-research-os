@@ -1,8 +1,8 @@
 
 1:  确认研究问题分类
 
-- time_series_signal：单个资产自己未来会怎么走
-- cross_sectional_factor：同一时点资产之间谁更强谁更弱
+- time_series_signal：单个资产自己未来会怎么走 （初步完成）
+- cross_sectional_factor：同一时点资产之间谁更强谁更弱 （完成）
 - event_trigger：某个事件发生后会怎样
 - relative_value：两个或一组对象之间的相对错位会怎样修复
 

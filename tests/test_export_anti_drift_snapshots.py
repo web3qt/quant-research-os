@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import run
 import sys
 
-from scripts.export_anti_drift_snapshots import main
+from runtime.scripts.export_anti_drift_snapshots import main
 
 
 def test_export_anti_drift_snapshots_writes_expected_files(tmp_path, monkeypatch) -> None:
@@ -24,7 +24,7 @@ def test_export_anti_drift_snapshots_writes_expected_files(tmp_path, monkeypatch
 
 def test_export_anti_drift_snapshots_cli_runs_from_repo_root(tmp_path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    script_path = repo_root / "scripts" / "export_anti_drift_snapshots.py"
+    script_path = repo_root / "runtime" / "scripts" / "export_anti_drift_snapshots.py"
     output_dir = tmp_path / "cli-snapshots"
 
     result = run(

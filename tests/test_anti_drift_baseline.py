@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.anti_drift_baseline import compare_json_roots, promote_json_roots
+from runtime.scripts.anti_drift_baseline import compare_json_roots, promote_json_roots
 
 
 def _write_json(path: Path, payload: dict) -> None:

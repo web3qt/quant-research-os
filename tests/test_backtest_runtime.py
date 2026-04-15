@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.backtest_runtime import build_backtest_ready_from_test_evidence, scaffold_backtest_ready
+from runtime.tools.backtest_runtime import build_backtest_ready_from_test_evidence, scaffold_backtest_ready
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from tools.anti_drift import canonical_snapshot_from_session_context, session_stage_to_gate_stage
-from tools.research_session import session_stage_base_name, summarize_session_status
+from runtime.tools.anti_drift import canonical_snapshot_from_session_context, session_stage_to_gate_stage
+from runtime.tools.research_session import session_stage_base_name, summarize_session_status
 
 
 def test_session_stage_base_name_supports_new_substep_suffixes() -> None:

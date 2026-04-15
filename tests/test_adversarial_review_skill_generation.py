@@ -25,7 +25,7 @@ def test_generator_writes_mainline_and_csf_review_skills(tmp_path: Path) -> None
     output_root = tmp_path / "generated"
 
     result = run(
-        [sys.executable, "scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
+        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
         cwd=repo_root,
         check=False,
         capture_output=True,
@@ -58,7 +58,7 @@ def test_generated_review_skill_template_contains_adversarial_contract_language(
     output_root = tmp_path / "generated"
 
     result = run(
-        [sys.executable, "scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
+        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
         cwd=repo_root,
         check=False,
         capture_output=True,

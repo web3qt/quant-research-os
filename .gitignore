@@ -10,3 +10,4 @@ governance/*
 .omx/
 .claude/
 .claude-plugin/
+.pytest_cache/

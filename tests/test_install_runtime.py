@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.install_runtime import InstallError, check_install, install_qros, list_skill_dirs, resolve_install_mode
+from runtime.tools.install_runtime import InstallError, check_install, install_qros, list_skill_dirs, resolve_install_mode
 
 
 def test_resolve_install_mode_prefers_repo_local_when_skill_tree_exists(tmp_path: Path) -> None:
@@ -126,7 +126,17 @@ def test_list_skill_dirs_rejects_duplicate_flattened_skill_names(tmp_path: Path)
 def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo_root = tmp_path / "repo"
     shutil.copytree(Path.cwd() / "skills", repo_root / "skills")
-    for name in ("bin", "scripts", "tools", "templates", "docs/experience", "contracts"):
+    for name in (
+        "runtime/bin",
+        "runtime/scripts",
+        "runtime/tools",
+        "runtime/hooks",
+        "templates",
+        "docs/guides",
+        "docs/governance",
+        "docs/README.codex.md",
+        "contracts",
+    ):
         source = Path.cwd() / name
         destination = repo_root / name
         if source.is_dir():

@@ -4,7 +4,7 @@ import yaml
 
 from tests.lineage_program_support import ensure_stage_program
 from tests.test_idea_runtime_scripts import _mandate_freeze_draft, _route_assessment
-from tools.lineage_program_runtime import (
+from runtime.tools.lineage_program_runtime import (
     StageProgramSpec,
     inspect_stage_program,
     invoke_stage_if_admitted,

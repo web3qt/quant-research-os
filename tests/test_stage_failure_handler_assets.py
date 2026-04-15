@@ -42,8 +42,8 @@ def test_qros_research_session_requires_automatic_failure_routing() -> None:
 
 
 def test_failure_mode_is_documented_in_usage_docs() -> None:
-    usage_doc = Path("docs/experience/qros-research-session-usage.md").read_text(encoding="utf-8")
-    quickstart_doc = Path("docs/experience/quickstart-codex.md").read_text(encoding="utf-8")
+    usage_doc = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    quickstart_doc = Path("docs/guides/quickstart-codex.md").read_text(encoding="utf-8")
 
     for content in (usage_doc, quickstart_doc):
         assert "qros-stage-failure-handler" in content

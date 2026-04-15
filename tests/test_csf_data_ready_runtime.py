@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.csf_data_ready_runtime import (
+from runtime.tools.csf_data_ready_runtime import (
     build_csf_data_ready_from_mandate,
     scaffold_csf_data_ready,
 )

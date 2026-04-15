@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.test_evidence_runtime import build_test_evidence_from_train_freeze, scaffold_test_evidence
+from runtime.tools.test_evidence_runtime import build_test_evidence_from_train_freeze, scaffold_test_evidence
 
 
 def _write_yaml(path: Path, payload: dict) -> None:

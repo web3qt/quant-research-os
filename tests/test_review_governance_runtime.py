@@ -2,9 +2,9 @@ from pathlib import Path
 
 import yaml
 
-from tools.review_governance_runtime import governance_root_for_lineage, record_review_governance, update_governance_candidates
-from tools.review_skillgen.adversarial_review_contract import FIX_REQUIRED_OUTCOME
-from tools.review_skillgen.governance_signal import load_review_governance_policy
+from runtime.tools.review_governance_runtime import governance_root_for_lineage, record_review_governance, update_governance_candidates
+from runtime.tools.review_skillgen.adversarial_review_contract import FIX_REQUIRED_OUTCOME
+from runtime.tools.review_skillgen.governance_signal import load_review_governance_policy
 
 
 def _request_payload(*, lineage_id: str, cycle_id: str, started_at: str) -> dict:

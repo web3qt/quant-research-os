@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from tools.anti_drift import canonical_snapshot_from_session_context, semantic_projection
-from tools.anti_drift_scenarios import (
+from runtime.tools.anti_drift import canonical_snapshot_from_session_context, semantic_projection
+from runtime.tools.anti_drift_scenarios import (
     prepare_mainline_mandate_review_complete,
     prepare_mainline_signal_ready_review_complete,
     write_minimal_stage_outputs,
     write_stage_completion_certificate,
 )
-from tools.research_session import run_research_session
+from runtime.tools.research_session import run_research_session
 
 
 def test_idea_intake_confirmation_semantics_are_stable_across_equivalent_raw_ideas(tmp_path: Path) -> None:

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.csf_signal_ready_runtime import (
+from runtime.tools.csf_signal_ready_runtime import (
     build_csf_signal_ready_from_data_ready,
     scaffold_csf_signal_ready,
 )

@@ -26,7 +26,7 @@
   ],
   "lineage_transition": "Enter failure handling for train_freeze via qros-stage-failure-handler",
   "evidence_refs": [
-    "tools/anti_drift_scenarios_failure.py::train_freeze_pass_for_retry"
+    "runtime/tools/anti_drift_scenarios_failure.py::train_freeze_pass_for_retry"
   ],
   "failure_class": null,
   "severity": null

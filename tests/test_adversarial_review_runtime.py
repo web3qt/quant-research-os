@@ -5,8 +5,8 @@ import yaml
 
 from tests.lineage_program_support import STAGE_PROGRAM_SPECS, ensure_stage_program, write_fake_stage_provenance
 from tests.test_research_session_runtime import _write_minimal_stage_outputs
-from tools.research_session import run_research_session
-from tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.research_session import run_research_session
+from runtime.tools.review_skillgen.review_engine import run_stage_review
 
 
 MANDATE_REQUIRED_OUTPUTS = [

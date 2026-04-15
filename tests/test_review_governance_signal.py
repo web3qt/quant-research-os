@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.review_skillgen.governance_signal import (
+from runtime.tools.review_skillgen.governance_signal import (
     build_governance_signal_bundle,
     load_review_governance_policy,
 )
