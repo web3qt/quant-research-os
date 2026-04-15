@@ -40,6 +40,18 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     assert (project_root / ".qros" / "bin" / "qros-session").exists()
     assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
+    session_result = run(
+        [str(project_root / ".qros" / "bin" / "qros-session"), "--raw-idea", "BTC leads high-liquidity alts"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=project_root,
+        env=env,
+    )
+
+    assert session_result.returncode == 0, session_result.stderr
+    assert (project_root / "outputs").exists()
+
 
 def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
     fixture_root = _copy_repo_fixture(tmp_path)
