@@ -39,6 +39,10 @@ RUNTIME_ASSETS = (
     RuntimeAsset(Path("contracts"), Path("contracts")),
 )
 
+REPO_LOCAL_RUNTIME_ASSETS = (
+    RuntimeAsset(Path("runtime/bin"), Path("bin")),
+)
+
 
 class InstallError(RuntimeError):
     pass
@@ -118,7 +122,7 @@ def list_skill_dirs(repo_root: Path) -> list[Path]:
 
 def list_runtime_assets(repo_root: Path) -> list[RuntimeAsset]:
     assets: list[RuntimeAsset] = []
-    for asset in RUNTIME_ASSETS:
+    for asset in REPO_LOCAL_RUNTIME_ASSETS:
         source = repo_root / asset.source_rel
         if not source.exists():
             raise InstallError(f"missing runtime asset: {source}")
@@ -162,6 +166,8 @@ def install_qros(
     runtime_assets = list_runtime_assets(repo_root) if target.mode == "repo-local" else []
 
     target.skills_root.mkdir(parents=True, exist_ok=True)
+    if target.mode == "repo-local" and target.runtime_root.exists():
+        shutil.rmtree(target.runtime_root)
     target.runtime_root.mkdir(parents=True, exist_ok=True)
 
     skills_written: list[str] = []

@@ -344,7 +344,7 @@ qros-research-session help
 <research-repo>/.qros/
 ```
 
-Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qros-*` skills 直接写进去，并记录安装来源；`repo-local` 会把运行时写进当前项目的 `./.qros/`。
+Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qros-*` skills 直接写进去，并记录安装来源；`repo-local` 只会把当前项目需要的 `./.qros/bin/*` 和本地 install manifest 写进 research repo。
 
 ## 安装后更新
 

@@ -33,6 +33,10 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert (install_root / ".qros").exists()
     assert (home_root / ".codex" / "skills").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
+    assert not (install_root / ".qros" / "tools").exists()
+    assert not (install_root / ".qros" / "scripts").exists()
+    assert not (install_root / ".qros" / "docs").exists()
+    assert not (install_root / ".qros" / "contracts").exists()
     manifest_path = install_root / ".qros" / "install-manifest.json"
     assert manifest_path.exists()
 
@@ -48,6 +52,11 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert "qros-backtest-ready-author" in manifest["installed_skills"]
     assert "qros-holdout-validation-author" in manifest["installed_skills"]
     assert "source_git_commit" in manifest
+    assert manifest["installed_runtime_files"] == [
+        "bin/qros-review",
+        "bin/qros-session",
+        "bin/qros-verify",
+    ]
 
 
 def test_user_global_install_writes_skills_and_install_manifest_under_home(
@@ -159,4 +168,27 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
     assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
     assert (home_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
     assert not (home_root / ".codex" / "skills" / "mandate").exists()
+    assert (install_root / ".qros" / "bin" / "qros-session").exists()
+    assert not (install_root / ".qros" / "tools").exists()
+
+
+def test_repo_local_reinstall_prunes_stale_runtime_mirror_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    install_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    stale_tools = install_root / ".qros" / "tools"
+    stale_docs = install_root / ".qros" / "docs"
+    stale_tools.mkdir(parents=True)
+    stale_docs.mkdir(parents=True)
+    (stale_tools / "old.py").write_text("print('stale')\n", encoding="utf-8")
+    (stale_docs / "old.md").write_text("stale\n", encoding="utf-8")
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    assert not stale_tools.exists()
+    assert not stale_docs.exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()

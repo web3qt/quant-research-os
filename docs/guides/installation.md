@@ -41,6 +41,13 @@ What it writes:
 - `~/.codex/qros/install-manifest.json`
 - `<research-repo>/.qros/`
 
+当前 `<research-repo>/.qros/` 默认只保留：
+
+- `bin/`
+- `install-manifest.json`
+
+它是项目本地 wrapper 层，不再复制整套 runtime 源码镜像。
+
 ## Update
 
 Update overwrites the cloned repo in place.
