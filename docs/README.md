@@ -45,7 +45,7 @@
 - `templates/`：生成模板层
 - `docs/`：解释层
 - `tests/`：验证层
-- `harness/`：服务根 `AGENTS.md` 的 instruction support 子树
+- `harness/`：分层 `AGENTS.md` 组织方式的示例子树，不是主仓真实治理面
 
 也就是说，`docs/` 不是整个项目的总入口树，只是其中的人类解释层。
 
@@ -75,6 +75,13 @@
 - 演示分层 `AGENTS.md` 地图
 - 验证不同启动目录下的 instruction 读取边界
 - 给 Codex 的 instruction / orchestration 机制提供支撑性样例
+
+主仓真实目录级规则入口在：
+
+- `../skills/AGENTS.md`
+- `../runtime/AGENTS.md`
+- `AGENTS.md`
+- `../tests/AGENTS.md`
 
 所以：
 

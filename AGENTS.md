@@ -52,7 +52,7 @@
 - `docs/`：SOP、使用说明、review 文档、操作文档
 - `tests/`：workflow 行为和文档回归测试
 - `bin/`：稳定的用户入口，例如 `qros-session` 与 `qros-review`
-- `harness/`：用于演示和测试分层 `AGENTS.md` 组织方式的子树
+- `harness/`：用于演示和测试分层 `AGENTS.md` 组织方式的示例子树
 
 ## Harness 说明
 
@@ -70,6 +70,13 @@
 - `harness/tools/AGENTS.md`：runtime / helper 子目录规则示例
 - `harness/tests/AGENTS.md`：测试子目录规则示例
 
+当前真实生效的目录级规则入口是：
+
+- `skills/AGENTS.md`：真实 skill / workflow 规则
+- `runtime/AGENTS.md`：真实 runtime / helper / scaffold 规则
+- `docs/AGENTS.md`：真实文档目录规则
+- `tests/AGENTS.md`：真实测试目录规则
+
 ### 重要工作方式说明
 
 如果你是在仓库根目录启动 Codex，例如：
@@ -84,7 +91,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 根目录启动时，默认会读到本文件
 - 根目录启动时，不会自动把 `harness/AGENTS.md` 和 `harness/*/AGENTS.md` 当作已加载指令
 
-因此，在“总是从仓库根启动”的使用方式下，harness 子树的存在必须由本文件显式导航出来，而不能假设 Codex 会主动去读子目录的 `AGENTS.md`。
+因此，在“总是从仓库根启动”的使用方式下，`harness/` 子树只应被理解为 instruction 分层示例，而不是主仓真实治理面。真实编辑规则应放在目标文件路径祖先链上的 `AGENTS.md` 中，例如根目录、`skills/`、`runtime/`、`docs/`、`tests/`。
 
 ### 什么时候进入 harness 子树
 
@@ -95,7 +102,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 试验 skill / tools / tests 目录的专属指令写法
 - 验证“从某个子目录启动时，Codex 会实际读取哪些 instruction files”
 
-如果任务和 QROS 主仓的真实技能、runtime、docs、tests 无关，而是专门讨论 instruction map / harness 设计，优先把它视为 `harness/` 子树任务。
+如果任务和 QROS 主仓的真实 skills、runtime、docs、tests 无关，而是专门讨论 instruction map / harness 设计，优先把它视为 `harness/` 子树任务。
 
 ## 命令
 
@@ -105,9 +112,9 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 文档 / bootstrap 最小检查：
   `python -m pytest tests/test_project_bootstrap.py tests/test_install_docs.py`
 - smoke：
-  `python scripts/run_verification_tier.py --tier smoke`
+  `python runtime/scripts/run_verification_tier.py --tier smoke`
 - full-smoke：
-  `python scripts/run_verification_tier.py --tier full-smoke`
+  `python runtime/scripts/run_verification_tier.py --tier full-smoke`
 
 如果修改的是某个具体 stage runtime，先跑最小相关测试，再按需要扩大验证范围。
 
@@ -116,15 +123,15 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 每个新需求默认都必须先定义并实际执行验证，不允许只写“已测试”而不给命令。
 - 最低要求是：**focused tests + smoke**。
 - 只要改动触及下列任一项，**full-smoke 也必须跑**：
-  - `qros-research-session` stage flow / gate semantics
-  - review / display / next-stage orchestration
-  - route split / CSF routing
-  - anti-drift snapshots 或 canonical session stage naming
-  - stage-display supported stage contract
-  - lineage-local stage-program auto-author seams
+- `qros-research-session` stage flow / gate semantics
+- review / display / next-stage orchestration
+- route split / CSF routing
+- anti-drift snapshots 或 canonical session stage naming
+- stage-display supported stage contract
+- lineage-local stage-program auto-author seams
 - `smoke` / `full-smoke` 的当前定义与命令以
-  `docs/experience/qros-verification-tiers.md` 和
-  `scripts/run_verification_tier.py` 为准。
+  `docs/guides/qros-verification-tiers.md` 和
+  `runtime/scripts/run_verification_tier.py` 为准。
 - 如果任务是纯文档 / 纯图示且明确不改变 runtime / workflow contract，至少运行文档 / bootstrap 最小检查，并在最终报告里明确说明为什么没有跑 smoke / full-smoke。
 
 ## 文档规则
