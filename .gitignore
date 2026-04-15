@@ -11,3 +11,5 @@ governance/*
 .claude/
 .claude-plugin/
 .pytest_cache/
+.qros/
+.codex/*

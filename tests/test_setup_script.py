@@ -19,18 +19,26 @@ def _copy_repo_fixture(tmp_path: Path) -> Path:
 
 def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     fixture_root = _copy_repo_fixture(tmp_path)
+    project_root = tmp_path / "research-project"
+    project_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
+
     result = run(
-        ["./setup", "--host", "codex", "--mode", "repo-local"],
+        [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],
         check=False,
         capture_output=True,
         text=True,
-        cwd=fixture_root,
+        cwd=project_root,
+        env=env,
     )
 
     assert result.returncode == 0
-    assert (fixture_root / ".qros" / "install-manifest.json").exists()
-    assert (fixture_root / ".qros" / "bin" / "qros-session").exists()
-    assert (fixture_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (project_root / ".qros" / "install-manifest.json").exists()
+    assert (project_root / ".qros" / "bin" / "qros-session").exists()
+    assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
 
 def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
@@ -50,19 +58,26 @@ def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
     )
 
     assert result.returncode == 0
-    assert (home_root / ".qros" / "install-manifest.json").exists()
-    assert (home_root / ".qros" / "bin" / "qros-session").exists()
+    assert (home_root / ".codex" / "qros" / "install-manifest.json").exists()
     assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert not (home_root / ".qros").exists()
 
 
 def test_setup_check_reports_incomplete_install(tmp_path: Path) -> None:
     fixture_root = _copy_repo_fixture(tmp_path)
+    project_root = tmp_path / "research-project"
+    project_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
     result = run(
-        ["./setup", "--host", "codex", "--mode", "repo-local", "--check"],
+        [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local", "--check"],
         check=False,
         capture_output=True,
         text=True,
-        cwd=fixture_root,
+        cwd=project_root,
+        env=env,
     )
 
     assert result.returncode != 0

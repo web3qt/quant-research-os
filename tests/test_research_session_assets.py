@@ -57,7 +57,7 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "是否按以上内容冻结 holdout_validation" in content
     assert "解释性内容" in content
     assert "适合则优先用中文表达" in content
-    assert "~/.qros/bin/qros-session" in content
+    assert "./.qros/bin/qros-session" in content
 
 
 def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
@@ -65,7 +65,7 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     content = usage_path.read_text(encoding="utf-8")
 
     assert usage_path.exists()
-    assert "~/.qros/bin/qros-session" in content
+    assert "./.qros/bin/qros-session" in content
     assert "qros-research-session" in content
     assert "data_ready" in content
     assert "mandate_confirmation_pending" in content

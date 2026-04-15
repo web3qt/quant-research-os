@@ -196,7 +196,7 @@
   qros-data-ready-review/
   qros-signal-ready-review/
 
-~/.qros/
+./.qros/
   bin/
   scripts/
   tools/
@@ -238,8 +238,8 @@
 
 - 安装到用户目录
 - 复制 skills 到 `~/.codex/skills/`
-- 复制 runtime/docs/templates 到 `~/.qros/`
-- 写 `~/.qros/install-manifest.json`
+- 复制 runtime/docs/templates 到 `./.qros/`
+- 写 `./.qros/install-manifest.json`
 
 ### `--mode auto`
 

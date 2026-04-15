@@ -17,7 +17,7 @@ def test_resolve_install_mode_prefers_repo_local_when_skill_tree_exists(tmp_path
     assert resolve_install_mode("auto", project_root) == "repo-local"
 
 
-def test_repo_local_install_writes_skills_runtime_and_manifest(
+def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     repo_root = Path.cwd()
@@ -31,7 +31,7 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
 
     assert result.mode == "repo-local"
     assert (install_root / ".qros").exists()
-    assert (install_root / ".codex" / "skills").exists()
+    assert (home_root / ".codex" / "skills").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
     manifest_path = install_root / ".qros" / "install-manifest.json"
     assert manifest_path.exists()
@@ -39,9 +39,9 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
-    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
-    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
-    assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-stage-display" / "agents" / "openai.yaml").exists()
+    assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
     assert "qros-mandate-review" in manifest["installed_skills"]
     assert "qros-train-freeze-author" in manifest["installed_skills"]
     assert "qros-test-evidence-author" in manifest["installed_skills"]
@@ -50,7 +50,7 @@ def test_repo_local_install_writes_skills_runtime_and_manifest(
     assert "source_git_commit" in manifest
 
 
-def test_user_global_install_writes_skills_and_runtime_under_home(
+def test_user_global_install_writes_skills_and_install_manifest_under_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     repo_root = Path.cwd()
@@ -64,11 +64,11 @@ def test_user_global_install_writes_skills_and_runtime_under_home(
 
     assert result.mode == "user-global"
     assert (home_root / ".codex" / "skills").exists()
-    assert (home_root / ".qros" / "bin" / "qros-session").exists()
     assert (home_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
     assert (home_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
-    assert (home_root / ".qros").exists()
-    assert (home_root / ".qros" / "install-manifest.json").exists()
+    assert (home_root / ".codex" / "qros").exists()
+    assert (home_root / ".codex" / "qros" / "install-manifest.json").exists()
+    assert not (home_root / ".qros").exists()
 
 
 def test_check_install_reports_missing_assets_without_writing(
@@ -155,7 +155,8 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
 
     assert "qros-research-session" in result.skills_written
     assert result.skills_written.count("qros-stage-display") == 1
-    assert (install_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
-    assert (install_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
-    assert (install_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
-    assert not (install_root / ".codex" / "skills" / "mandate").exists()
+    assert (home_root / ".codex" / "skills" / "qros-research-session" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
+    assert (home_root / ".codex" / "skills" / "qros-stage-display" / "SKILL.md").exists()
+    assert not (home_root / ".codex" / "skills" / "mandate").exists()
+    assert (install_root / ".qros" / "bin" / "qros-session").exists()

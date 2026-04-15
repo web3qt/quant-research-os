@@ -26,13 +26,20 @@ cd ~/workspace/quant-research-os
 
 This keeps the repo clone as the authored source while writing flat installed skills directly into Codex's native discovery path.
 
+Then, from each research repo root, bootstrap a local runtime:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
 ## Install Layout
 
 What it writes:
 
 - cloned repo source bundles under `~/workspace/quant-research-os/skills/`
 - `~/.codex/skills/qros-*/`
-- `~/.qros/`
+- `~/.codex/qros/install-manifest.json`
+- `<research-repo>/.qros/`
 
 ## Update
 
@@ -54,13 +61,15 @@ Check is simple:
 
 ```bash
 ls ~/.codex/skills | grep qros-
-test -d ~/.qros
+test -f ~/.codex/qros/install-manifest.json
+test -d ./.qros
 ```
 
 It verifies:
 
 - Codex can discover QROS skills through `~/.codex/skills/`
-- the runtime assets exist under `~/.qros/`
+- the install metadata exists under `~/.codex/qros/`
+- the runtime assets exist under `./.qros/`
 
 ## First Commands After Install
 
@@ -69,11 +78,11 @@ In Codex, start with:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-The recommended user path is skill-first. The repo clone is the authored source; `setup` is what makes Codex see the installed skills.
+The recommended user path is skill-first. The repo clone is the authored source; `user-global` makes Codex see the installed skills, and `repo-local` makes the current research repo get its own runtime.
 
-For normal use, you do not need to start from `~/.qros/bin/qros-session`.
+For normal use, you do not need to start from `./.qros/bin/qros-session`.
 
-Use `~/.qros/bin/qros-session`, `~/.qros/bin/qros-review`, and `~/.qros/bin/qros-verify` mainly for:
+Use `./.qros/bin/qros-session`, `./.qros/bin/qros-review`, and `./.qros/bin/qros-verify` mainly for:
 
 - deterministic debugging
 - manual recovery
@@ -82,6 +91,6 @@ Use `~/.qros/bin/qros-session`, `~/.qros/bin/qros-review`, and `~/.qros/bin/qros
 ## Troubleshooting
 
 - `Codex` cannot see the skills: verify `~/.codex/skills/` contains `qros-*`
-- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`，然后重启 Codex
+- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`，然后在当前 research repo 根再跑一次 `~/workspace/quant-research-os/setup --host codex --mode repo-local`，最后重启 Codex
 - Need workflow guidance: open `docs/guides/quickstart-codex.md`
 - Need the unified entry docs: open `docs/guides/qros-research-session-usage.md`

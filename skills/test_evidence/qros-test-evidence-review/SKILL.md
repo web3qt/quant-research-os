@@ -213,5 +213,5 @@ description: Codex review skill for Test Evidence stage verification.
 7. 再记录 audit-only findings
 8. 保存 `adversarial_review_result.yaml`；如有必要，再保存 `review_findings.yaml`
 9. 如果结果是 `FIX_REQUIRED`，退回 author lane，并在 closure 前停止
-10. 只有结果达到 closure-ready，才运行 `~/.qros/bin/qros-review`
+10. 只有结果达到 closure-ready，才运行 `./.qros/bin/qros-review`
 11. 复核最终生成的 closure artifacts

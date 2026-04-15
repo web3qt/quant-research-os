@@ -54,7 +54,7 @@ sequenceDiagram
 
     U->>A: "我想研究动量因子"
     A->>S: 读取行为规范
-    A->>R: ~/.qros/bin/qros-session --raw-idea "研究动量因子"
+    A->>R: ./.qros/bin/qros-session --raw-idea "研究动量因子"
 
     R->>D: 检查 outputs/ 目录
     R-->>A: 返回状态面板<br/>📍 idea_intake<br/>▶ 确认 observation 和 hypothesis

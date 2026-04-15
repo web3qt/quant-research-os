@@ -26,7 +26,7 @@ python runtime/scripts/run_verification_tier.py --tier smoke
 或安装后：
 
 ```bash
-~/.qros/bin/qros-verify --tier smoke
+./.qros/bin/qros-verify --tier smoke
 ```
 
 ### `full-smoke`
@@ -47,7 +47,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 或安装后：
 
 ```bash
-~/.qros/bin/qros-verify --tier full-smoke
+./.qros/bin/qros-verify --tier full-smoke
 ```
 
 ## 什么时候跑哪一层

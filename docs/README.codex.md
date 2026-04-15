@@ -26,13 +26,19 @@ git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-rese
 cd ~/workspace/quant-research-os
 ```
 
-2. Build the installed Codex skill tree and runtime:
+2. Build the installed Codex skill tree:
 
 ```bash
 ./setup --host codex --mode user-global
 ```
 
 3. Restart Codex.
+
+4. In each research repo root, bootstrap the local runtime:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
 
 ## How It Works
 
@@ -55,11 +61,11 @@ Skills are the normal entrypoint:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-mandate-review`
 
-If you need deterministic runtime debugging or manual recovery, use the repo-local wrappers:
+If you need deterministic runtime debugging or manual recovery, use the project-local wrappers:
 
 ```bash
-~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-~/.qros/bin/qros-review
+./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+./.qros/bin/qros-review
 ```
 
 ## Updating
@@ -78,10 +84,11 @@ If you installed an older QROS contract before the move to direct `~/.codex/skil
 rm -rf ~/.codex/skills/qros-*
 ```
 
-Optionally remove the runtime and clone:
+Optionally remove the install metadata, project-local runtime, and clone:
 
 ```bash
-rm -rf ~/.qros
+rm -rf ~/.codex/qros
+rm -rf ./.qros
 rm -rf ~/workspace/quant-research-os
 ```
 
@@ -95,10 +102,11 @@ rm -rf ~/workspace/quant-research-os
 ls ~/.codex/skills | grep qros-
 ```
 
-2. Check the runtime tree exists:
+2. Check the install metadata and runtime tree exist:
 
 ```bash
-ls ~/.qros/bin
+test -f ~/.codex/qros/install-manifest.json
+ls ./.qros/bin
 ```
 
 3. If you just updated the repo, rerun:
@@ -106,6 +114,12 @@ ls ~/.qros/bin
 ```bash
 cd ~/workspace/quant-research-os
 ./setup --host codex --mode user-global
+```
+
+Then rerun repo-local bootstrap from the active research repo root:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
 ```
 
 4. Restart Codex. Skills are discovered at startup.

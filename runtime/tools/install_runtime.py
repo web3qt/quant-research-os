@@ -18,6 +18,7 @@ InstallHost = Literal["codex"]
 SUPPORTED_HOSTS: set[str] = {"codex"}
 SUPPORTED_MODES: set[str] = {"repo-local", "user-global", "auto"}
 SKILLS_SOURCE_DIR = Path("skills")
+GLOBAL_METADATA_ROOT = Path(".codex") / "qros"
 
 
 @dataclass(frozen=True)
@@ -73,12 +74,12 @@ def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
         runtime_root = cwd / ".qros"
         return InstallTarget(
             mode=resolved_mode,
-            skills_root=cwd / ".codex" / "skills",
+            skills_root=home / ".codex" / "skills",
             runtime_root=runtime_root,
             manifest_path=runtime_root / "install-manifest.json",
         )
 
-    runtime_root = home / ".qros"
+    runtime_root = home / GLOBAL_METADATA_ROOT
     return InstallTarget(
         mode=resolved_mode,
         skills_root=home / ".codex" / "skills",
@@ -158,7 +159,7 @@ def install_qros(
     repo_root = repo_root.resolve()
     target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve())
     skill_dirs = list_skill_dirs(repo_root)
-    runtime_assets = list_runtime_assets(repo_root)
+    runtime_assets = list_runtime_assets(repo_root) if target.mode == "repo-local" else []
 
     target.skills_root.mkdir(parents=True, exist_ok=True)
     target.runtime_root.mkdir(parents=True, exist_ok=True)
@@ -209,8 +210,7 @@ def check_install(
     messages: list[str] = []
 
     expected_skill_dirs = list_skill_dirs(repo_root)
-    expected_skills = [path.name for path in expected_skill_dirs]
-    expected_assets = list_runtime_assets(repo_root)
+    expected_assets = list_runtime_assets(repo_root) if target.mode == "repo-local" else []
 
     for skill_dir in expected_skill_dirs:
         destination_root = target.skills_root / skill_dir.name
@@ -281,10 +281,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", default="auto", choices=sorted(SUPPORTED_MODES))
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--target-cwd", type=Path, default=None)
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[2]
-    cwd = Path.cwd()
+    cwd = (args.target_cwd or Path.cwd()).resolve()
     home = Path.home()
 
     try:

@@ -13,7 +13,7 @@
 - 用户通过一个 symlink 让 Codex 发现 QROS skills
 - 用户日常仍以 `qros-*` skill 名称作为第一入口
 - 研究产物写当前研究仓
-- 不再引入 `pipx install qros`、包级全局 CLI、`~/.qros` runtime 镜像这类重分发层
+- 不再引入 `pipx install qros`、包级全局 CLI、`./.qros` runtime 镜像这类重分发层
 
 这次改动的目标不是“把 QROS 产品化成通用 Python CLI 包”，而是“顺着 Codex 已有的原生 skill 发现机制，把安装和更新压到最轻”。
 
@@ -117,7 +117,7 @@ qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
 - `~/.codex/qros/` 是 QROS 工具仓本体
 - `~/.agents/skills/qros` 只是一个 symlink 入口
 - 不再复制 skills 到另一个安装目录
-- 不再复制 runtime 到 `~/.qros`
+- 不再复制 runtime 到 `./.qros`
 
 ## Skill Discovery Model
 
@@ -192,7 +192,7 @@ skill 调用：
 - `qros codex install`
 - `qros codex refresh`
 - `qros doctor`
-- `~/.qros/manifest.json` 作为主安装状态
+- `./.qros/manifest.json` 作为主安装状态
 - 包资源分发作为主路径
 
 如果确实保留，也只能作为开发辅助，而不是用户主路径。
@@ -239,7 +239,7 @@ skill 调用：
 - `pipx` / `uv tool` 安装
 - 全局 `qros` 命令作为主入口
 - package data 资源分发体系
-- `~/.qros` 完整 runtime 镜像
+- `./.qros` 完整 runtime 镜像
 
 ## Success Criteria
 

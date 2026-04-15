@@ -16,6 +16,12 @@ cd ~/workspace/quant-research-os
 ./setup --host codex --mode user-global
 ```
 
+Then, from the current research repo root:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
 ## 2. Start From The Unified Skill
 
 In Codex, start with:
@@ -23,7 +29,7 @@ In Codex, start with:
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 
-正常用户从这里开始，不需要先跑 `~/.qros/bin/qros-session`。
+正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 
 如果你第一次看到 `research_intent`、`window_contract`、`delivery_contract` 这类 group 名，先看：
 

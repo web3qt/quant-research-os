@@ -15,13 +15,19 @@ git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-rese
 cd ~/workspace/quant-research-os
 ```
 
-2. Build the installed Codex skill tree and runtime:
+2. Build the installed Codex skill tree:
 
 ```bash
 ./setup --host codex --mode user-global
 ```
 
 3. Restart Codex to discover the skills.
+
+4. For each research repo, bootstrap a project-local runtime from that repo's root:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
 
 ## Verify
 
@@ -32,16 +38,18 @@ ls ~/.codex/skills | grep qros-
 You should see installed skill directories such as `qros-research-session`.
 
 ```bash
-ls ~/.qros/bin
+test -f ~/.codex/qros/install-manifest.json
+test -d ./.qros/bin
 ```
 
-You should see runtime wrappers such as `qros-session`.
+You should see a global install manifest under `~/.codex/qros/` and project-local runtime wrappers under `./.qros/bin/`.
 
 ## How it works
 
 - repo source of truth: cloned repo `skills/`
 - installed flat Codex skill tree: `~/.codex/skills/`
-- installed runtime helpers: `~/.qros/`
+- global install metadata: `~/.codex/qros/install-manifest.json`
+- project-local runtime helpers: `<research-repo>/.qros/`
 
 ## Updating
 
@@ -51,14 +59,21 @@ git pull
 ./setup --host codex --mode user-global
 ```
 
-Rerunning `setup` refreshes the flat installed skill tree under `~/.codex/skills`.
+Then rerun project-local bootstrap inside each research repo that should pick up the updated runtime:
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
+Rerunning `setup` refreshes the flat installed skill tree under `~/.codex/skills` and the local runtime under `./.qros/`.
 
 ## Uninstalling
 
-Optionally delete the installed skills, runtime, and repo clone:
+Optionally delete the installed skills, install metadata, project-local runtime, and repo clone:
 
 ```bash
 rm -rf ~/.codex/skills/qros-*
-rm -rf ~/.qros
+rm -rf ~/.codex/qros
+rm -rf ./.qros
 rm -rf ~/workspace/quant-research-os
 ```

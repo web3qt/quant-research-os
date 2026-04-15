@@ -4,7 +4,7 @@
 
 **Goal:** Convert QROS from a repo-driven installer into a globally installed Codex tool where users keep the `qros-*` skill names, but every skill executes through a stable global `qros` CLI and writes research outputs into the current research project.
 
-**Architecture:** Add a real Python package-level CLI with `qros` console entrypoints for Codex install, diagnostics, session orchestration, and review execution. Replace repo-relative skill commands with rendered Codex skill files that call `qros ...` against the current project directory. Move install state to `~/.codex/skills/` plus `~/.qros/manifest.json` and keep workflow templates/docs as package resources instead of copied runtime trees.
+**Architecture:** Add a real Python package-level CLI with `qros` console entrypoints for Codex install, diagnostics, session orchestration, and review execution. Replace repo-relative skill commands with rendered Codex skill files that call `qros ...` against the current project directory. Move install state to `~/.codex/skills/` plus `./.qros/manifest.json` and keep workflow templates/docs as package resources instead of copied runtime trees.
 
 **Tech Stack:** Python 3.11, `pytest`, `importlib.resources`, existing QROS runtime modules under `tools/`, Codex skill files under `.agents/skills/`
 
@@ -178,7 +178,7 @@ qros session --cwd "$PWD" --raw-idea "<idea>"
 qros review --cwd "$PWD"
 ```
 
-Write `~/.qros/manifest.json` with:
+Write `./.qros/manifest.json` with:
 
 - package version
 - installed skills
@@ -387,7 +387,7 @@ Add a doctor command that reports:
 
 - package version
 - `~/.codex/skills` path
-- `~/.qros/manifest.json` path
+- `./.qros/manifest.json` path
 - whether required `qros-*` skills are installed
 - whether the current environment can resolve the `qros` executable
 
@@ -418,7 +418,7 @@ Expected:
 - Codex install succeeds
 - `doctor` reports installed skills
 - `/tmp/qros-smoke/outputs/` is created
-- `~/.qros/` contains state/manifest only, not research outputs
+- `./.qros/` contains state/manifest only, not research outputs
 
 **Step 5: Commit**
 

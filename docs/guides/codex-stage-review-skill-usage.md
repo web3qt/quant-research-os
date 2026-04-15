@@ -8,7 +8,7 @@
 - `qros-data-ready-review`
 - `qros-signal-ready-review`
 
-它们都是通过 `./setup --host codex --mode user-global` 直接写入 `~/.codex/skills/` 暴露给 Codex 的 skills。
+它们都是通过 `./setup --host codex --mode user-global` 直接写入 `~/.codex/skills/` 暴露给 Codex 的 skills；而真正执行 review engine 时，当前 research repo 还需要先有自己的 `./.qros/` 本地 runtime。
 
 ## What These Skills Do
 
@@ -67,13 +67,13 @@
 在当前 `outputs/<lineage>/<stage>/` 目录下执行：
 
 ```bash
-~/.qros/bin/qros-review
+./.qros/bin/qros-review
 ```
 
 如果不在 stage 目录中，也可以显式传参：
 
 ```bash
-~/.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
+./.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 
 ## Closure Artifacts
@@ -102,6 +102,12 @@ python runtime/scripts/gen_codex_stage_review_skills.py
 
 ```bash
 ./setup --host codex --mode user-global
+```
+
+如果要让当前 research repo 的本地 runtime 也同步到最新版本，再在该项目根执行：
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
 ```
 
 ## Freshness Validation

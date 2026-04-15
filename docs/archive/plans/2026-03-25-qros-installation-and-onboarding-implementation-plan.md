@@ -4,7 +4,7 @@
 
 **Goal:** Add a gstack-style installation and onboarding layer for Codex so users can run `./setup`, install QROS in `repo-local` or `user-global` mode, and follow a documented first workflow from `idea_intake` to `mandate review`.
 
-**Architecture:** Add a thin top-level `setup` wrapper and a shared Python installer core in `tools/install_runtime.py`. The installer copies a bounded asset set into `.agents/skills/` plus `.qros/` for repo-local installs, or into `~/.codex/skills/` plus `~/.qros/` for user-global installs. Documentation is anchored by a new `README.md` and two experience docs so the install path and first-run workflow are consistent with the actual runtime.
+**Architecture:** Add a thin top-level `setup` wrapper and a shared Python installer core in `tools/install_runtime.py`. The installer copies a bounded asset set into `.agents/skills/` plus `.qros/` for repo-local installs, or into `~/.codex/skills/` plus `./.qros/` for user-global installs. Documentation is anchored by a new `README.md` and two experience docs so the install path and first-run workflow are consistent with the actual runtime.
 
 **Tech Stack:** Python 3.11, `pytest`, Bash `setup`, existing QROS scripts and skills
 
@@ -88,7 +88,7 @@ Implement public functions:
 Rules:
 
 - Copy only `qros-*` skills
-- Copy runtime/docs/templates into `.qros/` or `~/.qros/`
+- Copy runtime/docs/templates into `.qros/` or `./.qros/`
 - Write `install-manifest.json`
 - Preserve unknown files
 - Raise clear errors for unsupported host, missing assets, or invalid mode

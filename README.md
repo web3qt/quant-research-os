@@ -25,6 +25,14 @@ qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
 qros-research-session help
 ```
 
+真正进入某个 research repo 开工前，还要在该项目根执行一次：
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
+这一步会把 `./.qros/` 写进当前项目，而不是写进 home 目录。
+
 ## 当前主流程阶段图
 
 ```text
@@ -61,7 +69,7 @@ QROS 是按三层设计的，理解这一点最重要。
 1. **框架源仓**
    也就是你现在看到的这个 repo。这里放 workflow、skills、runtime、schema、SOP、测试。
 2. **安装后的技能与运行时**
-   安装后，Codex 从 `~/.codex/skills/qros-*` 发现技能；`~/.qros/` 保留稳定 wrapper 和 runtime 资产，主要用于调试、恢复和 deterministic 验证。
+   安装后，Codex 从 `~/.codex/skills/qros-*` 发现技能；每个 research repo 再拥有自己的 `./.qros/` 本地 runtime。全局只保留 skills 和 install manifest，不再保留共享的 `~/.qros/` runtime 目录。
 3. **真实研究仓**
    某条研究线真正的 formal artifacts、lineage-local stage program、review closure，都应写到当前 research repo 的 `outputs/<lineage_id>/` 下。
 
@@ -140,7 +148,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 如果需要 deterministic 调试或手工验证，也可以用：
 
 ```bash
-~/.qros/bin/qros-verify --tier smoke
+./.qros/bin/qros-verify --tier smoke
 ```
 
 #### Instruction / Harness 层
@@ -272,19 +280,26 @@ cd ~/workspace/quant-research-os
 
 然后 **Restart Codex**。
 
+进入某个新的 research repo 后，再在该项目根执行：
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
 ## 用户如何真正开始使用
 
 安装完成后，实际入口很简单：
 
-1. 运行 `./setup --host codex --mode user-global`
+1. 在 QROS 框架仓执行 `./setup --host codex --mode user-global`
 2. 重启 Codex
-3. 在新会话里直接输入 `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
-4. 如果想先看说明，就输入 `qros-research-session help`
+3. 在当前 research repo 根执行 `~/workspace/quant-research-os/setup --host codex --mode repo-local`
+4. 在新会话里直接输入 `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
+5. 如果想先看说明，就输入 `qros-research-session help`
 
 如果你想直接验证安装是否正常，也可以运行：
 
 ```bash
-~/.qros/bin/qros-verify --tier smoke
+./.qros/bin/qros-verify --tier smoke
 ```
 
 ## 日常使用
@@ -299,8 +314,8 @@ qros-research-session help
 如果要做手动诊断、恢复或直接验证 runtime 行为，再调用稳定 wrapper：
 
 ```bash
-~/.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-~/.qros/bin/qros-review
+./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+./.qros/bin/qros-review
 ```
 
 如果你想看更细的实际运行行为、状态字段、stage gate 语义和恢复方式，可以继续读：
@@ -313,7 +328,7 @@ qros-research-session help
 
 - 所有 `*_review` 阶段都要求**独立的 adversarial reviewer**
 - reviewer 必须检查 stage artifact、provenance，以及 lineage-local `program/<stage>/` 源码
-- 只有 `CLOSURE_READY_*` 结果才能继续运行 `~/.qros/bin/qros-review` 写 closure artifacts
+- 只有 `CLOSURE_READY_*` 结果才能继续运行 `./.qros/bin/qros-review` 写 closure artifacts
 - `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`
 - review 闭环之上还有 **governance-candidate lane**：post-rollout review findings 会写成 `governance_signal.json`，再聚合到 `governance/review_findings_ledger.jsonl` 与 `governance/candidates/*.yaml`
 - 候选优先级固定为：`hard_gate -> template_constraint -> regression_test`
@@ -325,10 +340,11 @@ qros-research-session help
 
 ```text
 ~/.codex/skills/qros-*
-~/.qros/
+~/.codex/qros/install-manifest.json
+<research-repo>/.qros/
 ```
 
-Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qros-*` skills 直接写进去。
+Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qros-*` skills 直接写进去，并记录安装来源；`repo-local` 会把运行时写进当前项目的 `./.qros/`。
 
 ## 安装后更新
 
@@ -338,7 +354,13 @@ Codex 扫描 `~/.codex/skills/`。`./setup --mode user-global` 会把扁平 `qro
 git pull && ./setup --host codex --mode user-global
 ```
 
-如果你之前装的是旧版，例如还在用 `~/.agents/skills`，或还保留 display 相关旧 skill/runtime，也按上面这条重新执行一次，然后**重启 Codex**，让本地安装树刷新到当前合同。
+然后在需要继续使用的 research repo 根，再执行：
+
+```bash
+~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
+如果你之前装的是旧版，例如还在用 `~/.agents/skills`，也按上面两步重新执行一次，然后**重启 Codex**，让本地安装树刷新到当前合同。
 
 ## 延伸阅读
 
@@ -353,5 +375,5 @@ git pull && ./setup --host codex --mode user-global
 ## 常见问题
 
 - Codex 看不到技能：确认 `~/.codex/skills/` 里存在 `qros-*`
-- 感觉安装内容过旧：执行 `git pull && ./setup --host codex --mode user-global`，然后重启 Codex
+- 感觉安装内容过旧：执行 `git pull && ./setup --host codex --mode user-global`，再在当前 research repo 根执行 `~/workspace/quant-research-os/setup --host codex --mode repo-local`，然后重启 Codex
 - 不确定安装是否正常：新开会话，输入 “帮我研究一个量化策略” 测试自动触发
