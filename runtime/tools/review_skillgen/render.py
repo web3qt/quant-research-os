@@ -53,7 +53,9 @@ def _render_audit_only(stage_contract: dict[str, Any]) -> str:
 
 def _render_verdicts(gate_schema: dict[str, Any]) -> str:
     lines = []
-    for verdict, meta in gate_schema.get("status_vocabulary", {}).items():
+    status_vocabulary = gate_schema.get("status_vocabulary", {})
+    for verdict in gate_schema.get("review_closure_vocabulary", ()):
+        meta = status_vocabulary.get(verdict, {})
         meaning = meta.get("meaning", "")
         lines.append(f"- `{verdict}`: {meaning}")
     return "\n".join(lines)

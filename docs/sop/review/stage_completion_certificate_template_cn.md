@@ -28,7 +28,7 @@
 - `run_id`:
 - `decision_date_utc`:
 - `stage_status`:  
-  <!-- 允许值：PASS / CONDITIONAL PASS / PASS FOR RETRY / RETRY / NO-GO / GO / CHILD LINEAGE -->
+  <!-- 允许值：PASS / CONDITIONAL PASS / PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE -->
 - `review_scope`:  
   <!-- 例如：baseline only / full stage artifacts / selected params only -->
 - `reviewed_by_builder`:

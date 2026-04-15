@@ -74,7 +74,7 @@
         <mxCell id="24" value="07_csf_holdout_validation&#xa;最终方案稳定性、breadth、regime 审计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="3190" y="330" width="230" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="25" value="终点&#xa;组织结论: GO / NO-GO / RETRY / CHILD LINEAGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="25" value="终点&#xa;holdout_validation review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="3440" y="200" width="240" height="90" as="geometry"/>
         </mxCell>
         <mxCell id="26" value="已移除&#xa;监控 / 降额 / 回滚条件冻结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
@@ -89,7 +89,7 @@
         <mxCell id="29" value="CSF 独立支线关注点&#xa;- mandate 已经先冻结 route 与因子身份&#xa;- data_ready 变成截面面板底座，而不是单资产时序表&#xa;- signal_ready 冻结 factor_panel / direction / score contract&#xa;- test 按 factor_role 切证据语义&#xa;- backtest 把因子映射为正式组合后再谈经济性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
           <mxGeometry x="2460" y="500" width="760" height="180" as="geometry"/>
         </mxCell>
-        <mxCell id="30" value="Review closure 真正决定能否晋级&#xa;closure artifacts: latest_review_pack.yaml / stage_gate_review.yaml / stage_completion_certificate.yaml&#xa;advancing statuses: PASS / CONDITIONAL PASS / GO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+        <mxCell id="30" value="Review closure 真正决定能否推进&#xa;closure artifacts: latest_review_pack.yaml / stage_gate_review.yaml / stage_completion_certificate.yaml&#xa;advancing statuses: PASS / CONDITIONAL PASS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
           <mxGeometry x="1110" y="740" width="840" height="110" as="geometry"/>
         </mxCell>
         <mxCell id="31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" edge="1" parent="1" source="7" target="8">

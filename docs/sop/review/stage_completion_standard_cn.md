@@ -90,9 +90,6 @@
 5. `Test Evidence`
 6. `Backtest Ready`
 7. `Holdout Validation`
-8. `Promotion Decision`
-9. `Shadow Admission`
-10. `Canary / Production`（研究侧能覆盖的部分）
 
 本规范不适用于：
 
@@ -319,11 +316,6 @@
 - 是否暴露孤峰参数
 - 是否疑似 selection bias
 
-#### `Shadow Admission`
-- 实际滑点是否远高于假设
-- 实际成交分布是否严重偏离
-- API/监控/运营异常是否改变结论
-
 ### 结论规则
 - 若存在未解释的重大异常：`Sanity Pass = false`
 
@@ -461,7 +453,7 @@
 - `Reviewer / Critic`
 - `Auditor / Referee`
 
-正式 `PASS / CONDITIONAL PASS / GO` 尽量不由同一人单独完成。
+正式 `PASS / CONDITIONAL PASS` 尽量不由同一人单独完成。
 
 ## 8.2 单人研究
 允许 self-gate，但必须显式留下：

@@ -1,10 +1,10 @@
-# 🛠 Quant Research OS | 量化研究操作系统
+# 🛠 QROS | 阶段式研究治理框架
 
-QROS 是一个面向 agent 的阶段式研究治理框架。它不替你发明 alpha，也不替某条具体研究线代存真实业务代码。它做的事是把研究从“聊天里的想法”推进成一条**可审查、可复现、可追溯**的 research lineage，并用 freeze、review、formal artifacts、failure routing 和 lineage discipline 约束这条线如何被定义、推进、否决和重开。
+QROS是一个面向 agent 的阶段式研究治理框架。它不替你发明 alpha，也不替某条具体研究线代存真实业务代码。它做的事是把研究从“聊天里的想法”推进成一条**可审查、可复现、可追溯**的 research lineage，并用 freeze、review、formal artifacts、failure routing 和 lineage discipline 约束这条线如何被定义、推进、否决和重开。
 
-如果你只想知道一句话版本：
+它：
 
-- **这不是策略实现仓，这是研究流程框架仓。**
+- **不是策略实现仓，这是研究流程框架仓。**
 - **普通使用者的入口不是几十个 skill，而是一个：`qros-research-session`。**
 - **真实研究产物不写在这个仓库里，而写在当前 active research repo 的 `outputs/<lineage_id>/` 下。**
 
@@ -21,7 +21,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 安装完成后，在 Codex 里直接开始：
 
 ```text
-qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT
+qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT ，横截面研究
 qros-research-session help
 ```
 
