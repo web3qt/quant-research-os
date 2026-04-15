@@ -109,9 +109,12 @@ def _resolve_verdict(
         return None, FIX_REQUIRED_OUTCOME
 
     if recommended:
-        if blocking_findings and recommended in {"PASS", "CONDITIONAL PASS"}:
+        gates = load_gate_schema(GATES_PATH)
+        passing_verdicts = set(gates["review_passing_verdicts"])
+        retry_verdicts = set(gates["review_retry_verdicts"])
+        if blocking_findings and recommended in passing_verdicts:
             return "RETRY", "CLOSURE_READY_RETRY"
-        if recommended in {"PASS FOR RETRY", "RETRY"}:
+        if recommended in retry_verdicts:
             if not reviewer_findings.get("rollback_stage") or not reviewer_findings.get("allowed_modifications"):
                 raise ValueError(f"{recommended} requires rollback_stage and allowed_modifications")
         return recommended, review_loop_outcome

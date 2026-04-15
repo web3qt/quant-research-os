@@ -6,6 +6,17 @@ def test_gate_schema_contains_first_wave_stages() -> None:
     assert "mandate" in gates["stages"]
     assert "data_ready" in gates["stages"]
     assert "signal_ready" in gates["stages"]
+    assert set(gates["review_closure_vocabulary"]) == {
+        "PASS",
+        "CONDITIONAL PASS",
+        "PASS FOR RETRY",
+        "RETRY",
+        "NO-GO",
+        "GO",
+        "CHILD LINEAGE",
+    }
+    assert set(gates["review_passing_verdicts"]) == {"PASS", "CONDITIONAL PASS"}
+    assert set(gates["review_retry_verdicts"]) == {"PASS FOR RETRY", "RETRY"}
 
 
 def test_checklist_schema_contains_first_wave_stages() -> None:
@@ -13,6 +24,14 @@ def test_checklist_schema_contains_first_wave_stages() -> None:
     assert "mandate" in checklist["stages"]
     assert "data_ready" in checklist["stages"]
     assert "signal_ready" in checklist["stages"]
+    assert set(checklist["verdict_guidance"]) == {
+        "PASS",
+        "CONDITIONAL PASS",
+        "PASS FOR RETRY",
+        "RETRY",
+        "NO-GO",
+        "CHILD LINEAGE",
+    }
 
 
 def test_gate_schema_enforces_required_stage_contract_keys() -> None:

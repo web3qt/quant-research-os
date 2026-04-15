@@ -886,27 +886,27 @@ stages:
           - "handoff note"
 
 verdict_guidance:
-  pass:
+  PASS:
     requires_all_blocking_checks: true
     allows_reservations: false
     note: "所有 blocking 检查通过，且无未解决 reservations"
-  conditional_pass:
+  "CONDITIONAL PASS":
     requires_all_blocking_checks: true
     allows_reservations: true
     note: "blocking 检查全部通过，但存在非阻断 reservations，必须写入 residual_risks"
-  pass_for_retry:
+  "PASS FOR RETRY":
     requires_all_blocking_checks: false
     allows_reservations: true
     note: "当前阶段不能直接晋级，但存在清晰的 rollback 与受控 retry 路径"
-  retry:
+  RETRY:
     requires_all_blocking_checks: false
     allows_reservations: true
     note: "当前阶段未通过，但仍属于原谱系可修复问题"
-  no_go:
+  "NO-GO":
     requires_all_blocking_checks: false
     allows_reservations: false
     note: "当前阶段已足以支持终止原线"
-  child_lineage:
+  "CHILD LINEAGE":
     requires_all_blocking_checks: false
     allows_reservations: false
     note: "修复当前问题必须改变研究身份，应开新谱系"

@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
+from runtime.tools.review_skillgen.loaders import load_gate_schema
 
-ALLOWED_VERDICTS = {
-    "PASS",
-    "CONDITIONAL PASS",
-    "PASS FOR RETRY",
-    "RETRY",
-    "NO-GO",
-    "GO",
-    "CHILD LINEAGE",
-}
+ROOT = Path(__file__).resolve().parents[3]
+GATES_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
+
+_GATE_SCHEMA = load_gate_schema(GATES_PATH)
+ALLOWED_VERDICTS = set(_GATE_SCHEMA["review_closure_vocabulary"])
 
 
 def _normalize_list(items: list[str] | None) -> list[str]:

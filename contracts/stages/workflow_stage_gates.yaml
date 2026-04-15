@@ -1,5 +1,5 @@
 version: 1
-owner_doc: docs/all-sops/第一层-主流程sop/research_workflow_sop.md
+owner_doc: docs/sop/main-flow/research_workflow_sop.md
 contract_role: machine_readable_stage_gate_truth
 
 status_vocabulary:
