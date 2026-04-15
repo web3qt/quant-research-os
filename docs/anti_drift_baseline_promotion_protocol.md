@@ -8,7 +8,6 @@ Applies to:
 
 - canonical decision snapshot goldens under `tests/fixtures/anti_drift/`
 - structured JSON regression payloads produced by anti-drift tools
-- classification baseline payloads produced by `scripts/evaluate_classification.py --json`
 
 ## Core rule
 
@@ -27,7 +26,6 @@ Any changed baseline must go through:
 Examples:
 
 ```bash
-python scripts/evaluate_classification.py --json --split test > /tmp/current_eval.json
 python scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/current_snapshot.json
 ```
 

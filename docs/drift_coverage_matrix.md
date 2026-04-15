@@ -6,9 +6,9 @@ This document records which test lane owns each drift class and what objective b
 | --- | --- | --- | --- |
 | Wrong routing | L2, L3 | `tests/test_research_session_runtime.py`, `tests/test_anti_drift.py` | same fixture resolves to different `route_skill` / `stage_id` |
 | Artifact/schema drift | L0, L1 | `tests/test_schema_loaders.py`, `tests/test_generated_skills_fresh.py`, `tests/test_generator_inputs.py` | schema key loss, required output drift, or broken generator inputs |
-| Semantic behavior drift | L3, L4 | `tests/test_anti_drift.py`, `tests/test_evaluate_classification.py` | canonical decision snapshot changes without approved re-baseline |
+| Semantic behavior drift | L3 | `tests/test_anti_drift.py` | canonical decision snapshot changes without approved re-baseline |
 | Stage-gate verdict drift | L0, L2, L3 | `tests/test_schema_loaders.py`, `tests/test_research_session_runtime.py`, `tests/test_anti_drift.py` | same fixture yields different formal decision / permission semantics |
-| Materially different conclusion over time | L2, L3, L4 | `tests/test_anti_drift.py`, `tests/test_evaluate_classification.py` | snapshot delta across baseline windows blocks promotion |
+| Materially different conclusion over time | L2, L3 | `tests/test_anti_drift.py` | snapshot delta across baseline windows blocks promotion |
 
 ## Canonical decision snapshot fields
 
