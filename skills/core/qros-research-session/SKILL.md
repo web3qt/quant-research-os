@@ -54,11 +54,7 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `csf_holdout_validation`
 - `csf_holdout_validation review`
 
-明确不覆盖：
-
-- `promotion_decision`
-- `shadow_admission`
-- `canary_production`
+`holdout_validation review` 是当前单入口编排的终点。
 
 ## Required Runtime
 
@@ -288,7 +284,7 @@ The agent may record a human-confirmed decision. It may not invent one, and it m
 108. Drive holdout_validation completion with the same discipline as `qros-holdout-validation-author`
 109. When holdout_validation artifacts are ready, move into holdout_validation review
 110. Reuse the same gate discipline as `qros-holdout-validation-review`
-111. Stop after `holdout_validation review`; do not silently enter `promotion_decision`
+111. Stop after `holdout_validation review`; treat it as the terminal stage for the current single-entry flow
 
 ## Auto vs Ask
 

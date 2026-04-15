@@ -58,7 +58,7 @@ QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage
 当前 single-entry `qros-research-session` 的实际编排边界是：
 
 - 一直推进到 `holdout_validation review`
-- 不继续进入 `promotion_decision / shadow / canary` 这些后续治理阶段
+- `holdout_validation review` 之后即停止
 
 ## 这项目是怎么设计的
 

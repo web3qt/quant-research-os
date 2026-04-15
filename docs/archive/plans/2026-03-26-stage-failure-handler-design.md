@@ -149,8 +149,6 @@
 
 - `idea_intake`
 - `mandate`
-- `promotion_decision`
-- `canary_production`
 
 原因是这些阶段当前没有独立 fail-SOP，不应在首版假装已经具备同等制度完备度。
 

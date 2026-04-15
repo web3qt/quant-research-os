@@ -46,12 +46,13 @@
 
 ## 重要目录
 
+- `contracts/`：机器可读真值层，例如 schema、policy 和 stage gate
 - `skills/`：QROS skill 入口与分阶段行为
-- `tools/`：runtime helper、scaffold/build 逻辑
-- `scripts/`：命令行 wrapper 与确定性 task runner
+- `runtime/tools/`：runtime helper、scaffold/build 逻辑
+- `runtime/scripts/`：命令行 wrapper 与确定性 task runner
+- `runtime/bin/`：稳定的用户入口，例如 `qros-session` 与 `qros-review`
 - `docs/`：SOP、使用说明、review 文档、操作文档
 - `tests/`：workflow 行为和文档回归测试
-- `bin/`：稳定的用户入口，例如 `qros-session` 与 `qros-review`
 - `harness/`：用于演示和测试分层 `AGENTS.md` 组织方式的示例子树
 
 ## Harness 说明
@@ -72,6 +73,7 @@
 
 当前真实生效的目录级规则入口是：
 
+- `contracts/AGENTS.md`：真实 schema / policy / gate 规则
 - `skills/AGENTS.md`：真实 skill / workflow 规则
 - `runtime/AGENTS.md`：真实 runtime / helper / scaffold 规则
 - `docs/AGENTS.md`：真实文档目录规则
@@ -91,7 +93,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 根目录启动时，默认会读到本文件
 - 根目录启动时，不会自动把 `harness/AGENTS.md` 和 `harness/*/AGENTS.md` 当作已加载指令
 
-因此，在“总是从仓库根启动”的使用方式下，`harness/` 子树只应被理解为 instruction 分层示例，而不是主仓真实治理面。真实编辑规则应放在目标文件路径祖先链上的 `AGENTS.md` 中，例如根目录、`skills/`、`runtime/`、`docs/`、`tests/`。
+因此，在“总是从仓库根启动”的使用方式下，`harness/` 子树只应被理解为 instruction 分层示例，而不是主仓真实治理面。真实编辑规则应放在目标文件路径祖先链上的 `AGENTS.md` 中，例如根目录、`contracts/`、`skills/`、`runtime/`、`docs/`、`tests/`。
 
 ### 什么时候进入 harness 子树
 
@@ -110,7 +112,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 
 - 全量测试：`python -m pytest`
 - 文档 / bootstrap 最小检查：
-  `python -m pytest tests/test_project_bootstrap.py tests/test_install_docs.py`
+  `python -m pytest tests/test_agents_layout.py tests/test_project_bootstrap.py tests/test_install_docs.py`
 - smoke：
   `python runtime/scripts/run_verification_tier.py --tier smoke`
 - full-smoke：
@@ -123,12 +125,12 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 每个新需求默认都必须先定义并实际执行验证，不允许只写“已测试”而不给命令。
 - 最低要求是：**focused tests + smoke**。
 - 只要改动触及下列任一项，**full-smoke 也必须跑**：
-- `qros-research-session` stage flow / gate semantics
-- review / display / next-stage orchestration
-- route split / CSF routing
-- anti-drift snapshots 或 canonical session stage naming
-- stage-display supported stage contract
-- lineage-local stage-program auto-author seams
+  - `qros-research-session` stage flow / gate semantics
+  - review / display / next-stage orchestration
+  - route split / CSF routing
+  - anti-drift snapshots 或 canonical session stage naming
+  - stage-display supported stage contract
+  - lineage-local stage-program auto-author seams
 - `smoke` / `full-smoke` 的当前定义与命令以
   `docs/guides/qros-verification-tiers.md` 和
   `runtime/scripts/run_verification_tier.py` 为准。
@@ -147,7 +149,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 保持 diff 小、可审查、可回退。
 - 复用仓库现有术语，不要为同一个 stage、artifact 或 contract 再发明第二套命名。
 - 没有明确理由不要新增依赖。
-- 默认使用中文注释；尤其是 `tools/`、`scripts/`、`skills/` 里涉及各研究阶段实现、runtime gate、review/failure routing 的代码，新增注释应优先写成清晰、简短、面向维护者的中文说明。
+- 默认使用中文注释；尤其是 `runtime/tools/`、`runtime/scripts/`、`skills/` 里涉及各研究阶段实现、runtime gate、review/failure routing 的代码，新增注释应优先写成清晰、简短、面向维护者的中文说明。
 - 当修改影响用户工作流、artifact contract 或 stage 语义时，优先同时更新测试和文档。
 
 ## 完成标准

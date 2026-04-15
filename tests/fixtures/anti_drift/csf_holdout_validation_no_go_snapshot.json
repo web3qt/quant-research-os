@@ -20,9 +20,7 @@
     "artifact_catalog.md",
     "field_dictionary.md"
   ],
-  "downstream_permissions": [
-    "promotion_decision"
-  ],
+  "downstream_permissions": [],
   "blocking_reasons": [
     "Normal progression is blocked by review verdict NO-GO."
   ],

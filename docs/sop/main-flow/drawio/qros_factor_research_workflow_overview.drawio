@@ -74,13 +74,13 @@
         <mxCell id="24" value="07_csf_holdout_validation&#xa;最终方案稳定性、breadth、regime 审计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="3190" y="330" width="230" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="25" value="07_promotion_decision&#xa;组织结论: GO / NO-GO / RETRY / CHILD LINEAGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="25" value="终点&#xa;组织结论: GO / NO-GO / RETRY / CHILD LINEAGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="3440" y="200" width="240" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="26" value="08_shadow_admission&#xa;监控 / 降额 / 回滚条件冻结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="26" value="已移除&#xa;监控 / 降额 / 回滚条件冻结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="3740" y="200" width="220" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="27" value="09_canary_production&#xa;kill switch / owner / escalation / runbook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="27" value="已移除&#xa;kill switch / owner / escalation / runbook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="4020" y="200" width="230" height="90" as="geometry"/>
         </mxCell>
         <mxCell id="28" value="时序信号主线关注点&#xa;- 先把共享数据层和 signal schema 冻结&#xa;- Train 只定阈值和候选范围&#xa;- Test 只做独立样本结构证据&#xa;- Backtest 才验证双引擎交易可行性&#xa;- Holdout 只做最终未参与窗口确认" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">

@@ -80,7 +80,7 @@
         <mxCell id="26" value="02_csf_data_ready -&gt; 03_csf_signal_ready&#xa;-&gt; 04_csf_train_freeze -&gt; 05_csf_test_evidence&#xa;-&gt; 06_csf_backtest_ready -&gt; 07_csf_holdout_validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
           <mxGeometry x="2430" y="488" width="560" height="150" as="geometry"/>
         </mxCell>
-        <mxCell id="27" value="统一治理节点&#xa;promotion_decision -&gt; shadow_admission -&gt; canary_production" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="27" value="统一治理节点&#xa;holdout_validation 为当前终点" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="2430" y="700" width="430" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="28" value="页面压缩原则&#xa;左栏只放 7 个 intake 合同节点&#xa;右栏只放 mandate、route 和后续正式主线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">

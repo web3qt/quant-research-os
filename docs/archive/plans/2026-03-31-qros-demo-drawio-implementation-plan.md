@@ -36,7 +36,7 @@
   - one vertical fishbone under `research_intent` showing the actual frozen fields in sequence
   - time-series branch
   - CSF branch
-  - promotion / shadow / canary
+  - 当前终点标记
   - governance annotations
 
 **Step 3: Link the new asset from the show README**

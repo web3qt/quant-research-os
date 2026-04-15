@@ -96,10 +96,7 @@
   - `04 csf_test_evidence`
   - `05 csf_backtest_ready`
   - `06 csf_holdout_validation`
-- 两条线汇合到：
-  - `07 promotion_decision`
-  - `08 shadow_admission`
-  - `09 canary_production`
+- 两条线都以 `06 holdout_validation` / `06 csf_holdout_validation` 作为当前终点
 - 额外放两个治理提示节点：
   - 每阶段都要 `formal artifacts + review closure`
   - `RETRY / NO-GO / CHILD LINEAGE` 时转 `failure handling`

@@ -1,10 +1,10 @@
 # Main Flow SOP Draw.io Design
 
-**Goal:** 为 `docs/main-flow-sop/01` 到 `09` 的主流程 SOP 文档补齐与 `00_mandate_sop_cn.drawio` 同风格的思维导图文件。
+**Goal:** 为 `docs/main-flow-sop/01` 到 `06` 的主流程 SOP 文档补齐与 `00_mandate_sop_cn.drawio` 同风格的思维导图文件。
 
 **Scope**
 
-- 目标文件为 `01_data_ready_sop_cn.md` 到 `09_canary_production_sop_cn.md`
+- 目标文件为 `01_data_ready_sop_cn.md` 到 `06_holdout_validation_sop_cn.md`
 - 每个 `.md` 生成一个同名 `.drawio`
 - 风格统一参考 `docs/main-flow-sop/00_mandate_sop_cn.drawio`
 

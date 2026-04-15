@@ -730,5 +730,5 @@
 | 字段 | 含义 | 为什么需要 | 不该怎么填 |
 | --- | --- | --- | --- |
 | `machine_artifacts` | csf_holdout_validation 必须正式交付的机器文件 | promotion decision 只能消费正式 holdout 产物 | 只写 narrative 结果 |
-| `consumer_stage` | 正式下游 | 锁定消费者为 `promotion_decision` | 不写消费者 |
+| `consumer_stage` | 正式下游或终点标记 | 锁定为终点或明确消费者 | 不写消费者 |
 | `field_doc_rule` | 每个机器文件都必须带 companion field doc 的规则 | 防止输出机器文件没人能读懂 | 只交 parquet/json，不交字段说明 |

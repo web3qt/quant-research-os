@@ -121,6 +121,6 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 ## 6. Next
 
-After `holdout_validation review`, this version stops. `promotion_decision` orchestration is not yet part of the single-entry flow.
+After `holdout_validation review`, this version stops. That is the current terminal stage of the single-entry flow.
 
 Codex discovers QROS directly through `~/.codex/skills/`; `./setup` writes the flat installed `qros-*` skills there.

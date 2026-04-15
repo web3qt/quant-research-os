@@ -67,7 +67,6 @@ User message → QROS trigger detected?
 - **qros-test-evidence-failure** — test_evidence stage failure classification and triage
 - **qros-backtest-failure** — backtest_ready stage failure classification and triage
 - **qros-holdout-failure** — holdout_validation stage failure classification and triage
-- **qros-shadow-failure** — shadow admission stage failure classification
 - **qros-lineage-change-control** — Change control for scope/split/universe modifications
 
 ## Core Principles

@@ -96,8 +96,8 @@ flowchart TB
 
     I --> P["当前单入口编排<br/>到 holdout_validation review 停止"]
     O --> P
-    P -.-> Q["07+ 后续治理阶段<br/>promotion / shadow / canary"]
-    Q -.-> R["SOP 已定义<br/>未纳入当前 qros-research-session"]
+    P -.-> Q["当前终点<br/>holdout_validation review"]
+    Q -.-> R["后续治理阶段已移除"]
 
     S["每个阶段都必须有<br/>freeze + lineage-local program + artifacts + review closure"] -.-> D
     S -.-> E
@@ -152,7 +152,7 @@ flowchart TB
 
 只有通过 intake gate，研究才会进入 `mandate`。在这里，研究问题、时间边界、Universe、数据合同、参数边界和执行合同会被正式冻结。`mandate` 之后，流程按 `research_route` 分流：`time_series_signal` 进入 `data_ready -> signal_ready -> train_freeze -> test_evidence -> backtest_ready -> holdout_validation`，`cross_sectional_factor` 进入对应的 `csf_*` 独立主线。
 
-当前仓库里，`qros-research-session` 这条 first-wave 单入口编排只覆盖到 `holdout_validation review`。`promotion_decision -> shadow_admission -> canary_production` 这些更后面的治理节点已经在 SOP 中定义，但还没有接入当前 single-entry runtime，所以展示时应把它们理解成后续治理蓝图，而不是今天已经打通的实际编排路径。
+当前仓库里，`qros-research-session` 这条 single-entry 编排只覆盖到 `holdout_validation review`，并以此作为当前终点。
 
 无论走哪条路线，阶段推进都依赖四件事：
 

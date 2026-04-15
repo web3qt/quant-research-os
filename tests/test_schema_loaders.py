@@ -12,7 +12,6 @@ def test_gate_schema_contains_first_wave_stages() -> None:
         "PASS FOR RETRY",
         "RETRY",
         "NO-GO",
-        "GO",
         "CHILD LINEAGE",
     }
     assert set(gates["review_passing_verdicts"]) == {"PASS", "CONDITIONAL PASS"}

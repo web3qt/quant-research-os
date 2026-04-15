@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 为 `docs/main-flow-sop/01` 到 `09` 的 SOP 文档生成统一风格的 `.drawio` 思维导图。
+**Goal:** 为 `docs/main-flow-sop/01` 到 `06` 的 SOP 文档生成统一风格的 `.drawio` 思维导图。
 
 **Architecture:** 使用一个一次性生成脚本读取 Markdown heading 结构，按统一布局规则输出 draw.io XML。生成后通过 XML 解析和文件存在性检查做最小验证，避免逐文件手工维护大段 XML。
 
@@ -19,9 +19,6 @@
 - Read: `docs/main-flow-sop/04_test_evidence_sop_cn.md`
 - Read: `docs/main-flow-sop/05_backtest_ready_sop_cn.md`
 - Read: `docs/main-flow-sop/06_holdout_validation_sop_cn.md`
-- Read: `docs/main-flow-sop/07_promotion_decision_sop_cn.md`
-- Read: `docs/main-flow-sop/08_shadow_admission_sop_cn.md`
-- Read: `docs/main-flow-sop/09_canary_production_sop_cn.md`
 - Read: `docs/main-flow-sop/00_mandate_sop_cn.drawio`
 
 **Step 1:** Confirm target markdown files and existing reference draw.io.
@@ -37,9 +34,6 @@
 - Create: `docs/main-flow-sop/04_test_evidence_sop_cn.drawio`
 - Create: `docs/main-flow-sop/05_backtest_ready_sop_cn.drawio`
 - Create: `docs/main-flow-sop/06_holdout_validation_sop_cn.drawio`
-- Create: `docs/main-flow-sop/07_promotion_decision_sop_cn.drawio`
-- Create: `docs/main-flow-sop/08_shadow_admission_sop_cn.drawio`
-- Create: `docs/main-flow-sop/09_canary_production_sop_cn.drawio`
 
 **Step 1:** Parse title and normalized section tree from each markdown file.
 

@@ -27,9 +27,8 @@ description: Use when qros stage review verdicts are PASS FOR RETRY, RETRY, NO-G
 - `test_evidence` → `qros-test-evidence-failure`
 - `backtest_ready` → `qros-backtest-failure`
 - `holdout_validation` → `qros-holdout-failure`
-- `shadow` → `qros-shadow-failure`
 
-不覆盖：`idea_intake`、`mandate`、`promotion_decision`、`canary_production`
+不覆盖：`idea_intake`、`mandate`
 
 ## Entry Conditions
 
@@ -112,7 +111,6 @@ code_version: <commit>
 | `test_evidence` | `qros-test-evidence-failure` |
 | `backtest_ready` | `qros-backtest-failure` |
 | `holdout_validation` | `qros-holdout-failure` |
-| `shadow` | `qros-shadow-failure` |
 
 每个 stage-specific skill 完成 failure classification 后，必须将结论传入 `qros-lineage-change-control` 进行 change control 判定。
 

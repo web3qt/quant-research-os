@@ -13,7 +13,6 @@ def test_stage_failure_handler_skill_exists_and_covers_failure_flow() -> None:
     assert "test_evidence" in content
     assert "backtest_ready" in content
     assert "holdout_validation" in content
-    assert "shadow" in content
     assert "PASS FOR RETRY" in content
     assert "RETRY" in content
     assert "NO-GO" in content

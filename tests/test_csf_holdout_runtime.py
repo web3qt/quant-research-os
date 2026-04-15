@@ -57,7 +57,7 @@ def _csf_holdout_validation_draft(*, confirmed: bool) -> dict:
                 "confirmed": confirmed,
                 "draft": {
                     "machine_artifacts": ["csf_holdout_run_manifest.json", "holdout_test_compare.parquet"],
-                    "consumer_stage": "promotion_decision",
+                    "consumer_stage": "terminal",
                     "field_doc_rule": "Every machine artifact needs field documentation.",
                 },
                 "missing_items": [],

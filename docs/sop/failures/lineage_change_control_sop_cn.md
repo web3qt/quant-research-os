@@ -21,7 +21,6 @@
   - 04_test_evidence_failure_sop
   - 05_backtest_failure_sop
   - 06_holdout_failure_sop
-  - 07_shadow_failure_sop
 
 ---
 
@@ -133,7 +132,6 @@
 
 典型例子：
 - 在 `05_backtest` 中只调整执行器退出语义
-- 在 `07_shadow` 中只调整订单节奏
 - 在 `01/02` 中修复已识别的数据/时点问题
 
 ### 4.3 `STAGE_ROLLBACK`

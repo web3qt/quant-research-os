@@ -82,7 +82,7 @@ def _blank_holdout_validation_draft(
                         "holdout_backtest_compare.csv",
                         "window_results/",
                     ],
-                    "consumer_stage": "promotion_decision",
+                    "consumer_stage": "terminal",
                     "field_doc_rule": "",
                 },
                 "missing_items": [],

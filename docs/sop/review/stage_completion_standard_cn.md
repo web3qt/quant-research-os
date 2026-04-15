@@ -22,7 +22,6 @@
   - 04_test_evidence_failure_sop
   - 05_backtest_failure_sop
   - 06_holdout_failure_sop
-  - 07_shadow_failure_sop
   - lineage_change_control_sop
 
 ---

@@ -3207,7 +3207,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return _review_gate_status_and_next_action(lineage_root, current_stage)
 
 
-    return "REVIEW_COMPLETE", "Stop here until promotion_decision orchestration exists"
+    return "REVIEW_COMPLETE", "Stop here. holdout_validation review is the current terminal stage."
 
 
 def _route_assessment_error(gate_decision: dict) -> str | None:

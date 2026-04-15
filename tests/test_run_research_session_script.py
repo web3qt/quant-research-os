@@ -522,7 +522,7 @@ def _holdout_validation_draft(*, confirmed: bool) -> dict:
                         "holdout_backtest_compare.csv",
                         "window_results/",
                     ],
-                    "consumer_stage": "promotion_decision",
+                    "consumer_stage": "terminal",
                     "field_doc_rule": "Every machine artifact requires field documentation.",
                 },
                 "missing_items": [],

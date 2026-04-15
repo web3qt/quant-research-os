@@ -240,7 +240,7 @@
                 <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review 停止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3680" y="290" width="240" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="19" value="07+ 后续治理阶段&#xa;promotion / shadow / canary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="19" value="07+ 后续治理阶段&#xa;holdout_validation review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3680" y="410" width="230" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="20" value="SOP 已定义&#xa;未纳入当前 qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
@@ -249,7 +249,7 @@
                 <mxCell id="209" value="&lt;b&gt;为什么这里不再作为当前主线&lt;/b&gt;&lt;br&gt;当前 qros-research-session first-wave 只覆盖到 holdout_validation review。&lt;br&gt;也就是说，runtime 在当前版本不会自动从研究阶段继续推进到 07+ 治理阶段。&lt;br&gt;&lt;br&gt;因此右侧这块应被理解为 roadmap / governance blueprint，而不是当前已落地的单入口编排路径。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="3700" y="660" width="280" height="190" as="geometry"/>
                 </mxCell>
-                <mxCell id="210" value="&lt;b&gt;07+ 后续治理阶段仍然重要&lt;/b&gt;&lt;br&gt;SOP 里已经定义了 promotion_decision、shadow_admission、canary_production 这些治理节点。&lt;br&gt;它们不是研究阶段的普通延长线，而是组织级 GO、监控、回滚、owner 与运行边界的治理合同。&lt;br&gt;&lt;br&gt;如果未来接入 runtime，应明确以治理 gate 的身份接入，而不是假装它们已经和研究主线打通。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="210" value="&lt;b&gt;07+ 后续治理阶段仍然重要&lt;/b&gt;&lt;br&gt;SOP 里已经定义了 已移除的后续治理阶段 这些治理节点。&lt;br&gt;它们不是研究阶段的普通延长线，而是组织级 GO、监控、回滚、owner 与运行边界的治理合同。&lt;br&gt;&lt;br&gt;如果未来接入 runtime，应明确以治理 gate 的身份接入，而不是假装它们已经和研究主线打通。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="3700" y="880" width="280" height="205" as="geometry"/>
                 </mxCell>
                 <mxCell id="211" value="&lt;b&gt;当前图里的阅读方式&lt;/b&gt;&lt;br&gt;左侧案例块是 CSF 示例，不代表系统默认只推荐这条 route。&lt;br&gt;中间两条链路表示当前已落地、可由 qros-research-session 编排的 first-wave 研究主线。&lt;br&gt;右侧灰色区域表示未来治理阶段，已在 SOP 定义，但不应被当成今天已经接入的 runtime 事实。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">

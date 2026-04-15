@@ -152,7 +152,6 @@ description: Codex review skill for Backtest Ready stage verification.
 - `PASS FOR RETRY`: 允许按既定 rollback 范围受控重试，未完成前不得继续晋级
 - `RETRY`: 当前阶段失败，但失败原因仍属于受控可修复问题
 - `NO-GO`: 组织上不支持继续推进当前方案
-- `GO`: 组织上批准进入下一治理或运行阶段
 - `CHILD LINEAGE`: 需要以新谱系承接，不允许在原线静默改题
 - `GO_TO_MANDATE`: 想法通过 qualification，允许进入 mandate_confirmation_pending 并申请生成 Mandate 产物
 - `NEEDS_REFRAME`: 方向可研究，但当前边界或变量定义不足，需按 required_reframe_actions 重写后再审

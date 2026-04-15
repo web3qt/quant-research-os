@@ -43,18 +43,6 @@ STAGE_ALIASES = {
     "07_holdout": "holdout_validation",
     "csf_holdout_validation": "csf_holdout_validation",
     "07_csf_holdout_validation": "csf_holdout_validation",
-    "promotion": "promotion_decision",
-    "promotion_decision": "promotion_decision",
-    "07_promotion": "promotion_decision",
-    "08_promotion": "promotion_decision",
-    "shadow": "shadow_admission",
-    "shadow_admission": "shadow_admission",
-    "08_shadow": "shadow_admission",
-    "09_shadow": "shadow_admission",
-    "canary_prod": "canary_production",
-    "canary_production": "canary_production",
-    "09_canary_prod": "canary_production",
-    "10_canary_prod": "canary_production",
 }
 
 REVIEW_SUBDIRS = {"request", "result", "closure", "governance"}

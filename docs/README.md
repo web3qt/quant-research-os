@@ -78,6 +78,7 @@
 
 主仓真实目录级规则入口在：
 
+- `../contracts/AGENTS.md`
 - `../skills/AGENTS.md`
 - `../runtime/AGENTS.md`
 - `AGENTS.md`

@@ -32,7 +32,6 @@
 
 - `idea_intake`
 - `mandate`
-- `promotion_decision`
 - lineage / rollback / child lineage 纪律
 - transition approval artifacts
 - `review_findings.yaml`

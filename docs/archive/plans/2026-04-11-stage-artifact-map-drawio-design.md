@@ -17,11 +17,7 @@
 - mainline: `data_ready -> signal_ready -> train_freeze -> test_evidence -> backtest_ready -> holdout_validation`
 - CSF: `csf_data_ready -> csf_signal_ready -> csf_train_freeze -> csf_test_evidence -> csf_backtest_ready -> csf_holdout_validation`
 
-不覆盖：
-
-- `promotion_decision`
-- `shadow_admission`
-- `canary_production`
+不覆盖当前终点之后的任何治理阶段。
 
 ## Recommended Format
 
