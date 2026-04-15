@@ -2,7 +2,14 @@ from pathlib import Path
 
 import yaml
 
-from runtime.tools.review_governance_runtime import governance_root_for_lineage, record_review_governance, update_governance_candidates
+from runtime.tools.review_governance_runtime import (
+    capture_governance_decision,
+    governance_root_for_lineage,
+    load_pending_governance_decisions,
+    record_governance_decision,
+    record_review_governance,
+    update_governance_candidates,
+)
 from runtime.tools.review_skillgen.adversarial_review_contract import FIX_REQUIRED_OUTCOME
 from runtime.tools.review_skillgen.governance_signal import load_review_governance_policy
 
@@ -142,3 +149,55 @@ def test_update_governance_candidates_requires_decision_artifact_for_approved_st
     updated = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
     assert updated["status"] == "approved"
     assert updated["policy_activation_state"] == "inactive"
+
+
+def test_capture_governance_decision_writes_pending_artifact(tmp_path: Path) -> None:
+    _record_case(tmp_path, lineage_id="case_a", cycle_id="cycle-a")
+    _record_case(tmp_path, lineage_id="case_b", cycle_id="cycle-b")
+    lineage_root, _ = _record_case(tmp_path, lineage_id="case_c", cycle_id="cycle-c")
+
+    governance_root = governance_root_for_lineage(lineage_root)
+    candidate_path = next((governance_root / "candidates").glob("*.yaml"))
+    candidate = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
+
+    pending_path = capture_governance_decision(
+        governance_root=governance_root,
+        candidate_id=candidate["candidate_id"],
+        decision_outcome="approved",
+        decision_note="User approved this repeated finding for follow-up repo work.",
+    )
+
+    assert pending_path.exists()
+    pending = yaml.safe_load(pending_path.read_text(encoding="utf-8"))
+    assert pending["candidate_id"] == candidate["candidate_id"]
+    assert pending["decision_outcome"] == "approved"
+    assert pending["confirmed_by_user"] is True
+
+
+def test_record_governance_decision_updates_candidate_and_clears_pending(tmp_path: Path) -> None:
+    _record_case(tmp_path, lineage_id="case_a", cycle_id="cycle-a")
+    _record_case(tmp_path, lineage_id="case_b", cycle_id="cycle-b")
+    lineage_root, _ = _record_case(tmp_path, lineage_id="case_c", cycle_id="cycle-c")
+
+    governance_root = governance_root_for_lineage(lineage_root)
+    candidate_path = next((governance_root / "candidates").glob("*.yaml"))
+    candidate = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
+
+    pending_path = capture_governance_decision(
+        governance_root=governance_root,
+        candidate_id=candidate["candidate_id"],
+        decision_outcome="deferred",
+    )
+    result = record_governance_decision(
+        governance_root=governance_root,
+        candidate_id=candidate["candidate_id"],
+        decision_outcome="deferred",
+        decision_note="Need one more quarter of evidence before changing policy.",
+    )
+
+    assert Path(result["decision_path"]).exists()
+    assert not pending_path.exists()
+    updated = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "deferred"
+    assert updated["decision_ref"] == result["decision_path"]
+    assert load_pending_governance_decisions(governance_root) == []

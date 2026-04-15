@@ -25,6 +25,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("runtime/scripts/update_review_governance_candidates.py").exists()
     assert Path("runtime/tools/install_runtime.py").exists()
     assert Path("runtime/scripts/run_research_session.py").exists()
+    assert Path("runtime/scripts/record_governance_decision.py").exists()
     assert Path("runtime/scripts/run_verification_tier.py").exists()
     assert Path("runtime/scripts/run_stage_review.py").exists()
     assert Path("runtime/scripts/scaffold_idea_intake.py").exists()

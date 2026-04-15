@@ -160,6 +160,16 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 }
 ```
 
+同样地，如果用户已经明确做出了 governance decision，但 agent 只写了 `governance/pending_decisions/*.yaml` 而还没把正式 decision artifact 写进 `governance/decisions/*.md`，session 会阻断并返回：
+
+```json
+{
+  "stage_status": "awaiting_governance_record",
+  "blocking_reason_code": "GOVERNANCE_DECISION_RECORD_REQUIRED",
+  "next_action": "Write governance/decisions for <candidate_id>, update the candidate status, and clear governance/pending_decisions/<candidate_id>.yaml."
+}
+```
+
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 intake interview approval：
 
 ```bash

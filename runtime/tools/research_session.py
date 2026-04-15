@@ -68,6 +68,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_result,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_governance_runtime import governance_root_for_lineage, load_pending_governance_decisions
 from runtime.tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_DRAFT_FILE,
     SIGNAL_READY_FREEZE_GROUP_ORDER,
@@ -1824,7 +1825,10 @@ def summarize_session_status(
         gate_status=gate_status,
         next_action=(
             runtime_next_action
-            if requires_failure_handling or current_stage.endswith("_author") or current_stage.endswith("_review_complete")
+            if requires_failure_handling
+            or current_stage.endswith("_author")
+            or current_stage.endswith("_review_complete")
+            or stage_status == "awaiting_governance_record"
             else next_action
         ),
         why_now=why_now or [],
@@ -1884,6 +1888,8 @@ def _current_skill_for_stage(
 ) -> str:
     if requires_failure_handling:
         return "qros-stage-failure-handler"
+    if runtime_stage_status == "awaiting_governance_record":
+        return "qros-research-session"
     if runtime_stage_status == "awaiting_author_fix" and current_stage.endswith("_review"):
         return STAGE_ACTIVE_SKILLS.get(f"{_stage_base_name(current_stage)}_author", "qros-research-session")
     return STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
@@ -1902,6 +1908,8 @@ def _why_this_skill(
         return (
             f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
         )
+    if runtime_stage_status == "awaiting_governance_record":
+        return "A human-confirmed governance decision is pending formal recording, so qros-session is holding progression until governance artifacts are written."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Current stage {current_stage} is waiting for explicit approval before entering the downstream stage."
     if current_stage.endswith("_review_complete"):
@@ -1958,6 +1966,11 @@ def _resume_hint(
         return (
             f"Invoke {current_skill} for lineage {lineage_id} in the same research repo, "
             f"then rerun qros-session --lineage-id {lineage_id}."
+        )
+    if runtime_stage_status == "awaiting_governance_record":
+        return (
+            f"Write the pending governance decision artifacts for lineage {lineage_id}, then rerun "
+            f"qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review_confirmation_pending"):
         return (
@@ -2123,6 +2136,7 @@ def _program_runtime_status(
     requires_failure_handling: bool,
 ) -> tuple[str, str, str | None, str | None, str, str, str | None, str]:
     spec = _program_spec_for_session_stage(current_stage)
+    pending_governance = _pending_governance_requirement(lineage_root)
     if spec is None:
         if requires_failure_handling:
             return (
@@ -2137,6 +2151,17 @@ def _program_runtime_status(
             )
         if current_stage.endswith("_review_complete"):
             return ("review_complete", "NONE", None, None, "n/a", "n/a", None, "No further action required.")
+        if pending_governance is not None:
+            return (
+                "awaiting_governance_record",
+                "GOVERNANCE_DECISION_RECORD_REQUIRED",
+                None,
+                None,
+                "n/a",
+                "n/a",
+                pending_governance["blocking_reason"],
+                pending_governance["next_action"],
+            )
         return (
             "awaiting_freeze_approval",
             "FREEZE_APPROVAL_MISSING",
@@ -2166,6 +2191,17 @@ def _program_runtime_status(
             provenance_status,
             f"Normal progression is blocked by review verdict {review_verdict or 'a failure-class review result'}.",
             f"Enter failure handling for {_stage_base_name(current_stage)} via qros-stage-failure-handler",
+        )
+    if pending_governance is not None:
+        return (
+            "awaiting_governance_record",
+            "GOVERNANCE_DECISION_RECORD_REQUIRED",
+            inspection.required_program_dir,
+            inspection.required_program_entrypoint,
+            inspection.program_contract_status,
+            provenance_status,
+            pending_governance["blocking_reason"],
+            pending_governance["next_action"],
         )
     if current_stage.endswith("_review_complete"):
         return (
@@ -2300,6 +2336,24 @@ def _program_runtime_status(
         f"{_stage_base_name(current_stage)} authoring outputs are still incomplete.",
         f"Run the lineage-local entrypoint {inspection.required_program_entrypoint} from {inspection.required_program_dir}.",
     )
+
+
+def _pending_governance_requirement(lineage_root: Path) -> dict[str, str] | None:
+    governance_root = governance_root_for_lineage(lineage_root)
+    pending = load_pending_governance_decisions(governance_root)
+    if not pending:
+        return None
+    current = pending[0]
+    candidate_id = str(current.get("candidate_id") or "<unknown-candidate>")
+    outcome = str(current.get("decision_outcome") or "<unknown-outcome>")
+    return {
+        "blocking_reason": (
+            f"Human-confirmed governance decision for {candidate_id} is still pending formal recording as {outcome}."
+        ),
+        "next_action": (
+            f"Write governance/decisions for {candidate_id}, update the candidate status, and clear governance/pending_decisions/{candidate_id}.yaml."
+        ),
+    }
 
 
 def run_research_session(

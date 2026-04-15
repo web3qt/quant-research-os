@@ -10,18 +10,22 @@ import yaml
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 from runtime.tools.review_skillgen.governance_signal import build_governance_signal_bundle, load_review_governance_policy
 
+ALLOWED_GOVERNANCE_DECISION_OUTCOMES = {"approved", "rejected", "deferred"}
+
 
 def governance_root_for_lineage(lineage_root: Path) -> Path:
     return lineage_root.resolve().parents[1] / "governance"
 
 
-def _ensure_dirs(governance_root: Path) -> tuple[Path, Path, Path]:
+def _ensure_dirs(governance_root: Path) -> tuple[Path, Path, Path, Path]:
     candidates = governance_root / "candidates"
     decisions = governance_root / "decisions"
+    pending = governance_root / "pending_decisions"
     governance_root.mkdir(parents=True, exist_ok=True)
     candidates.mkdir(parents=True, exist_ok=True)
     decisions.mkdir(parents=True, exist_ok=True)
-    return governance_root / "review_findings_ledger.jsonl", candidates, decisions
+    pending.mkdir(parents=True, exist_ok=True)
+    return governance_root / "review_findings_ledger.jsonl", candidates, decisions, pending
 
 
 def _load_existing_ledger(ledger_path: Path) -> list[dict[str, Any]]:
@@ -44,6 +48,145 @@ def _append_ledger_entries(ledger_path: Path, entries: list[dict[str, Any]]) -> 
 
 def _candidate_id(fingerprint: str) -> str:
     return f"review-{fingerprint}"
+
+
+def _normalize_decision_outcome(value: str) -> str:
+    normalized = value.strip().lower()
+    mapped = {
+        "approve": "approved",
+        "approved": "approved",
+        "reject": "rejected",
+        "rejected": "rejected",
+        "defer": "deferred",
+        "deferred": "deferred",
+    }.get(normalized)
+    if mapped is None:
+        raise ValueError(
+            f"Unsupported governance decision outcome: {value}. Allowed: {sorted(ALLOWED_GOVERNANCE_DECISION_OUTCOMES)}"
+        )
+    return mapped
+
+
+def _candidate_path(candidates_dir: Path, candidate_id: str) -> Path:
+    return candidates_dir / f"{candidate_id}.yaml"
+
+
+def _load_candidate(candidate_path: Path) -> dict[str, Any]:
+    if not candidate_path.exists():
+        raise FileNotFoundError(candidate_path)
+    payload = yaml.safe_load(candidate_path.read_text(encoding="utf-8")) or {}
+    if not isinstance(payload, dict):
+        raise ValueError(f"{candidate_path} must contain a YAML mapping")
+    return payload
+
+
+def _decision_id(candidate_id: str, timestamp_utc: str) -> str:
+    compact = timestamp_utc.replace("-", "").replace(":", "").replace("+00:00", "Z")
+    compact = compact.replace(".", "").replace("T", "T")
+    return f"decision-{compact}-{candidate_id}"
+
+
+def capture_governance_decision(
+    *,
+    governance_root: Path,
+    candidate_id: str,
+    decision_outcome: str,
+    confirmed_by_user: bool = True,
+    captured_by_agent: str = "codex",
+    decider_identity: str = "user",
+    decider_mode: str = "interactive",
+    decision_note: str | None = None,
+    planned_repo_change: str | None = None,
+    captured_at: str | None = None,
+) -> Path:
+    normalized_outcome = _normalize_decision_outcome(decision_outcome)
+    _, candidates_dir, _, pending_dir = _ensure_dirs(governance_root)
+    _load_candidate(_candidate_path(candidates_dir, candidate_id))
+    timestamp = captured_at or datetime.now(timezone.utc).isoformat()
+    payload = {
+        "candidate_id": candidate_id,
+        "decision_outcome": normalized_outcome,
+        "confirmed_by_user": bool(confirmed_by_user),
+        "decider_identity": decider_identity,
+        "decider_mode": decider_mode,
+        "captured_at": timestamp,
+        "captured_by_agent": captured_by_agent,
+    }
+    if decision_note:
+        payload["decision_note"] = decision_note
+    if planned_repo_change:
+        payload["planned_repo_change"] = planned_repo_change
+    pending_path = pending_dir / f"{candidate_id}.yaml"
+    pending_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return pending_path
+
+
+def load_pending_governance_decisions(governance_root: Path) -> list[dict[str, Any]]:
+    pending_dir = governance_root / "pending_decisions"
+    if not pending_dir.exists():
+        return []
+    entries: list[dict[str, Any]] = []
+    for path in sorted(pending_dir.glob("*.yaml")):
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if not isinstance(payload, dict):
+            continue
+        payload["path"] = str(path)
+        entries.append(payload)
+    return entries
+
+
+def record_governance_decision(
+    *,
+    governance_root: Path,
+    candidate_id: str,
+    decision_outcome: str,
+    decider_identity: str = "user",
+    decider_mode: str = "interactive",
+    decision_note: str | None = None,
+    planned_repo_change: str | None = None,
+    decision_timestamp_utc: str | None = None,
+) -> dict[str, Any]:
+    normalized_outcome = _normalize_decision_outcome(decision_outcome)
+    _, candidates_dir, decisions_dir, pending_dir = _ensure_dirs(governance_root)
+    candidate_path = _candidate_path(candidates_dir, candidate_id)
+    candidate = _load_candidate(candidate_path)
+    timestamp = decision_timestamp_utc or datetime.now(timezone.utc).isoformat()
+    decision_id = _decision_id(candidate_id, timestamp)
+    decision_path = decisions_dir / f"{decision_id}.md"
+
+    frontmatter = {
+        "decision_id": decision_id,
+        "candidate_id": candidate_id,
+        "decision_outcome": normalized_outcome,
+        "decider_identity": decider_identity,
+        "decider_mode": decider_mode,
+        "decision_timestamp_utc": timestamp,
+        "planned_repo_change": planned_repo_change,
+    }
+    body = decision_note.strip() if decision_note and decision_note.strip() else "Recorded from explicit human-confirmed governance decision."
+    decision_path.write_text(
+        "---\n"
+        + yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True).strip()
+        + "\n---\n\n"
+        + body
+        + "\n",
+        encoding="utf-8",
+    )
+
+    candidate["status"] = normalized_outcome
+    candidate["decision_ref"] = str(decision_path)
+    candidate["updated_at"] = timestamp
+    candidate_path.write_text(yaml.safe_dump(candidate, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    pending_path = pending_dir / f"{candidate_id}.yaml"
+    if pending_path.exists():
+        pending_path.unlink()
+
+    return {
+        "candidate_path": str(candidate_path),
+        "decision_path": str(decision_path),
+        "status": normalized_outcome,
+    }
 
 
 def _load_decisions(decisions_dir: Path) -> dict[str, dict[str, str]]:
@@ -78,7 +221,7 @@ def _load_decisions(decisions_dir: Path) -> dict[str, dict[str, str]]:
 
 
 def update_governance_candidates(*, governance_root: Path, policy: dict[str, Any]) -> dict[str, Any]:
-    ledger_path, candidates_dir, decisions_dir = _ensure_dirs(governance_root)
+    ledger_path, candidates_dir, decisions_dir, _ = _ensure_dirs(governance_root)
     records = _load_existing_ledger(ledger_path)
     by_fingerprint: dict[str, list[dict[str, Any]]] = {}
     for record in records:
@@ -153,7 +296,7 @@ def record_review_governance(
         policy=policy,
     )
     governance_root = governance_root_for_lineage(lineage_root)
-    ledger_path, _, _ = _ensure_dirs(governance_root)
+    ledger_path, _, _, _ = _ensure_dirs(governance_root)
     ledger_entries_written = 0
     if bundle["post_rollout_only"]:
         existing = _load_existing_ledger(ledger_path)
@@ -192,7 +335,7 @@ def sync_review_governance_from_stage(*, stage_dir: Path, lineage_root: Path) ->
         raise FileNotFoundError(signal_path)
     bundle = json.loads(signal_path.read_text(encoding="utf-8"))
     governance_root = governance_root_for_lineage(lineage_root)
-    ledger_path, _, _ = _ensure_dirs(governance_root)
+    ledger_path, _, _, _ = _ensure_dirs(governance_root)
     existing = _load_existing_ledger(ledger_path)
     seen = {(entry["review_cycle_id"], entry["finding_fingerprint"]) for entry in existing}
     new_entries: list[dict[str, Any]] = []

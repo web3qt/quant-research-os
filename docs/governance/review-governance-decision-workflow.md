@@ -52,6 +52,28 @@ Allowed decisions:
 - `rejected`
 - `deferred`
 
+## Agent-assisted decision recording
+
+Users should not need to call a separate governance command.
+
+When a candidate already exists and the human makes an explicit decision in the normal research conversation, the agent may:
+- capture the human-confirmed decision into `governance/pending_decisions/<candidate_id>.yaml`
+- write `governance/decisions/*.md`
+- update `governance/candidates/*.yaml`
+
+The agent may not invent the decision on its own.
+
+## Runtime enforcement
+
+Runtime still does not trust chat history directly.
+
+If a human-confirmed governance decision has been captured into `governance/pending_decisions/*.yaml` but the formal decision artifact under `governance/decisions/*.md` has not yet been written, `qros-session` should block with:
+
+- `stage_status = awaiting_governance_record`
+- `blocking_reason_code = GOVERNANCE_DECISION_RECORD_REQUIRED`
+
+That forces the agent to finish governance recording before ordinary progression continues.
+
 ## Important boundary
 
 Even an `approved` governance decision does **not** activate policy.
