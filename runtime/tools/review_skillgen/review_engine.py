@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import csv
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 import os
 from typing import Any
+
+import yaml
 
 from runtime.tools.review_governance_runtime import record_review_governance
 from runtime.tools.review_skillgen.adversarial_review_contract import (
@@ -12,6 +16,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
     assign_runtime_reviewer_to_request,
+    canonicalize_runtime_review_result,
     load_adversarial_review_request,
     load_adversarial_review_result,
     resolve_closure_verdict,
@@ -94,6 +99,223 @@ def _check_stage_evidence(stage_dir: Path, checks: list[dict[str, Any]]) -> tupl
             blocking.append(message)
 
     return blocking, reservations
+
+
+def _read_structured_payload(path: Path, fmt: str) -> Any:
+    if fmt == "json":
+        return json.loads(path.read_text(encoding="utf-8"))
+    if fmt == "yaml":
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+    raise ValueError(f"unsupported structured artifact format: {fmt}")
+
+
+def _read_tabular_rows(path: Path, fmt: str) -> list[dict[str, Any]]:
+    if fmt == "csv":
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            return list(csv.DictReader(handle))
+    if fmt == "parquet":
+        import pyarrow.parquet as pq
+
+        return pq.read_table(path).to_pylist()
+    raise ValueError(f"unsupported tabular artifact format: {fmt}")
+
+
+def _resolve_field_path(payload: Any, field_path: str) -> Any:
+    value = payload
+    for part in field_path.split("."):
+        if not isinstance(value, dict):
+            raise ValueError(f"field path {field_path!r} is not addressable")
+        value = value.get(part)
+    return value
+
+
+def _is_non_empty_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, dict, tuple, set)):
+        return len(value) > 0
+    return True
+
+
+def _check_structural_gates(author_formal_dir: Path, structural_checks: list[dict[str, Any]]) -> list[str]:
+    findings: list[str] = []
+
+    for check in structural_checks:
+        artifact_path = author_formal_dir / str(check["artifact"])
+        fmt = str(check["format"])
+        check_type = str(check["check_type"])
+
+        try:
+            if check_type in {"non_empty", "enum_in"}:
+                payload = _read_structured_payload(artifact_path, fmt)
+                field_value = _resolve_field_path(payload, str(check["field"]))
+                if check_type == "non_empty":
+                    if not _is_non_empty_value(field_value):
+                        findings.append(f"{check['id']}: {check['message']}; observed={field_value!r}")
+                elif field_value not in list(check.get("allowed_values", [])):
+                    findings.append(f"{check['id']}: {check['message']}; observed={field_value!r}")
+                continue
+
+            rows = _read_tabular_rows(artifact_path, fmt)
+            if check_type == "row_count_gt":
+                threshold = int(check["threshold"])
+                if len(rows) <= threshold:
+                    findings.append(f"{check['id']}: {check['message']}; observed_row_count={len(rows)}")
+                continue
+
+            if check_type == "unique_key":
+                fields = [str(field) for field in check.get("fields", [])]
+                if not fields:
+                    raise ValueError("unique_key requires fields")
+                seen: set[tuple[Any, ...]] = set()
+                duplicate_key: tuple[Any, ...] | None = None
+                for row in rows:
+                    key = tuple(row.get(field) for field in fields)
+                    if key in seen:
+                        duplicate_key = key
+                        break
+                    seen.add(key)
+                if duplicate_key is not None:
+                    findings.append(f"{check['id']}: {check['message']}; observed_duplicate_key={duplicate_key!r}")
+                continue
+
+            raise ValueError(f"unsupported structural check type: {check_type}")
+        except Exception as exc:
+            findings.append(f"{check['id']}: structural gate evaluation failed for {check['artifact']}: {exc}")
+
+    return findings
+
+
+def _load_factor_role(lineage_root: Path) -> str | None:
+    route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    if not route_path.exists():
+        return None
+    data = yaml.safe_load(route_path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        return None
+    factor_role = data.get("factor_role")
+    if isinstance(factor_role, str) and factor_role.strip():
+        return factor_role.strip()
+    return None
+
+
+def _coerce_metric_value(value: Any, value_type: str) -> Any:
+    if value_type == "number":
+        if isinstance(value, bool):
+            raise ValueError("boolean is not a valid numeric value")
+        return float(value)
+    if value_type == "boolean":
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "1", "yes"}:
+                return True
+            if lowered in {"false", "0", "no"}:
+                return False
+        raise ValueError(f"could not coerce {value!r} to boolean")
+    raise ValueError(f"unsupported value_type: {value_type}")
+
+
+def _read_metric_values(author_formal_dir: Path, check: dict[str, Any]) -> list[Any]:
+    artifact_path = author_formal_dir / str(check["artifact"])
+    fmt = str(check["format"])
+    field = str(check["field"])
+
+    if fmt == "json":
+        payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+        if field not in payload:
+            raise ValueError(f"missing field {field!r} in {artifact_path.name}")
+        return [payload[field]]
+
+    if fmt == "csv":
+        with artifact_path.open("r", encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        if not rows:
+            raise ValueError(f"{artifact_path.name} has no rows")
+        return [row[field] for row in rows if field in row]
+
+    if fmt == "parquet":
+        import pyarrow.parquet as pq
+
+        table = pq.read_table(artifact_path, columns=[field])
+        return table.column(field).to_pylist()
+
+    raise ValueError(f"unsupported metric artifact format: {fmt}")
+
+
+def _resolve_metric_threshold(author_formal_dir: Path, check: dict[str, Any]) -> float:
+    if "threshold" in check:
+        return float(check["threshold"])
+
+    threshold_artifact = check.get("threshold_artifact")
+    threshold_format = check.get("threshold_format")
+    threshold_field = check.get("threshold_field")
+    if threshold_artifact and threshold_format and threshold_field:
+        payload = _read_structured_payload(author_formal_dir / str(threshold_artifact), str(threshold_format))
+        value = _resolve_field_path(payload, str(threshold_field))
+        return float(value)
+
+    raise ValueError(f"metric gate {check['id']} missing threshold configuration")
+
+
+def _metric_check_failed(value: Any, check: dict[str, Any]) -> bool:
+    operator = str(check["operator"])
+    value_type = str(check["value_type"])
+    coerced = _coerce_metric_value(value, value_type)
+    if operator == "gt":
+        return not (coerced > float(check["threshold"]))
+    if operator == "ge":
+        return not (coerced >= float(check["threshold"]))
+    if operator == "eq":
+        expected = check.get("expected")
+        if value_type == "boolean":
+            expected = _coerce_metric_value(expected, value_type)
+        return coerced != expected
+    raise ValueError(f"unsupported operator: {operator}")
+
+
+def _check_metric_gates(
+    *,
+    lineage_root: Path,
+    author_formal_dir: Path,
+    stage_contract: dict[str, Any],
+) -> list[str]:
+    findings: list[str] = []
+    factor_role = _load_factor_role(lineage_root)
+
+    for check in stage_contract.get("metric_gate_checks", []):
+        factor_roles = check.get("factor_role_in", [])
+        if factor_roles:
+            if factor_role is None:
+                findings.append(
+                    f"{check['id']}: could not resolve factor_role for metric gate evaluation"
+                )
+                continue
+            if factor_role not in factor_roles:
+                continue
+
+        try:
+            values = _read_metric_values(author_formal_dir, check)
+            threshold = _resolve_metric_threshold(author_formal_dir, check) if str(check["operator"]) in {"gt", "ge"} else None
+        except Exception as exc:
+            findings.append(f"{check['id']}: metric gate evaluation failed for {check['artifact']}: {exc}")
+            continue
+
+        if not values:
+            findings.append(f"{check['id']}: metric gate {check['artifact']} produced no values")
+            continue
+
+        normalized_check = dict(check)
+        if threshold is not None:
+            normalized_check["threshold"] = threshold
+        failures = [value for value in values if _metric_check_failed(value, normalized_check)]
+        if failures:
+            findings.append(f"{check['id']}: {check['message']}; observed={failures[0]!r}")
+
+    return findings
 
 
 def _resolve_verdict(
@@ -186,6 +408,12 @@ def run_stage_review(
     )
     request_payload = assign_runtime_reviewer_to_request(request_path, request_payload, runtime_identity)
     review_result = load_adversarial_review_result(result_path)
+    review_result = canonicalize_runtime_review_result(
+        result_path,
+        request_payload=request_payload,
+        result_payload=review_result,
+        runtime_identity=runtime_identity,
+    )
     validate_result_against_request(
         request_payload=request_payload,
         result_payload=review_result,
@@ -199,6 +427,16 @@ def run_stage_review(
 
     auto_stage_blocking, auto_stage_reservations = _check_stage_evidence(author_formal_dir, stage_checks.get("checks", []))
     blocking_findings.extend(auto_stage_blocking)
+    # 前半段 CSF stage 先执行合同/结构 gate，确保语义冻结和可复现性先过，再谈后段统计表现。
+    blocking_findings.extend(_check_structural_gates(author_formal_dir, stage_contract.get("structural_gate_checks", [])))
+    # 先把合同里写明的关键数值门禁落成真实 blocking findings，避免“有产物但坏结果也放行”。
+    blocking_findings.extend(
+        _check_metric_gates(
+            lineage_root=lineage_root,
+            author_formal_dir=author_formal_dir,
+            stage_contract=stage_contract,
+        )
+    )
 
     reservation_findings = list(auto_stage_reservations)
     reservation_findings.extend(reviewer_findings["reservation_findings"])

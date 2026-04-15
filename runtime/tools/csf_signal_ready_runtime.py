@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,22 @@ CSF_SIGNAL_READY_FREEZE_GROUP_ORDER = [
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    if not rows:
+        raise ValueError(f"{path.name} requires at least one row")
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
+def _read_parquet_rows(path: Path) -> list[dict[str, Any]]:
+    import pyarrow.parquet as pq
+
+    return pq.read_table(path).to_pylist()
 
 
 def _blank_csf_signal_ready_freeze_draft() -> dict[str, Any]:
@@ -134,7 +151,70 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
 
-    (stage_formal_dir / "factor_panel.parquet").write_text("占位 factor panel 载荷\n", encoding="utf-8")
+    membership_rows = _read_parquet_rows(upstream_formal_dir / "asset_universe_membership.parquet")
+    eligibility_rows = _read_parquet_rows(upstream_formal_dir / "eligibility_base_mask.parquet")
+    taxonomy_path = upstream_formal_dir / "asset_taxonomy_snapshot.parquet"
+    taxonomy_rows = _read_parquet_rows(taxonomy_path) if taxonomy_path.exists() else []
+    returns_panel_path = upstream_formal_dir / "shared_feature_base" / "returns_panel.parquet"
+    liquidity_panel_path = upstream_formal_dir / "shared_feature_base" / "liquidity_panel.parquet"
+    beta_inputs_path = upstream_formal_dir / "shared_feature_base" / "beta_inputs.parquet"
+    returns_rows = _read_parquet_rows(returns_panel_path) if returns_panel_path.exists() else []
+    liquidity_rows = _read_parquet_rows(liquidity_panel_path) if liquidity_panel_path.exists() else []
+    beta_rows = _read_parquet_rows(beta_inputs_path) if beta_inputs_path.exists() else []
+
+    eligible_lookup = {
+        (str(row.get("date")), str(row.get("asset"))): bool(row.get("eligible"))
+        for row in eligibility_rows
+    }
+    returns_lookup = {
+        (str(row.get("date")), str(row.get("asset"))): float(row.get("return_1d", 0.0))
+        for row in returns_rows
+    }
+    liquidity_lookup = {
+        (str(row.get("date")), str(row.get("asset"))): float(row.get("dollar_volume", 0.0))
+        for row in liquidity_rows
+    }
+    beta_lookup = {
+        (str(row.get("date")), str(row.get("asset"))): float(row.get("beta_proxy", 1.0))
+        for row in beta_rows
+    }
+    taxonomy_lookup = {
+        (str(row.get("date", "")), str(row.get("asset"))): str(row.get("group_bucket", "ungrouped"))
+        for row in taxonomy_rows
+    }
+
+    factor_panel_rows: list[dict[str, Any]] = []
+    factor_group_rows: list[dict[str, Any]] = []
+    by_date_total: dict[str, int] = {}
+    by_date_kept: dict[str, int] = {}
+    for membership in membership_rows:
+        date = str(membership.get("date"))
+        asset = str(membership.get("asset"))
+        by_date_total[date] = by_date_total.get(date, 0) + 1
+        if not bool(membership.get("in_universe")):
+            continue
+        if not eligible_lookup.get((date, asset), False):
+            continue
+        ret = returns_lookup.get((date, asset), 0.0)
+        liquidity = liquidity_lookup.get((date, asset), 0.0)
+        beta = beta_lookup.get((date, asset), 1.0)
+        # 用 data_ready 共享底座做一个确定性的最小派生分数，保证不是静态硬编码资产。
+        factor_value = float(ret * 100.0 - beta + (liquidity / 1000.0))
+        factor_panel_rows.append({"date": date, "asset": asset, final_score_field: factor_value})
+        group_value = taxonomy_lookup.get((date, asset), taxonomy_lookup.get(("", asset), "ungrouped"))
+        factor_group_rows.append({"date": date, "asset": asset, "group_context": group_value})
+        by_date_kept[date] = by_date_kept.get(date, 0) + 1
+
+    coverage_rows = [
+        {
+            "date": date,
+            "coverage_ratio": (by_date_kept.get(date, 0) / total) if total else 0.0,
+            "asset_count": by_date_kept.get(date, 0),
+        }
+        for date, total in sorted(by_date_total.items())
+    ]
+
+    _write_parquet_rows(stage_formal_dir / "factor_panel.parquet", factor_panel_rows)
     _dump_yaml(
         stage_formal_dir / "factor_manifest.yaml",
         {
@@ -155,8 +235,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             "score_combination_formula": score_combination_formula,
         },
     )
-    for name in ["factor_coverage_report.parquet", "factor_group_context.parquet"]:
-        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+    _write_parquet_rows(stage_formal_dir / "factor_coverage_report.parquet", coverage_rows)
+    _write_parquet_rows(stage_formal_dir / "factor_group_context.parquet", factor_group_rows)
     (stage_formal_dir / "factor_contract.md").write_text(
         "\n".join(
             [

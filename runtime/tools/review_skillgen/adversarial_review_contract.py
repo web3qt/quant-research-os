@@ -247,6 +247,44 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
     return data
 
 
+def canonicalize_runtime_review_result(
+    result_path: str | Path,
+    *,
+    request_payload: dict[str, Any],
+    result_payload: dict[str, Any],
+    runtime_identity: ReviewerRuntimeIdentity,
+) -> dict[str, Any]:
+    canonical: dict[str, Any] = {
+        "review_cycle_id": request_payload["review_cycle_id"],
+        "reviewer_identity": runtime_identity.reviewer_identity,
+        "reviewer_role": runtime_identity.reviewer_role,
+        "reviewer_session_id": runtime_identity.reviewer_session_id,
+        "reviewer_mode": runtime_identity.reviewer_mode,
+        "review_loop_outcome": result_payload["review_loop_outcome"],
+        "reviewed_program_dir": request_payload["required_program_dir"],
+        "reviewed_program_entrypoint": request_payload["required_program_entrypoint"],
+        "reviewed_artifact_paths": sorted(request_payload["required_artifact_paths"]),
+        "reviewed_provenance_paths": sorted(request_payload["required_provenance_paths"]),
+        "blocking_findings": list(result_payload["blocking_findings"]),
+        "reservation_findings": list(result_payload["reservation_findings"]),
+        "info_findings": list(result_payload["info_findings"]),
+        "residual_risks": list(result_payload["residual_risks"]),
+        "allowed_modifications": list(result_payload["allowed_modifications"]),
+        "downstream_permissions": list(result_payload["downstream_permissions"]),
+    }
+    for key in ("rollback_stage", "review_summary", "review_started_at", "review_completed_at"):
+        value = result_payload.get(key)
+        if value is not None:
+            canonical[key] = value
+
+    if canonical != result_payload:
+        Path(result_path).write_text(
+            yaml.safe_dump(canonical, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+    return canonical
+
+
 def resolve_closure_verdict(review_loop_outcome: str) -> str | None:
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
         return None

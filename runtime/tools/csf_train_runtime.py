@@ -25,6 +25,16 @@ def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    if not rows:
+        raise ValueError(f"{path.name} requires at least one row")
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
 def _blank_csf_train_freeze_draft() -> dict[str, Any]:
     return {
         "groups": {
@@ -214,12 +224,28 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             },
         },
     )
-    for name in [
-        "train_factor_quality.parquet",
-        "train_bucket_diagnostics.parquet",
-        "train_neutralization_diagnostics.parquet",
-    ]:
-        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+    _write_parquet_rows(
+        stage_formal_dir / "train_factor_quality.parquet",
+        [
+            {"variant_id": kept_variant_ids[0] if kept_variant_ids else "baseline_v1", "quality_score": 1.0},
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "train_bucket_diagnostics.parquet",
+        [
+            {"bucket_id": "q1", "min_names": int(quantile_count), "ranking_scope": ranking_scope},
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "train_neutralization_diagnostics.parquet",
+        [
+            {
+                "neutralization_policy": neutralization_policy,
+                "group_taxonomy_reference": group_taxonomy_reference,
+                "beta_estimation_window": beta_estimation_window,
+            },
+        ],
+    )
     with (stage_formal_dir / "train_variant_ledger.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["variant_id", "status", "selection_rule"])

@@ -214,6 +214,17 @@ stages:
         evidence:
           - "cross_section_coverage.parquet"
           - "csf_data_ready_gate_decision.md"
+      - id: "CSF-DATA-008"
+        severity: "blocking"
+        check: "panel_primary_key、cross_section_time_key、asset_key 与 shared_feature_outputs 均已显式冻结，不能保持空缺"
+        evidence:
+          - "panel_manifest.json"
+      - id: "CSF-DATA-009"
+        severity: "blocking"
+        check: "asset_universe_membership 非空，且 eligibility_base_mask 在 (date, asset) 上唯一"
+        evidence:
+          - "asset_universe_membership.parquet"
+          - "eligibility_base_mask.parquet"
 
   csf_signal_ready:
     stage_name: "CSF Signal Ready"
@@ -267,6 +278,17 @@ stages:
         evidence:
           - "factor_contract.md"
           - "review notes"
+      - id: "CSF-SIGNAL-008"
+        severity: "blocking"
+        check: "factor_direction、panel_primary_key、final_score_field 与 score_combination_formula 均已冻结，且不允许保持空缺"
+        evidence:
+          - "factor_manifest.yaml"
+          - "component_factor_manifest.yaml"
+      - id: "CSF-SIGNAL-009"
+        severity: "blocking"
+        check: "factor_panel 非空，且在 (date, asset) 上唯一"
+        evidence:
+          - "factor_panel.parquet"
 
   csf_train_freeze:
     stage_name: "CSF Train Freeze"
@@ -321,6 +343,18 @@ stages:
         evidence:
           - "train_factor_quality.parquet"
           - "csf_train_contract.md"
+      - id: "CSF-TRAIN-009"
+        severity: "blocking"
+        check: "candidate_variant_ids、kept_variant_ids 与 train_governable_axes 均已显式冻结，不能空着进入 test"
+        evidence:
+          - "csf_train_freeze.yaml"
+          - "train_variant_ledger.csv"
+      - id: "CSF-TRAIN-010"
+        severity: "blocking"
+        check: "train_factor_quality 非空，且 train_variant_ledger 在 variant_id 上唯一"
+        evidence:
+          - "train_factor_quality.parquet"
+          - "train_variant_ledger.csv"
 
   csf_test_evidence:
     stage_name: "CSF Test Evidence"
@@ -369,6 +403,11 @@ stages:
         evidence:
           - "csf_test_gate_table.csv"
           - "artifact_catalog.md"
+      - id: "CSF-TEST-008"
+        severity: "blocking"
+        check: "standalone_alpha 场景下，mean_rank_ic <= 0 不得放行到下一阶段"
+        evidence:
+          - "rank_ic_summary.json"
 
   csf_backtest_ready:
     stage_name: "CSF Backtest Ready"
@@ -419,6 +458,11 @@ stages:
           - "name_level_metrics.parquet"
           - "engine_compare.csv"
           - "csf_backtest_gate_decision.md"
+      - id: "CSF-BACKTEST-008"
+        severity: "blocking"
+        check: "mean_net_return <= 0 时不得将 csf_backtest_ready 判为通过"
+        evidence:
+          - "csf_backtest_gate_table.csv"
 
   csf_holdout_validation:
     stage_name: "CSF Holdout Validation"
@@ -466,6 +510,11 @@ stages:
         evidence:
           - "csf_holdout_gate_decision.md"
           - "artifact_catalog.md"
+      - id: "CSF-HOLDOUT-008"
+        severity: "blocking"
+        check: "direction_match = false 或 holdout_mean_net_return <= 0 时不得将 holdout 判为通过"
+        evidence:
+          - "holdout_test_compare.parquet"
 
   data_ready:
     stage_name: "Data Ready"

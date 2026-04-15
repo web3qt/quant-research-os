@@ -223,7 +223,7 @@ def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) 
         )
 
 
-def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_path: Path) -> None:
+def test_run_stage_review_rewrites_scope_to_match_runtime_request(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(
         stage_dir,
@@ -259,14 +259,24 @@ def test_run_stage_review_rejects_scope_that_does_not_match_runtime_request(tmp_
         },
     )
 
-    with pytest.raises(ValueError, match="program scope|required_program"):
-        run_stage_review(
-            cwd=stage_dir,
-            reviewer_identity="reviewer-agent",
-            reviewer_role="adversarial-reviewer",
-            reviewer_session_id="reviewer-session",
-            reviewer_mode="adversarial",
-        )
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="adversarial-reviewer",
+        reviewer_session_id="reviewer-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
+    )
+    assert payload["final_verdict"] == "PASS"
+    assert result_payload["reviewed_program_dir"] == "program/mandate"
+    assert result_payload["reviewed_program_entrypoint"] == "run_stage.py"
+    assert result_payload["reviewed_artifact_paths"] == [
+        "mandate.md",
+        "research_scope.md",
+    ]
 
 
 @pytest.mark.parametrize(

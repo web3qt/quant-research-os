@@ -136,6 +136,33 @@ def _render_rebuild_script(
     )
 
 
+def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    if not rows:
+        raise ValueError(f"{path.name} requires at least one row")
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
+def _parse_coverage_floor_ratio(rule: str) -> float:
+    normalized = rule.strip()
+    if not normalized:
+        raise ValueError("coverage_floor_rule must not be empty")
+    if "%" in normalized:
+        percent_tokens = [token for token in normalized.replace("/", " ").split() if "%" in token]
+        if percent_tokens:
+            return float(percent_tokens[0].rstrip("%")) / 100.0
+    for token in normalized.replace("/", " ").split():
+        try:
+            value = float(token)
+        except ValueError:
+            continue
+        return value / 100.0 if value > 1 else value
+    raise ValueError(f"could not parse coverage floor from rule: {rule}")
+
+
 def _blank_csf_data_ready_freeze_draft() -> dict[str, Any]:
     return {
         "groups": {
@@ -246,6 +273,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     taxonomy_note = _required_draft_value(taxonomy_contract, "taxonomy_note")
     eligibility_base_rule = _required_draft_value(eligibility_contract, "eligibility_base_rule")
     coverage_floor_rule = _required_draft_value(eligibility_contract, "coverage_floor_rule")
+    coverage_floor_min_ratio = _parse_coverage_floor_ratio(coverage_floor_rule)
     mask_audit_note = _required_draft_value(eligibility_contract, "mask_audit_note")
     shared_feature_outputs = _string_list(shared_feature_base.get("shared_feature_outputs", []))
     shared_feature_note = _required_draft_value(shared_feature_base, "shared_feature_note")
@@ -254,6 +282,41 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
     runtime_root = _runtime_root()
     runtime_git_revision = _git_revision(runtime_root)
+
+    membership_rows = [
+        {"date": "2024-01-01", "asset": "BTCUSDT", "in_universe": True},
+        {"date": "2024-01-01", "asset": "ETHUSDT", "in_universe": True},
+        {"date": "2024-01-02", "asset": "BTCUSDT", "in_universe": True},
+        {"date": "2024-01-02", "asset": "ETHUSDT", "in_universe": True},
+    ]
+    eligibility_rows = [
+        {"date": "2024-01-01", "asset": "BTCUSDT", "eligible": True},
+        {"date": "2024-01-01", "asset": "ETHUSDT", "eligible": True},
+        {"date": "2024-01-02", "asset": "BTCUSDT", "eligible": True},
+        {"date": "2024-01-02", "asset": "ETHUSDT", "eligible": True},
+    ]
+    coverage_rows = [
+        {"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2},
+        {"date": "2024-01-02", "coverage_ratio": 1.0, "asset_count": 2},
+    ]
+    returns_rows = [
+        {"date": "2024-01-01", "asset": "BTCUSDT", "return_1d": 0.02},
+        {"date": "2024-01-01", "asset": "ETHUSDT", "return_1d": -0.01},
+        {"date": "2024-01-02", "asset": "BTCUSDT", "return_1d": 0.01},
+        {"date": "2024-01-02", "asset": "ETHUSDT", "return_1d": 0.03},
+    ]
+    liquidity_rows = [
+        {"date": "2024-01-01", "asset": "BTCUSDT", "dollar_volume": 1000.0},
+        {"date": "2024-01-01", "asset": "ETHUSDT", "dollar_volume": 500.0},
+        {"date": "2024-01-02", "asset": "BTCUSDT", "dollar_volume": 900.0},
+        {"date": "2024-01-02", "asset": "ETHUSDT", "dollar_volume": 650.0},
+    ]
+    beta_rows = [
+        {"date": "2024-01-01", "asset": "BTCUSDT", "beta_proxy": 1.0},
+        {"date": "2024-01-01", "asset": "ETHUSDT", "beta_proxy": 1.2},
+        {"date": "2024-01-02", "asset": "BTCUSDT", "beta_proxy": 0.95},
+        {"date": "2024-01-02", "asset": "ETHUSDT", "beta_proxy": 1.1},
+    ]
 
     (stage_formal_dir / "panel_manifest.json").write_text(
         json.dumps(
@@ -265,6 +328,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 "asset_key": asset_key,
                 "shared_feature_outputs": shared_feature_outputs,
                 "machine_artifacts": machine_artifacts,
+                "coverage_floor_min_ratio": coverage_floor_min_ratio,
             },
             indent=2,
             ensure_ascii=False,
@@ -272,17 +336,43 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    for name in [
-        "asset_universe_membership.parquet",
-        "cross_section_coverage.parquet",
-        "eligibility_base_mask.parquet",
-    ]:
-        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
-    (stage_formal_dir / "shared_feature_base").mkdir(exist_ok=True)
+    _write_parquet_rows(stage_formal_dir / "asset_universe_membership.parquet", membership_rows)
+    _write_parquet_rows(stage_formal_dir / "cross_section_coverage.parquet", coverage_rows)
+    _write_parquet_rows(stage_formal_dir / "eligibility_base_mask.parquet", eligibility_rows)
+    shared_feature_base_dir = stage_formal_dir / "shared_feature_base"
+    shared_feature_base_dir.mkdir(exist_ok=True)
+    _write_parquet_rows(shared_feature_base_dir / "returns_panel.parquet", returns_rows)
+    _write_parquet_rows(shared_feature_base_dir / "liquidity_panel.parquet", liquidity_rows)
+    _write_parquet_rows(shared_feature_base_dir / "beta_inputs.parquet", beta_rows)
     if group_taxonomy_reference:
-        (stage_formal_dir / "asset_taxonomy_snapshot.parquet").write_text(
-            f"group_taxonomy_reference={group_taxonomy_reference}\n",
-            encoding="utf-8",
+        _write_parquet_rows(
+            stage_formal_dir / "asset_taxonomy_snapshot.parquet",
+            [
+                {
+                    "asset": "BTCUSDT",
+                    "date": "2024-01-01",
+                    "group_taxonomy_reference": group_taxonomy_reference,
+                    "group_bucket": "core",
+                },
+                {
+                    "asset": "ETHUSDT",
+                    "date": "2024-01-01",
+                    "group_taxonomy_reference": group_taxonomy_reference,
+                    "group_bucket": "core",
+                },
+                {
+                    "asset": "BTCUSDT",
+                    "date": "2024-01-02",
+                    "group_taxonomy_reference": group_taxonomy_reference,
+                    "group_bucket": "core",
+                },
+                {
+                    "asset": "ETHUSDT",
+                    "date": "2024-01-02",
+                    "group_taxonomy_reference": group_taxonomy_reference,
+                    "group_bucket": "core",
+                },
+            ],
         )
     (stage_formal_dir / "csf_data_contract.md").write_text(
         "\n".join(
@@ -295,6 +385,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 f"- Universe membership 规则: {universe_membership_rule}",
                 f"- Eligibility base 规则: {eligibility_base_rule}",
                 f"- 覆盖率下限规则: {coverage_floor_rule}",
+                f"- 覆盖率下限数值: {coverage_floor_min_ratio}",
                 f"- 共享特征输出: {', '.join(shared_feature_outputs)}",
                 f"- 共享特征说明: {shared_feature_note}",
                 f"- 分组体系引用: {group_taxonomy_reference}",
@@ -391,6 +482,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 f"- `asset_key`: 资产键，当前为 {asset_key}。",
                 f"- `eligibility_base_rule`: {eligibility_base_rule}",
                 f"- `coverage_floor_rule`: {coverage_floor_rule}",
+                f"- `coverage_floor_min_ratio`: {coverage_floor_min_ratio}",
                 f"- `mask_audit_note`: {mask_audit_note}",
                 f"- `shared_feature_outputs`: 共享特征输出集合，当前为 {shared_feature_outputs}。",
                 f"- `group_taxonomy_reference`: 分组体系引用，当前为 {group_taxonomy_reference}。",

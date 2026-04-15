@@ -32,6 +32,10 @@
 4. 检查 request 中列出的必需 artifacts 与 provenance
 5. 写出 `adversarial_review_result.yaml`
 
+`./.qros/bin/qros-review` 运行时会以 active request 为准，重写 result 中的
+`review_cycle_id`、reviewer identity、program scope 和 reviewed artifact scope。
+不要把磁盘上已有的 `adversarial_review_result.yaml` 当作不可质疑真值。
+
 ## Required Review Result Fields
 
 `adversarial_review_result.yaml` 至少必须包含：
@@ -82,6 +86,35 @@
 ## Execution Gate
 
 只有结果达到 closure-ready，才运行 `./.qros/bin/qros-review`。
+
+对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation` 这三类
+CSF stage，`qros-review` 不只检查 artifact 是否存在，还会读取关键数值门禁：
+
+- `standalone_alpha` 的 `mean_rank_ic` 必须为正
+- `csf_backtest_ready` 的 `mean_net_return` 必须为正
+- `csf_holdout_validation` 的 `direction_match` 必须为 `true`，且 `holdout_mean_net_return` 必须为正
+
+这些 hard metric gates 触发时，必须写成 `blocking_findings`，不得因为 artifact 齐全就给 `PASS`。
+
+对前半段 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`，严格性来自
+合同/语义 gate，而不是收益门：
+
+- `csf_data_ready` 必须冻结非空的 panel key 与 shared feature base 合同
+- `csf_data_ready` 的 `cross_section_coverage.parquet` 还必须满足冻结的 coverage floor 数值门
+- `csf_signal_ready` 必须冻结合法的 `factor_direction`、panel key 和 score 字段
+- `csf_train_freeze` 必须冻结非空的 candidate / kept variants 与 train-governable axes
+- `csf_train_freeze` 的 `train_factor_quality.parquet` 不能是空表，`train_variant_ledger.csv` 的 `variant_id` 不得重复
+
+这些 contract gates 触发时，同样必须写成 `blocking_findings`，不能用“后面 test/backtest 再看”来放行。
+
+当 stage contract 额外挂了 `row_count_gt` 或 `unique_key` 时，review 还会检查：
+
+- 对应 parquet / csv 不是空表
+- 约定主键（例如 `date × asset`）没有重复
+
+因此，runtime builder 不能再把 `.parquet` 产物写成占位文本；至少要生成可被正常读取的最小真实表。
+
+对 `csf_signal_ready`，最小真实表还应优先从 `csf_data_ready` 的 membership / eligibility / taxonomy / shared feature base 派生，而不是静态硬编码资产集合。
 
 ## Shared Verdict Vocabulary
 

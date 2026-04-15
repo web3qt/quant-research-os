@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.csf_train_runtime import build_csf_train_freeze_from_signal_ready, scaffold_csf_train_freeze
@@ -167,3 +168,6 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
         search_governance["non_governable_axis_reject_rule"]
         == "variants that change signal-expression axes after csf_signal_ready must reopen csf_signal_ready instead of entering train_freeze"
     )
+
+    train_quality = pq.read_table(formal_dir / "train_factor_quality.parquet").to_pylist()
+    assert len(train_quality) > 0

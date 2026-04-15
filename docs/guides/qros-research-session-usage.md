@@ -85,6 +85,32 @@ Canonical program tree：
 
 阶段 review 失败不是普通调试（不是普通 debug）。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
+对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation`，当前 runtime 还额外执行 hard metric gates，而不是只看 artifact 是否齐全：
+
+- `standalone_alpha` 的 `mean_rank_ic <= 0` 时，不得从 `csf_test_evidence` 放行
+- `mean_net_return <= 0` 时，不得把 `csf_backtest_ready` 判成通过
+- `direction_match = false` 或 `holdout_mean_net_return <= 0` 时，不得把 `csf_holdout_validation` 判成通过
+
+所以 `review_complete` 的含义是“artifact + metric gate 都通过”，而不是单纯“流程跑通”。
+
+对前半段的 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`，当前 runtime 则执行 contract / semantic gates：
+
+- `csf_data_ready` 会检查 panel key、time key、asset key 和 shared feature base 合同是否显式冻结
+- `csf_data_ready` 会检查 `cross_section_coverage.parquet` 的 `coverage_ratio` 是否达到冻结的 coverage floor
+- `csf_signal_ready` 会检查 `factor_direction` 是否属于允许词表，且 panel key / final score 字段 / score formula 不得留空
+- `csf_train_freeze` 会检查 candidate variants、kept variants 和 train-governable axes 是否显式冻结
+- `csf_train_freeze` 还会检查 `train_factor_quality.parquet` 非空，以及 `train_variant_ledger.csv` 的 `variant_id` 唯一
+
+所以前半段的 `PASS` 含义是“研究对象的合同边界已经冻结并可复用”，不是“后段表现已经成立”。
+
+另外，`csf_data_ready` 与 `csf_signal_ready` 现在还会对部分表执行最小结构 gate：
+
+- `row_count_gt`：表必须非空
+- `unique_key`：如 `date × asset` 这类主键不得重复
+
+所以这些阶段的 `.parquet` 产物不能只是占位文本，必须至少是可读取的最小真实 parquet。
+对于 `csf_signal_ready`，这些最小真实 parquet 还应尽量从上游 `csf_data_ready` 冻结产物派生，而不是静态硬编码资产列表。
+
 ## Internal Runtime
 
 deterministic backend 的入口在克隆下来的仓库里：

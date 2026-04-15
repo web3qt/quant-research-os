@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.csf_data_ready_runtime import (
@@ -137,3 +138,19 @@ def test_build_csf_data_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert (formal_dir / "rebuild_csf_data_ready.py").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+
+    membership = pq.read_table(formal_dir / "asset_universe_membership.parquet").to_pylist()
+    coverage = pq.read_table(formal_dir / "cross_section_coverage.parquet").to_pylist()
+    eligibility = pq.read_table(formal_dir / "eligibility_base_mask.parquet").to_pylist()
+    returns_panel = pq.read_table(formal_dir / "shared_feature_base" / "returns_panel.parquet").to_pylist()
+    liquidity_panel = pq.read_table(formal_dir / "shared_feature_base" / "liquidity_panel.parquet").to_pylist()
+    beta_inputs = pq.read_table(formal_dir / "shared_feature_base" / "beta_inputs.parquet").to_pylist()
+    manifest = yaml.safe_load((formal_dir / "panel_manifest.json").read_text(encoding="utf-8"))
+    assert len(membership) > 0
+    assert len(coverage) > 0
+    assert len(eligibility) > 0
+    assert len(returns_panel) > 0
+    assert len(liquidity_panel) > 0
+    assert len(beta_inputs) > 0
+    assert len({(row["date"], row["asset"]) for row in eligibility}) == len(eligibility)
+    assert manifest["coverage_floor_min_ratio"] == 0.95

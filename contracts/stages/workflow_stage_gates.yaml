@@ -455,6 +455,63 @@ stages:
     notes:
       - stage_dir = 02_csf_data_ready
       - 该阶段只为 cross_sectional_factor 主线服务
+    structural_gate_checks:
+      - id: CSF-DATA-STRUCT-001
+        severity: blocking
+        artifact: panel_manifest.json
+        format: json
+        field: panel_primary_key
+        check_type: non_empty
+        message: csf_data_ready requires a non-empty panel_primary_key contract
+      - id: CSF-DATA-STRUCT-002
+        severity: blocking
+        artifact: panel_manifest.json
+        format: json
+        field: cross_section_time_key
+        check_type: non_empty
+        message: csf_data_ready requires cross_section_time_key to be frozen
+      - id: CSF-DATA-STRUCT-003
+        severity: blocking
+        artifact: panel_manifest.json
+        format: json
+        field: asset_key
+        check_type: non_empty
+        message: csf_data_ready requires asset_key to be frozen
+      - id: CSF-DATA-STRUCT-004
+        severity: blocking
+        artifact: panel_manifest.json
+        format: json
+        field: shared_feature_outputs
+        check_type: non_empty
+        message: csf_data_ready requires shared_feature_outputs to be explicitly frozen
+      - id: CSF-DATA-STRUCT-005
+        severity: blocking
+        artifact: asset_universe_membership.parquet
+        format: parquet
+        check_type: row_count_gt
+        threshold: 0
+        message: csf_data_ready requires non-empty asset_universe_membership rows
+      - id: CSF-DATA-STRUCT-006
+        severity: blocking
+        artifact: eligibility_base_mask.parquet
+        format: parquet
+        check_type: unique_key
+        fields:
+          - date
+          - asset
+        message: csf_data_ready requires eligibility_base_mask to be unique on (date, asset)
+    metric_gate_checks:
+      - id: CSF-DATA-METRIC-001
+        severity: blocking
+        artifact: cross_section_coverage.parquet
+        format: parquet
+        field: coverage_ratio
+        value_type: number
+        operator: ge
+        threshold_artifact: panel_manifest.json
+        threshold_format: json
+        threshold_field: coverage_floor_min_ratio
+        message: csf_data_ready coverage floor must be satisfied before advancing
 
   csf_signal_ready:
     stage_id: csf_signal_ready
@@ -541,6 +598,54 @@ stages:
         - 未冻结的 train 尺子
     notes:
       - stage_dir = 03_csf_signal_ready
+    structural_gate_checks:
+      - id: CSF-SIGNAL-STRUCT-001
+        severity: blocking
+        artifact: factor_manifest.yaml
+        format: yaml
+        field: factor_direction
+        check_type: enum_in
+        allowed_values:
+          - high_better
+          - low_better
+        message: csf_signal_ready requires factor_direction to use an allowed frozen vocabulary
+      - id: CSF-SIGNAL-STRUCT-002
+        severity: blocking
+        artifact: factor_manifest.yaml
+        format: yaml
+        field: panel_primary_key
+        check_type: non_empty
+        message: csf_signal_ready requires factor_panel primary key to be frozen
+      - id: CSF-SIGNAL-STRUCT-003
+        severity: blocking
+        artifact: factor_manifest.yaml
+        format: yaml
+        field: final_score_field
+        check_type: non_empty
+        message: csf_signal_ready requires final_score_field to be explicit
+      - id: CSF-SIGNAL-STRUCT-004
+        severity: blocking
+        artifact: component_factor_manifest.yaml
+        format: yaml
+        field: score_combination_formula
+        check_type: non_empty
+        message: csf_signal_ready requires score_combination_formula to be explicit
+      - id: CSF-SIGNAL-STRUCT-005
+        severity: blocking
+        artifact: factor_panel.parquet
+        format: parquet
+        check_type: row_count_gt
+        threshold: 0
+        message: csf_signal_ready requires non-empty factor_panel rows
+      - id: CSF-SIGNAL-STRUCT-006
+        severity: blocking
+        artifact: factor_panel.parquet
+        format: parquet
+        check_type: unique_key
+        fields:
+          - date
+          - asset
+        message: csf_signal_ready requires factor_panel to be unique on (date, asset)
 
   csf_train_freeze:
     stage_id: csf_train_freeze
@@ -630,6 +735,43 @@ stages:
         - 未冻结的 train 搜索轨迹
     notes:
       - stage_dir = 04_csf_train_freeze
+    structural_gate_checks:
+      - id: CSF-TRAIN-STRUCT-001
+        severity: blocking
+        artifact: csf_train_freeze.yaml
+        format: yaml
+        field: search_governance_contract.candidate_variant_ids
+        check_type: non_empty
+        message: csf_train_freeze requires candidate_variant_ids to be explicitly frozen
+      - id: CSF-TRAIN-STRUCT-002
+        severity: blocking
+        artifact: csf_train_freeze.yaml
+        format: yaml
+        field: search_governance_contract.kept_variant_ids
+        check_type: non_empty
+        message: csf_train_freeze requires kept_variant_ids to be explicitly frozen
+      - id: CSF-TRAIN-STRUCT-003
+        severity: blocking
+        artifact: csf_train_freeze.yaml
+        format: yaml
+        field: search_governance_contract.train_governable_axes
+        check_type: non_empty
+        message: csf_train_freeze requires train_governable_axes to be explicit
+      - id: CSF-TRAIN-STRUCT-004
+        severity: blocking
+        artifact: train_factor_quality.parquet
+        format: parquet
+        check_type: row_count_gt
+        threshold: 0
+        message: csf_train_freeze requires non-empty train_factor_quality rows
+      - id: CSF-TRAIN-STRUCT-005
+        severity: blocking
+        artifact: train_variant_ledger.csv
+        format: csv
+        check_type: unique_key
+        fields:
+          - variant_id
+        message: csf_train_freeze requires train_variant_ledger to be unique on variant_id
 
   csf_test_evidence:
     stage_id: csf_test_evidence
@@ -709,6 +851,18 @@ stages:
         - 未冻结的 test 搜索轨迹
     notes:
       - stage_dir = 05_csf_test_evidence
+    metric_gate_checks:
+      - id: CSF-TEST-METRIC-001
+        severity: blocking
+        factor_role_in:
+          - standalone_alpha
+        artifact: rank_ic_summary.json
+        format: json
+        field: mean_rank_ic
+        value_type: number
+        operator: gt
+        threshold: 0.0
+        message: standalone_alpha requires mean_rank_ic > 0 before advancing from csf_test_evidence
 
   csf_backtest_ready:
     stage_id: csf_backtest_ready
@@ -807,6 +961,16 @@ stages:
         - 未冻结的权重搜索轨迹
     notes:
       - stage_dir = 06_csf_backtest_ready
+    metric_gate_checks:
+      - id: CSF-BACKTEST-METRIC-001
+        severity: blocking
+        artifact: csf_backtest_gate_table.csv
+        format: csv
+        field: mean_net_return
+        value_type: number
+        operator: gt
+        threshold: 0.0
+        message: csf_backtest_ready requires mean_net_return > 0 after cost
 
   csf_holdout_validation:
     stage_id: csf_holdout_validation
@@ -840,6 +1004,25 @@ stages:
       - csf_holdout_gate_decision.md
       - artifact_catalog.md
       - field_dictionary.md
+    metric_gate_checks:
+      - id: CSF-HOLDOUT-METRIC-001
+        severity: blocking
+        artifact: holdout_test_compare.parquet
+        format: parquet
+        field: direction_match
+        value_type: boolean
+        operator: eq
+        expected: true
+        message: holdout direction must remain aligned with the frozen test/backtest conclusion
+      - id: CSF-HOLDOUT-METRIC-002
+        severity: blocking
+        artifact: holdout_test_compare.parquet
+        format: parquet
+        field: holdout_mean_net_return
+        value_type: number
+        operator: gt
+        threshold: 0.0
+        message: holdout_mean_net_return must stay positive before holdout_validation can pass
     formal_gate:
       pass_all_of:
         - 只复用冻结方案，不重估上游尺子

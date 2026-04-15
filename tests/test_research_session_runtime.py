@@ -20,6 +20,15 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_test_parquet_rows(path: Path, rows: list[dict]) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
 def _stage_output_path(stage_dir: Path, name: str) -> Path:
     if name in {"latest_review_pack.yaml", "stage_gate_review.yaml", "stage_completion_certificate.yaml"}:
         path = stage_dir / "review" / "closure" / name
@@ -218,6 +227,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         ],
         "csf_data_ready": [
             "panel_manifest.json",
+            "asset_universe_membership.parquet",
             "cross_section_coverage.parquet",
             "eligibility_base_mask.parquet",
             "asset_taxonomy_snapshot.parquet",
@@ -307,7 +317,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         "test_evidence": [],
         "backtest_ready": ["vectorbt", "backtrader"],
         "holdout_validation": ["window_results"],
-        "csf_data_ready": ["asset_universe_membership.parquet", "shared_feature_base"],
+        "csf_data_ready": ["shared_feature_base"],
         "csf_signal_ready": [],
         "csf_train_freeze": [],
         "csf_test_evidence": [],
@@ -315,7 +325,52 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         "csf_holdout_validation": [],
     }
 
+    parquet_fixtures: dict[str, list[dict]] = {
+        "asset_universe_membership.parquet": [
+            {"date": "2024-01-01", "asset": "BTCUSDT", "in_universe": True},
+            {"date": "2024-01-01", "asset": "ETHUSDT", "in_universe": True},
+        ],
+        "cross_section_coverage.parquet": [
+            {"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2},
+        ],
+        "eligibility_base_mask.parquet": [
+            {"date": "2024-01-01", "asset": "BTCUSDT", "eligible": True},
+            {"date": "2024-01-01", "asset": "ETHUSDT", "eligible": True},
+        ],
+        "asset_taxonomy_snapshot.parquet": [
+            {"asset": "BTCUSDT", "group_taxonomy_reference": "sector_bucket_v1", "group_bucket": "core"},
+            {"asset": "ETHUSDT", "group_taxonomy_reference": "sector_bucket_v1", "group_bucket": "core"},
+        ],
+        "factor_panel.parquet": [
+            {"date": "2024-01-01", "asset": "BTCUSDT", "factor_value": 1.0},
+            {"date": "2024-01-01", "asset": "ETHUSDT", "factor_value": -1.0},
+        ],
+        "factor_coverage_report.parquet": [
+            {"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2},
+        ],
+        "factor_group_context.parquet": [
+            {"date": "2024-01-01", "asset": "BTCUSDT", "group_context": "core"},
+            {"date": "2024-01-01", "asset": "ETHUSDT", "group_context": "core"},
+        ],
+        "train_factor_quality.parquet": [
+            {"variant_id": "baseline_v1", "quality_score": 1.0},
+        ],
+        "train_bucket_diagnostics.parquet": [
+            {"bucket_id": "q1", "min_names": 10, "ranking_scope": "full_universe"},
+        ],
+        "train_neutralization_diagnostics.parquet": [
+            {
+                "neutralization_policy": "group_neutral",
+                "group_taxonomy_reference": "sector_bucket_v1",
+                "beta_estimation_window": "60d",
+            },
+        ],
+    }
+
     for name in file_outputs[stage]:
+        if name in parquet_fixtures:
+            _write_test_parquet_rows(author_formal_dir / name, parquet_fixtures[name])
+            continue
         (author_formal_dir / name).write_text("ok\n", encoding="utf-8")
     for name in dir_outputs[stage]:
         (author_formal_dir / name).mkdir()
