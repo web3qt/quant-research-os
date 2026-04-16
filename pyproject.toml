@@ -1,6 +1,6 @@
 [project]
 name = "quant-research-os"
-version = "0.1.0"
+version = "0.2.0"
 description = "Agentic stage-gated governance framework for quantitative research workflows"
 requires-python = ">=3.11"
 dependencies = [
