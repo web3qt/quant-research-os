@@ -81,7 +81,7 @@ Canonical program tree：
 
 每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 program hash、entrypoint、authoring session 和 output refs 记账。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后但 review 尚未 closure 时，会停在 `awaiting_review_closure`。
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_author_fix` 或 `awaiting_review_closure`。
 
 阶段 review 失败不是普通调试（不是普通 debug）。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
@@ -91,7 +91,7 @@ Canonical program tree：
 - `mean_net_return <= 0` 时，不得把 `csf_backtest_ready` 判成通过
 - `direction_match = false` 或 `holdout_mean_net_return <= 0` 时，不得把 `csf_holdout_validation` 判成通过
 
-所以 `review_complete` 的含义是“artifact + metric gate 都通过”，而不是单纯“流程跑通”。
+所以这些 CSF stage 的通过语义是“artifact + metric gate 都通过”，而不是单纯“流程跑通”。
 
 对前半段的 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`，当前 runtime 则执行 contract / semantic gates：
 
@@ -142,7 +142,7 @@ Lineage: btc_leads_alts
 - `Current stage`：当前 lineage 真实所处的阶段
 - `Current active skill`：按当前 stage / verdict 推导出来、制度上现在真正应该干活的 skill；如果 review verdict 进入失败类分支，这里会切到 `qros-stage-failure-handler`
 
-如果某个阶段已经 review closure 完成，session 会直接进入 `*_next_stage_confirmation_pending`，等待用户是否进入下一阶段。展示/总结不是 formal workflow gate；如果用户想看阶段总结，应直接在对话里提出。
+如果某个非终态阶段已经 review closure 完成，session 会进入 `*_next_stage_confirmation_pending`，等待用户是否进入下一阶段。对最终的 `holdout_validation`，最后一次 `CONFIRM_NEXT_STAGE` 会把 session 标成 `holdout_validation_review_complete`。展示/总结不是 formal workflow gate；如果用户想看阶段总结，应直接在对话里提出。
 
 如果你要让脚本输出机读状态而不是文本面板，可以加 `--json`：
 
@@ -173,15 +173,15 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 
 ```json
 {
-  "current_stage": "data_ready",
+  "current_stage": "data_ready_author",
   "current_route": "time_series_signal",
   "stage_status": "awaiting_stage_program",
   "blocking_reason_code": "STAGE_PROGRAM_MISSING",
-  "required_program_dir": "outputs/<lineage_id>/program/time_series/data_ready",
-  "required_program_entrypoint": "build_data_ready.py",
+  "required_program_dir": "program/time_series/data_ready",
+  "required_program_entrypoint": "run_stage.py",
   "program_contract_status": "missing",
   "provenance_status": "missing",
-  "next_action": "Author the lineage-local data_ready stage program and rerun qros-session",
+  "next_action": "Author the lineage-local stage program under program/time_series/data_ready.",
   "resume_hint": "Continue in the same research repo after adding stage_program.yaml, README.md, and the entrypoint."
 }
 ```
@@ -259,14 +259,12 @@ session runtime 会按下面这个顺序检查磁盘状态：
 7. required program dir 不存在 -> 当前 stage 保持 author/build 态，但 `stage_status = awaiting_stage_program`
 8. program dir 存在但 `stage_program.yaml`、entrypoint 或 authored_by 合同不合法 -> `stage_status = awaiting_program_validation`
 9. program contract 合法但程序执行失败、provenance 缺失或 required outputs 不成立 -> `awaiting_program_execution` / 相应 blocking reason
-10. stage artifacts 与 `program_execution_manifest.json` 都成立，但 review closure 还缺失 -> `<stage> review` 且 `stage_status = awaiting_review_closure`
-11. mandate review closure exists -> `data_ready_confirmation_pending`
-12. data_ready review closure exists -> `signal_ready_confirmation_pending`
-13. signal_ready review closure exists -> `train_freeze_confirmation_pending`
-14. train_freeze review closure exists -> `test_evidence_confirmation_pending`
-15. test_evidence review closure exists -> `backtest_ready_confirmation_pending`
-16. backtest_ready review closure exists -> `holdout_validation_confirmation_pending`
-17. holdout_validation review closure exists -> session stops and reports completion
+10. stage artifacts 与 `program_execution_manifest.json` 都成立，但 review 还没开始 -> `<stage>_review_confirmation_pending`，并要求 `CONFIRM_REVIEW`
+11. review 已开始但 closure 还缺失 -> `<stage>_review`，review substate 会落在 `awaiting_adversarial_review`、`awaiting_author_fix` 或 `awaiting_review_closure`
+12. 任一非终态 stage 的 review closure exists 但 downstream handoff 未确认 -> `<stage>_next_stage_confirmation_pending`
+13. 对非终态 stage，收到 `CONFIRM_NEXT_STAGE` 后 -> 下游 `<next_stage>_confirmation_pending`
+14. `holdout_validation` review closure exists 但最终 handoff 未确认 -> `holdout_validation_next_stage_confirmation_pending`
+15. 收到最终 `CONFIRM_NEXT_STAGE` 后 -> `holdout_validation_review_complete`
 
 如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
 
@@ -298,7 +296,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
   这里会明确问数据来源哪里来，以及后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
 - 确认 `execution_contract`
 - 在生成 mandate 前先问 `是否确认进入 mandate？`
-- mandate review closure 完成后，按 group 交互式冻结 data_ready
+- mandate review closure 完成后，先进入 `mandate_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 data_ready
 - 确认 `extraction_contract`
 - 确认 `quality_semantics`
 - 确认 `universe_admission`
@@ -307,7 +305,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 让当前 research repo 真实物化这些 group 承诺的共享输出，以及 QC 或 coverage 证据
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `data_ready`
 - 在生成 data_ready 前先问 `是否按以上内容冻结 data_ready？`
-- data_ready review closure 完成后，按 group 交互式冻结 signal_ready
+- data_ready review closure 完成后，先进入 `data_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 signal_ready
 - 确认 `signal_expression`
 - 确认 `param_identity`
 - 确认 `time_semantics`
@@ -316,7 +314,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 让当前 research repo 真实物化这些 group 承诺的 baseline signal timeseries、param manifests 和 coverage 证据
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `signal_ready`
 - 在生成 signal_ready 前先问 `是否按以上内容冻结 signal_ready？`
-- signal_ready review closure 完成后，按 group 交互式冻结 train_freeze
+- signal_ready review closure 完成后，先进入 `signal_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 train_freeze
 - 确认 `window_contract`
 - 确认 `threshold_contract`
 - 确认 `quality_filters`
@@ -325,7 +323,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 让当前 research repo 真实物化这些 group 承诺的 train thresholds、质量输出和 ledgers
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `train_freeze`
 - 在生成 train_freeze 前先问 `是否按以上内容冻结 train_freeze？`
-- train_freeze review closure 完成后，按 group 交互式冻结 test_evidence
+- train_freeze review closure 完成后，先进入 `train_freeze_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 test_evidence
 - 确认 `window_contract`
 - 确认 `formal_gate_contract`
 - 确认 `admissibility_contract`
@@ -334,7 +332,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 让当前 research repo 真实物化这些 group 承诺的 independent-sample statistics、admissibility outputs 和 frozen selections
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `test_evidence`
 - 在生成 test_evidence 前先问 `是否按以上内容冻结 test_evidence？`
-- test_evidence review closure 完成后，按 group 交互式冻结 backtest_ready
+- test_evidence review closure 完成后，先进入 `test_evidence_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 backtest_ready
 - 确认 `execution_policy`
 - 确认 `portfolio_policy`
 - 确认 `risk_overlay`
@@ -343,7 +341,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 让当前 research repo 真实物化这些 group 承诺的 dual-engine backtest outputs、combo ledgers 和 capacity evidence
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `backtest_ready`
 - 在生成 backtest_ready 前先问 `是否按以上内容冻结 backtest_ready？`
-- backtest_ready review closure 完成后，按 group 交互式冻结 holdout_validation
+- backtest_ready review closure 完成后，先进入 `backtest_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 holdout_validation
 - 确认 `window_contract`
 - 确认 `reuse_contract`
 - 确认 `drift_audit`
@@ -369,7 +367,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 11. QROS 展示最终的 grouped mandate summary，并询问 `是否确认进入 mandate？`
 12. 用户用自然语言回答
 13. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/mandate/` 下的 stage program，再由 runtime 校验并调用它构建 `01_mandate/`
-14. mandate review closure 完成后，QROS 进入 `data_ready_confirmation_pending`
+14. mandate review closure 完成后，QROS 先进入 `mandate_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `data_ready_confirmation_pending`
 15. QROS 确认 `extraction_contract`
 16. QROS 确认 `quality_semantics`
 17. QROS 确认 `universe_admission`
@@ -378,7 +376,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 20. QROS 展示最终的 grouped data_ready summary，并询问 `是否按以上内容冻结 data_ready？`
 21. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/data_ready/`，再由 runtime 校验并调用它构建 `02_data_ready/`
 22. 这个 build 应该真实物化共享数据产物和证据，而不是只 scaffold 目录或写 placeholder 文件
-23. data_ready review closure 完成后，QROS 进入 `signal_ready_confirmation_pending`
+23. data_ready review closure 完成后，QROS 先进入 `data_ready_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `signal_ready_confirmation_pending`
 24. QROS 确认 `signal_expression`
 25. QROS 确认 `param_identity`
 26. QROS 确认 `time_semantics`
@@ -387,7 +385,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 29. QROS 展示最终的 grouped signal_ready summary，并询问 `是否按以上内容冻结 signal_ready？`
 30. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/signal_ready/`，再由 runtime 校验并调用它构建 `03_signal_ready/`
 31. 这个 build 应该真实物化 signal timeseries、param manifests 和 coverage 证据，而不是只 scaffold 目录或写 placeholder 文件
-32. signal_ready review closure 完成后，QROS 进入 `train_freeze_confirmation_pending`
+32. signal_ready review closure 完成后，QROS 先进入 `signal_ready_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `train_freeze_confirmation_pending`
 33. QROS 确认 `window_contract`
 34. QROS 确认 `threshold_contract`
 35. QROS 确认 `quality_filters`
@@ -396,7 +394,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 38. QROS 展示最终的 grouped train_freeze summary，并询问 `是否按以上内容冻结 train_freeze？`
 39. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/train_freeze/`，再由 runtime 校验并调用它构建 `04_train_freeze/`
 40. 这个 build 应该真实物化 train thresholds、质量输出和 ledgers，而不是只 scaffold 目录或写 placeholder 文件
-41. train_freeze review closure 完成后，QROS 进入 `test_evidence_confirmation_pending`
+41. train_freeze review closure 完成后，QROS 先进入 `train_freeze_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `test_evidence_confirmation_pending`
 42. QROS 确认 `window_contract`
 43. QROS 确认 `formal_gate_contract`
 44. QROS 确认 `admissibility_contract`
@@ -405,7 +403,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 47. QROS 展示最终的 grouped test_evidence summary，并询问 `是否按以上内容冻结 test_evidence？`
 48. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/test_evidence/`，再由 runtime 校验并调用它构建 `05_test_evidence/`
 49. 这个 build 应该真实物化 test statistics、admissibility outputs 和 frozen selection artifacts，而不是只 scaffold 目录或写 placeholder 文件
-50. test_evidence review closure 完成后，QROS 进入 `backtest_ready_confirmation_pending`
+50. test_evidence review closure 完成后，QROS 先进入 `test_evidence_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `backtest_ready_confirmation_pending`
 51. QROS 确认 `execution_policy`
 52. QROS 确认 `portfolio_policy`
 53. QROS 确认 `risk_overlay`
@@ -414,7 +412,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 56. QROS 展示最终的 grouped backtest_ready summary，并询问 `是否按以上内容冻结 backtest_ready？`
 57. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/backtest_ready/`，再由 runtime 校验并调用它构建 `06_backtest/`
 58. 这个 build 应该真实物化 dual-engine backtest outputs、combo ledgers 和 capacity evidence，而不是只 scaffold 目录或写 placeholder 文件
-59. backtest_ready review closure 完成后，QROS 进入 `holdout_validation_confirmation_pending`
+59. backtest_ready review closure 完成后，QROS 先进入 `backtest_ready_next_stage_confirmation_pending`；收到 `CONFIRM_NEXT_STAGE` 后再进入 `holdout_validation_confirmation_pending`
 60. QROS 确认 `window_contract`
 61. QROS 确认 `reuse_contract`
 62. QROS 确认 `drift_audit`
@@ -423,7 +421,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 65. QROS 展示最终的 grouped holdout_validation summary，并询问 `是否按以上内容冻结 holdout_validation？`
 66. agent 在内部记录批准决定，然后先补齐 `outputs/<lineage_id>/program/time_series/holdout_validation/`，再由 runtime 校验并调用它构建 `07_holdout/`
 67. 这个 build 应该真实物化 single-window、merged-window 和 comparison outputs，而不是只 scaffold 目录或写 placeholder 文件
-68. holdout_validation review closure 完成后，session 会停止，而不是继续进入更后面的阶段
+68. holdout_validation review closure 完成后，QROS 先进入 `holdout_validation_next_stage_confirmation_pending`；收到最终 `CONFIRM_NEXT_STAGE` 后进入 `holdout_validation_review_complete`，而不是继续进入更后面的治理阶段
 
 ## Why This Exists
 

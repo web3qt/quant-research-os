@@ -66,37 +66,37 @@ The agent should:
 - stop at `mandate_confirmation_pending` when intake is admitted
 - confirm grouped freeze content during the conversation: `research_intent`, `scope_contract`, `data_contract`, `execution_contract`
 - explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
-- continue into `data_ready_confirmation_pending` after mandate review closure
+- after mandate review closure, first enter `mandate_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `data_ready_confirmation_pending`
 - confirm grouped data_ready content during the conversation: `extraction_contract`, `quality_semantics`, `universe_admission`, `shared_derived_layer`, `delivery_contract`
 - make the active research repo materially generate the shared data outputs and QC or coverage evidence promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `data_ready`
 - explicitly ask `是否按以上内容冻结 data_ready？` before writing `02_data_ready/`
-- continue into `signal_ready_confirmation_pending` after data_ready review closure
+- after data_ready review closure, first enter `data_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `signal_ready_confirmation_pending`
 - confirm grouped signal_ready content during the conversation: `signal_expression`, `param_identity`, `time_semantics`, `signal_schema`, `delivery_contract`
 - make the active research repo materially generate baseline signal timeseries, param manifests and coverage evidence promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `signal_ready`
 - explicitly ask `是否按以上内容冻结 signal_ready？` before writing `03_signal_ready/`
-- continue into `train_freeze_confirmation_pending` after signal_ready review closure
+- after signal_ready review closure, first enter `signal_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `train_freeze_confirmation_pending`
 - confirm grouped train_freeze content during the conversation: `window_contract`, `threshold_contract`, `quality_filters`, `param_governance`, `delivery_contract`
 - make the active research repo materially generate train thresholds, quality outputs and ledgers promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `train_freeze`
 - explicitly ask `是否按以上内容冻结 train_freeze？` before writing `04_train_freeze/`
-- continue into `test_evidence_confirmation_pending` after train_freeze review closure
+- after train_freeze review closure, first enter `train_freeze_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `test_evidence_confirmation_pending`
 - confirm grouped test_evidence content during the conversation: `window_contract`, `formal_gate_contract`, `admissibility_contract`, `audit_contract`, `delivery_contract`
 - make the active research repo materially generate test statistics, admissibility outputs and frozen selections promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `test_evidence`
 - explicitly ask `是否按以上内容冻结 test_evidence？` before writing `05_test_evidence/`
-- continue into `backtest_ready_confirmation_pending` after test_evidence review closure
+- after test_evidence review closure, first enter `test_evidence_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `backtest_ready_confirmation_pending`
 - confirm grouped backtest_ready content during the conversation: `execution_policy`, `portfolio_policy`, `risk_overlay`, `engine_contract`, `delivery_contract`
 - make the active research repo materially generate dual-engine backtest outputs, combo ledgers and capacity evidence promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `backtest_ready`
 - explicitly ask `是否按以上内容冻结 backtest_ready？` before writing `06_backtest/`
-- continue into `holdout_validation_confirmation_pending` after backtest_ready review closure
+- after backtest_ready review closure, first enter `backtest_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `holdout_validation_confirmation_pending`
 - confirm grouped holdout_validation content during the conversation: `window_contract`, `reuse_contract`, `drift_audit`, `failure_governance`, `delivery_contract`
 - make the active research repo materially generate single-window, merged-window and comparison outputs promised by that freeze
 - never treat empty directories, placeholder files, or contract-only markdown as completed `holdout_validation`
 - explicitly ask `是否按以上内容冻结 holdout_validation？` before writing `07_holdout/`
-- stop after `holdout_validation review`
+- after holdout_validation review closure, first enter `holdout_validation_next_stage_confirmation_pending`; explicit `CONFIRM_NEXT_STAGE` marks the session complete
 
 ## 4. What You Should See
 
@@ -122,6 +122,6 @@ QROS still uses scripts internally for deterministic state transitions, but thos
 
 ## 6. Next
 
-After `holdout_validation review`, this version stops. That is the current terminal stage of the single-entry flow.
+After `holdout_validation review` closure, the runtime enters `holdout_validation_next_stage_confirmation_pending`. After explicit `CONFIRM_NEXT_STAGE`, it moves to `holdout_validation_review_complete`. It does not continue into later governance stages.
 
 Codex discovers QROS directly through `~/.codex/skills/`; `./setup` writes the flat installed `qros-*` skills there.

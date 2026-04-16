@@ -237,19 +237,19 @@
                 <mxCell id="205" value="&lt;b&gt;06 csf_holdout_validation 在做什么&lt;/b&gt;&lt;br&gt;它在验证最终冻结方案，在最后完全未参与设计的窗口里是否仍然没有翻向或塌陷。&lt;br&gt;reuse frozen plan（只复用 test / backtest 冻结方案，不再重估任何上游尺子）&lt;br&gt;holdout vs prior compare（比较 holdout 与 test / backtest 的因子和组合表现）&lt;br&gt;stability audit（检查 rolling holdout stability、breadth / coverage 是否塌陷）&lt;br&gt;regime shift audit（当分布漂移明显时，显式审计是 regime 变化还是机制断裂）&lt;br&gt;formal outputs（holdout diagnostics、test compare、portfolio compare、regime_shift_audit）&lt;br&gt;&lt;br&gt;不在 holdout 调参，不改 bucket cut / neutralization / weight mapping，不把 holdout 并回 test 或 backtest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="860" width="540" height="250" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review 停止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review closure + 最终 handoff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3680" y="290" width="240" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="19" value="07+ 后续治理阶段&#xa;holdout_validation review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="19" value="当前终态&#xa;holdout_validation_review_complete" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3680" y="410" width="230" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="20" value="SOP 已定义&#xa;未纳入当前 qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3680" y="530" width="240" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="209" value="&lt;b&gt;为什么这里不再作为当前主线&lt;/b&gt;&lt;br&gt;当前 qros-research-session first-wave 只覆盖到 holdout_validation review。&lt;br&gt;也就是说，runtime 在当前版本不会自动从研究阶段继续推进到 07+ 治理阶段。&lt;br&gt;&lt;br&gt;因此右侧这块应被理解为 roadmap / governance blueprint，而不是当前已落地的单入口编排路径。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="209" value="&lt;b&gt;为什么这里不再作为当前主线&lt;/b&gt;&lt;br&gt;当前 qros-research-session first-wave 会推进到 holdout_validation review closure，随后进入 holdout_validation_next_stage_confirmation_pending，并在最终 CONFIRM_NEXT_STAGE 后进入 holdout_validation_review_complete。&lt;br&gt;也就是说，runtime 在当前版本不会从这个终态继续推进到 07+ 后续治理阶段。&lt;br&gt;&lt;br&gt;因此右侧这块应被理解为 roadmap / governance blueprint，而不是当前已落地的单入口编排路径。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="3700" y="660" width="280" height="190" as="geometry"/>
                 </mxCell>
-                <mxCell id="210" value="&lt;b&gt;当前不再保留后续治理阶段&lt;/b&gt;&lt;br&gt;holdout_validation review 就是当前项目的正式终点。&lt;br&gt;如果未来重新引入新阶段，必须以完整 contract / runtime / docs / tests 重新接入。&lt;br&gt;&lt;br&gt;不要把右侧区域理解成现存的产品能力。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="210" value="&lt;b&gt;当前不再保留后续治理阶段&lt;/b&gt;&lt;br&gt;当前项目的单入口终态是 holdout_validation_review_complete；它来自 holdout_validation review closure 之后的最终 next-stage confirm。&lt;br&gt;如果未来重新引入新阶段，必须以完整 contract / runtime / docs / tests 重新接入。&lt;br&gt;&lt;br&gt;不要把右侧区域理解成现存的产品能力。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="3700" y="880" width="280" height="205" as="geometry"/>
                 </mxCell>
                 <mxCell id="211" value="&lt;b&gt;当前图里的阅读方式&lt;/b&gt;&lt;br&gt;左侧案例块是 CSF 示例，不代表系统默认只推荐这条 route。&lt;br&gt;中间两条链路表示当前已落地、可由 qros-research-session 编排的 first-wave 研究主线。&lt;br&gt;右侧灰色区域表示未来治理阶段，已在 SOP 定义，但不应被当成今天已经接入的 runtime 事实。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=10;align=left;spacingLeft=10;" parent="1" vertex="1">

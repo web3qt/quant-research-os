@@ -519,7 +519,7 @@
                 <mxCell id="spg-review" value="`awaiting_review_closure`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1860" y="1480" width="320" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="spg-ok" value="review_complete&#xa;可以进入下一阶段确认" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="spg-ok" value="`*_next_stage_confirmation_pending`&#xa;等待显式 handoff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="980" y="1640" width="380" height="74" as="geometry"/>
                 </mxCell>
                 <mxCell id="spg-note" value="一句话：mandate 之后，QROS 不再只看“文档写了没”，而是看 program、provenance、formal outputs 和 review closure 是否一起成立。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EEFC;strokeColor=#4A6FA5;fontSize=15;fontStyle=1;" parent="1" vertex="1">

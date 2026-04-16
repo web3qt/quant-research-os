@@ -56,8 +56,8 @@ sequenceDiagram
     A->>S: 读取行为规范
     A->>R: ./.qros/bin/qros-session --raw-idea "研究动量因子"
 
-    R->>D: 检查 outputs/ 目录
-    R-->>A: 返回状态面板<br/>📍 idea_intake<br/>▶ 确认 observation 和 hypothesis
+    R->>D: 检查并初始化 outputs/ 目录与 intake scaffold
+    R-->>A: 返回状态面板<br/>📍 idea_intake_confirmation_pending<br/>▶ 确认 observation 和 hypothesis
 
     loop 分组确认循环
         A->>U: "你的主要假说是什么？"
@@ -66,13 +66,13 @@ sequenceDiagram
     end
 
     A->>R: --confirm-intake
-    R->>D: 校验 idea_brief.md、scorecard.yaml、gate_decision.yaml
+    R->>D: 校验 idea_brief.md、qualification_scorecard.yaml、idea_gate_decision.yaml
     R-->>A: ✅ 推进到 mandate_confirmation_pending
 
     A->>U: "是否确认进入 mandate？"
     U->>A: "确认"
     A->>R: --confirm-mandate
-    R->>D: 校验 mandate 产物完整性
+    R->>D: 写入 mandate transition approval，并检查 mandate freeze group 是否已齐
     R-->>A: 推进到 mandate_author
 ```
 
@@ -98,7 +98,7 @@ graph TB
 
     subgraph Core["核心状态机"]
         RS["research_session.py<br/>~3200 行"]
-        RS -->|"67 种状态"| SessionStage["SessionStage"]
+        RS -->|"约 70 个状态<br/>当前为 69 个唯一状态"| SessionStage["SessionStage"]
     end
 
     subgraph StageRuntimes["各阶段 Runtime"]
@@ -152,16 +152,21 @@ graph TB
 ```mermaid
 graph LR
     R["qros-session"] -->|"exit 0"| OK["一切正常，可继续"]
-    R -->|"exit 2"| Confirm["等待用户确认<br/>FREEZE_APPROVAL_MISSING"]
+    R -->|"exit 2"| Confirm["等待确认 / 阻塞<br/>FREEZE_APPROVAL_MISSING 等"]
     R -->|"exit 3"| NoProg["谱系程序缺失<br/>STAGE_PROGRAM_MISSING"]
     R -->|"exit 4"| BadProg["谱系程序合约违反<br/>STAGE_PROGRAM_INVALID"]
-    R -->|"exit 5"| ExecFail["程序执行失败<br/>PROGRAM_EXECUTION_FAILED"]
+    R -->|"exit 5"| ExecFail["程序执行 / provenance 失败<br/>PROGRAM_EXECUTION_FAILED 等"]
     R -->|"exit 6"| BadOut["产物不完整<br/>OUTPUTS_INVALID"]
-    R -->|"exit 7"| ReviewPend["等待审查<br/>REVIEW_PENDING"]
+    R -->|"exit 7"| ReviewPend["等待 review lane<br/>REVIEW_PENDING 等"]
     R -->|"exit 8"| FailHandle["需要失败处理<br/>FAILURE_HANDLER_REQUIRED"]
 ```
 
-Shell 包装器将退出码 2-8 映射为 `exit 0`（非致命阻塞），只有真正的系统错误才传递非零退出码。Agent 不会因为阻塞而报错，而是读到状态面板后知道该做什么。
+这里的退出码是 Python 入口 `run_research_session.py` 的语义退出码：
+
+- `exit 2` 不只表示 `FREEZE_APPROVAL_MISSING`，也覆盖 `NEXT_STAGE_CONFIRMATION_REQUIRED`、`LINEAGE_RESUME_BLOCKED` 和若干 display / resume 类阻塞
+- `exit 7` 不只表示 `REVIEW_PENDING`，也覆盖 `REVIEW_CONFIRMATION_REQUIRED`、`ADVERSARIAL_REVIEW_PENDING`、`AUTHOR_FIX_REQUIRED`、`REVIEW_CLOSURE_PENDING`
+
+Shell 包装器 `qros-session` 会将退出码 `2-8` 映射为 `exit 0`（非致命阻塞），只有真正的系统错误才传递非零退出码。Agent 不会因为阻塞而报错，而是读到状态面板后知道该做什么。
 
 ---
 
@@ -192,9 +197,9 @@ graph TB
 ```
 
 - **软约束**（SKILL.md）告诉 Agent "你应该这样做"——但 LLM 可能跳步
-- **硬约束**（Python Runtime）检查磁盘产物 "文件在不在？合约满不满足？"——不满足就阻塞
+- **硬约束**（Python Runtime）检查磁盘产物 "文件在不在？是否满足当前阶段的确定性门禁？"——不满足就阻塞
 
-即使 Agent 试图跳步，runtime 发现磁盘上缺文件就不会推进状态。这就是 QROS 的核心保障：**用确定性代码约束不确定性 AI**。
+即使 Agent 试图跳步，runtime 发现磁盘上缺关键产物、缺 provenance，或 review / contract gate 未满足，就不会推进状态。这就是 QROS 的核心保障：**用确定性代码约束不确定性 AI**。
 
 ---
 
@@ -233,52 +238,60 @@ graph LR
 stateDiagram-v2
     [*] --> idea_intake: 用户提出原始想法
 
-    idea_intake --> intake_confirm: 填写 observation / hypothesis / route
-    intake_confirm --> mandate_confirm: GO_TO_MANDATE
+    idea_intake --> idea_intake_confirmation_pending: scaffold / draft ready
+    idea_intake_confirmation_pending --> mandate_confirmation_pending: CONFIRM_IDEA_INTAKE + GO_TO_MANDATE
 
-    mandate_confirm --> mandate_author: 用户确认进入 mandate
-    mandate_author --> mandate_review: 产物写入完成
+    mandate_confirmation_pending --> mandate_author: CONFIRM_MANDATE + freeze groups complete
+    mandate_author --> mandate_review_confirmation_pending: required outputs + provenance ready
+    mandate_review_confirmation_pending --> mandate_review: CONFIRM_REVIEW / review started
+    mandate_review --> mandate_next_stage_confirmation_pending: closure PASS
+    mandate_review --> fail: PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE
 
-    mandate_review --> dr_confirm: PASS
-    mandate_review --> fail: RETRY / NO-GO
+    mandate_next_stage_confirmation_pending --> data_ready_confirmation_pending: CONFIRM_NEXT_STAGE
+    data_ready_confirmation_pending --> data_ready_author: CONFIRM_DATA_READY + freeze groups complete
+    data_ready_author --> data_ready_review_confirmation_pending: required outputs + provenance ready
+    data_ready_review_confirmation_pending --> data_ready_review: CONFIRM_REVIEW / review started
+    data_ready_review --> data_ready_next_stage_confirmation_pending: closure PASS
+    data_ready_review --> fail
 
-    dr_confirm --> data_ready_author: 用户确认 data_ready 参数
-    data_ready_author --> data_ready_review: 产物写入完成
+    data_ready_next_stage_confirmation_pending --> signal_ready_confirmation_pending: CONFIRM_NEXT_STAGE
+    signal_ready_confirmation_pending --> signal_ready_author: CONFIRM_SIGNAL_READY + freeze groups complete
+    signal_ready_author --> signal_ready_review_confirmation_pending: required outputs + provenance ready
+    signal_ready_review_confirmation_pending --> signal_ready_review: CONFIRM_REVIEW / review started
+    signal_ready_review --> signal_ready_next_stage_confirmation_pending: closure PASS
 
-    data_ready_review --> sr_confirm: PASS
-    data_ready_review --> fail: RETRY / NO-GO
+    signal_ready_next_stage_confirmation_pending --> train_freeze_confirmation_pending: CONFIRM_NEXT_STAGE
+    train_freeze_confirmation_pending --> train_freeze_author: CONFIRM_TRAIN_FREEZE + freeze groups complete
+    train_freeze_author --> train_freeze_review_confirmation_pending: required outputs + provenance ready
+    train_freeze_review_confirmation_pending --> train_freeze_review: CONFIRM_REVIEW / review started
+    train_freeze_review --> train_freeze_next_stage_confirmation_pending: closure PASS
 
-    sr_confirm --> signal_ready_author: 用户确认 signal 参数
-    signal_ready_author --> signal_ready_review: 产物写入完成
+    train_freeze_next_stage_confirmation_pending --> test_evidence_confirmation_pending: CONFIRM_NEXT_STAGE
+    test_evidence_confirmation_pending --> test_evidence_author: CONFIRM_TEST_EVIDENCE + freeze groups complete
+    test_evidence_author --> test_evidence_review_confirmation_pending: required outputs + provenance ready
+    test_evidence_review_confirmation_pending --> test_evidence_review: CONFIRM_REVIEW / review started
+    test_evidence_review --> test_evidence_next_stage_confirmation_pending: closure PASS
 
-    signal_ready_review --> tf_confirm: PASS
+    test_evidence_next_stage_confirmation_pending --> backtest_ready_confirmation_pending: CONFIRM_NEXT_STAGE
+    backtest_ready_confirmation_pending --> backtest_ready_author: CONFIRM_BACKTEST_READY + freeze groups complete
+    backtest_ready_author --> backtest_ready_review_confirmation_pending: required outputs + provenance ready
+    backtest_ready_review_confirmation_pending --> backtest_ready_review: CONFIRM_REVIEW / review started
+    backtest_ready_review --> backtest_ready_next_stage_confirmation_pending: closure PASS
 
-    tf_confirm --> train_freeze_author: 用户确认 train 参数
-    train_freeze_author --> train_freeze_review: 产物写入完成
-
-    train_freeze_review --> te_confirm: PASS
-
-    te_confirm --> test_evidence_author: 用户确认 test 参数
-    test_evidence_author --> test_evidence_review: 产物写入完成
-
-    test_evidence_review --> bt_confirm: PASS
-
-    bt_confirm --> backtest_ready_author: 用户确认 backtest 参数
-    backtest_ready_author --> backtest_ready_review: 产物写入完成
-
-    backtest_ready_review --> hv_confirm: PASS
-
-    hv_confirm --> holdout_author: 用户确认 holdout 参数
-    holdout_author --> holdout_review: 产物写入完成
-
-    holdout_review --> [*]: 完成
+    backtest_ready_next_stage_confirmation_pending --> holdout_validation_confirmation_pending: CONFIRM_NEXT_STAGE
+    holdout_validation_confirmation_pending --> holdout_validation_author: CONFIRM_HOLDOUT_VALIDATION + freeze groups complete
+    holdout_validation_author --> holdout_validation_review_confirmation_pending: required outputs + provenance ready
+    holdout_validation_review_confirmation_pending --> holdout_validation_review: CONFIRM_REVIEW / review started
+    holdout_validation_review --> holdout_validation_next_stage_confirmation_pending: closure PASS
+    holdout_validation_next_stage_confirmation_pending --> holdout_validation_review_complete: CONFIRM_NEXT_STAGE
+    holdout_validation_review_complete --> [*]: 终态
 
     fail --> [*]: 失败处理
 
     note right of fail
         失败路由判定：
-        PASS_FOR_RETRY / RETRY /
-        NO-GO / CHILD_LINEAGE
+        PASS FOR RETRY / RETRY /
+        NO-GO / CHILD LINEAGE
         切入 qros-stage-failure-handler
     end note
 ```
@@ -287,12 +300,12 @@ stateDiagram-v2
 
 ```mermaid
 graph LR
-    A["确认待定<br/>*_confirmation_pending"] -->|"用户确认"| B["创作阶段<br/>*_author"]
-    B -->|"产物写入完成"| C["审查确认<br/>*_review_confirmation_pending"]
-    C -->|"用户确认"| D["审查阶段<br/>*_review"]
-    D -->|"PASS"| E["下一阶段确认<br/>*_next_stage_confirmation_pending"]
-    D -->|"RETRY/NO-GO"| F["失败处理"]
-    E -->|"用户确认"| A2["下一阶段确认待定"]
+    A["确认待定<br/>*_confirmation_pending"] -->|"用户确认 + freeze groups complete"| B["创作阶段<br/>*_author"]
+    B -->|"required outputs + provenance ready"| C["审查确认<br/>*_review_confirmation_pending"]
+    C -->|"用户确认 / review started"| D["审查阶段<br/>*_review"]
+    D -->|"closure PASS"| E["下一阶段确认<br/>*_next_stage_confirmation_pending"]
+    D -->|"PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE"| F["失败处理"]
+    E -->|"CONFIRM_NEXT_STAGE"| A2["下一阶段入口状态"]
 ```
 
 ---
@@ -312,15 +325,15 @@ graph TB
             E["review/closure/<br/>stage_completion_certificate.yaml"]
         end
         subgraph "program/"
-            P1["stage_program.yaml"]
-            P2["README.md"]
-            P3["entrypoint.py / .rs / .sh"]
+            P1["mandate/"]
+            P2["time_series/<br/>data_ready / signal_ready / ..."]
+            P3["cross_sectional_factor/<br/>data_ready / signal_ready / ..."]
             P4["common/<br/>共享库"]
         end
     end
 ```
 
-Runtime 的校验逻辑是：**产物文件存在于磁盘 + 内容符合合约 = 阶段完成**。不依赖对话历史，不依赖 Agent 记忆。
+Runtime 的主会话状态机判定逻辑更准确地说是：**required outputs 存在于磁盘 + provenance 存在 = author 阶段可进入 review lane**。在进入 review lane 后，`qros-review` / review engine 会继续依据 review artifacts、closure artifacts，以及部分 stage-specific contract gates（尤其是 CSF 结构 / 指标门）决定能否正式关闭。整个流程都不依赖对话历史，也不依赖 Agent 记忆。
 
 ---
 
@@ -352,7 +365,7 @@ graph TB
 
 关键边界原则：
 
-1. **QROS 不做推理**——不替用户判断假说是否合理，只校验产物是否完整
+1. **QROS 不替用户做开放式研究判断**——主 runtime 不判断假说优劣，主要负责阶段检测、产物 / provenance 校验与状态推进；review engine 对部分结构化内容会做确定性 gate 检查
 2. **宿主不做校验**——LLM 不自己判断阶段是否完成，而是调 runtime 检查
 3. **产物优于记忆**——正式结论依赖磁盘文件，不依赖对话历史
 4. **合约是共享真相**——runtime 和 SKILL.md 都从同一份 YAML 合约读取门控标准

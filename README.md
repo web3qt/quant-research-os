@@ -85,8 +85,8 @@ git pull && ./setup --host codex --mode user-global
 │  -> 03_signal_ready
 │  -> 04_train_freeze
 │  -> 05_test_evidence
-│  -> 06_backtest_ready
-│  -> 07_holdout_validation
+│  -> 06_backtest
+│  -> 07_holdout
 └─ cross_sectional_factor
    -> 02_csf_data_ready
    -> 03_csf_signal_ready
@@ -100,8 +100,9 @@ QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage
 
 当前 single-entry `qros-research-session` 的实际编排边界是：
 
-- 一直推进到 `holdout_validation review`
-- `holdout_validation review` 之后即停止
+- 一直推进到 `holdout_validation review` closure
+- closure 之后先进入 `holdout_validation_next_stage_confirmation_pending`
+- 显式执行 `CONFIRM_NEXT_STAGE` 后进入 `holdout_validation_review_complete` 终态，不再继续更后面的治理阶段
 
 ## 🧱 仓库结构
 
@@ -127,7 +128,7 @@ QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage
 ## ⚠️ 当前关键约束
 
 - 所有 `*_review` 阶段都要求独立的 adversarial reviewer
-- reviewer 必须检查 stage artifact、provenance，以及 lineage-local `program/<stage>/` 源码
+- reviewer 必须检查 stage artifact、provenance，以及对应的 lineage-local route-aware stage program 源码（例如 `outputs/<lineage_id>/program/mandate/`、`outputs/<lineage_id>/program/time_series/data_ready/`）
 - 只有 `CLOSURE_READY_*` 才能继续运行 `./.qros/bin/qros-review` 写 closure artifacts
 - `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`
 

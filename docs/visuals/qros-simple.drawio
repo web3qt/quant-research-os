@@ -177,10 +177,10 @@
                 <mxCell id="17" value="06 csf_holdout_validation&#xa;验证最终方案在保留窗里是否仍成立" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2720" y="410" width="260" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review 停止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review closure + 最终 handoff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="240" width="250" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="19" value="07+ 后续治理阶段&#xa;holdout_validation review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="19" value="当前终态&#xa;holdout_validation_review_complete" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="3140" y="360" width="250" height="88" as="geometry"/>
                 </mxCell>
                 <mxCell id="20" value="SOP 已定义&#xa;未纳入当前 qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#64748B;fontSize=15;fontStyle=1;" parent="1" vertex="1">
