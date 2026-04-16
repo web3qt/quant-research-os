@@ -70,6 +70,16 @@ If you need deterministic runtime debugging or manual recovery, use the project-
 
 ## Updating
 
+In Codex, the preferred path is:
+
+```text
+qros-update
+```
+
+It refreshes the published `main` install and the current repo's `./.qros/`.
+
+Manual fallback:
+
 ```bash
 cd ~/workspace/quant-research-os
 git pull

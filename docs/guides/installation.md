@@ -52,6 +52,16 @@ What it writes:
 
 Update overwrites the cloned repo in place.
 
+If you are already inside Codex, the preferred path is:
+
+```text
+qros-update
+```
+
+It refreshes both the global install and the current repo's `./.qros/` runtime.
+
+Manual fallback:
+
 ```bash
 cd ~/workspace/quant-research-os
 git pull

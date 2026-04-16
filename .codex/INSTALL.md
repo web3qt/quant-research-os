@@ -53,6 +53,16 @@ You should see a global install manifest under `~/.codex/qros/` and project-loca
 
 ## Updating
 
+Inside Codex, the preferred path is:
+
+```text
+qros-update
+```
+
+It refreshes both the global install and the current repo's `./.qros/` runtime.
+
+Manual fallback:
+
 ```bash
 cd ~/workspace/quant-research-os
 git pull

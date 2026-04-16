@@ -4,6 +4,7 @@ import os
 import shutil
 from pathlib import Path
 from subprocess import run
+import sys
 
 
 def _copy_repo_fixture(tmp_path: Path) -> Path:
@@ -25,6 +26,7 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     home_root.mkdir()
     env = os.environ.copy()
     env["HOME"] = str(home_root)
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
 
     result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],
@@ -38,6 +40,7 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert (project_root / ".qros" / "install-manifest.json").exists()
     assert (project_root / ".qros" / "bin" / "qros-session").exists()
+    assert (project_root / ".qros" / "bin" / "qros-update").exists()
     assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
     session_result = run(
@@ -59,6 +62,7 @@ def test_setup_user_global_installs_into_home(tmp_path: Path) -> None:
     home_root.mkdir()
     env = os.environ.copy()
     env["HOME"] = str(home_root)
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
 
     result = run(
         ["./setup", "--host", "codex", "--mode", "user-global"],
@@ -83,6 +87,7 @@ def test_setup_check_reports_incomplete_install(tmp_path: Path) -> None:
     home_root.mkdir()
     env = os.environ.copy()
     env["HOME"] = str(home_root)
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
     result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local", "--check"],
         check=False,

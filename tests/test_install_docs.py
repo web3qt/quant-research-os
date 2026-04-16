@@ -19,6 +19,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "uv tool install qros" not in combined
     assert "qros-research-session" in combined
     assert "qros-research-session help" in combined
+    assert "qros-update" in combined
     assert "./.qros/bin/qros-session" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined

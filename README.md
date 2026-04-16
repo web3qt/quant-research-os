@@ -27,6 +27,12 @@ $qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT ，
 $qros-research-session help
 ```
 
+更新时，在 Codex 里直接运行：
+
+```text
+$qros-update
+```
+
 > 📌 推荐默认只记这一条主路径：安装好以后，先从 `$qros-research-session` 开始，不要先去背一堆 skill 名。
 
 <details>
@@ -52,6 +58,8 @@ cd ~/workspace/quant-research-os
 git pull && ./setup --host codex --mode user-global
 ~/workspace/quant-research-os/setup --host codex --mode repo-local
 ```
+
+如果你已经在 Codex 里，优先直接运行 `qros-update`，它会顺手刷新当前 repo 的 `./.qros/`。
 
 最小验证：
 
@@ -122,7 +130,6 @@ QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage
 - reviewer 必须检查 stage artifact、provenance，以及 lineage-local `program/<stage>/` 源码
 - 只有 `CLOSURE_READY_*` 才能继续运行 `./.qros/bin/qros-review` 写 closure artifacts
 - `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`
-- review findings 会继续汇入 governance-candidate lane，但 human governance decision 仍然不能直接替代正常 repo 变更
 
 ## 📚 延伸阅读
 

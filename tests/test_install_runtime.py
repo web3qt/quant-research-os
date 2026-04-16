@@ -55,6 +55,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert manifest["installed_runtime_files"] == [
         "bin/qros-review",
         "bin/qros-session",
+        "bin/qros-update",
         "bin/qros-verify",
     ]
 

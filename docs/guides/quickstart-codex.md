@@ -28,6 +28,7 @@ In Codex, start with:
 
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
+- `qros-update`
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 
