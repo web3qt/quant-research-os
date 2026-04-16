@@ -34,7 +34,6 @@ RUNTIME_ASSETS = (
     RuntimeAsset(Path("runtime/hooks"), Path("hooks")),
     RuntimeAsset(Path("templates"), Path("templates")),
     RuntimeAsset(Path("docs/guides"), Path("docs/guides")),
-    RuntimeAsset(Path("docs/governance"), Path("docs/governance")),
     RuntimeAsset(Path("docs/README.codex.md"), Path("docs/README.codex.md")),
     RuntimeAsset(Path("contracts"), Path("contracts")),
 )

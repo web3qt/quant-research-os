@@ -55,10 +55,8 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "drift_audit" in content
     assert "failure_governance" in content
     assert "是否按以上内容冻结 holdout_validation" in content
-    assert "governance/pending_decisions" in content
-    assert "GOVERNANCE_DECISION_RECORD_REQUIRED" in content
-    assert "approved" in content
-    assert "deferred" in content
+    assert "governance/pending_decisions" not in content
+    assert "GOVERNANCE_DECISION_RECORD_REQUIRED" not in content
     assert "docs/guides/qros-authoring-language-discipline.md" in content
     assert "./.qros/bin/qros-session" in content
 

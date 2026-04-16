@@ -142,31 +142,6 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - reuse runtime failure-routing status instead of ad hoc judgment
 - follow `qros-stage-failure-handler` before any further stage edits
 
-## Governance Decision Recording
-
-Users should not need a separate governance command.
-
-When a governance candidate already exists and the user makes an explicit governance decision inside the normal research conversation, this entry skill must treat it as part of the same orchestrated flow.
-
-Required behavior:
-
-- if the user's intent is clearly `approved`, `rejected`, or `deferred`, capture it without asking for a separate command
-- write the equivalent of `governance/pending_decisions/<candidate_id>.yaml`
-- then write the formal `governance/decisions/*.md`
-- then update `governance/candidates/*.yaml`
-- only after those artifacts exist may ordinary progression continue
-
-If the user's intent is ambiguous, ask one short clarification question instead of inventing the decision.
-
-If runtime reports:
-
-- `stage_status = awaiting_governance_record`
-- `blocking_reason_code = GOVERNANCE_DECISION_RECORD_REQUIRED`
-
-the agent must stop ordinary stage progression and finish governance recording first.
-
-The agent may record a human-confirmed decision. It may not invent one, and it may not automatically activate policy just because a decision was recorded.
-
 ## Language Discipline
 
 - 统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外语言口径。

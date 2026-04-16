@@ -142,7 +142,6 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
         "runtime/hooks",
         "templates",
         "docs/guides",
-        "docs/governance",
         "docs/README.codex.md",
         "contracts",
     ):

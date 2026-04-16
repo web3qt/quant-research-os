@@ -588,6 +588,8 @@ def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
     assert payload["lineage_root"].endswith("btc_leads_high_liquidity_alts_after_shock_events")
     assert payload["lineage_mode"] == "fresh_start"
     assert "fresh lineage slug" in payload["lineage_selection_reason"]
+    assert "governance_root" not in payload
+    assert "governance_summary" not in payload
     assert "reflection" not in payload
     assert "🧭" not in result.stdout
 

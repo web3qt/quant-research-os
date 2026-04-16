@@ -26,14 +26,12 @@
 
 - `contracts/stages/workflow_stage_gates.yaml`
 - `contracts/review/review_checklist_master.yaml`
-- `contracts/governance/review_governance_policy.yaml`
 
 文档层负责解释这些真值，不应与真值冲突：
 
 - `docs/sop/main-flow/`：主流程和各阶段操作说明
 - `docs/sop/failures/`：失败处置与 lineage change control
 - `docs/sop/review/`：review / closure 标准与模板
-- `docs/governance/`：治理决策流程说明
 
 ## 当前整个仓库的层次
 
@@ -59,8 +57,6 @@
   面向失败分流和 rollback / child-lineage 决策。
 - `docs/sop/review/`
   面向 reviewer / referee 的关闭标准、清单和模板。
-- `docs/governance/`
-  面向 review governance 和制度演进。
 - `docs/visuals/`
   图示、演示图和 drawio/excalidraw 资产。
 - `docs/archive/plans/`

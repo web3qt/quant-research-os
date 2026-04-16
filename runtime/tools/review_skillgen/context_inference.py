@@ -45,7 +45,7 @@ STAGE_ALIASES = {
     "07_csf_holdout_validation": "csf_holdout_validation",
 }
 
-REVIEW_SUBDIRS = {"request", "result", "closure", "governance"}
+REVIEW_SUBDIRS = {"request", "result", "closure"}
 
 
 def _normalize_stage_name(name: str) -> str | None:
@@ -74,7 +74,6 @@ def build_stage_context(stage_root: Path) -> dict[str, Any]:
         "review_request_dir": review_root / "request",
         "review_result_dir": review_root / "result",
         "review_closure_dir": review_root / "closure",
-        "review_governance_dir": review_root / "governance",
     }
 
 

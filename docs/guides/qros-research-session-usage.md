@@ -186,16 +186,6 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 }
 ```
 
-同样地，如果用户已经明确做出了 governance decision，但 agent 只写了 `governance/pending_decisions/*.yaml` 而还没把正式 decision artifact 写进 `governance/decisions/*.md`，session 会阻断并返回：
-
-```json
-{
-  "stage_status": "awaiting_governance_record",
-  "blocking_reason_code": "GOVERNANCE_DECISION_RECORD_REQUIRED",
-  "next_action": "Write governance/decisions for <candidate_id>, update the candidate status, and clear governance/pending_decisions/<candidate_id>.yaml."
-}
-```
-
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 intake interview approval：
 
 ```bash
@@ -279,17 +269,6 @@ session runtime 会按下面这个顺序检查磁盘状态：
 17. holdout_validation review closure exists -> session stops and reports completion
 
 如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
-
-## Governance-candidate lane
-
-从 adversarial review + deterministic closure 往上，再加一层 conservative governance lane：
-
-- post-rollout review cycle 会写 `governance_signal.json`
-- 重复 finding 会进入 `governance/review_findings_ledger.jsonl`
-- 达到阈值后会打开 `governance/candidates/*.yaml`
-- 但 runtime 仍然不能自动改 active gate / template / regression test
-
-是否真的把 candidate 变成制度，必须经过单独的人类治理确认；即使确认通过，真正生效仍要走正常 repo 变更。
 
 ## Expected User Experience
 

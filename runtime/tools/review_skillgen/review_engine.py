@@ -9,7 +9,6 @@ from typing import Any
 
 import yaml
 
-from runtime.tools.review_governance_runtime import record_review_governance
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
@@ -508,30 +507,6 @@ def run_stage_review(
         },
     }
 
-    governance_result = record_review_governance(
-        stage_dir=stage_dir,
-        lineage_root=lineage_root,
-        stage=stage,
-        request_payload=request_payload,
-        review_result=review_result,
-        review_loop_outcome=review_loop_outcome,
-        final_verdict=final_verdict,
-        blocking_findings=blocking_findings,
-        reservation_findings=reservation_findings,
-        info_findings=info_findings,
-    )
-    common_payload["governance_signal_path"] = "review/governance/governance_signal.json"
-    common_payload["governance_candidate_summary"] = {
-        "ledger_entries_written": governance_result["ledger_entries_written"],
-        "candidates_updated": governance_result["candidates_updated"],
-        "post_rollout": governance_result["bundle"]["post_rollout_only"],
-    }
-    common_payload["governance"] = {
-        "appended_entries": governance_result["ledger_entries_written"],
-        "candidates_updated": governance_result["candidates_updated"],
-        "post_rollout": governance_result["bundle"]["post_rollout_only"],
-    }
-
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
         return {
             **common_payload,
@@ -565,9 +540,6 @@ def run_stage_review(
         checklist_source=common_payload["checklist_source"],
         required_outputs_checked=common_payload["required_outputs_checked"],
         evidence_summary=common_payload["evidence_summary"],
-        governance_signal_path=common_payload["governance_signal_path"],
-        governance_candidate_summary=common_payload["governance_candidate_summary"],
-        governance=common_payload["governance"],
     )
 
     write_closure_artifacts(

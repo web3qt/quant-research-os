@@ -4,7 +4,6 @@ import pytest
 import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
-from runtime.tools.review_governance_runtime import capture_governance_decision, governance_root_for_lineage
 from runtime.tools.research_session import (
     detect_session_stage,
     run_research_session,
@@ -2100,7 +2099,7 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
         assert status.failure_reason_summary == f"{expected_stage} requires failure handling because review verdict is {verdict}."
 
 
-def test_run_research_session_blocks_on_pending_governance_record(tmp_path: Path) -> None:
+def test_run_research_session_ignores_removed_review_governance_lane(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_id = "governance_case"
     lineage_root = outputs_root / lineage_id
@@ -2121,7 +2120,7 @@ def test_run_research_session_blocks_on_pending_governance_record(tmp_path: Path
     _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     _write_next_stage_confirmation(mandate_dir, stage="mandate")
 
-    governance_root = governance_root_for_lineage(lineage_root)
+    governance_root = tmp_path / "governance"
     candidate_path = governance_root / "candidates" / "review-pending-governance.yaml"
     _write_yaml(
         candidate_path,
@@ -2137,20 +2136,21 @@ def test_run_research_session_blocks_on_pending_governance_record(tmp_path: Path
             "updated_at": "2026-04-15T12:00:00Z",
         },
     )
-    capture_governance_decision(
-        governance_root=governance_root,
-        candidate_id="review-pending-governance",
-        decision_outcome="approved",
-        decision_note="User approved this for follow-up repo work.",
+    _write_yaml(
+        governance_root / "pending_decisions" / "review-pending-governance.yaml",
+        {
+            "candidate_id": "review-pending-governance",
+            "decision_outcome": "approved",
+            "decision_note": "User approved this for follow-up repo work.",
+        },
     )
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
 
-    assert status.stage_status == "awaiting_governance_record"
-    assert status.blocking_reason_code == "GOVERNANCE_DECISION_RECORD_REQUIRED"
-    assert status.current_skill == "qros-research-session"
-    assert "review-pending-governance" in (status.blocking_reason or "")
-    assert "governance/decisions" in status.next_action
+    assert status.current_stage == "data_ready_confirmation_pending"
+    assert status.stage_status == "awaiting_freeze_approval"
+    assert status.blocking_reason_code == "FREEZE_APPROVAL_MISSING"
+    assert "governance" not in (status.blocking_reason or "").lower()
 
 
 def test_run_research_session_marks_pass_reviews_as_not_requiring_failure_handling(
