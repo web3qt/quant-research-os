@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 import yaml
@@ -32,6 +33,33 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
 
 
 def _write_review_request(stage_dir: Path, *, author_identity: str = "author-agent") -> None:
+    handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
+    _write_yaml(
+        handoff_manifest_path,
+        {
+            "review_cycle_id": "cycle-1",
+            "lineage_id": "topic_a",
+            "stage": "mandate",
+            "required_program_dir": "program/mandate",
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": [
+                "mandate.md",
+                "research_scope.md",
+                "time_split.json",
+                "parameter_grid.yaml",
+                "run_config.toml",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "permitted_input_roots": ["review/request", "author/formal"],
+            "permitted_output_roots": ["review/result"],
+            "required_result_write_root": "review/result",
+        },
+    )
+    handoff_manifest_digest = hashlib.sha256(
+        handoff_manifest_path.read_text(encoding="utf-8").encode("utf-8")
+    ).hexdigest()
     _write_yaml(
         stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
@@ -53,6 +81,41 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             ],
             "required_provenance_paths": ["program_execution_manifest.json"],
             "required_reviewer_mode": "adversarial",
+            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_digest": handoff_manifest_digest,
+            "required_result_write_root": "review/result",
+        },
+    )
+
+
+def _handoff_manifest_digest(stage_dir: Path) -> str:
+    return hashlib.sha256(
+        (stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml")
+        .read_text(encoding="utf-8")
+        .encode("utf-8")
+    ).hexdigest()
+
+
+def _write_spawned_reviewer_receipt(
+    stage_dir: Path,
+    *,
+    reviewer_identity: str = "reviewer-agent",
+    reviewer_session_id: str = "review-session",
+) -> None:
+    _write_yaml(
+        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
+        {
+            "review_cycle_id": "cycle-1",
+            "launcher_owner": "qros-runtime-launcher",
+            "launcher_session_id": "launcher-session",
+            "spawn_mode": "spawned_agent",
+            "fork_context": False,
+            "write_root": "review/result",
+            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_digest": _handoff_manifest_digest(stage_dir),
+            "requested_reviewer_identity": reviewer_identity,
+            "requested_reviewer_session_id": reviewer_session_id,
+            "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
 
@@ -66,6 +129,10 @@ def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS"
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_execution_mode": "spawned_agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
+            "handoff_manifest_digest": _handoff_manifest_digest(stage_dir),
             "review_loop_outcome": outcome,
             "reviewed_program_dir": "program/mandate",
             "reviewed_program_entrypoint": "run_stage.py",
@@ -92,6 +159,7 @@ def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS"
 def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_stage(tmp_path)
     _write_review_request(stage_dir)
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_review_result(stage_dir)
 
     payload = run_stage_review(
@@ -117,6 +185,7 @@ def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_p
     stage_dir = _prepare_mandate_stage(tmp_path)
     (stage_dir / "author" / "formal" / "parameter_grid.yaml").unlink()
     _write_review_request(stage_dir)
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_review_result(stage_dir)
 
     payload = run_stage_review(
@@ -134,6 +203,7 @@ def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_p
 def test_run_stage_review_accepts_pass_for_retry_with_rollback_metadata(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_stage(tmp_path)
     _write_review_request(stage_dir)
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_review_result(stage_dir, outcome="CLOSURE_READY_PASS_FOR_RETRY")
     _write_yaml(
         stage_dir / "review" / "result" / "review_findings.yaml",
@@ -161,6 +231,7 @@ def test_run_stage_review_accepts_pass_for_retry_with_rollback_metadata(tmp_path
 def test_run_stage_review_rejects_self_review(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_stage(tmp_path)
     _write_review_request(stage_dir, author_identity="same-agent")
+    _write_spawned_reviewer_receipt(stage_dir, reviewer_identity="same-agent")
     _write_review_result(stage_dir, reviewer_identity="same-agent")
 
     try:
@@ -180,6 +251,7 @@ def test_run_stage_review_rejects_self_review(tmp_path: Path) -> None:
 def test_run_stage_review_fix_required_skips_closure_artifacts(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_stage(tmp_path)
     _write_review_request(stage_dir)
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_review_result(stage_dir, outcome="FIX_REQUIRED")
 
     payload = run_stage_review(

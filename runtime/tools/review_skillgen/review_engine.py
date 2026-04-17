@@ -14,11 +14,13 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
-    assign_runtime_reviewer_to_request,
     canonicalize_runtime_review_result,
     load_adversarial_review_request,
     load_adversarial_review_result,
+    load_spawned_reviewer_receipt,
     resolve_closure_verdict,
+    SPAWNED_REVIEWER_RECEIPT_FILENAME,
+    validate_receipt_against_request,
     validate_result_against_request,
 )
 from runtime.tools.review_skillgen.closure_models import build_review_payload
@@ -397,6 +399,7 @@ def run_stage_review(
     stage_checks = checklist["stages"][stage]
 
     request_path = review_request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+    receipt_path = review_request_dir / SPAWNED_REVIEWER_RECEIPT_FILENAME
     result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
     request_payload = load_adversarial_review_request(request_path)
     runtime_identity = _runtime_identity(
@@ -405,16 +408,21 @@ def run_stage_review(
         reviewer_session_id=reviewer_session_id,
         reviewer_mode=reviewer_mode,
     )
-    request_payload = assign_runtime_reviewer_to_request(request_path, request_payload, runtime_identity)
+    receipt_payload = load_spawned_reviewer_receipt(receipt_path)
+    validate_receipt_against_request(
+        request_payload=request_payload,
+        receipt_payload=receipt_payload,
+        runtime_identity=runtime_identity,
+    )
     review_result = load_adversarial_review_result(result_path)
     review_result = canonicalize_runtime_review_result(
         result_path,
         request_payload=request_payload,
         result_payload=review_result,
-        runtime_identity=runtime_identity,
     )
     validate_result_against_request(
         request_payload=request_payload,
+        receipt_payload=receipt_payload,
         result_payload=review_result,
         runtime_identity=runtime_identity,
     )
@@ -494,6 +502,7 @@ def run_stage_review(
             "reviewed_provenance_paths": review_result["reviewed_provenance_paths"],
         },
         "adversarial_review_request": request_payload,
+        "spawned_reviewer_receipt": receipt_payload,
         "adversarial_review_result": review_result,
         "contract_source": str(GATES_PATH.relative_to(ROOT)),
         "checklist_source": str(CHECKLIST_PATH.relative_to(ROOT)),
@@ -535,6 +544,7 @@ def run_stage_review(
         downstream_permissions=downstream_permissions,
         review_scope=common_payload["review_scope"],
         adversarial_review_request=request_payload,
+        spawned_reviewer_receipt=receipt_payload,
         adversarial_review_result=review_result,
         contract_source=common_payload["contract_source"],
         checklist_source=common_payload["checklist_source"],

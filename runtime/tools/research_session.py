@@ -64,8 +64,13 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
+    SPAWNED_REVIEWER_RECEIPT_FILENAME,
     ensure_adversarial_review_request,
+    load_adversarial_review_request,
     load_adversarial_review_result,
+    load_spawned_reviewer_receipt,
+    validate_receipt_contract,
+    validate_result_contract,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.signal_ready_runtime import (
@@ -352,6 +357,10 @@ def _author_draft_dir(stage_dir: Path) -> Path:
 
 def _review_request_path(stage_dir: Path) -> Path:
     return _stage_context(stage_dir)["review_request_dir"] / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+
+
+def _review_receipt_path(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["review_request_dir"] / SPAWNED_REVIEWER_RECEIPT_FILENAME
 
 
 def _review_result_path(stage_dir: Path) -> Path:
@@ -2025,6 +2034,52 @@ def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
     return load_adversarial_review_result(result_path)
 
 
+def _load_spawned_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
+    receipt_path = _review_receipt_path(stage_dir)
+    if not receipt_path.exists():
+        return None
+    return load_spawned_reviewer_receipt(receipt_path)
+
+
+def _review_proof_chain_error(stage_dir: Path) -> str | None:
+    request_path = _review_request_path(stage_dir)
+    if not request_path.exists():
+        return None
+
+    try:
+        request_payload = load_adversarial_review_request(request_path)
+    except Exception as exc:
+        return str(exc)
+
+    receipt_path = _review_receipt_path(stage_dir)
+    result_path = _review_result_path(stage_dir)
+    if not receipt_path.exists():
+        if result_path.exists():
+            return f"{SPAWNED_REVIEWER_RECEIPT_FILENAME} is missing"
+        return None
+    try:
+        receipt_payload = load_spawned_reviewer_receipt(receipt_path)
+        validate_receipt_contract(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+        )
+    except Exception as exc:
+        return str(exc)
+
+    if not result_path.exists():
+        return None
+    try:
+        result_payload = load_adversarial_review_result(result_path)
+        validate_result_contract(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            result_payload=result_payload,
+        )
+    except Exception as exc:
+        return str(exc)
+    return None
+
+
 def _ensure_review_request_for_stage(lineage_root: Path, current_stage: SessionStage) -> None:
     if not current_stage.endswith("_review"):
         return
@@ -2084,7 +2139,9 @@ def _review_substate(
     lineage_root: Path,
 ) -> tuple[str, str, str, str]:
     request_path = _review_request_path(stage_dir)
+    review_receipt = _load_spawned_reviewer_receipt_if_present(stage_dir)
     review_result = _load_adversarial_review_result_if_present(stage_dir)
+    proof_chain_error = _review_proof_chain_error(stage_dir)
     stage_base = _stage_base_name(current_stage)
     author_skill = STAGE_ACTIVE_SKILLS.get(f"{stage_base}_author", "qros-research-session")
     review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
@@ -2096,11 +2153,33 @@ def _review_substate(
             f"Rerun qros-session --lineage-id {lineage_root.name} to issue the review request, then run {review_skill}.",
         )
     if review_result is None:
+        if review_receipt is not None and proof_chain_error is not None:
+            return (
+                "awaiting_adversarial_review",
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"{stage_base} has a spawned reviewer receipt on disk, but the proof chain is invalid: {proof_chain_error}",
+                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
+            )
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
-            f"{stage_base} is waiting for an independent adversarial reviewer to inspect artifacts and source code.",
-            f"Run {review_skill} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            (
+                f"{stage_base} is waiting for an independent adversarial reviewer to inspect artifacts and source code."
+                if review_receipt is not None
+                else f"{stage_base} is waiting for the runtime launcher to issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin."
+            ),
+            (
+                f"Run {review_skill} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}."
+                if review_receipt is not None
+                else f"Issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then run {review_skill}."
+            ),
+        )
+    if proof_chain_error is not None:
+        return (
+            "awaiting_adversarial_review",
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"{stage_base} has reviewer artifacts on disk, but the spawned reviewer proof chain is invalid: {proof_chain_error}",
+            f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then rerun {review_skill}.",
         )
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (
@@ -2834,11 +2913,36 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if stage_dir is None:
         return "REVIEW_PENDING", "Complete the review workflow."
     request_exists = _review_request_path(stage_dir).exists()
+    receipt_exists = _review_receipt_path(stage_dir).exists()
     review_result = _load_adversarial_review_result_if_present(stage_dir)
-    if not request_exists or review_result is None:
+    proof_chain_error = _review_proof_chain_error(stage_dir)
+    if not request_exists:
+        return (
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"Issue {ADVERSARIAL_REVIEW_REQUEST_FILENAME} for independent adversarial review.",
+        )
+    if not receipt_exists:
+        return (
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"Issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then produce "
+            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME} via independent adversarial review.",
+        )
+    if review_result is None:
+        if receipt_exists and proof_chain_error is not None:
+            return (
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing "
+                f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+            )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
             f"Produce {ADVERSARIAL_REVIEW_RESULT_FILENAME} via independent adversarial review.",
+        )
+    if proof_chain_error is not None:
+        return (
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher and regenerate "
+            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
         )
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (

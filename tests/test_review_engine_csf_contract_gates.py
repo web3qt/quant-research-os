@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -60,6 +61,25 @@ def _prepare_csf_stage(tmp_path: Path, *, stage_key: str, stage_dir_name: str) -
 
 def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None:
     spec = STAGE_PROGRAM_SPECS[stage_key]
+    handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
+    _write_yaml(
+        handoff_manifest_path,
+        {
+            "review_cycle_id": f"{stage_key}-cycle-1",
+            "lineage_id": stage_dir.parent.name,
+            "stage": spec["stage_id"],
+            "required_program_dir": str(spec["program_dir"]),
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": [],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "permitted_input_roots": ["review/request", "author/formal"],
+            "permitted_output_roots": ["review/result"],
+            "required_result_write_root": "review/result",
+        },
+    )
+    handoff_manifest_digest = hashlib.sha256(
+        handoff_manifest_path.read_text(encoding="utf-8").encode("utf-8")
+    ).hexdigest()
     request_payload = {
         "review_cycle_id": f"{stage_key}-cycle-1",
         "lineage_id": stage_dir.parent.name,
@@ -71,6 +91,22 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "required_artifact_paths": [],
         "required_provenance_paths": ["program_execution_manifest.json"],
         "required_reviewer_mode": "adversarial",
+        "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+        "handoff_manifest_digest": handoff_manifest_digest,
+        "required_result_write_root": "review/result",
+    }
+    receipt_payload = {
+        "review_cycle_id": f"{stage_key}-cycle-1",
+        "launcher_owner": "qros-runtime-launcher",
+        "launcher_session_id": "launcher-session",
+        "spawn_mode": "spawned_agent",
+        "fork_context": False,
+        "write_root": "review/result",
+        "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+        "handoff_manifest_digest": handoff_manifest_digest,
+        "requested_reviewer_identity": "reviewer-agent",
+        "requested_reviewer_session_id": "review-session",
+        "receipt_written_at": "2026-04-17T03:00:00Z",
     }
     result_payload = {
         "review_cycle_id": f"{stage_key}-cycle-1",
@@ -78,6 +114,10 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "reviewer_role": "reviewer",
         "reviewer_session_id": "review-session",
         "reviewer_mode": "adversarial",
+        "reviewer_execution_mode": "spawned_agent",
+        "reviewer_context_source": "explicit_handoff_only",
+        "reviewer_history_inheritance": "none",
+        "handoff_manifest_digest": handoff_manifest_digest,
         "review_loop_outcome": "CLOSURE_READY_PASS",
         "reviewed_program_dir": str(spec["program_dir"]),
         "reviewed_program_entrypoint": "run_stage.py",
@@ -91,6 +131,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "downstream_permissions": [],
     }
     _write_yaml(stage_dir / "review" / "request" / "adversarial_review_request.yaml", request_payload)
+    _write_yaml(stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml", receipt_payload)
     _write_yaml(stage_dir / "review" / "result" / "adversarial_review_result.yaml", result_payload)
 
 

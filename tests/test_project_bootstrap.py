@@ -10,6 +10,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("setup").exists()
     assert Path("skills").exists()
     assert Path("runtime/bin/qros-session").exists()
+    assert Path("runtime/bin/qros-spawn-reviewer").exists()
     assert Path("runtime/bin/qros-review").exists()
     assert Path("runtime/bin/qros-verify").exists()
     assert Path("runtime/bin/qros-update").exists()

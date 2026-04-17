@@ -55,6 +55,7 @@ def _stage_gate_review(payload: dict[str, Any]) -> dict[str, Any]:
         "allowed_modifications": list(payload.get("allowed_modifications", [])),
         "downstream_permissions": list(payload.get("downstream_permissions", [])),
         "adversarial_review_request": payload.get("adversarial_review_request", {}),
+        "spawned_reviewer_receipt": payload.get("spawned_reviewer_receipt", {}),
         "adversarial_review_result": payload.get("adversarial_review_result", {}),
     }
 

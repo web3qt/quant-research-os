@@ -81,7 +81,7 @@ Canonical program tree：
 
 每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 program hash、entrypoint、authoring session 和 output refs 记账。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_author_fix` 或 `awaiting_review_closure`。
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_author_fix` 或 `awaiting_review_closure`。在 `awaiting_adversarial_review` 里，runtime 现在要求先有 `review/request/spawned_reviewer_receipt.yaml`，再允许 reviewer 写 `review/result/adversarial_review_result.yaml`。
 
 阶段 review 失败不是普通调试（不是普通 debug）。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
@@ -431,7 +431,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 
 在 review 阶段，session 现在会显式区分三类状态：
 
-- `awaiting_adversarial_review`：runtime 已发出 `review/request/adversarial_review_request.yaml`，等待独立 reviewer
+- `awaiting_adversarial_review`：runtime 已发出 `review/request/adversarial_review_request.yaml`；若 `review/request/spawned_reviewer_receipt.yaml` 还不存在，先等待 runtime launcher 写 receipt，再等待独立 reviewer
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须回到 author lane 修复
 - `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closure 写正式 closure artifacts
 

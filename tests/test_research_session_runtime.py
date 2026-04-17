@@ -4,6 +4,11 @@ import pytest
 import yaml
 
 from tests.lineage_program_support import write_fake_stage_provenance
+from runtime.tools.review_skillgen.adversarial_review_contract import (
+    ensure_adversarial_review_request,
+    issue_spawned_reviewer_receipt,
+    load_adversarial_review_request,
+)
 from runtime.tools.research_session import (
     detect_session_stage,
     run_research_session,
@@ -99,20 +104,34 @@ def _write_adversarial_review_request(
     author_identity: str = "test-agent",
     author_session_id: str = "test-session",
 ) -> None:
-    _write_yaml(
-        stage_dir / "review" / "request" / "adversarial_review_request.yaml",
-        {
-            "review_cycle_id": f"{stage}-cycle-1",
-            "lineage_id": stage_dir.parent.name,
-            "stage": stage,
-            "author_identity": author_identity,
-            "author_session_id": author_session_id,
-            "required_program_dir": program_dir,
-            "required_program_entrypoint": "run_stage.py",
-            "required_artifact_paths": [],
-            "required_provenance_paths": ["program_execution_manifest.json"],
-            "required_reviewer_mode": "adversarial",
-        },
+    ensure_adversarial_review_request(
+        stage_dir,
+        lineage_id=stage_dir.parent.name,
+        stage=stage,
+        author_identity=author_identity,
+        author_session_id=author_session_id,
+        required_program_dir=program_dir,
+        required_program_entrypoint="run_stage.py",
+        required_artifact_paths=[],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+
+
+def _review_request_payload(stage_dir: Path) -> dict:
+    return load_adversarial_review_request(stage_dir / "review" / "request" / "adversarial_review_request.yaml")
+
+
+def _write_spawned_reviewer_receipt(
+    stage_dir: Path,
+    *,
+    reviewer_identity: str = "reviewer-agent",
+    reviewer_session_id: str = "review-session",
+) -> None:
+    issue_spawned_reviewer_receipt(
+        stage_dir,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        launcher_session_id="launcher-session",
     )
 
 
@@ -123,14 +142,19 @@ def _write_adversarial_review_result(
     program_dir: str,
     outcome: str,
 ) -> None:
+    request_payload = _review_request_payload(stage_dir)
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
-            "review_cycle_id": f"{stage}-cycle-1",
+            "review_cycle_id": request_payload["review_cycle_id"],
             "reviewer_identity": "reviewer-agent",
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_execution_mode": "spawned_agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
+            "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
             "review_loop_outcome": outcome,
             "reviewed_program_dir": program_dir,
             "reviewed_program_entrypoint": "run_stage.py",
@@ -2111,6 +2135,7 @@ def test_run_research_session_ignores_removed_review_governance_lane(tmp_path: P
         stage="mandate",
         program_dir="program/mandate",
     )
+    _write_spawned_reviewer_receipt(mandate_dir)
     _write_adversarial_review_result(
         mandate_dir,
         stage="mandate",
@@ -2253,7 +2278,7 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
     assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
-    assert status.next_action == "Produce adversarial_review_result.yaml via independent adversarial review."
+    assert status.next_action == "Issue adversarial_review_request.yaml for independent adversarial review."
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(
@@ -2265,6 +2290,7 @@ def test_run_research_session_exposes_author_fix_substate_for_fix_required_revie
 
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",
@@ -2292,6 +2318,7 @@ def test_run_research_session_exposes_review_closure_substate_after_closure_read
 
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_spawned_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",

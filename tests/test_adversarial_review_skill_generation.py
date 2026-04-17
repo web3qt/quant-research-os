@@ -84,6 +84,7 @@ def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> 
     assert protocol_path.exists()
     assert "adversarial reviewer-agent" in content
     assert "adversarial_review_request.yaml" in content
+    assert "spawned_reviewer_receipt.yaml" in content
     assert "adversarial_review_result.yaml" in content
     assert "FIX_REQUIRED" in content
     assert "closure-ready adverse verdict" in content

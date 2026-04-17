@@ -46,11 +46,20 @@
 
 ## Reviewer Findings
 
-第一版 review 执行闭环要求在当前 `stage_dir` 下提供：
+当前 review 执行闭环要求在当前 `stage_dir` 下至少提供：
 
+- `review/request/spawned_reviewer_receipt.yaml`
+- `review/result/adversarial_review_result.yaml`
 - `review/result/review_findings.yaml`
 
-建议至少包含：
+其中 `adversarial_review_result.yaml` 现在还必须显式声明：
+
+- `reviewer_execution_mode: spawned_agent`
+- `reviewer_context_source: explicit_handoff_only`
+- `reviewer_history_inheritance: none`
+- `handoff_manifest_digest`
+
+`review_findings.yaml` 仍建议至少包含：
 
 - `blocking_findings`
 - `reservation_findings`
@@ -64,15 +73,17 @@
 
 ## Running The Review Engine
 
-在当前 `outputs/<lineage>/<stage>/` 目录下执行：
+在当前 `outputs/<lineage>/<stage>/` 目录下，先由 runtime launcher 写 receipt，再执行 deterministic closure：
 
 ```bash
+./.qros/bin/qros-spawn-reviewer --reviewer-id <id> --reviewer-session-id <session>
 ./.qros/bin/qros-review
 ```
 
 如果不在 stage 目录中，也可以显式传参：
 
 ```bash
+./.qros/bin/qros-spawn-reviewer --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a --reviewer-id <id> --reviewer-session-id <session>
 ./.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 

@@ -27,14 +27,42 @@
 在任何 closure artifacts 出现之前，必须先完成：
 
 1. 检查 `adversarial_review_request.yaml`
-2. 确认 reviewer identity 与 `author_identity` 不同
-3. 对 `required_program_dir` 和 `required_program_entrypoint` 做 `source-code inspection`
-4. 检查 request 中列出的必需 artifacts 与 provenance
-5. 写出 `adversarial_review_result.yaml`
+2. 确认 `spawned_reviewer_receipt.yaml` 已由 runtime launcher 写出
+3. 确认 reviewer identity 与 `author_identity` 不同
+4. 对 `required_program_dir` 和 `required_program_entrypoint` 做 `source-code inspection`
+5. 检查 request 中列出的必需 artifacts 与 provenance
+6. 写出 `adversarial_review_result.yaml`
 
-`./.qros/bin/qros-review` 运行时会以 active request 为准，重写 result 中的
-`review_cycle_id`、reviewer identity、program scope 和 reviewed artifact scope。
+`./.qros/bin/qros-review` 运行时只会以 active request 为准，规范化
+program scope 和 reviewed artifact scope。
+它不会替你补写 `spawned_reviewer_receipt.yaml`，也不会回填
+`reviewer_execution_mode`、`reviewer_context_source`、
+`reviewer_history_inheritance`、`handoff_manifest_digest`、`review_cycle_id`、
+reviewer identity / session 等 proof 或 binding 字段。
 不要把磁盘上已有的 `adversarial_review_result.yaml` 当作不可质疑真值。
+
+## Spawned Reviewer Receipt
+
+当前唯一允许的 reviewer 形态是 `spawned_agent`。
+
+在 reviewer 写 `review/result/*` 之前，runtime launcher 必须先写出：
+
+- `review/request/spawned_reviewer_receipt.yaml`
+
+它至少要证明：
+
+- `spawn_mode: spawned_agent`
+- `fork_context: false`
+- `write_root: review/result`
+- `requested_reviewer_identity`
+- `requested_reviewer_session_id`
+- `handoff_manifest_path`
+- `handoff_manifest_digest`
+
+reviewer 的输入来源也必须被 request/receipt/result 三段一致地限制在：
+
+- `review/request/*`
+- `author/formal/*`
 
 ## Required Review Result Fields
 
@@ -45,6 +73,10 @@
 - `reviewer_role`
 - `reviewer_session_id`
 - `reviewer_mode: adversarial`
+- `reviewer_execution_mode: spawned_agent`
+- `reviewer_context_source: explicit_handoff_only`
+- `reviewer_history_inheritance: none`
+- `handoff_manifest_digest`
 - `review_loop_outcome`
 - `reviewed_program_dir`
 - `reviewed_program_entrypoint`
@@ -86,6 +118,10 @@
 ## Execution Gate
 
 只有结果达到 closure-ready，才运行 `./.qros/bin/qros-review`。
+
+如果 `spawned_reviewer_receipt.yaml` 缺失、request/receipt/result 的
+`review_cycle_id` 或 `handoff_manifest_digest` 不一致、receipt 中指定的
+reviewer 与真正提交 result 的 reviewer 不一致，`qros-review` 必须直接失败。
 
 对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation` 这三类
 CSF stage，`qros-review` 不只检查 artifact 是否存在，还会读取关键数值门禁：

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+TARGET_CWD="$PWD"
+ARGS=()
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --cwd)
+      TARGET_CWD="$2"
+      shift 2
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+else
+  PYTHON_BIN="python"
+fi
+
+RUNTIME_ROOT=""
+MANIFEST_PATH="$SCRIPT_DIR/../install-manifest.json"
+if [ -f "$MANIFEST_PATH" ]; then
+  SOURCE_REPO="$("$PYTHON_BIN" - "$MANIFEST_PATH" <<'PY'
+import json, sys
+from pathlib import Path
+
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(manifest.get("source_repo_path", ""))
+PY
+)"
+  if [ -n "$SOURCE_REPO" ] && [ -d "$SOURCE_REPO/runtime/scripts" ]; then
+    RUNTIME_ROOT="$SOURCE_REPO/runtime"
+  fi
+fi
+
+if [ -z "$RUNTIME_ROOT" ] && [ -d "$SCRIPT_DIR/../../runtime/scripts" ]; then
+  RUNTIME_ROOT="$(cd "$SCRIPT_DIR/../../runtime" && pwd)"
+fi
+
+if [ -z "$RUNTIME_ROOT" ]; then
+  echo "Unable to locate QROS runtime root from $SCRIPT_DIR" >&2
+  exit 1
+fi
+
+cd "$TARGET_CWD"
+if [ "${#ARGS[@]}" -gt 0 ]; then
+  exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/issue_spawned_reviewer_receipt.py" "${ARGS[@]}"
+fi
+
+exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/issue_spawned_reviewer_receipt.py"

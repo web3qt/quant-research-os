@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 from subprocess import run
 
@@ -27,6 +28,34 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     ]:
         (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
 
+    handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
+    _write_yaml(
+        handoff_manifest_path,
+        {
+            "review_cycle_id": "cycle-1",
+            "lineage_id": "topic_a",
+            "stage": "mandate",
+            "required_program_dir": "program/mandate",
+            "required_program_entrypoint": "run_stage.py",
+            "required_artifact_paths": [
+                "mandate.md",
+                "research_scope.md",
+                "time_split.json",
+                "parameter_grid.yaml",
+                "run_config.toml",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+            "permitted_input_roots": ["review/request", "author/formal"],
+            "permitted_output_roots": ["review/result"],
+            "required_result_write_root": "review/result",
+        },
+    )
+    handoff_manifest_digest = hashlib.sha256(
+        handoff_manifest_path.read_text(encoding="utf-8").encode("utf-8")
+    ).hexdigest()
+
     _write_yaml(
         stage_dir / "review" / "request" / "adversarial_review_request.yaml",
         {
@@ -48,6 +77,25 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             ],
             "required_provenance_paths": ["program_execution_manifest.json"],
             "required_reviewer_mode": "adversarial",
+            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_digest": handoff_manifest_digest,
+            "required_result_write_root": "review/result",
+        },
+    )
+    _write_yaml(
+        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
+        {
+            "review_cycle_id": "cycle-1",
+            "launcher_owner": "qros-runtime-launcher",
+            "launcher_session_id": "launcher-session",
+            "spawn_mode": "spawned_agent",
+            "fork_context": False,
+            "write_root": "review/result",
+            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_digest": handoff_manifest_digest,
+            "requested_reviewer_identity": "codex-reviewer",
+            "requested_reviewer_session_id": "local-review-session",
+            "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
     _write_yaml(
@@ -58,6 +106,10 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "reviewer_role": "reviewer",
             "reviewer_session_id": "local-review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_execution_mode": "spawned_agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
+            "handoff_manifest_digest": handoff_manifest_digest,
             "reviewed_program_dir": "program/mandate",
             "reviewed_program_entrypoint": "run_stage.py",
             "reviewed_artifact_paths": [
