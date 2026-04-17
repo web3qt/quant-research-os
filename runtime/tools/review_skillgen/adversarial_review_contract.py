@@ -282,8 +282,12 @@ def issue_spawned_reviewer_receipt(
     reviewer_identity: str,
     reviewer_session_id: str,
     launcher_session_id: str,
+    launcher_thread_id: str,
+    spawned_agent_id: str,
     launcher_owner: str = RUNTIME_LAUNCHER_OWNER,
 ) -> dict[str, Any]:
+    from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
+
     request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
     request_payload = load_adversarial_review_request(request_path)
     receipt_path = _receipt_path_for_stage(stage_dir)
@@ -291,7 +295,9 @@ def issue_spawned_reviewer_receipt(
         "review_cycle_id": request_payload["review_cycle_id"],
         "launcher_owner": launcher_owner,
         "launcher_session_id": launcher_session_id,
+        "launcher_thread_id": launcher_thread_id,
         "spawn_mode": REQUIRED_REVIEWER_EXECUTION_MODE,
+        "spawned_agent_id": spawned_agent_id,
         "fork_context": False,
         "write_root": REQUIRED_RESULT_WRITE_ROOT,
         "handoff_manifest_path": request_payload["handoff_manifest_path"],
@@ -303,8 +309,20 @@ def issue_spawned_reviewer_receipt(
     if receipt_path.exists():
         existing = load_spawned_reviewer_receipt(receipt_path)
         if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
+            write_reviewer_write_scope_baseline(
+                stage_dir,
+                review_cycle_id=existing["review_cycle_id"],
+                launcher_thread_id=existing["launcher_thread_id"],
+                spawned_agent_id=existing["spawned_agent_id"],
+            )
             return existing
     receipt_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id=payload["review_cycle_id"],
+        launcher_thread_id=payload["launcher_thread_id"],
+        spawned_agent_id=payload["spawned_agent_id"],
+    )
     return payload
 
 
@@ -317,7 +335,9 @@ def load_spawned_reviewer_receipt(path: str | Path) -> dict[str, Any]:
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=receipt_path),
         "launcher_owner": _require_string(payload, "launcher_owner", path=receipt_path),
         "launcher_session_id": _require_string(payload, "launcher_session_id", path=receipt_path),
+        "launcher_thread_id": _require_string(payload, "launcher_thread_id", path=receipt_path),
         "spawn_mode": _require_string(payload, "spawn_mode", path=receipt_path),
+        "spawned_agent_id": _require_string(payload, "spawned_agent_id", path=receipt_path),
         "fork_context": _require_bool(payload, "fork_context", path=receipt_path),
         "write_root": _require_string(payload, "write_root", path=receipt_path),
         "handoff_manifest_path": _require_string(payload, "handoff_manifest_path", path=receipt_path),
@@ -342,6 +362,7 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
         "reviewer_role": _require_string(payload, "reviewer_role", path=result_path),
         "reviewer_session_id": _require_string(payload, "reviewer_session_id", path=result_path),
         "reviewer_mode": _require_string(payload, "reviewer_mode", path=result_path),
+        "reviewer_agent_id": _require_string(payload, "reviewer_agent_id", path=result_path),
         "reviewer_execution_mode": _require_string(payload, "reviewer_execution_mode", path=result_path),
         "reviewer_context_source": _require_string(payload, "reviewer_context_source", path=result_path),
         "reviewer_history_inheritance": _require_string(payload, "reviewer_history_inheritance", path=result_path),
@@ -388,6 +409,7 @@ def canonicalize_runtime_review_result(
         "reviewer_role": result_payload["reviewer_role"],
         "reviewer_session_id": result_payload["reviewer_session_id"],
         "reviewer_mode": result_payload["reviewer_mode"],
+        "reviewer_agent_id": result_payload["reviewer_agent_id"],
         "reviewer_execution_mode": result_payload["reviewer_execution_mode"],
         "reviewer_context_source": result_payload["reviewer_context_source"],
         "reviewer_history_inheritance": result_payload["reviewer_history_inheritance"],
@@ -450,6 +472,10 @@ def validate_receipt_contract(
         raise ValueError("spawned_reviewer_receipt.yaml launcher_owner is not the fixed runtime launcher")
     if receipt_payload["spawn_mode"] != REQUIRED_REVIEWER_EXECUTION_MODE:
         raise ValueError("spawned_reviewer_receipt.yaml spawn_mode must be spawned_agent")
+    if not receipt_payload["spawned_agent_id"].strip():
+        raise ValueError("spawned_reviewer_receipt.yaml spawned_agent_id must be a non-empty string")
+    if not receipt_payload["launcher_thread_id"].strip():
+        raise ValueError("spawned_reviewer_receipt.yaml launcher_thread_id must be a non-empty string")
     if receipt_payload["fork_context"] is not False:
         raise ValueError("spawned_reviewer_receipt.yaml fork_context must be false")
     if receipt_payload["write_root"] != request_payload["required_result_write_root"]:
@@ -512,6 +538,8 @@ def validate_result_contract(
         raise ValueError("adversarial_review_result.yaml reviewer_identity does not match spawned_reviewer_receipt.yaml")
     if receipt_payload["requested_reviewer_session_id"] != result_payload["reviewer_session_id"]:
         raise ValueError("adversarial_review_result.yaml reviewer_session_id does not match spawned_reviewer_receipt.yaml")
+    if receipt_payload["spawned_agent_id"] != result_payload["reviewer_agent_id"]:
+        raise ValueError("adversarial_review_result.yaml reviewer_agent_id does not match spawned_reviewer_receipt.yaml")
     if result_payload["reviewer_execution_mode"] != REQUIRED_REVIEWER_EXECUTION_MODE:
         raise ValueError("adversarial_review_result.yaml reviewer_execution_mode must be spawned_agent")
     if result_payload["reviewer_context_source"] != REQUIRED_REVIEWER_CONTEXT_SOURCE:

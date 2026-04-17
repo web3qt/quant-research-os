@@ -73,6 +73,11 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     validate_result_contract,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
+    load_reviewer_write_scope_audit,
+    validate_reviewer_write_scope_audit,
+)
 from runtime.tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_DRAFT_FILE,
     SIGNAL_READY_FREEZE_GROUP_ORDER,
@@ -365,6 +370,10 @@ def _review_receipt_path(stage_dir: Path) -> Path:
 
 def _review_result_path(stage_dir: Path) -> Path:
     return _stage_context(stage_dir)["review_result_dir"] / ADVERSARIAL_REVIEW_RESULT_FILENAME
+
+
+def _review_audit_path(stage_dir: Path) -> Path:
+    return _stage_context(stage_dir)["review_result_dir"] / REVIEWER_WRITE_SCOPE_AUDIT_FILENAME
 
 
 def _review_findings_path(stage_dir: Path) -> Path:
@@ -2034,6 +2043,13 @@ def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
     return load_adversarial_review_result(result_path)
 
 
+def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
+    audit_path = _review_audit_path(stage_dir)
+    if not audit_path.exists():
+        return None
+    return load_reviewer_write_scope_audit(audit_path)
+
+
 def _load_spawned_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
     receipt_path = _review_receipt_path(stage_dir)
     if not receipt_path.exists():
@@ -2074,6 +2090,23 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
             request_payload=request_payload,
             receipt_payload=receipt_payload,
             result_payload=result_payload,
+        )
+    except Exception as exc:
+        return str(exc)
+    return None
+
+
+def _review_write_scope_audit_error(stage_dir: Path) -> str | None:
+    receipt_path = _review_receipt_path(stage_dir)
+    audit_path = _review_audit_path(stage_dir)
+    if not receipt_path.exists() or not audit_path.exists():
+        return None
+    try:
+        receipt_payload = load_spawned_reviewer_receipt(receipt_path)
+        audit_payload = load_reviewer_write_scope_audit(audit_path)
+        validate_reviewer_write_scope_audit(
+            receipt_payload=receipt_payload,
+            audit_payload=audit_payload,
         )
     except Exception as exc:
         return str(exc)
@@ -2141,7 +2174,9 @@ def _review_substate(
     request_path = _review_request_path(stage_dir)
     review_receipt = _load_spawned_reviewer_receipt_if_present(stage_dir)
     review_result = _load_adversarial_review_result_if_present(stage_dir)
+    review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
+    audit_error = _review_write_scope_audit_error(stage_dir)
     stage_base = _stage_base_name(current_stage)
     author_skill = STAGE_ACTIVE_SKILLS.get(f"{stage_base}_author", "qros-research-session")
     review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
@@ -2160,19 +2195,19 @@ def _review_substate(
                 f"{stage_base} has a spawned reviewer receipt on disk, but the proof chain is invalid: {proof_chain_error}",
                 f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
             )
+        if review_receipt is not None:
+            spawned_agent_id = review_receipt["spawned_agent_id"]
+            return (
+                "awaiting_spawned_reviewer_completion",
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"{stage_base} has launched spawned reviewer child {spawned_agent_id} and is waiting for it to write {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+                f"Wait for reviewer child {spawned_agent_id} to finish and write {ADVERSARIAL_REVIEW_RESULT_FILENAME}, then rerun {review_skill}.",
+            )
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
-            (
-                f"{stage_base} is waiting for an independent adversarial reviewer to inspect artifacts and source code."
-                if review_receipt is not None
-                else f"{stage_base} is waiting for the runtime launcher to issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin."
-            ),
-            (
-                f"Run {review_skill} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}."
-                if review_receipt is not None
-                else f"Issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then run {review_skill}."
-            ),
+            f"{stage_base} is waiting for the runtime launcher to issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin.",
+            f"Launch a spawned reviewer child, issue {SPAWNED_REVIEWER_RECEIPT_FILENAME}, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
@@ -2187,6 +2222,27 @@ def _review_substate(
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
             f"Run {author_skill} to fix findings, then rerun {review_skill}.",
+        )
+    if review_audit is None:
+        return (
+            "awaiting_reviewer_write_scope_audit",
+            "REVIEW_AUDIT_PENDING",
+            f"{stage_base} has a closure-ready review result, but {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} is still missing.",
+            f"Run qros-audit-reviewer to verify the reviewer did not modify protected files before rerunning {review_skill}.",
+        )
+    if audit_error is not None:
+        return (
+            "awaiting_reviewer_write_scope_audit",
+            "REVIEW_AUDIT_FAILED",
+            f"{stage_base} has a reviewer write-scope audit problem: {audit_error}",
+            f"Rerun qros-audit-reviewer, and if it still fails, discard the review cycle and return to the author lane.",
+        )
+    if review_audit["audit_status"] != "PASS":
+        return (
+            "awaiting_reviewer_write_scope_audit",
+            "REVIEW_AUDIT_FAILED",
+            f"{stage_base} reviewer write-scope audit did not pass.",
+            f"Inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME}, discard the invalid review cycle, and rerun review from the author lane.",
         )
     return (
         "awaiting_review_closure",
@@ -2915,7 +2971,9 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     request_exists = _review_request_path(stage_dir).exists()
     receipt_exists = _review_receipt_path(stage_dir).exists()
     review_result = _load_adversarial_review_result_if_present(stage_dir)
+    review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
+    audit_error = _review_write_scope_audit_error(stage_dir)
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
@@ -2924,8 +2982,8 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if not receipt_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Issue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then produce "
-            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME} via independent adversarial review.",
+            f"Launch a spawned reviewer child, issue {SPAWNED_REVIEWER_RECEIPT_FILENAME}, then wait for "
+            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if review_result is None:
         if receipt_exists and proof_chain_error is not None:
@@ -2934,9 +2992,15 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
                 f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing "
                 f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
             )
+        review_receipt = _load_spawned_reviewer_receipt_if_present(stage_dir)
+        if review_receipt is not None:
+            return (
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"Wait for spawned reviewer child {review_receipt['spawned_agent_id']} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Produce {ADVERSARIAL_REVIEW_RESULT_FILENAME} via independent adversarial review.",
+            f"Wait for the spawned reviewer child recorded in {SPAWNED_REVIEWER_RECEIPT_FILENAME} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
@@ -2948,6 +3012,16 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         return (
             "AUTHOR_FIX_REQUIRED",
             "Fix adversarial review findings in the author lane, then resubmit for review.",
+        )
+    if review_audit is None:
+        return (
+            "REVIEW_AUDIT_PENDING",
+            f"Run qros-audit-reviewer and confirm {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} passes before deterministic closure.",
+        )
+    if audit_error is not None or review_audit["audit_status"] != "PASS":
+        return (
+            "REVIEW_AUDIT_FAILED",
+            f"Reviewer write-scope audit failed; inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} and discard the invalid review cycle.",
         )
     return (
         "REVIEW_CLOSURE_PENDING",

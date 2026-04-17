@@ -15,5 +15,6 @@ def test_public_skills_reference_repo_local_wrappers() -> None:
 
 def test_repo_local_wrappers_exist() -> None:
     assert Path("runtime/bin/qros-session").exists()
+    assert Path("runtime/bin/qros-audit-reviewer").exists()
     assert Path("runtime/bin/qros-spawn-reviewer").exists()
     assert Path("runtime/bin/qros-review").exists()

@@ -49,11 +49,14 @@
 当前 review 执行闭环要求在当前 `stage_dir` 下至少提供：
 
 - `review/request/spawned_reviewer_receipt.yaml`
+- `review/request/reviewer_write_scope_baseline.yaml`
 - `review/result/adversarial_review_result.yaml`
+- `review/result/reviewer_write_scope_audit.yaml`
 - `review/result/review_findings.yaml`
 
 其中 `adversarial_review_result.yaml` 现在还必须显式声明：
 
+- `reviewer_agent_id`
 - `reviewer_execution_mode: spawned_agent`
 - `reviewer_context_source: explicit_handoff_only`
 - `reviewer_history_inheritance: none`
@@ -71,19 +74,23 @@
 
 自动可判定的硬项由 engine 处理，语义类判断由 reviewer 通过这个文件补充。
 
+制度上，`spawned_agent` 指独立 reviewer 子代理，而不是启动 review 的当前主线程继续自写 `review/result/*`。在当前 `Codex-only` 版本里，这个 reviewer child 应通过 native `spawn_agent` 启动；`./.qros/bin/qros-spawn-reviewer` 只负责写 launcher-side receipt，不等于 reviewer 已经完成审查。
+
 ## Running The Review Engine
 
-在当前 `outputs/<lineage>/<stage>/` 目录下，先由 runtime launcher 写 receipt，再执行 deterministic closure：
+在当前 `outputs/<lineage>/<stage>/` 目录下，主线程应先通过 native `spawn_agent` 启动独立 reviewer 子代理；wrapper 层先由 runtime launcher 写 receipt 和 baseline，reviewer 子代理写完 `review/result/*` 后，主线程先做 deterministic write-scope audit，再执行 deterministic closure：
 
 ```bash
-./.qros/bin/qros-spawn-reviewer --reviewer-id <id> --reviewer-session-id <session>
+./.qros/bin/qros-spawn-reviewer --reviewer-id <id> --reviewer-session-id <session> --launcher-thread-id <leader-thread-id> --spawned-agent-id <child-agent-id>
+./.qros/bin/qros-audit-reviewer
 ./.qros/bin/qros-review
 ```
 
 如果不在 stage 目录中，也可以显式传参：
 
 ```bash
-./.qros/bin/qros-spawn-reviewer --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a --reviewer-id <id> --reviewer-session-id <session>
+./.qros/bin/qros-spawn-reviewer --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a --reviewer-id <id> --reviewer-session-id <session> --launcher-thread-id <leader-thread-id> --spawned-agent-id <child-agent-id>
+./.qros/bin/qros-audit-reviewer --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ./.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 

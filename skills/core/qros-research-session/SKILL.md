@@ -146,6 +146,17 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 
 - 统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外语言口径。
 
+## Review Discipline
+
+- 进入任何 `*_review` stage 后，当前主会话必须先通过 native `spawn_agent` 启动独立 reviewer 子代理，再继续 review lane
+- 这个 reviewer 必须是 `spawned_agent`，且不得继承当前 author / leader 线程历史
+- launcher-side receipt 必须显式绑定 `launcher_thread_id` 与 `spawned_agent_id`
+- 当前主会话只允许准备 `review/request/*`、等待 reviewer 子代理落 `review/result/*`，随后运行 `qros-audit-reviewer`；只有 audit 通过后，才调用 `./.qros/bin/qros-review`
+- 当前主会话不得自己撰写 `review/result/adversarial_review_result.yaml` 或 `review/result/review_findings.yaml`
+- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许写入 `review/result/*`
+- 若 reviewer 子代理没有成功启动，必须停在 review pending / launch blocked，不得退化成同线程 review
+
 ## Working Rules
 
 1. Resolve or create the lineage

@@ -9,6 +9,10 @@ import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    write_reviewer_write_scope_baseline,
+)
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 from tests.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.test_research_session_runtime import _write_minimal_stage_outputs
@@ -99,7 +103,9 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "review_cycle_id": f"{stage_key}-cycle-1",
         "launcher_owner": "qros-runtime-launcher",
         "launcher_session_id": "launcher-session",
+        "launcher_thread_id": "leader-thread",
         "spawn_mode": "spawned_agent",
+        "spawned_agent_id": "reviewer-child-agent",
         "fork_context": False,
         "write_root": "review/result",
         "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
@@ -114,6 +120,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "reviewer_role": "reviewer",
         "reviewer_session_id": "review-session",
         "reviewer_mode": "adversarial",
+        "reviewer_agent_id": "reviewer-child-agent",
         "reviewer_execution_mode": "spawned_agent",
         "reviewer_context_source": "explicit_handoff_only",
         "reviewer_history_inheritance": "none",
@@ -132,7 +139,14 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
     }
     _write_yaml(stage_dir / "review" / "request" / "adversarial_review_request.yaml", request_payload)
     _write_yaml(stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml", receipt_payload)
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id=receipt_payload["review_cycle_id"],
+        launcher_thread_id=receipt_payload["launcher_thread_id"],
+        spawned_agent_id=receipt_payload["spawned_agent_id"],
+    )
     _write_yaml(stage_dir / "review" / "result" / "adversarial_review_result.yaml", result_payload)
+    run_reviewer_write_scope_audit(stage_dir)
 
 
 def test_run_stage_review_blocks_csf_data_ready_when_panel_manifest_contract_is_incomplete(tmp_path: Path) -> None:

@@ -6,6 +6,11 @@ import sys
 
 import yaml
 
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    write_reviewer_write_scope_baseline,
+)
+
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -90,7 +95,9 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "review_cycle_id": "cycle-1",
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
+            "launcher_thread_id": "leader-thread",
             "spawn_mode": "spawned_agent",
+            "spawned_agent_id": "reviewer-child-agent",
             "fork_context": False,
             "write_root": "review/result",
             "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
@@ -100,6 +107,12 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id="cycle-1",
+        launcher_thread_id="leader-thread",
+        spawned_agent_id="reviewer-child-agent",
+    )
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
@@ -108,6 +121,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
@@ -133,6 +147,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "downstream_permissions": [],
         },
     )
+    run_reviewer_write_scope_audit(stage_dir)
     return stage_dir
 
 
@@ -224,6 +239,10 @@ def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) ->
             "review-session",
             "--launcher-session-id",
             "launcher-session",
+            "--launcher-thread-id",
+            "leader-thread",
+            "--spawned-agent-id",
+            "reviewer-child-agent",
         ],
         cwd=tmp_path,
         check=False,
@@ -236,6 +255,60 @@ def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) ->
     receipt_payload = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
     assert receipt_payload["requested_reviewer_identity"] == "reviewer-agent"
     assert receipt_payload["requested_reviewer_session_id"] == "review-session"
+    assert receipt_payload["spawned_agent_id"] == "reviewer-child-agent"
+
+
+def test_audit_reviewer_write_scope_script_writes_pass_artifact(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    script_path = repo_root / "runtime" / "scripts" / "audit_reviewer_write_scope.py"
+    audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
+    audit_path.unlink()
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(stage_dir.parent),
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert audit_path.exists()
+    audit_payload = yaml.safe_load(audit_path.read_text(encoding="utf-8"))
+    assert audit_payload["audit_status"] == "PASS"
+
+
+def test_audit_reviewer_write_scope_script_fails_on_protected_author_change(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    script_path = repo_root / "runtime" / "scripts" / "audit_reviewer_write_scope.py"
+    (stage_dir / "author" / "formal" / "mandate.md").write_text("tampered\n", encoding="utf-8")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(stage_dir.parent),
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "Audit status: FAIL" in result.stdout
 
 
 def test_run_stage_review_script_rewrites_stale_result_to_match_active_request(tmp_path: Path) -> None:
@@ -251,6 +324,7 @@ def test_run_stage_review_script_rewrites_stale_result_to_match_active_request(t
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
@@ -325,6 +399,7 @@ def test_run_stage_review_script_rejects_review_cycle_mismatch(tmp_path: Path) -
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",

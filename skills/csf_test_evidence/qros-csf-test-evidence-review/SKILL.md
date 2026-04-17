@@ -20,6 +20,15 @@ description: Codex review skill for CSF Test Evidence stage verification.
 - `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
 - 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
 
+## 子代理执行要求
+
+- 本 skill 必须由独立 reviewer 子代理执行，不得由当前 author 线程或启动 review 的主线程直接执行
+- 在当前 `Codex-only` 版本里，发起 review 的主线程必须先通过 native `spawn_agent` 启动一个不继承 author 历史的 reviewer 子代理，再由该子代理执行本 skill
+- 当前主线程只允许准备 `review/request/*`、等待 reviewer 子代理落 `review/result/*`，不得自己撰写 `adversarial_review_result.yaml` 或 `review_findings.yaml`
+- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许写入 `review/result/*`
+- 若没有独立 reviewer 子代理，必须停在 review pending / launch blocked，不得退化成同线程 review
+
 ## 共用输入
 
 - `contracts/stages/workflow_stage_gates.yaml`
@@ -72,6 +81,7 @@ description: Codex review skill for CSF Test Evidence stage verification.
 - [blocking] 未在 test 重估 train 尺子，也未新增未冻结的 variant
 - [blocking] 若使用 filter 语义，check 结果体现条件改善而不是独立赚钱
 - [reservation] 若存在多重测试或多个候选 variant，已保留完整 ledger 而非只保留通过项
+- [blocking] standalone_alpha 场景下，mean_rank_ic <= 0 不得放行到下一阶段
 
 ## 仅审计项
 

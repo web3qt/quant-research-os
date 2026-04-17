@@ -4,6 +4,10 @@ from pathlib import Path
 import yaml
 
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    write_reviewer_write_scope_baseline,
+)
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -101,6 +105,7 @@ def _write_spawned_reviewer_receipt(
     *,
     reviewer_identity: str = "reviewer-agent",
     reviewer_session_id: str = "review-session",
+    spawned_agent_id: str = "reviewer-child-agent",
 ) -> None:
     _write_yaml(
         stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
@@ -108,7 +113,9 @@ def _write_spawned_reviewer_receipt(
             "review_cycle_id": "cycle-1",
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
+            "launcher_thread_id": "leader-thread",
             "spawn_mode": "spawned_agent",
+            "spawned_agent_id": spawned_agent_id,
             "fork_context": False,
             "write_root": "review/result",
             "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
@@ -117,6 +124,12 @@ def _write_spawned_reviewer_receipt(
             "requested_reviewer_session_id": reviewer_session_id,
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
+    )
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id="cycle-1",
+        launcher_thread_id="leader-thread",
+        spawned_agent_id=spawned_agent_id,
     )
 
 
@@ -129,6 +142,7 @@ def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS"
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
@@ -154,6 +168,7 @@ def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS"
             "downstream_permissions": [],
         },
     )
+    run_reviewer_write_scope_audit(stage_dir)
 
 
 def test_run_stage_review_pass_path(tmp_path: Path) -> None:

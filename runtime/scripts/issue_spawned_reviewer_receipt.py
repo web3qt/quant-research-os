@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import sys
 
@@ -21,6 +22,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--reviewer-id", required=True)
     parser.add_argument("--reviewer-session-id", required=True)
     parser.add_argument("--launcher-session-id", default="local-launcher-session")
+    parser.add_argument("--launcher-thread-id", default=os.environ.get("CODEX_THREAD_ID", "local-launcher-thread"))
+    parser.add_argument("--spawned-agent-id", required=True)
     return parser.parse_args()
 
 
@@ -40,10 +43,13 @@ def main() -> int:
         reviewer_identity=args.reviewer_id,
         reviewer_session_id=args.reviewer_session_id,
         launcher_session_id=args.launcher_session_id,
+        launcher_thread_id=args.launcher_thread_id,
+        spawned_agent_id=args.spawned_agent_id,
     )
     print(f"Issued: {stage_dir / 'review' / 'request' / 'spawned_reviewer_receipt.yaml'}")
     print(f"Review cycle: {payload['review_cycle_id']}")
     print(f"Requested reviewer: {payload['requested_reviewer_identity']}")
+    print(f"Spawned agent id: {payload['spawned_agent_id']}")
     return 0
 
 

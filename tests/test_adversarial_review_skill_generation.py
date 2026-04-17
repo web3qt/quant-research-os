@@ -74,6 +74,8 @@ def test_generated_review_skill_template_references_shared_protocol(tmp_path: Pa
 
     assert SHARED_PROTOCOL_PATH in skill_text
     assert "共享审查协议" in skill_text
+    assert "独立 reviewer 子代理" in skill_text
+    assert "spawn_agent" in skill_text
     assert "## 强制对抗审查 Reviewer 合同" not in skill_text
 
 
@@ -85,6 +87,10 @@ def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> 
     assert "adversarial reviewer-agent" in content
     assert "adversarial_review_request.yaml" in content
     assert "spawned_reviewer_receipt.yaml" in content
+    assert "reviewer_write_scope_baseline.yaml" in content
     assert "adversarial_review_result.yaml" in content
+    assert "reviewer_write_scope_audit.yaml" in content
+    assert "当前主线程不得自己撰写" in content
+    assert "spawned_agent_id" in content
     assert "FIX_REQUIRED" in content
     assert "closure-ready adverse verdict" in content

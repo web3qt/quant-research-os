@@ -58,6 +58,10 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "governance/pending_decisions" not in content
     assert "GOVERNANCE_DECISION_RECORD_REQUIRED" not in content
     assert "docs/guides/qros-authoring-language-discipline.md" in content
+    assert "独立 reviewer 子代理" in content
+    assert "spawn_agent" in content
+    assert "不得自己撰写 `review/result/adversarial_review_result.yaml`" in content
+    assert "qros-audit-reviewer" in content
     assert "./.qros/bin/qros-session" in content
 
 
@@ -72,6 +76,9 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "mandate_confirmation_pending" in content
     assert "idea_intake_confirmation_pending" in content
     assert "用户不需要记住内部命令" in content
+    assert "独立 reviewer 子代理" in content
+    assert "awaiting_reviewer_write_scope_audit" in content
+    assert "qros-audit-reviewer" in content
     assert "intake" in content.lower()
     assert "kill criteria" in content
     assert "--confirm-intake" in content

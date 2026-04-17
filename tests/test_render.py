@@ -16,6 +16,7 @@ def test_render_stage_skill_includes_stage_specific_contract() -> None:
     assert "Mandate" in text
     assert "formal gate" in text.lower()
     assert "docs/guides/qros-review-shared-protocol.md" in text
+    assert "独立 reviewer 子代理" in text
     assert "time_split.json" in text
     assert "默认 rollback stage：mandate" in text
     assert "仅审计项" in text

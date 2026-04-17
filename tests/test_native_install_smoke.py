@@ -4,6 +4,11 @@ from subprocess import run
 
 import yaml
 
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    write_reviewer_write_scope_baseline,
+)
+
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,7 +93,9 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "review_cycle_id": "cycle-1",
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
+            "launcher_thread_id": "leader-thread",
             "spawn_mode": "spawned_agent",
+            "spawned_agent_id": "reviewer-child-agent",
             "fork_context": False,
             "write_root": "review/result",
             "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
@@ -98,6 +105,12 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id="cycle-1",
+        launcher_thread_id="leader-thread",
+        spawned_agent_id="reviewer-child-agent",
+    )
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
@@ -106,6 +119,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "reviewer_role": "reviewer",
             "reviewer_session_id": "local-review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
@@ -131,6 +145,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "downstream_permissions": [],
         },
     )
+    run_reviewer_write_scope_audit(stage_dir)
     (stage_dir / "program_execution_manifest.json").write_text("ok\n", encoding="utf-8")
     return stage_dir
 

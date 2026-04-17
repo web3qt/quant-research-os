@@ -9,6 +9,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     issue_spawned_reviewer_receipt,
     load_adversarial_review_request,
 )
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
 from runtime.tools.research_session import (
     detect_session_stage,
     run_research_session,
@@ -126,12 +127,15 @@ def _write_spawned_reviewer_receipt(
     *,
     reviewer_identity: str = "reviewer-agent",
     reviewer_session_id: str = "review-session",
+    spawned_agent_id: str = "reviewer-child-agent",
 ) -> None:
     issue_spawned_reviewer_receipt(
         stage_dir,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id="launcher-session",
+        launcher_thread_id="leader-thread",
+        spawned_agent_id=spawned_agent_id,
     )
 
 
@@ -151,6 +155,7 @@ def _write_adversarial_review_result(
             "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
             "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
             "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
@@ -168,6 +173,7 @@ def _write_adversarial_review_result(
             "downstream_permissions": [],
         },
     )
+    run_reviewer_write_scope_audit(stage_dir)
 
 
 def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:

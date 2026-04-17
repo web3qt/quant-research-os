@@ -20,6 +20,15 @@ description: Codex review skill for CSF Signal Ready stage verification.
 - `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
 - 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
 
+## 子代理执行要求
+
+- 本 skill 必须由独立 reviewer 子代理执行，不得由当前 author 线程或启动 review 的主线程直接执行
+- 在当前 `Codex-only` 版本里，发起 review 的主线程必须先通过 native `spawn_agent` 启动一个不继承 author 历史的 reviewer 子代理，再由该子代理执行本 skill
+- 当前主线程只允许准备 `review/request/*`、等待 reviewer 子代理落 `review/result/*`，不得自己撰写 `adversarial_review_result.yaml` 或 `review_findings.yaml`
+- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许写入 `review/result/*`
+- 若没有独立 reviewer 子代理，必须停在 review pending / launch blocked，不得退化成同线程 review
+
 ## 共用输入
 
 - `contracts/stages/workflow_stage_gates.yaml`
@@ -77,6 +86,8 @@ description: Codex review skill for CSF Signal Ready stage verification.
 - [blocking] 缺失值策略、coverage contract 和 eligibility 传递规则已冻结
 - [blocking] 若需要组内排序或组中性化，factor group context 已冻结
 - [blocking] 不得把过滤器语义伪装成独立 alpha 语义
+- [blocking] factor_direction、panel_primary_key、final_score_field 与 score_combination_formula 均已冻结，且不允许保持空缺
+- [blocking] factor_panel 非空，且在 (date, asset) 上唯一
 
 ## 仅审计项
 
