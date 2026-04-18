@@ -3,11 +3,10 @@ from pathlib import Path
 
 import yaml
 
+from runtime.tools.review_skillgen.adversarial_review_contract import issue_spawned_reviewer_receipt
 from runtime.tools.review_skillgen.review_engine import run_stage_review
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    run_reviewer_write_scope_audit,
-    write_reviewer_write_scope_baseline,
-)
+from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -110,27 +109,11 @@ def _write_spawned_reviewer_receipt(
     reviewer_session_id: str = "review-session",
     spawned_agent_id: str = "reviewer-child-agent",
 ) -> None:
-    _write_yaml(
-        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
-        {
-            "review_cycle_id": "cycle-1",
-            "launcher_owner": "qros-runtime-launcher",
-            "launcher_session_id": "launcher-session",
-            "launcher_thread_id": "leader-thread",
-            "spawn_mode": "spawned_agent",
-            "spawned_agent_id": spawned_agent_id,
-            "fork_context": False,
-            "write_root": "review/result",
-            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
-            "handoff_manifest_digest": _handoff_manifest_digest(stage_dir),
-            "requested_reviewer_identity": reviewer_identity,
-            "requested_reviewer_session_id": reviewer_session_id,
-            "receipt_written_at": "2026-04-17T03:00:00Z",
-        },
-    )
-    write_reviewer_write_scope_baseline(
+    issue_spawned_reviewer_receipt(
         stage_dir,
-        review_cycle_id="cycle-1",
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        launcher_session_id="launcher-session",
         launcher_thread_id="leader-thread",
         spawned_agent_id=spawned_agent_id,
     )
@@ -197,6 +180,14 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert "governance" not in payload
     assert "governance_signal_path" not in payload
     assert "governance_candidate_summary" not in payload
+    trace_events = load_review_cycle_trace(stage_dir / "review" / "review_cycle_trace.jsonl")
+    assert [event["event_type"] for event in trace_events] == [
+        "receipt_issued",
+        "write_scope_audit_completed",
+        "review_evaluated",
+    ]
+    assert trace_events[-1]["final_verdict"] == "PASS"
+    assert trace_events[-1]["closure_written"] is True
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:
@@ -285,3 +276,7 @@ def test_run_stage_review_fix_required_skips_closure_artifacts(tmp_path: Path) -
     assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
     assert not (stage_dir / "review" / "governance" / "governance_signal.json").exists()
     assert "governance" not in payload
+    trace_events = load_review_cycle_trace(stage_dir / "review" / "review_cycle_trace.jsonl")
+    assert trace_events[-1]["event_type"] == "review_evaluated"
+    assert trace_events[-1]["review_loop_outcome"] == "FIX_REQUIRED"
+    assert trace_events[-1]["closure_written"] is False

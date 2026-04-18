@@ -94,6 +94,12 @@ Canonical program tree：
 
 所以，只要主 Agent 修过 `author/formal/*` 却没刷新 request / handoff，runtime 就会把这轮 review 当成 stale handoff 拒掉。
 
+另外，review lane 现在还应在 stage 目录里留下一个轻量 trace：
+
+- `review/review_cycle_trace.jsonl`
+
+它会把 request、receipt、audit、review verdict 这些关键节点记下来。以后你拿 `review_cycle_id`、`reviewer_session_id`、`spawned_agent_id` 或 `launcher_thread_id` 做回溯，会比只看聊天记录顺得多。
+
 如果 reviewer 返回 `FIX_REQUIRED`，主 Agent 也不应该直接原地再叫一个 reviewer 来“复看一眼”。正确顺序是：
 
 1. 先阅读 `review/result/adversarial_review_result.yaml`

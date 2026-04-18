@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from runtime.tools.review_skillgen.review_cycle_trace import append_review_cycle_event
 
 
 ADVERSARIAL_REVIEW_REQUEST_FILENAME = "adversarial_review_request.yaml"
@@ -309,6 +310,24 @@ def ensure_adversarial_review_request(
         return existing
 
     request_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    append_review_cycle_event(
+        stage_dir,
+        event_type="request_issued",
+        review_cycle_id=payload["review_cycle_id"],
+        payload={
+            "lineage_id": payload["lineage_id"],
+            "stage": payload["stage"],
+            "author_identity": payload["author_identity"],
+            "author_session_id": payload["author_session_id"],
+            "required_program_dir": payload["required_program_dir"],
+            "required_program_entrypoint": payload["required_program_entrypoint"],
+            "required_artifact_paths": list(payload["required_artifact_paths"]),
+            "required_provenance_paths": list(payload["required_provenance_paths"]),
+            "launcher_review_ready_status": payload["launcher_review_ready_status"],
+            "launcher_handoff_context_paths": list(payload["launcher_handoff_context_paths"]),
+            "handoff_manifest_digest": payload["handoff_manifest_digest"],
+        },
+    )
     return payload
 
 
@@ -480,6 +499,20 @@ def issue_spawned_reviewer_receipt(
         review_cycle_id=payload["review_cycle_id"],
         launcher_thread_id=payload["launcher_thread_id"],
         spawned_agent_id=payload["spawned_agent_id"],
+    )
+    append_review_cycle_event(
+        stage_dir,
+        event_type="receipt_issued",
+        review_cycle_id=payload["review_cycle_id"],
+        payload={
+            "launcher_session_id": payload["launcher_session_id"],
+            "launcher_thread_id": payload["launcher_thread_id"],
+            "requested_reviewer_identity": payload["requested_reviewer_identity"],
+            "requested_reviewer_session_id": payload["requested_reviewer_session_id"],
+            "spawned_agent_id": payload["spawned_agent_id"],
+            "write_root": payload["write_root"],
+            "handoff_manifest_digest": payload["handoff_manifest_digest"],
+        },
     )
     return payload
 

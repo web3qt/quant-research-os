@@ -13,6 +13,10 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_result,
     load_spawned_reviewer_receipt,
 )
+from runtime.tools.review_skillgen.review_cycle_trace import (
+    REVIEW_CYCLE_TRACE_FILENAME,
+    append_review_cycle_event,
+)
 
 
 REVIEWER_WRITE_SCOPE_BASELINE_FILENAME = "reviewer_write_scope_baseline.yaml"
@@ -41,12 +45,15 @@ def _audit_path(stage_dir: Path) -> Path:
 
 def _iter_protected_files(stage_dir: Path) -> dict[str, str]:
     baseline_rel = Path("review/request") / REVIEWER_WRITE_SCOPE_BASELINE_FILENAME
+    trace_rel = Path("review") / REVIEW_CYCLE_TRACE_FILENAME
     snapshot: dict[str, str] = {}
     for path in sorted(stage_dir.rglob("*")):
         if not path.is_file():
             continue
         rel = path.relative_to(stage_dir)
         if rel == baseline_rel:
+            continue
+        if rel == trace_rel:
             continue
         if rel.parts[:2] == REVIEW_RESULT_ROOT.parts:
             continue
@@ -142,6 +149,21 @@ def run_reviewer_write_scope_audit(stage_dir: Path) -> dict[str, Any]:
     path = _audit_path(stage_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    append_review_cycle_event(
+        stage_dir,
+        event_type="write_scope_audit_completed",
+        review_cycle_id=payload["review_cycle_id"],
+        payload={
+            "launcher_thread_id": payload["launcher_thread_id"],
+            "spawned_agent_id": payload["spawned_agent_id"],
+            "reviewer_agent_id": payload["reviewer_agent_id"],
+            "audit_status": payload["audit_status"],
+            "protected_files_added": list(payload["protected_files_added"]),
+            "protected_files_removed": list(payload["protected_files_removed"]),
+            "protected_files_changed": list(payload["protected_files_changed"]),
+            "unexpected_result_files": list(payload["unexpected_result_files"]),
+        },
+    )
     return payload
 
 

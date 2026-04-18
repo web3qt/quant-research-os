@@ -20,6 +20,19 @@
 - `review/closure/stage_gate_review.yaml`
 - `review/closure/stage_completion_certificate.yaml`
 
+## Review Trace
+
+为方便按 `session / reviewer / review_cycle_id` 做 postmortem，当前 review lane 还会把关键节点追加到：
+
+- `review/review_cycle_trace.jsonl`
+
+它至少会记录：
+
+- request issued
+- spawned reviewer receipt issued
+- reviewer write-scope audit completed
+- review evaluated（`FIX_REQUIRED` 或 closure-ready verdict）
+
 ## Leader / Launcher Discipline
 
 发起 review 的当前主线程必须实际启动一个独立 reviewer 子代理。
@@ -196,6 +209,8 @@ reviewer 与真正提交 result 的 reviewer 不一致，`qros-review` 必须直
 
 如果 request / handoff manifest 的 `review-ready` 字段不完整，或者 launcher
 声称检查过的 paths 与 active request scope 不一致，`qros-review` 也必须直接失败。
+
+`review/review_cycle_trace.jsonl` 不参与 gate 判定，但应保持可追加、可搜索，方便未来按 session id、reviewer session、spawned agent id 或 review_cycle_id 还原一次 review cycle。
 
 对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation` 这三类
 CSF stage，`qros-review` 不只检查 artifact 是否存在，还会读取关键数值门禁：

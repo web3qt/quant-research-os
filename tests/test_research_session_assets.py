@@ -86,6 +86,7 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "review-ready" in content
     assert "review/result/review_findings.yaml" in content
     assert "launcher_review_ready_status" in content
+    assert "review/review_cycle_trace.jsonl" in content
     assert "intake" in content.lower()
     assert "kill criteria" in content
     assert "--confirm-intake" in content

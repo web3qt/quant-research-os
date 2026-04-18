@@ -12,6 +12,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
 
 
@@ -243,6 +244,7 @@ def test_ensure_adversarial_review_request_freezes_launcher_review_ready_metadat
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
 
     request_payload = _review_request_payload(stage_dir)
+    trace_events = load_review_cycle_trace(stage_dir / "review" / "review_cycle_trace.jsonl")
 
     assert request_payload["launcher_review_ready_status"] == "complete"
     assert sorted(request_payload["launcher_checked_artifact_paths"]) == sorted(request_payload["required_artifact_paths"])
@@ -250,6 +252,8 @@ def test_ensure_adversarial_review_request_freezes_launcher_review_ready_metadat
         request_payload["required_provenance_paths"]
     )
     assert request_payload["launcher_handoff_context_paths"] == ["artifact_catalog.md", "field_dictionary.md"]
+    assert trace_events[0]["event_type"] == "request_issued"
+    assert trace_events[0]["author_identity"] == "author-agent"
 
 
 def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) -> None:

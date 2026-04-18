@@ -25,6 +25,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 )
 from runtime.tools.review_skillgen.closure_models import build_review_payload
 from runtime.tools.review_skillgen.closure_writer import write_closure_artifacts
+from runtime.tools.review_skillgen.review_cycle_trace import append_review_cycle_event
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
@@ -529,6 +530,25 @@ def run_stage_review(
     }
 
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
+        append_review_cycle_event(
+            stage_dir,
+            event_type="review_evaluated",
+            review_cycle_id=review_result["review_cycle_id"],
+            payload={
+                "lineage_id": lineage_id,
+                "stage": stage,
+                "review_loop_outcome": review_loop_outcome,
+                "final_verdict": None,
+                "reviewer_identity": review_result["reviewer_identity"],
+                "reviewer_session_id": review_result["reviewer_session_id"],
+                "reviewer_agent_id": review_result["reviewer_agent_id"],
+                "blocking_findings_count": len(blocking_findings),
+                "reservation_findings_count": len(reservation_findings),
+                "info_findings_count": len(info_findings),
+                "residual_risks_count": len(residual_risks),
+                "closure_written": False,
+            },
+        )
         return {
             **common_payload,
             "final_verdict": None,
@@ -570,6 +590,25 @@ def run_stage_review(
         explicit_context={
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
+        },
+    )
+    append_review_cycle_event(
+        stage_dir,
+        event_type="review_evaluated",
+        review_cycle_id=review_result["review_cycle_id"],
+        payload={
+            "lineage_id": lineage_id,
+            "stage": stage,
+            "review_loop_outcome": review_loop_outcome,
+            "final_verdict": final_verdict,
+            "reviewer_identity": review_result["reviewer_identity"],
+            "reviewer_session_id": review_result["reviewer_session_id"],
+            "reviewer_agent_id": review_result["reviewer_agent_id"],
+            "blocking_findings_count": len(blocking_findings),
+            "reservation_findings_count": len(reservation_findings),
+            "info_findings_count": len(info_findings),
+            "residual_risks_count": len(residual_risks),
+            "closure_written": True,
         },
     )
     return payload

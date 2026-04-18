@@ -107,6 +107,10 @@
 - `launcher_checked_provenance_paths`
 - `launcher_handoff_context_paths`
 
+另外，review runtime 还会把关键节点追加到：
+
+- `review/review_cycle_trace.jsonl`
+
 如果 reviewer 返回 `FIX_REQUIRED`，主线程应先读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复并刷新 outputs，再起一个新的 reviewer cycle；不要直接复用旧 receipt / result / audit。
 
 ## Closure Artifacts
