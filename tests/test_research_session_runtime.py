@@ -2312,7 +2312,8 @@ def test_run_research_session_exposes_author_fix_substate_for_fix_required_revie
     assert status.current_skill == "qros-mandate-author"
     assert status.gate_status == "AUTHOR_FIX_REQUIRED"
     assert "author-fix skill" in status.why_this_skill
-    assert "author lane" in status.next_action
+    assert "review_findings.yaml" in status.next_action
+    assert "fresh reviewer cycle" in status.next_action
 
 
 def test_run_research_session_exposes_review_closure_substate_after_closure_ready_result(

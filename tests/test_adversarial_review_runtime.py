@@ -238,6 +238,20 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
     assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
 
 
+def test_ensure_adversarial_review_request_freezes_launcher_review_ready_metadata(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+
+    request_payload = _review_request_payload(stage_dir)
+
+    assert request_payload["launcher_review_ready_status"] == "complete"
+    assert sorted(request_payload["launcher_checked_artifact_paths"]) == sorted(request_payload["required_artifact_paths"])
+    assert sorted(request_payload["launcher_checked_provenance_paths"]) == sorted(
+        request_payload["required_provenance_paths"]
+    )
+    assert request_payload["launcher_handoff_context_paths"] == ["artifact_catalog.md", "field_dictionary.md"]
+
+
 def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(
@@ -430,7 +444,8 @@ def test_run_research_session_routes_fix_required_back_to_author_with_route_pari
     assert status.current_skill == expected_author_skill
     assert status.stage_status == "awaiting_author_fix"
     assert status.blocking_reason_code == "AUTHOR_FIX_REQUIRED"
-    assert "fix" in status.next_action.lower()
+    assert "review_findings.yaml" in status.next_action
+    assert "fresh reviewer cycle" in status.next_action
 
 
 def test_run_research_session_waits_for_spawned_reviewer_child_after_receipt(tmp_path: Path) -> None:
@@ -538,6 +553,28 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
     assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
     assert "proof chain is invalid" in (status.blocking_reason or "")
     assert "spawned_reviewer_receipt.yaml" in status.next_action
+
+
+def test_run_research_session_keeps_review_pending_when_request_handoff_is_invalid(tmp_path: Path) -> None:
+    outputs_root, stage_dir = _prepare_review_runtime_case(
+        tmp_path,
+        lineage_id="btc_invalid_review_handoff",
+        stage_key="test_evidence",
+        stage_dir_name="05_test_evidence",
+    )
+    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload["launcher_checked_artifact_paths"] = []
+    _write_yaml(request_path, request_payload)
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_invalid_review_handoff")
+
+    assert status.current_stage == "test_evidence_review"
+    assert status.stage_status == "awaiting_adversarial_review"
+    assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
+    assert "proof chain is invalid" in (status.blocking_reason or "")
+    assert "launcher_checked_artifact_paths" in (status.blocking_reason or "")
 
 
 def test_run_stage_review_rejects_missing_spawned_reviewer_receipt(tmp_path: Path) -> None:

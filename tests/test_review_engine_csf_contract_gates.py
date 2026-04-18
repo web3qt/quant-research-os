@@ -65,6 +65,9 @@ def _prepare_csf_stage(tmp_path: Path, *, stage_key: str, stage_dir_name: str) -
 
 def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None:
     spec = STAGE_PROGRAM_SPECS[stage_key]
+    required_artifact_paths: list[str] = []
+    required_provenance_paths = ["program_execution_manifest.json"]
+    launcher_handoff_context_paths: list[str] = []
     handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
     _write_yaml(
         handoff_manifest_path,
@@ -74,11 +77,15 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
             "stage": spec["stage_id"],
             "required_program_dir": str(spec["program_dir"]),
             "required_program_entrypoint": "run_stage.py",
-            "required_artifact_paths": [],
-            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_artifact_paths": required_artifact_paths,
+            "required_provenance_paths": required_provenance_paths,
             "permitted_input_roots": ["review/request", "author/formal"],
             "permitted_output_roots": ["review/result"],
             "required_result_write_root": "review/result",
+            "launcher_review_ready_status": "complete",
+            "launcher_checked_artifact_paths": required_artifact_paths,
+            "launcher_checked_provenance_paths": required_provenance_paths,
+            "launcher_handoff_context_paths": launcher_handoff_context_paths,
         },
     )
     handoff_manifest_digest = hashlib.sha256(
@@ -92,12 +99,16 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "author_session_id": "author-session",
         "required_program_dir": str(spec["program_dir"]),
         "required_program_entrypoint": "run_stage.py",
-        "required_artifact_paths": [],
-        "required_provenance_paths": ["program_execution_manifest.json"],
+        "required_artifact_paths": required_artifact_paths,
+        "required_provenance_paths": required_provenance_paths,
         "required_reviewer_mode": "adversarial",
         "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
         "handoff_manifest_digest": handoff_manifest_digest,
         "required_result_write_root": "review/result",
+        "launcher_review_ready_status": "complete",
+        "launcher_checked_artifact_paths": required_artifact_paths,
+        "launcher_checked_provenance_paths": required_provenance_paths,
+        "launcher_handoff_context_paths": launcher_handoff_context_paths,
     }
     receipt_payload = {
         "review_cycle_id": f"{stage_key}-cycle-1",
@@ -128,8 +139,8 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "review_loop_outcome": "CLOSURE_READY_PASS",
         "reviewed_program_dir": str(spec["program_dir"]),
         "reviewed_program_entrypoint": "run_stage.py",
-        "reviewed_artifact_paths": [],
-        "reviewed_provenance_paths": ["program_execution_manifest.json"],
+        "reviewed_artifact_paths": required_artifact_paths,
+        "reviewed_provenance_paths": required_provenance_paths,
         "blocking_findings": [],
         "reservation_findings": [],
         "info_findings": [],

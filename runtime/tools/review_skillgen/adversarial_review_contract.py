@@ -20,6 +20,7 @@ REQUIRED_REVIEWER_CONTEXT_SOURCE = "explicit_handoff_only"
 REQUIRED_REVIEWER_HISTORY_INHERITANCE = "none"
 REQUIRED_RESULT_WRITE_ROOT = "review/result"
 RUNTIME_LAUNCHER_OWNER = "qros-runtime-launcher"
+REQUIRED_LAUNCHER_REVIEW_READY_STATUS = "complete"
 FIX_REQUIRED_OUTCOME = "FIX_REQUIRED"
 CLOSURE_READY_OUTCOMES = {
     "CLOSURE_READY_PASS": "PASS",
@@ -31,6 +32,7 @@ CLOSURE_READY_OUTCOMES = {
 }
 ALLOWED_REVIEW_LOOP_OUTCOMES = {FIX_REQUIRED_OUTCOME, *CLOSURE_READY_OUTCOMES}
 REQUIRED_HANDOFF_INPUT_ROOTS = ("review/request", "author/formal")
+REQUIRED_HANDOFF_CONTEXT_PATHS = ("artifact_catalog.md", "field_dictionary.md", "run_manifest.json")
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,46 @@ def _receipt_path_for_stage(stage_dir: Path) -> Path:
     return stage_dir / "review" / "request" / SPAWNED_REVIEWER_RECEIPT_FILENAME
 
 
+def _expected_launcher_handoff_context_paths(required_artifact_paths: list[str]) -> list[str]:
+    required_set = set(required_artifact_paths)
+    return [path for path in REQUIRED_HANDOFF_CONTEXT_PATHS if path in required_set]
+
+
+def _build_launcher_review_ready_payload(
+    *,
+    required_artifact_paths: list[str],
+    required_provenance_paths: list[str],
+) -> dict[str, Any]:
+    return {
+        "launcher_review_ready_status": REQUIRED_LAUNCHER_REVIEW_READY_STATUS,
+        "launcher_checked_artifact_paths": sorted(required_artifact_paths),
+        "launcher_checked_provenance_paths": sorted(required_provenance_paths),
+        "launcher_handoff_context_paths": _expected_launcher_handoff_context_paths(required_artifact_paths),
+    }
+
+
+def _validate_review_ready_stage_inputs(
+    stage_dir: Path,
+    *,
+    required_artifact_paths: list[str],
+    required_provenance_paths: list[str],
+) -> None:
+    author_formal_dir = stage_dir / "author" / "formal"
+    for relative_path in sorted(required_artifact_paths):
+        artifact_path = author_formal_dir / relative_path
+        if not artifact_path.exists():
+            raise ValueError(f"{stage_dir}: review-ready artifact {relative_path!r} is missing under author/formal")
+        if artifact_path.is_file() and artifact_path.stat().st_size == 0:
+            raise ValueError(f"{stage_dir}: review-ready artifact {relative_path!r} is empty under author/formal")
+    for relative_path in sorted(required_provenance_paths):
+        provenance_candidates = [stage_dir / relative_path, author_formal_dir / relative_path]
+        provenance_path = next((candidate for candidate in provenance_candidates if candidate.exists()), None)
+        if provenance_path is None:
+            raise ValueError(f"{stage_dir}: review-ready provenance {relative_path!r} is missing")
+        if provenance_path.is_file() and provenance_path.stat().st_size == 0:
+            raise ValueError(f"{stage_dir}: review-ready provenance {relative_path!r} is empty")
+
+
 def build_review_cycle_id(
     *,
     lineage_id: str,
@@ -128,7 +170,7 @@ def _build_handoff_manifest_payload(
     required_artifact_paths: list[str],
     required_provenance_paths: list[str],
 ) -> dict[str, Any]:
-    return {
+    payload = {
         "review_cycle_id": review_cycle_id,
         "lineage_id": lineage_id,
         "stage": stage,
@@ -140,6 +182,13 @@ def _build_handoff_manifest_payload(
         "permitted_output_roots": [REQUIRED_RESULT_WRITE_ROOT],
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
+    payload.update(
+        _build_launcher_review_ready_payload(
+            required_artifact_paths=required_artifact_paths,
+            required_provenance_paths=required_provenance_paths,
+        )
+    )
+    return payload
 
 
 def _write_handoff_manifest(
@@ -189,6 +238,11 @@ def ensure_adversarial_review_request(
 ) -> dict[str, Any]:
     request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
     request_path.parent.mkdir(parents=True, exist_ok=True)
+    _validate_review_ready_stage_inputs(
+        stage_dir,
+        required_artifact_paths=required_artifact_paths,
+        required_provenance_paths=required_provenance_paths,
+    )
     review_cycle_id = build_review_cycle_id(
         lineage_id=lineage_id,
         stage=stage,
@@ -224,12 +278,33 @@ def ensure_adversarial_review_request(
         "handoff_manifest_digest": handoff_manifest_digest,
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
+    payload.update(
+        _build_launcher_review_ready_payload(
+            required_artifact_paths=required_artifact_paths,
+            required_provenance_paths=required_provenance_paths,
+        )
+    )
     if program_hash:
         payload["author_program_hash"] = program_hash
     if stage_invoked_at:
         payload["author_stage_invoked_at"] = stage_invoked_at
 
-    existing = load_adversarial_review_request(request_path) if request_path.exists() else None
+    existing: dict[str, Any] | None = None
+    raw_existing: dict[str, Any] | None = None
+    if request_path.exists():
+        try:
+            raw_existing = _require_mapping(request_path)
+        except Exception:
+            raw_existing = None
+        try:
+            existing = load_adversarial_review_request(request_path)
+        except Exception:
+            if raw_existing is not None and (
+                raw_existing.get("review_cycle_id") != payload["review_cycle_id"]
+                or raw_existing.get("handoff_manifest_digest") != payload["handoff_manifest_digest"]
+            ):
+                request_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+            return payload
     if existing == payload:
         return existing
 
@@ -254,6 +329,16 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         "handoff_manifest_path": _require_string(payload, "handoff_manifest_path", path=request_path),
         "handoff_manifest_digest": _require_string(payload, "handoff_manifest_digest", path=request_path),
         "required_result_write_root": _require_string(payload, "required_result_write_root", path=request_path),
+        "launcher_review_ready_status": _require_string(payload, "launcher_review_ready_status", path=request_path),
+        "launcher_checked_artifact_paths": _require_string_list(
+            payload, "launcher_checked_artifact_paths", path=request_path
+        ),
+        "launcher_checked_provenance_paths": _require_string_list(
+            payload, "launcher_checked_provenance_paths", path=request_path
+        ),
+        "launcher_handoff_context_paths": _require_string_list(
+            payload, "launcher_handoff_context_paths", path=request_path
+        ),
     }
     if data["required_reviewer_mode"] != REQUIRED_REVIEWER_MODE:
         raise ValueError(f"{request_path}: required_reviewer_mode must be {REQUIRED_REVIEWER_MODE!r}")
@@ -261,6 +346,17 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         raise ValueError(
             f"{request_path}: required_result_write_root must be {REQUIRED_RESULT_WRITE_ROOT!r}"
         )
+    if data["launcher_review_ready_status"] != REQUIRED_LAUNCHER_REVIEW_READY_STATUS:
+        raise ValueError(
+            f"{request_path}: launcher_review_ready_status must be {REQUIRED_LAUNCHER_REVIEW_READY_STATUS!r}"
+        )
+    if sorted(data["launcher_checked_artifact_paths"]) != sorted(data["required_artifact_paths"]):
+        raise ValueError(f"{request_path}: launcher_checked_artifact_paths must match required_artifact_paths")
+    if sorted(data["launcher_checked_provenance_paths"]) != sorted(data["required_provenance_paths"]):
+        raise ValueError(f"{request_path}: launcher_checked_provenance_paths must match required_provenance_paths")
+    expected_context_paths = _expected_launcher_handoff_context_paths(data["required_artifact_paths"])
+    if sorted(data["launcher_handoff_context_paths"]) != sorted(expected_context_paths):
+        raise ValueError(f"{request_path}: launcher_handoff_context_paths do not match the required handoff context")
     for optional_key in ("author_program_hash", "author_stage_invoked_at"):
         value = payload.get(optional_key)
         if isinstance(value, str) and value.strip():
@@ -273,6 +369,68 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
     manifest_text = manifest_path.read_text(encoding="utf-8")
     if _digest_text(manifest_text) != data["handoff_manifest_digest"]:
         raise ValueError(f"{request_path}: handoff manifest digest does not match {manifest_path}")
+    manifest_payload = load_spawned_reviewer_handoff_manifest(manifest_path)
+    for key in (
+        "review_cycle_id",
+        "lineage_id",
+        "stage",
+        "required_program_dir",
+        "required_program_entrypoint",
+        "required_artifact_paths",
+        "required_provenance_paths",
+        "required_result_write_root",
+        "launcher_review_ready_status",
+        "launcher_checked_artifact_paths",
+        "launcher_checked_provenance_paths",
+        "launcher_handoff_context_paths",
+    ):
+        if manifest_payload[key] != data[key]:
+            raise ValueError(f"{request_path}: handoff manifest field {key} does not match the active request")
+    return data
+
+
+def load_spawned_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
+    manifest_path = Path(path)
+    payload = _require_mapping(manifest_path)
+    data = {
+        "review_cycle_id": _require_string(payload, "review_cycle_id", path=manifest_path),
+        "lineage_id": _require_string(payload, "lineage_id", path=manifest_path),
+        "stage": _require_string(payload, "stage", path=manifest_path),
+        "required_program_dir": _require_string(payload, "required_program_dir", path=manifest_path),
+        "required_program_entrypoint": _require_string(payload, "required_program_entrypoint", path=manifest_path),
+        "required_artifact_paths": _require_string_list(payload, "required_artifact_paths", path=manifest_path),
+        "required_provenance_paths": _require_string_list(payload, "required_provenance_paths", path=manifest_path),
+        "permitted_input_roots": _require_string_list(payload, "permitted_input_roots", path=manifest_path),
+        "permitted_output_roots": _require_string_list(payload, "permitted_output_roots", path=manifest_path),
+        "required_result_write_root": _require_string(payload, "required_result_write_root", path=manifest_path),
+        "launcher_review_ready_status": _require_string(payload, "launcher_review_ready_status", path=manifest_path),
+        "launcher_checked_artifact_paths": _require_string_list(
+            payload, "launcher_checked_artifact_paths", path=manifest_path
+        ),
+        "launcher_checked_provenance_paths": _require_string_list(
+            payload, "launcher_checked_provenance_paths", path=manifest_path
+        ),
+        "launcher_handoff_context_paths": _require_string_list(
+            payload, "launcher_handoff_context_paths", path=manifest_path
+        ),
+    }
+    if tuple(data["permitted_input_roots"]) != REQUIRED_HANDOFF_INPUT_ROOTS:
+        raise ValueError(f"{manifest_path}: permitted_input_roots must be {list(REQUIRED_HANDOFF_INPUT_ROOTS)!r}")
+    if data["permitted_output_roots"] != [REQUIRED_RESULT_WRITE_ROOT]:
+        raise ValueError(f"{manifest_path}: permitted_output_roots must be {[REQUIRED_RESULT_WRITE_ROOT]!r}")
+    if data["required_result_write_root"] != REQUIRED_RESULT_WRITE_ROOT:
+        raise ValueError(f"{manifest_path}: required_result_write_root must be {REQUIRED_RESULT_WRITE_ROOT!r}")
+    if data["launcher_review_ready_status"] != REQUIRED_LAUNCHER_REVIEW_READY_STATUS:
+        raise ValueError(
+            f"{manifest_path}: launcher_review_ready_status must be {REQUIRED_LAUNCHER_REVIEW_READY_STATUS!r}"
+        )
+    if sorted(data["launcher_checked_artifact_paths"]) != sorted(data["required_artifact_paths"]):
+        raise ValueError(f"{manifest_path}: launcher_checked_artifact_paths must match required_artifact_paths")
+    if sorted(data["launcher_checked_provenance_paths"]) != sorted(data["required_provenance_paths"]):
+        raise ValueError(f"{manifest_path}: launcher_checked_provenance_paths must match required_provenance_paths")
+    expected_context_paths = _expected_launcher_handoff_context_paths(data["required_artifact_paths"])
+    if sorted(data["launcher_handoff_context_paths"]) != sorted(expected_context_paths):
+        raise ValueError(f"{manifest_path}: launcher_handoff_context_paths do not match the required handoff context")
     return data
 
 

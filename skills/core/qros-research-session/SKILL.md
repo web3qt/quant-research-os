@@ -157,6 +157,16 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - reviewer 子代理只允许写入 `review/result/*`
 - 若 reviewer 子代理没有成功启动，必须停在 review pending / launch blocked，不得退化成同线程 review
 
+## Main-Agent Review Loop
+
+- 在启动 reviewer 子代理之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
+- `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
+- 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
+- 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
+- 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
+- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后发起新的 reviewer cycle
+- author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs
+
 ## Working Rules
 
 1. Resolve or create the lineage
@@ -186,6 +196,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 24. Drive mandate completion with the same discipline as `qros-mandate-author`
 25. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
 26. Only after explicit review confirmation may the session enter `mandate_review`
+27. 在任何 `*_review` 真正启动 reviewer 子代理前，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备
 28. Confirm `extraction_contract`
 29. Confirm `quality_semantics`
 30. Confirm `universe_admission`
@@ -199,6 +210,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 38. Drive data_ready completion with the same discipline as `qros-data-ready-author`
 39. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
 40. Only after explicit review confirmation may the session enter `data_ready_review`
+41. 在 `data_ready_review` 里若收到 `FIX_REQUIRED`，必须先回 author lane 修复并刷新 `author/formal/*`，再发起新的 reviewer cycle
 42. Confirm `signal_expression`
 43. Confirm `param_identity`
 44. Confirm `time_semantics`
@@ -212,6 +224,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 52. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
 53. When signal_ready artifacts are ready, move into signal_ready review
 54. Reuse the same gate discipline as `qros-signal-ready-review`
+55. 在 `signal_ready review` 中不得复用上一轮 stale receipt / result；author outputs 变化后必须重开 review cycle
 55. After `signal_ready review` closure, enter `train_freeze_confirmation_pending`
 56. Confirm `window_contract`
 57. Confirm `threshold_contract`
@@ -240,6 +253,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 80. Drive test_evidence completion with the same discipline as `qros-test-evidence-author`
 81. When test_evidence artifacts are ready, move into test_evidence review
 82. Reuse the same gate discipline as `qros-test-evidence-review`
+83. 在 `test_evidence review` 里若 reviewer 指出缺 artifact / stale scope，主 Agent 必须先修正 handoff 与 formal outputs，再重新提交 review
 83. After `test_evidence review` closure, enter `backtest_ready_confirmation_pending`
 84. Confirm `execution_policy`
 85. Confirm `portfolio_policy`
@@ -254,6 +268,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 94. Drive backtest_ready completion with the same discipline as `qros-backtest-ready-author`
 95. When backtest_ready artifacts are ready, move into backtest_ready review
 96. Reuse the same gate discipline as `qros-backtest-ready-review`
+97. 在 `backtest_ready review` 与 `holdout_validation review` 里，主 Agent 只在已经能清楚说明“这轮 reviewer 该审什么”时才允许发起 review
 97. After `backtest_ready review` closure, enter `holdout_validation_confirmation_pending`
 98. Confirm `window_contract`
 99. Confirm `reuse_contract`

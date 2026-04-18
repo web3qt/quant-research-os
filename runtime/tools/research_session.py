@@ -1987,8 +1987,8 @@ def _resume_hint(
     if current_stage.endswith("_review"):
         if runtime_stage_status == "awaiting_author_fix":
             return (
-                f"Run {current_skill} to address fix-required findings, then rerun the review workflow and "
-                f"qros-session --lineage-id {lineage_id}."
+                f"Run {current_skill} to address review/result/review_findings.yaml in the author lane, "
+                f"refresh author/formal outputs, then rerun the review workflow and qros-session --lineage-id {lineage_id}."
             )
         return (
             f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
@@ -2187,6 +2187,20 @@ def _review_substate(
             f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
             f"Rerun qros-session --lineage-id {lineage_root.name} to issue the review request, then run {review_skill}.",
         )
+    if review_receipt is None and proof_chain_error is not None:
+        if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
+            return (
+                "awaiting_adversarial_review",
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"{stage_base} has reviewer artifacts on disk, but {SPAWNED_REVIEWER_RECEIPT_FILENAME} is missing.",
+                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
+            )
+        return (
+            "awaiting_adversarial_review",
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"{stage_base} has an invalid adversarial review request or handoff proof; the proof chain is invalid: {proof_chain_error}",
+            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer child for {review_skill}.",
+        )
     if review_result is None:
         if review_receipt is not None and proof_chain_error is not None:
             return (
@@ -2221,7 +2235,7 @@ def _review_substate(
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Run {author_skill} to fix findings, then rerun {review_skill}.",
+            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, run {author_skill} to fix the allowed scope in the author lane, refresh author/formal outputs, then relaunch a fresh reviewer cycle with {review_skill}.",
         )
     if review_audit is None:
         return (
@@ -2979,6 +2993,16 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
             "ADVERSARIAL_REVIEW_PENDING",
             f"Issue {ADVERSARIAL_REVIEW_REQUEST_FILENAME} for independent adversarial review.",
         )
+    if not receipt_exists and proof_chain_error is not None:
+        if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
+            return (
+                "ADVERSARIAL_REVIEW_PENDING",
+                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing {ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+            )
+        return (
+            "ADVERSARIAL_REVIEW_PENDING",
+            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer child; proof chain validation failed.",
+        )
     if not receipt_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
@@ -3011,7 +3035,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (
             "AUTHOR_FIX_REQUIRED",
-            "Fix adversarial review findings in the author lane, then resubmit for review.",
+            "Read review/result/review_findings.yaml and adversarial_review_result.yaml, fix the allowed scope in the author lane, refresh author/formal outputs, then resubmit through a fresh reviewer cycle.",
         )
     if review_audit is None:
         return (

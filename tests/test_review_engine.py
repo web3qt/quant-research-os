@@ -37,6 +37,17 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
 
 
 def _write_review_request(stage_dir: Path, *, author_identity: str = "author-agent") -> None:
+    required_artifact_paths = [
+        "mandate.md",
+        "research_scope.md",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]
+    required_provenance_paths = ["program_execution_manifest.json"]
+    launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
     handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
     _write_yaml(
         handoff_manifest_path,
@@ -46,19 +57,15 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "stage": "mandate",
             "required_program_dir": "program/mandate",
             "required_program_entrypoint": "run_stage.py",
-            "required_artifact_paths": [
-                "mandate.md",
-                "research_scope.md",
-                "time_split.json",
-                "parameter_grid.yaml",
-                "run_config.toml",
-                "artifact_catalog.md",
-                "field_dictionary.md",
-            ],
-            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_artifact_paths": required_artifact_paths,
+            "required_provenance_paths": required_provenance_paths,
             "permitted_input_roots": ["review/request", "author/formal"],
             "permitted_output_roots": ["review/result"],
             "required_result_write_root": "review/result",
+            "launcher_review_ready_status": "complete",
+            "launcher_checked_artifact_paths": required_artifact_paths,
+            "launcher_checked_provenance_paths": required_provenance_paths,
+            "launcher_handoff_context_paths": launcher_handoff_context_paths,
         },
     )
     handoff_manifest_digest = hashlib.sha256(
@@ -74,20 +81,16 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "author_session_id": "author-session",
             "required_program_dir": "program/mandate",
             "required_program_entrypoint": "run_stage.py",
-            "required_artifact_paths": [
-                "mandate.md",
-                "research_scope.md",
-                "time_split.json",
-                "parameter_grid.yaml",
-                "run_config.toml",
-                "artifact_catalog.md",
-                "field_dictionary.md",
-            ],
-            "required_provenance_paths": ["program_execution_manifest.json"],
+            "required_artifact_paths": required_artifact_paths,
+            "required_provenance_paths": required_provenance_paths,
             "required_reviewer_mode": "adversarial",
             "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
             "required_result_write_root": "review/result",
+            "launcher_review_ready_status": "complete",
+            "launcher_checked_artifact_paths": required_artifact_paths,
+            "launcher_checked_provenance_paths": required_provenance_paths,
+            "launcher_handoff_context_paths": launcher_handoff_context_paths,
         },
     )
 

@@ -83,6 +83,27 @@ Canonical program tree：
 
 如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_spawned_reviewer_completion`、`awaiting_reviewer_write_scope_audit`、`awaiting_author_fix` 或 `awaiting_review_closure`。在 `awaiting_adversarial_review` 里，runtime 现在要求先有 `review/request/spawned_reviewer_receipt.yaml`，再允许 reviewer 写 `review/result/adversarial_review_result.yaml`。制度上，这里的 reviewer 应当是通过 native `spawn_agent` 启动的独立 reviewer 子代理，而不是当前 author / leader 线程继续自写 result；`spawned_reviewer_receipt.yaml` 只是 launcher proof，不等于 review 已完成。reviewer child 完成后，主线程还必须先运行 `qros-audit-reviewer` 生成 `review/result/reviewer_write_scope_audit.yaml`，只有 audit 为 `PASS` 才能进入 closure。
 
+这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
+
+现在这层自查还会被压成 request / handoff contract：
+
+- `launcher_review_ready_status`
+- `launcher_checked_artifact_paths`
+- `launcher_checked_provenance_paths`
+- `launcher_handoff_context_paths`
+
+所以，只要主 Agent 修过 `author/formal/*` 却没刷新 request / handoff，runtime 就会把这轮 review 当成 stale handoff 拒掉。
+
+如果 reviewer 返回 `FIX_REQUIRED`，主 Agent 也不应该直接原地再叫一个 reviewer 来“复看一眼”。正确顺序是：
+
+1. 先阅读 `review/result/adversarial_review_result.yaml`
+2. 再阅读 `review/result/review_findings.yaml`
+3. 回 author lane 修复允许范围内的问题
+4. 刷新 `author/formal/*` 与 review request scope
+5. 重新起一个新的 reviewer cycle
+
+author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs。
+
 阶段 review 失败不是普通调试（不是普通 debug）。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
 对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation`，当前 runtime 还额外执行 hard metric gates，而不是只看 artifact 是否齐全：
@@ -245,6 +266,13 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 ```
 
 用户不需要记住内部命令。正常路径里，agent 会在对话中停下来确认是否继续进入 mandate、data_ready、signal_ready、train_freeze、test_evidence、backtest_ready 和 holdout_validation。
+
+正常 review 主路径还应保持一个简单纪律：
+
+- 一个 active review cycle 只认一个 reviewer child
+- reviewer child 只读 `review/request/*` 和 `author/formal/*`
+- reviewer child 只写 `review/result/*`
+- 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
 ## How Stage Detection Works
 

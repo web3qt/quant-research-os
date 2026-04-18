@@ -62,6 +62,10 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "spawn_agent" in content
     assert "不得自己撰写 `review/result/adversarial_review_result.yaml`" in content
     assert "qros-audit-reviewer" in content
+    assert "Main-Agent Review Loop" in content
+    assert "review-ready" in content
+    assert "review/result/review_findings.yaml" in content
+    assert "launcher_review_ready_status" in content
     assert "./.qros/bin/qros-session" in content
 
 
@@ -79,6 +83,9 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "独立 reviewer 子代理" in content
     assert "awaiting_reviewer_write_scope_audit" in content
     assert "qros-audit-reviewer" in content
+    assert "review-ready" in content
+    assert "review/result/review_findings.yaml" in content
+    assert "launcher_review_ready_status" in content
     assert "intake" in content.lower()
     assert "kill criteria" in content
     assert "--confirm-intake" in content

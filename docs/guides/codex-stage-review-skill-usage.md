@@ -94,6 +94,21 @@
 ./.qros/bin/qros-review --stage-dir outputs/topic_a/mandate --lineage-root outputs/topic_a
 ```
 
+发起 review 之前，主线程最好先完成一次 `review-ready` 自查：
+
+- 当前 request scope 指向的是**最新** author outputs，而不是修复前的 stale 路径
+- 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json` 与 program provenance 已到位
+- handoff 已明确说明这轮声称已完成什么、希望 reviewer 重点验证什么、还存在哪些已知限制
+
+当前 runtime 还会把这层自查冻结到 request / handoff：
+
+- `launcher_review_ready_status`
+- `launcher_checked_artifact_paths`
+- `launcher_checked_provenance_paths`
+- `launcher_handoff_context_paths`
+
+如果 reviewer 返回 `FIX_REQUIRED`，主线程应先读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复并刷新 outputs，再起一个新的 reviewer cycle；不要直接复用旧 receipt / result / audit。
+
 ## Closure Artifacts
 
 review 结束后，skills 统一面向以下 closure artifacts：
