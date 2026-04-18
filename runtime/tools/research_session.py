@@ -258,9 +258,11 @@ CSF_SIGNAL_READY_REQUIRED_OUTPUTS = [
     "component_factor_manifest.yaml",
     "factor_coverage_report.parquet",
     "factor_group_context.parquet",
+    "route_inheritance_contract.yaml",
     "factor_contract.md",
     "factor_field_dictionary.md",
     "csf_signal_ready_gate_decision.md",
+    "run_manifest.json",
     "artifact_catalog.md",
     "field_dictionary.md",
 ]

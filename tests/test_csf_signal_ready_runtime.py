@@ -194,9 +194,11 @@ def test_build_csf_signal_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert (formal_dir / "component_factor_manifest.yaml").exists()
     assert (formal_dir / "factor_coverage_report.parquet").exists()
     assert (formal_dir / "factor_group_context.parquet").exists()
+    assert (formal_dir / "route_inheritance_contract.yaml").exists()
     assert (formal_dir / "factor_contract.md").exists()
     assert (formal_dir / "factor_field_dictionary.md").exists()
     assert (formal_dir / "csf_signal_ready_gate_decision.md").exists()
+    assert (formal_dir / "run_manifest.json").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
 
@@ -209,3 +211,9 @@ def test_build_csf_signal_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert len({(row["date"], row["asset"]) for row in factor_panel}) == len(factor_panel)
     assert {row["asset"] for row in factor_panel} == {"SOLUSDT", "DOGEUSDT"}
     assert {row["asset"] for row in factor_panel} == {row["asset"] for row in factor_group_context}
+
+    route_contract = yaml.safe_load((formal_dir / "route_inheritance_contract.yaml").read_text(encoding="utf-8"))
+    assert route_contract["research_route"] == "cross_sectional_factor"
+    assert route_contract["factor_role"] == "standalone_alpha"
+    assert route_contract["portfolio_expression"] == "long_only_rank"
+    assert route_contract["group_taxonomy_reference_requirement_status"] == "required_satisfied"

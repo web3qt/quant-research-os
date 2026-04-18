@@ -58,9 +58,11 @@ description: Codex review skill for CSF Signal Ready stage verification.
 必需输出:
 - factor_panel.parquet
 - factor_manifest.yaml
+- route_inheritance_contract.yaml
 - factor_field_dictionary.md
 - factor_coverage_report.parquet
 - factor_contract.md
+- run_manifest.json
 - artifact_catalog.md
 - field_dictionary.md
 

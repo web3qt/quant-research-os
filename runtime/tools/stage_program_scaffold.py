@@ -117,7 +117,12 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "function": "build_csf_signal_ready_from_data_ready",
         "stage_dir": Path("03_csf_signal_ready"),
         "inputs": ["02_csf_data_ready/panel_manifest.json", "03_csf_signal_ready/csf_signal_ready_freeze_draft.yaml"],
-        "outputs": ["03_csf_signal_ready/factor_panel.parquet", "03_csf_signal_ready/csf_signal_ready_gate_decision.md"],
+        "outputs": [
+            "03_csf_signal_ready/factor_panel.parquet",
+            "03_csf_signal_ready/route_inheritance_contract.yaml",
+            "03_csf_signal_ready/run_manifest.json",
+            "03_csf_signal_ready/csf_signal_ready_gate_decision.md",
+        ],
     },
     "csf_train_freeze": {
         "stage_id": "train_freeze",

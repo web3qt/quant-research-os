@@ -232,6 +232,30 @@ def test_run_stage_review_blocks_csf_signal_ready_when_factor_direction_is_missi
     assert any("factor_direction" in item for item in payload["blocking_findings"])
 
 
+def test_run_stage_review_blocks_csf_signal_ready_when_route_inheritance_contract_is_missing(tmp_path: Path) -> None:
+    stage_dir = _prepare_csf_stage(
+        tmp_path,
+        stage_key="csf_signal_ready",
+        stage_dir_name="03_csf_signal_ready",
+    )
+    formal_dir = stage_dir / "author" / "formal"
+    route_contract_path = formal_dir / "route_inheritance_contract.yaml"
+    if route_contract_path.exists():
+        route_contract_path.unlink()
+    _write_review_request_and_result(stage_dir, stage_key="csf_signal_ready")
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    assert payload["final_verdict"] == "RETRY"
+    assert any("CSF-SIGNAL-000" in item for item in payload["blocking_findings"])
+
+
 def test_run_stage_review_blocks_csf_data_ready_when_membership_rows_are_empty(tmp_path: Path) -> None:
     stage_dir = _prepare_csf_stage(
         tmp_path,

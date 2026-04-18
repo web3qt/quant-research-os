@@ -123,6 +123,7 @@ author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史
 对前半段的 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`，当前 runtime 则执行 contract / semantic gates：
 
 - `csf_data_ready` 会检查 panel key、time key、asset key 和 shared feature base 合同是否显式冻结
+- `csf_signal_ready` 现在要求 `author/formal/route_inheritance_contract.yaml` 作为当前阶段唯一正式 route 继承凭证；它必须把 mandate 的 `research_route.yaml` 与当前阶段绑定起来
 - `csf_data_ready` 会检查 `cross_section_coverage.parquet` 的 `coverage_ratio` 是否达到冻结的 coverage floor
 - `csf_signal_ready` 会检查 `factor_direction` 是否属于允许词表，且 panel key / final score 字段 / score formula 不得留空
 - `csf_train_freeze` 会检查 candidate variants、kept variants 和 train-governable axes 是否显式冻结

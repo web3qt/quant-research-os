@@ -234,8 +234,7 @@ stages:
         severity: "blocking"
         check: "factor_role、factor_structure、portfolio_expression、neutralization_policy 均来自 mandate 冻结；non-standalone 具备 target_strategy_reference，group_neutral 具备 group_taxonomy_reference"
         evidence:
-          - "mandate.md"
-          - "research_route.yaml"
+          - "route_inheritance_contract.yaml"
       - id: "CSF-SIGNAL-001"
         severity: "blocking"
         check: "factor_id、factor_version、factor_direction 已冻结"

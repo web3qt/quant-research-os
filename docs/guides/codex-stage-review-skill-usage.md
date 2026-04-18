@@ -74,6 +74,12 @@
 
 自动可判定的硬项由 engine 处理，语义类判断由 reviewer 通过这个文件补充。
 
+对 `csf_signal_ready`，当前阶段关于 mandate route 继承的唯一正式证据应当是：
+
+- `author/formal/route_inheritance_contract.yaml`
+
+review checklist 和 deterministic engine 应只认这个 artifact，而不是再要求 reviewer 在当前阶段目录里临时拼 `mandate.md` / `research_route.yaml` 的替代解释。
+
 制度上，`spawned_agent` 指独立 reviewer 子代理，而不是启动 review 的当前主线程继续自写 `review/result/*`。在当前 `Codex-only` 版本里，这个 reviewer child 应通过 native `spawn_agent` 启动；`./.qros/bin/qros-spawn-reviewer` 只负责写 launcher-side receipt，不等于 reviewer 已经完成审查。
 
 ## Running The Review Engine

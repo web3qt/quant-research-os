@@ -527,14 +527,18 @@ stages:
     required_outputs:
       - factor_panel.parquet
       - factor_manifest.yaml
+      - route_inheritance_contract.yaml
       - factor_field_dictionary.md
       - factor_coverage_report.parquet
       - factor_contract.md
+      - run_manifest.json
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
       - factor_panel.parquet
       - factor_manifest.yaml
+      - route_inheritance_contract.yaml
+      - run_manifest.json
       - factor_coverage_report.parquet
     human_artifacts:
       - factor_field_dictionary.md
@@ -646,6 +650,72 @@ stages:
           - date
           - asset
         message: csf_signal_ready requires factor_panel to be unique on (date, asset)
+      - id: CSF-SIGNAL-STRUCT-007
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: research_route
+        check_type: enum_in
+        allowed_values:
+          - cross_sectional_factor
+        message: csf_signal_ready requires route inheritance contract to stay on the cross_sectional_factor branch
+      - id: CSF-SIGNAL-STRUCT-008
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: factor_role
+        check_type: non_empty
+        message: csf_signal_ready requires factor_role to be inherited through the formal route inheritance contract
+      - id: CSF-SIGNAL-STRUCT-009
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: factor_structure
+        check_type: non_empty
+        message: csf_signal_ready requires factor_structure to be inherited through the formal route inheritance contract
+      - id: CSF-SIGNAL-STRUCT-010
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: portfolio_expression
+        check_type: non_empty
+        message: csf_signal_ready requires portfolio_expression to be inherited through the formal route inheritance contract
+      - id: CSF-SIGNAL-STRUCT-011
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: neutralization_policy
+        check_type: non_empty
+        message: csf_signal_ready requires neutralization_policy to be inherited through the formal route inheritance contract
+      - id: CSF-SIGNAL-STRUCT-012
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: inheritance_mode
+        check_type: enum_in
+        allowed_values:
+          - exact_copy
+        message: csf_signal_ready route inheritance must bind exactly to the frozen mandate route contract
+      - id: CSF-SIGNAL-STRUCT-013
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: target_strategy_reference_requirement_status
+        check_type: enum_in
+        allowed_values:
+          - not_required
+          - required_satisfied
+        message: csf_signal_ready route inheritance must explicitly satisfy target_strategy_reference requirements
+      - id: CSF-SIGNAL-STRUCT-014
+        severity: blocking
+        artifact: route_inheritance_contract.yaml
+        format: yaml
+        field: group_taxonomy_reference_requirement_status
+        check_type: enum_in
+        allowed_values:
+          - not_required
+          - required_satisfied
+        message: csf_signal_ready route inheritance must explicitly satisfy group_taxonomy_reference requirements
 
   csf_train_freeze:
     stage_id: csf_train_freeze

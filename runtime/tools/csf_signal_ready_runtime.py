@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -150,6 +151,24 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     machine_artifacts = _string_list(delivery_contract.get("machine_artifacts", []))
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
+    mandate_formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    route_payload = yaml.safe_load((mandate_formal_dir / "research_route.yaml").read_text(encoding="utf-8")) or {}
+    route_contract_text = (mandate_formal_dir / "research_route.yaml").read_text(encoding="utf-8")
+    factor_role = str(route_payload.get("factor_role", "")).strip()
+    portfolio_expression = str(route_payload.get("portfolio_expression", "")).strip()
+    neutralization_policy = str(route_payload.get("neutralization_policy", "")).strip()
+    target_strategy_reference = str(route_payload.get("target_strategy_reference", "")).strip()
+    group_taxonomy_reference = str(route_payload.get("group_taxonomy_reference", "")).strip()
+    target_strategy_requirement_status = (
+        "required_satisfied" if factor_role in {"regime_filter", "combo_filter"} and target_strategy_reference else
+        "required_missing" if factor_role in {"regime_filter", "combo_filter"} else
+        "not_required"
+    )
+    group_taxonomy_requirement_status = (
+        "required_satisfied" if neutralization_policy == "group_neutral" and group_taxonomy_reference else
+        "required_missing" if neutralization_policy == "group_neutral" else
+        "not_required"
+    )
 
     membership_rows = _read_parquet_rows(upstream_formal_dir / "asset_universe_membership.parquet")
     eligibility_rows = _read_parquet_rows(upstream_formal_dir / "eligibility_base_mask.parquet")
@@ -237,6 +256,23 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     )
     _write_parquet_rows(stage_formal_dir / "factor_coverage_report.parquet", coverage_rows)
     _write_parquet_rows(stage_formal_dir / "factor_group_context.parquet", factor_group_rows)
+    _dump_yaml(
+        stage_formal_dir / "route_inheritance_contract.yaml",
+        {
+            "source_route_artifact": "../../01_mandate/author/formal/research_route.yaml",
+            "source_route_digest_sha256": hashlib.sha256(route_contract_text.encode("utf-8")).hexdigest(),
+            "research_route": str(route_payload.get("research_route", "")).strip(),
+            "factor_role": factor_role,
+            "factor_structure": str(route_payload.get("factor_structure", "")).strip(),
+            "portfolio_expression": portfolio_expression,
+            "neutralization_policy": neutralization_policy,
+            "target_strategy_reference": target_strategy_reference,
+            "group_taxonomy_reference": group_taxonomy_reference,
+            "target_strategy_reference_requirement_status": target_strategy_requirement_status,
+            "group_taxonomy_reference_requirement_status": group_taxonomy_requirement_status,
+            "inheritance_mode": "exact_copy",
+        },
+    )
     (stage_formal_dir / "factor_contract.md").write_text(
         "\n".join(
             [
@@ -284,6 +320,52 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    (stage_formal_dir / "run_manifest.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_signal_ready",
+                "lineage_id": lineage_root.name,
+                "source_stage": "csf_data_ready",
+                "research_route": str(route_payload.get("research_route", "")).strip(),
+                "factor_role": factor_role,
+                "factor_structure": str(route_payload.get("factor_structure", "")).strip(),
+                "portfolio_expression": portfolio_expression,
+                "neutralization_policy": neutralization_policy,
+                "program_dir": "program/cross_sectional_factor/signal_ready",
+                "program_entrypoint": "run_stage.py",
+                "program_execution_manifest": "program_execution_manifest.json",
+                "input_roots": [
+                    "../02_csf_data_ready/author/formal/panel_manifest.json",
+                    "../02_csf_data_ready/author/formal/asset_universe_membership.parquet",
+                    "../02_csf_data_ready/author/formal/eligibility_base_mask.parquet",
+                    "../02_csf_data_ready/author/formal/csf_data_contract.md",
+                    "../../01_mandate/author/formal/research_route.yaml",
+                ],
+                "stage_outputs": [
+                    "artifact_catalog.md",
+                    "component_factor_manifest.yaml",
+                    "csf_signal_ready_gate_decision.md",
+                    "factor_contract.md",
+                    "factor_coverage_report.parquet",
+                    "factor_field_dictionary.md",
+                    "factor_group_context.parquet",
+                    "factor_manifest.yaml",
+                    "factor_panel.parquet",
+                    "field_dictionary.md",
+                    "route_inheritance_contract.yaml",
+                ],
+                "replay_command": f"python3 {lineage_root / 'program' / 'cross_sectional_factor' / 'signal_ready' / 'run_stage.py'} --lineage-root {lineage_root}",
+                "notes": [
+                    "Route identity is inherited from mandate through route_inheritance_contract.yaml.",
+                    "This stage must not redefine factor_role, factor_structure, portfolio_expression, or neutralization_policy.",
+                ],
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (stage_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
@@ -294,9 +376,11 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
                 "- component_factor_manifest.yaml",
                 "- factor_coverage_report.parquet",
                 "- factor_group_context.parquet",
+                "- route_inheritance_contract.yaml",
                 "- factor_contract.md",
                 "- factor_field_dictionary.md",
                 "- csf_signal_ready_gate_decision.md",
+                "- run_manifest.json",
                 "- field_dictionary.md",
             ]
         )
@@ -313,6 +397,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
                 f"- `factor_direction`: 因子方向，当前为 {factor_direction}。",
                 f"- `factor_structure`: 因子结构，当前为 {factor_structure}。",
                 f"- `panel_primary_key`: 面板主键，当前为 {panel_primary_key}。",
+                "- `route_inheritance_contract.yaml`: 当前阶段唯一正式 route 继承凭证，绑定 mandate 的 research_route.yaml。",
                 f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
             ]
         )
