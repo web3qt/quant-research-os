@@ -25,17 +25,17 @@ jobs:
       - name: Deterministic anti-drift test gate
         run: |
           python -m pytest \
-            tests/test_build_anti_drift_release_artifact.py \
-            tests/test_build_anti_drift_gate_summary.py \
-            tests/test_export_anti_drift_snapshots.py \
-            tests/test_anti_drift_replay.py \
-            tests/test_render_anti_drift_nightly_report.py \
-            tests/test_anti_drift_baseline.py \
-            tests/test_anti_drift.py \
-            tests/test_run_research_session_script.py \
-            tests/test_schema_loaders.py \
-            tests/test_generation.py \
-            tests/test_generated_skills_fresh.py
+            tests/anti_drift/test_build_anti_drift_release_artifact.py \
+            tests/anti_drift/test_build_anti_drift_gate_summary.py \
+            tests/anti_drift/test_export_anti_drift_snapshots.py \
+            tests/anti_drift/test_anti_drift_replay.py \
+            tests/anti_drift/test_render_anti_drift_nightly_report.py \
+            tests/anti_drift/test_anti_drift_baseline.py \
+            tests/anti_drift/test_anti_drift.py \
+            tests/session/test_run_research_session_script.py \
+            tests/contracts/test_schema_loaders.py \
+            tests/review/test_generation.py \
+            tests/review/test_generated_skills_fresh.py
       - name: Generator freshness
         run: python runtime/scripts/gen_codex_stage_review_skills.py --dry-run
       - name: Snapshot baseline compare

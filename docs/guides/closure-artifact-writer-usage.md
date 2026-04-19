@@ -92,10 +92,10 @@ write_closure_artifacts(
 最直接的验证命令：
 
 ```bash
-python -m pytest tests/test_closure_models.py -v
-python -m pytest tests/test_context_inference.py -v
-python -m pytest tests/test_closure_writer_stage_outputs.py -v
-python -m pytest tests/test_closure_writer_lineage_mirror.py -v
-python -m pytest tests/test_closure_writer_context_modes.py -v
+python -m pytest tests/review/test_closure_models.py -v
+python -m pytest tests/review/test_context_inference.py -v
+python -m pytest tests/review/test_closure_writer_stage_outputs.py -v
+python -m pytest tests/review/test_closure_writer_lineage_mirror.py -v
+python -m pytest tests/review/test_closure_writer_context_modes.py -v
 python -m pytest tests -v
 ```

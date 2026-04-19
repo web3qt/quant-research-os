@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.stage_evaluator import write_stage_evaluator_artifacts
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 
 
@@ -93,4 +94,9 @@ def write_closure_artifacts(
     lineage_latest_path.write_text(
         yaml.safe_dump(latest_review_pack, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
+    )
+
+    write_stage_evaluator_artifacts(
+        stage_dir,
+        lineage_root=lineage_root,
     )

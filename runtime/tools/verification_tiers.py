@@ -4,25 +4,28 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SMOKE_TEST_PATHS: tuple[str, ...] = (
-    "tests/test_verification_tiers.py",
-    "tests/test_research_session_runtime.py",
-    "tests/test_run_research_session_script.py",
-    "tests/test_stage_substep_normalization.py",
-    "tests/test_skill_tree.py",
-    "tests/test_research_session_assets.py",
-    "tests/test_project_bootstrap.py",
-    "tests/test_install_docs.py",
+    "tests/contracts/test_verification_tiers.py",
+    "tests/contracts/test_stage_evaluator_contract.py",
+    "tests/session/test_research_session_runtime.py",
+    "tests/session/test_run_research_session_script.py",
+    "tests/session/test_qros_session_temp_repo_smoke.py",
+    "tests/session/test_stage_substep_normalization.py",
+    "tests/skills/test_skill_tree.py",
+    "tests/session/test_research_session_assets.py",
+    "tests/bootstrap/test_project_bootstrap.py",
+    "tests/docs/test_install_docs.py",
 )
 
 FULL_SMOKE_EXTRA_TEST_PATHS: tuple[str, ...] = (
-    "tests/test_csf_research_session_routing.py",
-    "tests/test_csf_data_ready_auto_program.py",
-    "tests/test_research_session_reflection.py",
-    "tests/test_anti_drift.py",
-    "tests/test_anti_drift_metamorphic.py",
-    "tests/test_anti_drift_replay.py",
-    "tests/test_closure_writer_context_modes.py",
-    "tests/test_export_anti_drift_snapshots.py",
+    "tests/session/test_csf_research_session_routing.py",
+    "tests/runtime/test_csf_data_ready_auto_program.py",
+    "tests/session/test_research_session_reflection.py",
+    "tests/review/test_stage_evaluator.py",
+    "tests/anti_drift/test_anti_drift.py",
+    "tests/anti_drift/test_anti_drift_metamorphic.py",
+    "tests/anti_drift/test_anti_drift_replay.py",
+    "tests/review/test_closure_writer_context_modes.py",
+    "tests/anti_drift/test_export_anti_drift_snapshots.py",
 )
 
 SUPPORTED_VERIFICATION_TIERS: tuple[str, ...] = ("smoke", "full-smoke")

@@ -220,35 +220,54 @@ def _panel_lines(status) -> list[str]:
 def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
     lines: list[str] = []
     confirmation_label = None
+    confirmation_artifact = None
     if args.confirm_intake:
         confirmation_label = "CONFIRM_IDEA_INTAKE"
+        confirmation_artifact = "idea_intake_transition_approval.yaml"
     elif args.confirm_mandate:
         confirmation_label = "CONFIRM_MANDATE"
+        confirmation_artifact = "mandate_transition_approval.yaml"
     elif args.confirm_data_ready:
         confirmation_label = "CONFIRM_DATA_READY"
+        confirmation_artifact = "data_ready_transition_approval.yaml"
     elif args.confirm_signal_ready:
         confirmation_label = "CONFIRM_SIGNAL_READY"
+        confirmation_artifact = "signal_ready_transition_approval.yaml"
     elif args.confirm_train_freeze:
         confirmation_label = "CONFIRM_TRAIN_FREEZE"
+        confirmation_artifact = "train_freeze_transition_approval.yaml"
     elif args.confirm_test_evidence:
         confirmation_label = "CONFIRM_TEST_EVIDENCE"
+        confirmation_artifact = "test_evidence_transition_approval.yaml"
     elif args.confirm_backtest_ready:
         confirmation_label = "CONFIRM_BACKTEST_READY"
+        confirmation_artifact = "backtest_ready_transition_approval.yaml"
     elif args.confirm_holdout_validation:
         confirmation_label = "CONFIRM_HOLDOUT_VALIDATION"
+        confirmation_artifact = "holdout_validation_transition_approval.yaml"
     elif args.confirm_review:
         confirmation_label = "CONFIRM_REVIEW"
+        confirmation_artifact = "review_transition_approval.yaml"
     elif args.confirm_next_stage:
         confirmation_label = "CONFIRM_NEXT_STAGE"
+        confirmation_artifact = "next_stage_transition_approval.yaml"
 
     if confirmation_label is None:
         return lines
 
-    lines.append(f"✅ Confirmation recorded: {confirmation_label}")
+    recorded = confirmation_artifact is not None and any(
+        item.endswith(confirmation_artifact) for item in status.artifacts_written
+    )
+    if recorded:
+        lines.append(f"✅ Confirmation recorded: {confirmation_label}")
+    else:
+        lines.append(
+            f"⛔ Confirmation ignored: {confirmation_label} is not valid for the current session gate."
+        )
     if args.confirm_intake:
-        if status.current_stage == "mandate_confirmation_pending":
+        if recorded and status.current_stage == "mandate_confirmation_pending":
             lines.append("✅ Confirmation advanced the workflow.")
-        else:
+        elif recorded:
             lines.append(
                 "⛔ Confirmation did not advance the workflow because intake gate requirements are still incomplete."
             )

@@ -73,6 +73,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     validate_result_contract,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
     load_reviewer_write_scope_audit,
@@ -2095,6 +2096,23 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         )
     except Exception as exc:
         return str(exc)
+
+    spec = next(
+        (
+            value
+            for value in SESSION_STAGE_PROGRAM_SPECS.values()
+            if value.stage_dir_name == stage_dir.name
+        ),
+        None,
+    )
+    if spec is not None:
+        stale_reason = review_cycle_stale_reason(
+            stage_dir,
+            artifact_root=_author_formal_dir(stage_dir),
+            required_outputs=spec.required_outputs,
+        )
+        if stale_reason is not None:
+            return stale_reason
     return None
 
 
@@ -2478,43 +2496,74 @@ def run_research_session(
     lineage_root.mkdir(parents=True, exist_ok=True)
 
     artifacts_written: list[str] = []
-    if idea_intake_decision is not None:
+    current_stage = detect_session_stage(lineage_root)
+
+    # 只有当前真正停在对应 confirmation gate，才允许把确认决策正式写盘。
+    if idea_intake_decision is not None and current_stage in {
+        "idea_intake",
+        "idea_intake_confirmation_pending",
+    }:
         artifacts_written.append(
             write_idea_intake_transition_decision(lineage_root, decision=idea_intake_decision)
         )
-    if mandate_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if mandate_decision is not None and current_stage == "mandate_confirmation_pending":
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
         )
-    if data_ready_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if data_ready_decision is not None and current_stage in {
+        "data_ready_confirmation_pending",
+        "csf_data_ready_confirmation_pending",
+    }:
         artifacts_written.append(
             write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
         )
-    if signal_ready_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if signal_ready_decision is not None and current_stage in {
+        "signal_ready_confirmation_pending",
+        "csf_signal_ready_confirmation_pending",
+    }:
         artifacts_written.append(
             write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
         )
-    if train_freeze_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if train_freeze_decision is not None and current_stage in {
+        "train_freeze_confirmation_pending",
+        "csf_train_freeze_confirmation_pending",
+    }:
         artifacts_written.append(
             write_train_freeze_transition_decision(lineage_root, decision=train_freeze_decision)
         )
-    if test_evidence_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if test_evidence_decision is not None and current_stage in {
+        "test_evidence_confirmation_pending",
+        "csf_test_evidence_confirmation_pending",
+    }:
         artifacts_written.append(
             write_test_evidence_transition_decision(lineage_root, decision=test_evidence_decision)
         )
-    if backtest_ready_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if backtest_ready_decision is not None and current_stage in {
+        "backtest_ready_confirmation_pending",
+        "csf_backtest_ready_confirmation_pending",
+    }:
         artifacts_written.append(
             write_backtest_ready_transition_decision(lineage_root, decision=backtest_ready_decision)
         )
-    if holdout_validation_decision is not None:
+        current_stage = detect_session_stage(lineage_root)
+    if holdout_validation_decision is not None and current_stage in {
+        "holdout_validation_confirmation_pending",
+        "csf_holdout_validation_confirmation_pending",
+    }:
         artifacts_written.append(
             write_holdout_validation_transition_decision(
                 lineage_root, decision=holdout_validation_decision
             )
         )
-    current_stage = detect_session_stage(lineage_root)
+        current_stage = detect_session_stage(lineage_root)
 
-    if review_decision is not None:
+    if review_decision is not None and current_stage.endswith("_review_confirmation_pending"):
         written = write_review_transition_decision(
             lineage_root,
             current_stage=current_stage,
@@ -2524,7 +2573,7 @@ def run_research_session(
             artifacts_written.append(written)
         current_stage = detect_session_stage(lineage_root)
 
-    if next_stage_decision is not None:
+    if next_stage_decision is not None and current_stage.endswith("_next_stage_confirmation_pending"):
         written = write_next_stage_transition_decision(
             lineage_root,
             current_stage=current_stage,
@@ -2739,6 +2788,16 @@ def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
     return True
 
 
+def _review_closure_complete(stage_dir: Path) -> bool:
+    if _review_proof_chain_error(stage_dir) is not None:
+        return False
+    if _review_write_scope_audit_error(stage_dir) is not None:
+        return False
+    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
+        return _completion_certificate_allows_progress(stage_dir)
+    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+
+
 def _review_verdict_from_stage_dir(stage_dir: Path) -> str | None:
     certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
     if not certificate_path.exists():
@@ -2812,6 +2871,7 @@ def _review_has_started(stage_dir: Path) -> bool:
     return any(
         path.exists()
         for path in (
+            _author_draft_dir(stage_dir) / REVIEW_TRANSITION_APPROVAL_FILE,
             _review_request_path(stage_dir),
             _review_result_path(stage_dir),
             _review_closure_path(stage_dir, "stage_completion_certificate.yaml"),
@@ -2903,81 +2963,55 @@ def _next_stage_entry_state(lineage_root: Path, *, next_stage_base: str) -> Sess
 
 
 def _mandate_closure_complete(mandate_dir: Path) -> bool:
-    if _review_closure_path(mandate_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(mandate_dir)
-    return all(_review_closure_path(mandate_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(mandate_dir)
 
 
 def _data_ready_closure_complete(data_ready_dir: Path) -> bool:
-    if _review_closure_path(data_ready_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(data_ready_dir)
-    return all(_review_closure_path(data_ready_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(data_ready_dir)
 
 
 def _csf_data_ready_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _signal_ready_closure_complete(signal_ready_dir: Path) -> bool:
-    if _review_closure_path(signal_ready_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(signal_ready_dir)
-    return all(_review_closure_path(signal_ready_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(signal_ready_dir)
 
 
 def _csf_signal_ready_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _train_freeze_closure_complete(train_dir: Path) -> bool:
-    if _review_closure_path(train_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(train_dir)
-    return all(_review_closure_path(train_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(train_dir)
 
 
 def _csf_train_freeze_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _test_evidence_closure_complete(test_dir: Path) -> bool:
-    if _review_closure_path(test_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(test_dir)
-    return all(_review_closure_path(test_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(test_dir)
 
 
 def _csf_test_evidence_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _backtest_ready_closure_complete(backtest_dir: Path) -> bool:
-    if _review_closure_path(backtest_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(backtest_dir)
-    return all(_review_closure_path(backtest_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(backtest_dir)
 
 
 def _csf_backtest_ready_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
-    if _review_closure_path(holdout_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(holdout_dir)
-    return all(_review_closure_path(holdout_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(holdout_dir)
 
 
 def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
-    if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
-        return _completion_certificate_allows_progress(stage_dir)
-    return all(_review_closure_path(stage_dir, name).exists() for name in MANDATE_CLOSURE_OUTPUTS)
+    return _review_closure_complete(stage_dir)
 
 
 def _review_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:

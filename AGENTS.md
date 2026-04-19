@@ -112,7 +112,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 
 - 全量测试：`python -m pytest`
 - 文档 / bootstrap 最小检查：
-  `python -m pytest tests/test_agents_layout.py tests/test_project_bootstrap.py tests/test_install_docs.py`
+  `python -m pytest tests/contracts/test_agents_layout.py tests/bootstrap/test_project_bootstrap.py tests/docs/test_install_docs.py`
 - smoke：
   `python runtime/scripts/run_verification_tier.py --tier smoke`
 - full-smoke：

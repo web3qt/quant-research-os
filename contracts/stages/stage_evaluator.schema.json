@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qros://contracts/stages/stage_evaluator.schema.json",
+  "title": "QROS Stage Evaluator Result",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "lineage_id",
+    "stage",
+    "stage_dir",
+    "route_family",
+    "pass",
+    "can_progress",
+    "status",
+    "reason",
+    "blocking_findings",
+    "warnings",
+    "required_outputs_checked",
+    "review_summary",
+    "evaluated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "lineage_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route_family": {
+      "type": "string",
+      "enum": [
+        "route_neutral",
+        "time_series_signal",
+        "cross_sectional_factor"
+      ]
+    },
+    "pass": {
+      "type": "boolean"
+    },
+    "can_progress": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "author_incomplete",
+        "confirmation_pending",
+        "needs_reframe",
+        "dropped",
+        "review_confirmation_pending",
+        "review_pending",
+        "review_in_progress",
+        "review_fix_required",
+        "review_audit_pending",
+        "review_audit_failed",
+        "review_closure_pending",
+        "passed",
+        "failed"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "blocking_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_outputs_checked": {
+      "type": "object",
+      "required": [
+        "expected",
+        "missing",
+        "present_count",
+        "missing_count"
+      ],
+      "properties": {
+        "expected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "present_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "review_summary": {
+      "type": "object",
+      "required": [
+        "reviewable",
+        "review_transition_confirmed",
+        "review_request_present",
+        "spawned_reviewer_receipt_present",
+        "review_result_present",
+        "review_audit_present",
+        "audit_status",
+        "closure_complete",
+        "review_loop_outcome",
+        "final_verdict"
+      ],
+      "properties": {
+        "reviewable": {
+          "type": "boolean"
+        },
+        "review_transition_confirmed": {
+          "type": "boolean"
+        },
+        "review_request_present": {
+          "type": "boolean"
+        },
+        "spawned_reviewer_receipt_present": {
+          "type": "boolean"
+        },
+        "review_result_present": {
+          "type": "boolean"
+        },
+        "review_audit_present": {
+          "type": "boolean"
+        },
+        "audit_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "closure_complete": {
+          "type": "boolean"
+        },
+        "review_loop_outcome": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "final_verdict": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
