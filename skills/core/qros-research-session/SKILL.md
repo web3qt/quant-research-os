@@ -161,8 +161,10 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 
 - 在启动 reviewer 子代理之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
 - `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
+- 如需要 deterministic 预检，优先运行 `runtime/bin/qros-review-preflight`
 - 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
+- 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
 - 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
 - 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后发起新的 reviewer cycle
 - author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs

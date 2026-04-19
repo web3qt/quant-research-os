@@ -81,7 +81,7 @@ Canonical program tree：
 
 每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 program hash、entrypoint、authoring session 和 output refs 记账。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_spawned_reviewer_completion`、`awaiting_reviewer_write_scope_audit`、`awaiting_author_fix` 或 `awaiting_review_closure`。在 `awaiting_adversarial_review` 里，runtime 现在要求先有 `review/request/spawned_reviewer_receipt.yaml`，再允许 reviewer 写 `review/result/adversarial_review_result.yaml`。制度上，这里的 reviewer 应当是通过 native `spawn_agent` 启动的独立 reviewer 子代理，而不是当前 author / leader 线程继续自写 result；`spawned_reviewer_receipt.yaml` 只是 launcher proof，不等于 review 已完成。reviewer child 完成后，主线程还必须先运行 `qros-audit-reviewer` 生成 `review/result/reviewer_write_scope_audit.yaml`，只有 audit 为 `PASS` 才能进入 closure。
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 会先进入 `*_review_confirmation_pending`，随后在真正进入 review lane 后按 reviewer 进度落到 `awaiting_adversarial_review`、`awaiting_spawned_reviewer_completion`、`awaiting_reviewer_write_scope_audit`、`awaiting_author_fix` 或 `awaiting_review_closure`。在 `awaiting_adversarial_review` 里，runtime 现在要求先有 `review/request/spawned_reviewer_receipt.yaml`，再允许 reviewer 写 review 结果。制度上，这里的 reviewer 应当是通过 native `spawn_agent` 启动的独立 reviewer 子代理，而不是当前 author / leader 线程继续自写 result；`spawned_reviewer_receipt.yaml` 只是 launcher proof，不等于 review 已完成。reviewer child 完成后，主线程还必须先运行 `qros-audit-reviewer` 生成 `review/result/reviewer_write_scope_audit.yaml`，只有 audit 为 `PASS` 才能进入 closure。
 
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 
@@ -91,6 +91,17 @@ Canonical program tree：
 - `launcher_checked_artifact_paths`
 - `launcher_checked_provenance_paths`
 - `launcher_handoff_context_paths`
+
+此外，active request 现在会显式区分三类 scope：
+
+- `required_artifact_paths` / `required_provenance_paths`
+  这是当前 stage 完整 deterministic gate scope
+- `stage_content_artifact_paths` / `stage_content_provenance_paths`
+  这是 reviewer 子代理应聚焦的 stage-local 内容审查范围
+- `upstream_binding_artifact_paths` / `upstream_binding_provenance_paths`
+  这是 deterministic validator 负责的上游绑定范围
+
+因此，`data_ready` / `signal_ready` / `train_freeze` 的 review 不应重新复审上游 stage 全目录；它们只应检查当前 stage formal package，以及当前 stage 内声明的上游绑定是否成立。
 
 所以，只要主 Agent 修过 `author/formal/*` 却没刷新 request / handoff，runtime 就会把这轮 review 当成 stale handoff 拒掉。
 
@@ -107,6 +118,12 @@ Canonical program tree：
 3. 回 author lane 修复允许范围内的问题
 4. 刷新 `author/formal/*` 与 review request scope
 5. 重新起一个新的 reviewer cycle
+
+如果 reviewer 只写了：
+
+- `review/result/reviewer_findings.raw.yaml`
+
+而没有正式写出 `adversarial_review_result.yaml`，当前 runtime 会在 closure engine 内按 active request / receipt / runtime reviewer identity 做 deterministic 规范化写入。这样 reviewer 不必手写 `review_cycle_id`、`handoff_manifest_digest`、`reviewed_*_paths` 等 proof 字段。
 
 author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs。
 

@@ -652,6 +652,7 @@ stages:
         message: csf_signal_ready requires factor_panel to be unique on (date, asset)
       - id: CSF-SIGNAL-STRUCT-007
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: research_route
@@ -661,6 +662,7 @@ stages:
         message: csf_signal_ready requires route inheritance contract to stay on the cross_sectional_factor branch
       - id: CSF-SIGNAL-STRUCT-008
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: factor_role
@@ -668,6 +670,7 @@ stages:
         message: csf_signal_ready requires factor_role to be inherited through the formal route inheritance contract
       - id: CSF-SIGNAL-STRUCT-009
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: factor_structure
@@ -675,6 +678,7 @@ stages:
         message: csf_signal_ready requires factor_structure to be inherited through the formal route inheritance contract
       - id: CSF-SIGNAL-STRUCT-010
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: portfolio_expression
@@ -682,6 +686,7 @@ stages:
         message: csf_signal_ready requires portfolio_expression to be inherited through the formal route inheritance contract
       - id: CSF-SIGNAL-STRUCT-011
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: neutralization_policy
@@ -689,6 +694,7 @@ stages:
         message: csf_signal_ready requires neutralization_policy to be inherited through the formal route inheritance contract
       - id: CSF-SIGNAL-STRUCT-012
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: inheritance_mode
@@ -698,6 +704,7 @@ stages:
         message: csf_signal_ready route inheritance must bind exactly to the frozen mandate route contract
       - id: CSF-SIGNAL-STRUCT-013
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: target_strategy_reference_requirement_status
@@ -708,6 +715,7 @@ stages:
         message: csf_signal_ready route inheritance must explicitly satisfy target_strategy_reference requirements
       - id: CSF-SIGNAL-STRUCT-014
         severity: blocking
+        validation_scope: upstream_binding
         artifact: route_inheritance_contract.yaml
         format: yaml
         field: group_taxonomy_reference_requirement_status

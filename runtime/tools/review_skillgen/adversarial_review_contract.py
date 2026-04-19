@@ -8,6 +8,11 @@ from typing import Any
 
 import yaml
 from runtime.tools.review_skillgen.review_cycle_trace import append_review_cycle_event
+from runtime.tools.review_skillgen.review_scope_builder import build_review_scope
+from runtime.tools.review_skillgen.review_scope_builder import (
+    stage_content_artifact_paths_from_request,
+    stage_content_provenance_paths_from_request,
+)
 
 
 ADVERSARIAL_REVIEW_REQUEST_FILENAME = "adversarial_review_request.yaml"
@@ -171,14 +176,23 @@ def _build_handoff_manifest_payload(
     required_artifact_paths: list[str],
     required_provenance_paths: list[str],
 ) -> dict[str, Any]:
+    review_scope = build_review_scope(
+        stage=stage,
+        required_artifact_paths=required_artifact_paths,
+        required_provenance_paths=required_provenance_paths,
+    )
     payload = {
         "review_cycle_id": review_cycle_id,
         "lineage_id": lineage_id,
         "stage": stage,
         "required_program_dir": required_program_dir,
         "required_program_entrypoint": required_program_entrypoint,
-        "required_artifact_paths": sorted(required_artifact_paths),
-        "required_provenance_paths": sorted(required_provenance_paths),
+        "required_artifact_paths": review_scope["required_artifact_paths"],
+        "required_provenance_paths": review_scope["required_provenance_paths"],
+        "stage_content_artifact_paths": review_scope["stage_content_artifact_paths"],
+        "stage_content_provenance_paths": review_scope["stage_content_provenance_paths"],
+        "upstream_binding_artifact_paths": review_scope["upstream_binding_artifact_paths"],
+        "upstream_binding_provenance_paths": review_scope["upstream_binding_provenance_paths"],
         "permitted_input_roots": list(REQUIRED_HANDOFF_INPUT_ROOTS),
         "permitted_output_roots": [REQUIRED_RESULT_WRITE_ROOT],
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
@@ -264,6 +278,11 @@ def ensure_adversarial_review_request(
         required_artifact_paths=required_artifact_paths,
         required_provenance_paths=required_provenance_paths,
     )
+    review_scope = build_review_scope(
+        stage=stage,
+        required_artifact_paths=required_artifact_paths,
+        required_provenance_paths=required_provenance_paths,
+    )
     payload: dict[str, Any] = {
         "review_cycle_id": review_cycle_id,
         "lineage_id": lineage_id,
@@ -272,8 +291,12 @@ def ensure_adversarial_review_request(
         "author_session_id": author_session_id,
         "required_program_dir": required_program_dir,
         "required_program_entrypoint": required_program_entrypoint,
-        "required_artifact_paths": sorted(required_artifact_paths),
-        "required_provenance_paths": sorted(required_provenance_paths),
+        "required_artifact_paths": review_scope["required_artifact_paths"],
+        "required_provenance_paths": review_scope["required_provenance_paths"],
+        "stage_content_artifact_paths": review_scope["stage_content_artifact_paths"],
+        "stage_content_provenance_paths": review_scope["stage_content_provenance_paths"],
+        "upstream_binding_artifact_paths": review_scope["upstream_binding_artifact_paths"],
+        "upstream_binding_provenance_paths": review_scope["upstream_binding_provenance_paths"],
         "required_reviewer_mode": REQUIRED_REVIEWER_MODE,
         "handoff_manifest_path": handoff_manifest_path,
         "handoff_manifest_digest": handoff_manifest_digest,
@@ -344,6 +367,24 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         "required_program_entrypoint": _require_string(payload, "required_program_entrypoint", path=request_path),
         "required_artifact_paths": _require_string_list(payload, "required_artifact_paths", path=request_path),
         "required_provenance_paths": _require_string_list(payload, "required_provenance_paths", path=request_path),
+        "stage_content_artifact_paths": _require_string_list(payload, "stage_content_artifact_paths", path=request_path)
+        if "stage_content_artifact_paths" in payload
+        else [],
+        "stage_content_provenance_paths": _require_string_list(
+            payload, "stage_content_provenance_paths", path=request_path
+        )
+        if "stage_content_provenance_paths" in payload
+        else [],
+        "upstream_binding_artifact_paths": _require_string_list(
+            payload, "upstream_binding_artifact_paths", path=request_path
+        )
+        if "upstream_binding_artifact_paths" in payload
+        else [],
+        "upstream_binding_provenance_paths": _require_string_list(
+            payload, "upstream_binding_provenance_paths", path=request_path
+        )
+        if "upstream_binding_provenance_paths" in payload
+        else [],
         "required_reviewer_mode": _require_string(payload, "required_reviewer_mode", path=request_path),
         "handoff_manifest_path": _require_string(payload, "handoff_manifest_path", path=request_path),
         "handoff_manifest_digest": _require_string(payload, "handoff_manifest_digest", path=request_path),
@@ -373,6 +414,22 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"{request_path}: launcher_checked_artifact_paths must match required_artifact_paths")
     if sorted(data["launcher_checked_provenance_paths"]) != sorted(data["required_provenance_paths"]):
         raise ValueError(f"{request_path}: launcher_checked_provenance_paths must match required_provenance_paths")
+    expected_scope = build_review_scope(
+        stage=data["stage"],
+        required_artifact_paths=data["required_artifact_paths"],
+        required_provenance_paths=data["required_provenance_paths"],
+    )
+    for scope_key in (
+        "stage_content_artifact_paths",
+        "stage_content_provenance_paths",
+        "upstream_binding_artifact_paths",
+        "upstream_binding_provenance_paths",
+    ):
+        expected = expected_scope[scope_key]
+        observed = sorted(data.get(scope_key, []))
+        if observed and observed != sorted(expected):
+            raise ValueError(f"{request_path}: {scope_key} do not match the expected stage review scope")
+        data[scope_key] = sorted(expected)
     expected_context_paths = _expected_launcher_handoff_context_paths(data["required_artifact_paths"])
     if sorted(data["launcher_handoff_context_paths"]) != sorted(expected_context_paths):
         raise ValueError(f"{request_path}: launcher_handoff_context_paths do not match the required handoff context")
@@ -397,6 +454,10 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         "required_program_entrypoint",
         "required_artifact_paths",
         "required_provenance_paths",
+        "stage_content_artifact_paths",
+        "stage_content_provenance_paths",
+        "upstream_binding_artifact_paths",
+        "upstream_binding_provenance_paths",
         "required_result_write_root",
         "launcher_review_ready_status",
         "launcher_checked_artifact_paths",
@@ -419,6 +480,26 @@ def load_spawned_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
         "required_program_entrypoint": _require_string(payload, "required_program_entrypoint", path=manifest_path),
         "required_artifact_paths": _require_string_list(payload, "required_artifact_paths", path=manifest_path),
         "required_provenance_paths": _require_string_list(payload, "required_provenance_paths", path=manifest_path),
+        "stage_content_artifact_paths": _require_string_list(
+            payload, "stage_content_artifact_paths", path=manifest_path
+        )
+        if "stage_content_artifact_paths" in payload
+        else [],
+        "stage_content_provenance_paths": _require_string_list(
+            payload, "stage_content_provenance_paths", path=manifest_path
+        )
+        if "stage_content_provenance_paths" in payload
+        else [],
+        "upstream_binding_artifact_paths": _require_string_list(
+            payload, "upstream_binding_artifact_paths", path=manifest_path
+        )
+        if "upstream_binding_artifact_paths" in payload
+        else [],
+        "upstream_binding_provenance_paths": _require_string_list(
+            payload, "upstream_binding_provenance_paths", path=manifest_path
+        )
+        if "upstream_binding_provenance_paths" in payload
+        else [],
         "permitted_input_roots": _require_string_list(payload, "permitted_input_roots", path=manifest_path),
         "permitted_output_roots": _require_string_list(payload, "permitted_output_roots", path=manifest_path),
         "required_result_write_root": _require_string(payload, "required_result_write_root", path=manifest_path),
@@ -447,6 +528,22 @@ def load_spawned_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"{manifest_path}: launcher_checked_artifact_paths must match required_artifact_paths")
     if sorted(data["launcher_checked_provenance_paths"]) != sorted(data["required_provenance_paths"]):
         raise ValueError(f"{manifest_path}: launcher_checked_provenance_paths must match required_provenance_paths")
+    expected_scope = build_review_scope(
+        stage=data["stage"],
+        required_artifact_paths=data["required_artifact_paths"],
+        required_provenance_paths=data["required_provenance_paths"],
+    )
+    for scope_key in (
+        "stage_content_artifact_paths",
+        "stage_content_provenance_paths",
+        "upstream_binding_artifact_paths",
+        "upstream_binding_provenance_paths",
+    ):
+        expected = expected_scope[scope_key]
+        observed = sorted(data.get(scope_key, []))
+        if observed and observed != sorted(expected):
+            raise ValueError(f"{manifest_path}: {scope_key} do not match the expected stage review scope")
+        data[scope_key] = sorted(expected)
     expected_context_paths = _expected_launcher_handoff_context_paths(data["required_artifact_paths"])
     if sorted(data["launcher_handoff_context_paths"]) != sorted(expected_context_paths):
         raise ValueError(f"{manifest_path}: launcher_handoff_context_paths do not match the required handoff context")
@@ -608,8 +705,8 @@ def canonicalize_runtime_review_result(
         "review_loop_outcome": result_payload["review_loop_outcome"],
         "reviewed_program_dir": request_payload["required_program_dir"],
         "reviewed_program_entrypoint": request_payload["required_program_entrypoint"],
-        "reviewed_artifact_paths": sorted(request_payload["required_artifact_paths"]),
-        "reviewed_provenance_paths": sorted(request_payload["required_provenance_paths"]),
+        "reviewed_artifact_paths": stage_content_artifact_paths_from_request(request_payload),
+        "reviewed_provenance_paths": stage_content_provenance_paths_from_request(request_payload),
         "blocking_findings": list(result_payload["blocking_findings"]),
         "reservation_findings": list(result_payload["reservation_findings"]),
         "info_findings": list(result_payload["info_findings"]),
@@ -709,11 +806,11 @@ def validate_result_against_request(
         raise ValueError(
             "adversarial_review_result.yaml reviewed_program_entrypoint does not match required_program_entrypoint"
         )
-    if sorted(result_payload["reviewed_artifact_paths"]) != sorted(request_payload["required_artifact_paths"]):
-        raise ValueError("adversarial_review_result.yaml reviewed_artifact_paths do not cover the required artifacts")
-    if sorted(result_payload["reviewed_provenance_paths"]) != sorted(request_payload["required_provenance_paths"]):
+    if sorted(result_payload["reviewed_artifact_paths"]) != stage_content_artifact_paths_from_request(request_payload):
+        raise ValueError("adversarial_review_result.yaml reviewed_artifact_paths do not cover the stage content artifacts")
+    if sorted(result_payload["reviewed_provenance_paths"]) != stage_content_provenance_paths_from_request(request_payload):
         raise ValueError(
-            "adversarial_review_result.yaml reviewed_provenance_paths do not cover the required provenance files"
+            "adversarial_review_result.yaml reviewed_provenance_paths do not cover the stage content provenance files"
         )
 
 

@@ -10,18 +10,11 @@ from typing import Any
 import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
-    ADVERSARIAL_REVIEW_REQUEST_FILENAME,
-    ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
-    canonicalize_runtime_review_result,
     load_adversarial_review_request,
-    load_adversarial_review_result,
     load_spawned_reviewer_receipt,
     resolve_closure_verdict,
-    SPAWNED_REVIEWER_RECEIPT_FILENAME,
-    validate_receipt_against_request,
-    validate_result_against_request,
 )
 from runtime.tools.review_skillgen.closure_models import build_review_payload
 from runtime.tools.review_skillgen.closure_writer import write_closure_artifacts
@@ -29,11 +22,17 @@ from runtime.tools.review_skillgen.review_cycle_trace import append_review_cycle
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
-    load_reviewer_write_scope_audit,
-    validate_reviewer_write_scope_audit,
+from runtime.tools.review_skillgen.protocol_validator import load_and_validate_protocol
+from runtime.tools.review_skillgen.review_scope_builder import (
+    stage_content_artifact_paths_from_request,
+    stage_content_provenance_paths_from_request,
+    upstream_binding_artifact_paths_from_request,
+    upstream_binding_provenance_paths_from_request,
 )
+from runtime.tools.review_skillgen.stage_content_gate import (
+    check_structural_gates,
+)
+from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -374,6 +373,32 @@ def _runtime_identity(
     )
 
 
+def _split_structural_checks(structural_checks: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    stage_content_checks: list[dict[str, Any]] = []
+    upstream_binding_checks: list[dict[str, Any]] = []
+
+    for check in structural_checks:
+        if check.get("validation_scope") == "upstream_binding":
+            upstream_binding_checks.append(check)
+        else:
+            stage_content_checks.append(check)
+
+    return stage_content_checks, upstream_binding_checks
+
+
+def _split_review_checks(checks: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    stage_content_checks: list[dict[str, Any]] = []
+    upstream_binding_checks: list[dict[str, Any]] = []
+
+    for check in checks:
+        if check.get("validation_scope") == "upstream_binding":
+            upstream_binding_checks.append(check)
+        else:
+            stage_content_checks.append(check)
+
+    return stage_content_checks, upstream_binding_checks
+
+
 def run_stage_review(
     *,
     cwd: Path | None = None,
@@ -404,50 +429,39 @@ def run_stage_review(
     stage_contract = gates["stages"][stage]
     stage_checks = checklist["stages"][stage]
 
-    request_path = review_request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
-    receipt_path = review_request_dir / SPAWNED_REVIEWER_RECEIPT_FILENAME
-    result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
-    audit_path = review_result_dir / REVIEWER_WRITE_SCOPE_AUDIT_FILENAME
-    request_payload = load_adversarial_review_request(request_path)
     runtime_identity = _runtime_identity(
         reviewer_identity=reviewer_identity,
         reviewer_role=reviewer_role,
         reviewer_session_id=reviewer_session_id,
         reviewer_mode=reviewer_mode,
     )
-    receipt_payload = load_spawned_reviewer_receipt(receipt_path)
-    validate_receipt_against_request(
-        request_payload=request_payload,
-        receipt_payload=receipt_payload,
+    protocol_payload = load_and_validate_protocol(
+        review_request_dir=review_request_dir,
+        review_result_dir=review_result_dir,
+        request_loader=load_adversarial_review_request,
+        receipt_loader=load_spawned_reviewer_receipt,
         runtime_identity=runtime_identity,
     )
-    review_result = load_adversarial_review_result(result_path)
-    review_result = canonicalize_runtime_review_result(
-        result_path,
-        request_payload=request_payload,
-        result_payload=review_result,
-    )
-    validate_result_against_request(
-        request_payload=request_payload,
-        receipt_payload=receipt_payload,
-        result_payload=review_result,
-        runtime_identity=runtime_identity,
-    )
-    audit_payload = load_reviewer_write_scope_audit(audit_path)
-    validate_reviewer_write_scope_audit(
-        receipt_payload=receipt_payload,
-        audit_payload=audit_payload,
-    )
+    request_payload = protocol_payload["request_payload"]
+    receipt_payload = protocol_payload["receipt_payload"]
+    review_result = protocol_payload["review_result"]
+    audit_payload = protocol_payload["audit_payload"]
     reviewer_findings = load_review_findings_if_present(review_result_dir / "review_findings.yaml")
 
+    stage_content_checks, upstream_binding_checks = _split_structural_checks(
+        stage_contract.get("structural_gate_checks", [])
+    )
+    stage_content_review_checks, upstream_binding_review_checks = _split_review_checks(stage_checks.get("checks", []))
     missing_required_outputs = _check_required_outputs(author_formal_dir, stage_contract.get("required_outputs", []))
     blocking_findings = [f"Missing required output: {item}" for item in missing_required_outputs]
     blocking_findings.extend(_check_global_evidence(author_formal_dir, stage_checks))
 
-    auto_stage_blocking, auto_stage_reservations = _check_stage_evidence(author_formal_dir, stage_checks.get("checks", []))
+    auto_stage_blocking, auto_stage_reservations = _check_stage_evidence(
+        author_formal_dir, stage_content_review_checks
+    )
     blocking_findings.extend(auto_stage_blocking)
-    # 前半段 CSF stage 先执行合同/结构 gate，确保语义冻结和可复现性先过，再谈后段统计表现。
-    blocking_findings.extend(_check_structural_gates(author_formal_dir, stage_contract.get("structural_gate_checks", [])))
+    # Stage content gate 只处理当前阶段自身内容；上游绑定验证单独走 deterministic validator。
+    blocking_findings.extend(check_structural_gates(author_formal_dir, stage_content_checks))
     # 先把合同里写明的关键数值门禁落成真实 blocking findings，避免“有产物但坏结果也放行”。
     blocking_findings.extend(
         _check_metric_gates(
@@ -456,6 +470,15 @@ def run_stage_review(
             stage_contract=stage_contract,
         )
     )
+    upstream_binding_findings = validate_upstream_bindings(
+        stage=stage,
+        lineage_root=lineage_root,
+        author_formal_dir=author_formal_dir,
+        structural_binding_checks=upstream_binding_checks,
+    )
+    upstream_binding_evidence_findings, _ = _check_stage_evidence(author_formal_dir, upstream_binding_review_checks)
+    upstream_binding_findings.extend(upstream_binding_evidence_findings)
+    blocking_findings.extend(upstream_binding_findings)
 
     reservation_findings = list(auto_stage_reservations)
     reservation_findings.extend(reviewer_findings["reservation_findings"])
@@ -508,6 +531,10 @@ def run_stage_review(
             "required_program_entrypoint": request_payload["required_program_entrypoint"],
             "required_artifact_paths": request_payload["required_artifact_paths"],
             "required_provenance_paths": request_payload["required_provenance_paths"],
+            "stage_content_artifact_paths": stage_content_artifact_paths_from_request(request_payload),
+            "stage_content_provenance_paths": stage_content_provenance_paths_from_request(request_payload),
+            "upstream_binding_artifact_paths": upstream_binding_artifact_paths_from_request(request_payload),
+            "upstream_binding_provenance_paths": upstream_binding_provenance_paths_from_request(request_payload),
             "reviewed_program_dir": review_result["reviewed_program_dir"],
             "reviewed_program_entrypoint": review_result["reviewed_program_entrypoint"],
             "reviewed_artifact_paths": review_result["reviewed_artifact_paths"],
@@ -526,6 +553,7 @@ def run_stage_review(
         "evidence_summary": {
             "recommended_gate_doc": stage_checks.get("recommended_gate_doc"),
             "review_summary": review_result.get("review_summary"),
+            "upstream_binding_findings": upstream_binding_findings,
         },
     }
 

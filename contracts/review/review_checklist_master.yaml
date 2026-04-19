@@ -232,6 +232,7 @@ stages:
     checks:
       - id: "CSF-SIGNAL-000"
         severity: "blocking"
+        validation_scope: "upstream_binding"
         check: "factor_role、factor_structure、portfolio_expression、neutralization_policy 均来自 mandate 冻结；non-standalone 具备 target_strategy_reference，group_neutral 具备 group_taxonomy_reference"
         evidence:
           - "route_inheritance_contract.yaml"
