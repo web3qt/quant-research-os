@@ -1,11 +1,11 @@
 {
   "fixture_id": "mandate-review-replay",
-  "input_digest": "2ec376e2965953510d4197f811992de981394d2a58fff4d2ded4e652ea314e8f",
+  "input_digest": "9876de06118cf831e5a2f52008eea3282be3b788554912575648a255181c13cc",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
   "lineage_mode": "explicit_resume",
   "lineage_selection_reason": "Explicit lineage_id btc_leads_alts was provided, so qros-session is targeting that lineage directly.",
-  "route_skill": "qros-mandate-review",
+  "route_skill": "qros-mandate-author",
   "stage_id": "mandate",
   "session_stage": "mandate_review_confirmation_pending",
   "formal_decision": "REVIEW_CONFIRMATION_PENDING",
@@ -23,9 +23,9 @@
     "csf_data_ready"
   ],
   "blocking_reasons": [
-    "mandate review entry is still waiting for explicit confirmation."
+    "mandate author outputs failed deterministic review preflight: Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0); MANDATE-STRUCT-002: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 3 more)"
   ],
-  "lineage_transition": "Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>",
+  "lineage_transition": "Run qros-mandate-author to repair author/formal outputs before review entry. Preflight findings: Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0); MANDATE-STRUCT-002: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 3 more)",
   "evidence_refs": [
     "runtime/tools/anti_drift_scenarios_mainline.py::mandate_review"
   ],

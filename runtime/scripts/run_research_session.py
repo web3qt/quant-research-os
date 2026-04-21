@@ -190,6 +190,16 @@ def _panel_lines(status) -> list[str]:
             f"Terminal state: {status.current_stage.endswith('_review_complete')}",
         ]
     )
+    if status.review_state is not None:
+        lines.append(f"Review state: {status.review_state}")
+    if status.active_review_cycle_id is not None:
+        lines.append(f"Active review cycle: {status.active_review_cycle_id}")
+    if status.review_requested_at is not None:
+        lines.append(f"Review requested at: {status.review_requested_at}")
+    if status.review_bound_author_digest is not None:
+        lines.append(f"Review bound author digest: {status.review_bound_author_digest}")
+    if status.closure_written_at is not None:
+        lines.append(f"Closure written at: {status.closure_written_at}")
     if status.review_verdict is not None:
         lines.append(_icon_line("🧪", "Review verdict", status.review_verdict))
     lines.append(_icon_line("🧯", "Requires failure handling", status.requires_failure_handling))
@@ -263,6 +273,10 @@ def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
     else:
         lines.append(
             f"⛔ Confirmation ignored: {confirmation_label} is not valid for the current session gate."
+        )
+    if args.confirm_review and recorded:
+        lines.append(
+            "ℹ️ Review approval no longer starts review inside the author session; open a separate review session and run ./.qros/bin/qros-start-review."
         )
     if args.confirm_intake:
         if recorded and status.current_stage == "mandate_confirmation_pending":
@@ -353,6 +367,16 @@ def main() -> int:
     print(f"🏁 Terminal state: {status.current_stage.endswith('_review_complete')}")
     if status.review_verdict is not None:
         print(f"🧪 Review verdict: {status.review_verdict}")
+    if status.review_state is not None:
+        print(f"🧷 Review state: {status.review_state}")
+    if status.active_review_cycle_id is not None:
+        print(f"🪢 Active review cycle: {status.active_review_cycle_id}")
+    if status.review_requested_at is not None:
+        print(f"🕒 Review requested at: {status.review_requested_at}")
+    if status.review_bound_author_digest is not None:
+        print(f"🔐 Review bound author digest: {status.review_bound_author_digest}")
+    if status.closure_written_at is not None:
+        print(f"📦 Closure written at: {status.closure_written_at}")
     print(f"🧯 Requires failure handling: {status.requires_failure_handling}")
     if status.failure_stage is not None:
         print(f"🧨 Failure stage: {status.failure_stage}")

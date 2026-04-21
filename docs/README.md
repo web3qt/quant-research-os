@@ -12,6 +12,7 @@
 - [安装说明](guides/installation.md)
 - [Codex 快速开始](guides/quickstart-codex.md)
 - [QROS 统一研究会话说明](guides/qros-research-session-usage.md)
+- [Review 约束地图](guides/qros-review-constraint-map.md)
 - [阶段冻结字段说明](guides/stage-freeze-group-field-guide.md)
 
 需要理解仓库结构时再看：

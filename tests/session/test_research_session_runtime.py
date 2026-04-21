@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -397,10 +398,49 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             },
         ],
     }
+    text_fixtures: dict[str, str] = {}
+    if stage == "mandate":
+        text_fixtures = {
+            "research_route.yaml": yaml.safe_dump(
+                {
+                    "research_route": "time_series_signal",
+                    "excluded_routes": ["cross_sectional_factor"],
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+            "time_split.json": json.dumps(
+                {
+                    "train": "2024-01-01/2024-03-31",
+                    "test": "2024-04-01/2024-06-30",
+                    "backtest": "2024-07-01/2024-09-30",
+                    "holdout": "2024-10-01/2024-12-31",
+                    "bar_size": "5m",
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            "parameter_grid.yaml": yaml.safe_dump(
+                {
+                    "parameters": [
+                        {
+                            "param_id": "shock_threshold_bp",
+                            "values": [30, 50],
+                        }
+                    ]
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+        }
 
     for name in file_outputs[stage]:
         if name in parquet_fixtures:
             _write_test_parquet_rows(author_formal_dir / name, parquet_fixtures[name])
+            continue
+        if name in text_fixtures:
+            (author_formal_dir / name).write_text(text_fixtures[name], encoding="utf-8")
             continue
         (author_formal_dir / name).write_text("ok\n", encoding="utf-8")
     for name in dir_outputs[stage]:
@@ -1128,6 +1168,120 @@ def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exis
     write_fake_stage_provenance(lineage_root, "mandate")
 
     assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
+
+
+def test_run_research_session_blocks_review_entry_when_mandate_preflight_fails(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(mandate_dir, "research_route.yaml")).write_text(
+        yaml.safe_dump(
+            {
+                "research_route": "time_series_signal",
+                "excluded_routes": ["cross_sectional_factor"],
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    (_stage_output_path(mandate_dir, "time_split.json")).write_text(
+        json.dumps(
+            {
+                "train": "",
+                "test": "",
+                "backtest": "",
+                "holdout": "",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (_stage_output_path(mandate_dir, "parameter_grid.yaml")).write_text(
+        yaml.safe_dump({"parameters": []}, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.stage_status == "awaiting_author_fix"
+    assert status.blocking_reason_code == "OUTPUTS_INVALID"
+    assert "time_split.json" in (status.blocking_reason or "")
+    assert "qros-mandate-author" in (status.next_action or "")
+
+
+def test_run_research_session_does_not_record_review_confirmation_when_preflight_fails(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
+    (_stage_output_path(mandate_dir, "research_route.yaml")).write_text(
+        yaml.safe_dump(
+            {
+                "research_route": "time_series_signal",
+                "excluded_routes": ["cross_sectional_factor"],
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    (_stage_output_path(mandate_dir, "time_split.json")).write_text(
+        json.dumps(
+            {
+                "train": "",
+                "test": "",
+                "backtest": "",
+                "holdout": "",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (_stage_output_path(mandate_dir, "parameter_grid.yaml")).write_text(
+        yaml.safe_dump({"parameters": []}, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        review_decision="CONFIRM_REVIEW",
+    )
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.stage_status == "awaiting_author_fix"
+    assert not (mandate_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
 
 
 def test_detect_session_stage_returns_data_ready_pending_when_mandate_closure_artifacts_exist(
@@ -2286,7 +2440,7 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
     assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
-    assert status.next_action == "Issue adversarial_review_request.yaml for independent adversarial review."
+    assert "./.qros/bin/qros-start-review" in status.next_action
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(

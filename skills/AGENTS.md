@@ -21,3 +21,7 @@
 - 不要在 skill 里重复整仓地图或泛化流程说明
 - 不要发明与 runtime / contracts 脱节的第二套命名
 - 不要把 review closure、failure routing、authoring 逻辑混写成一个模糊 skill
+
+## 应该做的事
+
+- 合理的规则必须做成强约束，而不是由 AI 自我发挥

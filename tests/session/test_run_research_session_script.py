@@ -961,7 +961,8 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
 
     result = run(
         [
@@ -978,9 +979,10 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
-    assert "▶ Next action: Run with --confirm-review or reply CONFIRM_REVIEW <lineage_id>" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
+    assert "qros-mandate-author" in result.stdout
     assert "Research route: cross_sectional_factor" in result.stdout
     assert (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
 
@@ -1020,8 +1022,9 @@ def test_run_research_session_reports_mandate_review_when_review_pending(tmp_pat
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
 
 
 def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_activation(
@@ -1238,9 +1241,10 @@ def test_run_research_session_does_not_record_data_ready_confirmation_before_man
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "Confirmation ignored: CONFIRM_DATA_READY" in result.stdout
     assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert not (data_ready_dir / "author" / "draft" / "data_ready_transition_approval.yaml").exists()
     assert not (_stage_output_path(data_ready_dir, "data_contract.md")).exists()
 

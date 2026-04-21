@@ -360,6 +360,42 @@ stages:
       - mandate 负责冻结问题，不负责宣布收益结论或交易规则
       - mandate 只冻结 crowding 和 capacity 的审计口径，不提前宣布容量结论
       - cross_sectional_factor 进入独立 csf_* 流程，不再复用旧的时序 stage 语义
+    structural_gate_checks:
+      - id: MANDATE-STRUCT-001
+        severity: blocking
+        artifact: time_split.json
+        format: json
+        field: train
+        check_type: non_empty
+        message: mandate requires a non-empty train window in time_split.json
+      - id: MANDATE-STRUCT-002
+        severity: blocking
+        artifact: time_split.json
+        format: json
+        field: test
+        check_type: non_empty
+        message: mandate requires a non-empty test window in time_split.json
+      - id: MANDATE-STRUCT-003
+        severity: blocking
+        artifact: time_split.json
+        format: json
+        field: backtest
+        check_type: non_empty
+        message: mandate requires a non-empty backtest window in time_split.json
+      - id: MANDATE-STRUCT-004
+        severity: blocking
+        artifact: time_split.json
+        format: json
+        field: holdout
+        check_type: non_empty
+        message: mandate requires a non-empty holdout window in time_split.json
+      - id: MANDATE-STRUCT-005
+        severity: blocking
+        artifact: parameter_grid.yaml
+        format: yaml
+        field: parameters
+        check_type: non_empty
+        message: mandate requires a non-empty parameter grid before review entry
 
   csf_data_ready:
     stage_id: csf_data_ready

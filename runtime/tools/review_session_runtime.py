@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from runtime.tools.lineage_program_runtime import inspect_stage_program, load_provenance_manifest
+from runtime.tools.research_session import (
+    _author_formal_dir,
+    _program_spec_for_session_stage,
+    _review_closure_path,
+    _review_proof_chain_error,
+    detect_session_stage,
+)
+from runtime.tools.review_skillgen.adversarial_review_contract import (
+    ensure_adversarial_review_request,
+    issue_spawned_reviewer_receipt,
+    load_adversarial_review_request,
+)
+from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
+from runtime.tools.review_skillgen.review_runtime_state import (
+    archive_active_review_cycle,
+    compute_author_materialization_digest,
+    load_review_runtime_state,
+    review_runtime_state_path,
+    write_review_runtime_state,
+)
+
+
+def _stage_dir_for_context(*, cwd: Path | None, explicit_context: dict[str, Any] | None) -> dict[str, Any]:
+    if explicit_context is not None:
+        context = build_stage_context(Path(explicit_context["stage_dir"]).resolve())
+        context["lineage_root"] = Path(explicit_context["lineage_root"]).resolve()
+        return context
+    return infer_review_context(cwd or Path.cwd())
+
+
+def _current_author_digest(stage_dir: Path, spec) -> str:
+    return compute_author_materialization_digest(
+        artifact_root=_author_formal_dir(stage_dir),
+        required_outputs=spec.required_outputs,
+        required_provenance_paths=("program_execution_manifest.json",),
+    )
+
+
+def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list[str]:
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    if not request_path.exists():
+        return []
+
+    request_payload = load_adversarial_review_request(request_path)
+    state_path = review_runtime_state_path(stage_dir)
+    state_payload = load_review_runtime_state(state_path) if state_path.exists() else None
+    bound_digest = state_payload.get("review_bound_author_digest") if state_payload else None
+    if bound_digest is None:
+        bound_digest = current_digest
+
+    closure_exists = (_review_closure_path(stage_dir, "stage_completion_certificate.yaml")).exists()
+    proof_chain_error = _review_proof_chain_error(stage_dir)
+    if bound_digest == current_digest and not closure_exists and proof_chain_error is None:
+        raise ValueError(
+            f"active review cycle {request_payload['review_cycle_id']} is still in progress; "
+            "start a new review only after it closes or the author package changes"
+        )
+
+    reason = "stale" if bound_digest != current_digest or proof_chain_error is not None else "superseded"
+    return archive_active_review_cycle(
+        stage_dir,
+        review_cycle_id=request_payload["review_cycle_id"],
+        reason=reason,
+    )
+
+
+def start_review_session(
+    *,
+    cwd: Path | None = None,
+    explicit_context: dict[str, Any] | None = None,
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    launcher_session_id: str,
+    launcher_thread_id: str,
+) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
+    current_stage = detect_session_stage(lineage_root)
+    if not current_stage.endswith("_review_confirmation_pending") and not current_stage.endswith("_review"):
+        raise ValueError(
+            f"review can only start from a review gate or active review stage; observed current_stage={current_stage}"
+        )
+
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None:
+        raise ValueError(f"current_stage {current_stage} is not a reviewable stage")
+    provenance = load_provenance_manifest(stage_dir)
+    if provenance is None:
+        raise ValueError(f"{stage_dir}: program_execution_manifest.json provenance is missing")
+    inspection = inspect_stage_program(lineage_root, spec.stage_id, spec.route)
+    if inspection.error_code is not None or inspection.required_program_entrypoint is None:
+        raise ValueError(inspection.error_message)
+    author_identity = provenance.get("authored_by_agent_id")
+    author_session_id = provenance.get("authoring_session_id")
+    if not isinstance(author_identity, str) or not author_identity.strip():
+        raise ValueError(f"{stage_dir}: authored_by_agent_id is missing from provenance")
+    if not isinstance(author_session_id, str) or not author_session_id.strip():
+        raise ValueError(f"{stage_dir}: authoring_session_id is missing from provenance")
+
+    archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=_current_author_digest(stage_dir, spec))
+
+    request_payload = ensure_adversarial_review_request(
+        stage_dir,
+        lineage_id=lineage_root.name,
+        stage=spec.stage_id,
+        author_identity=author_identity.strip(),
+        author_session_id=author_session_id.strip(),
+        required_program_dir=inspection.required_program_dir,
+        required_program_entrypoint=inspection.required_program_entrypoint,
+        required_artifact_paths=list(spec.required_outputs),
+        required_provenance_paths=["program_execution_manifest.json"],
+        program_hash=provenance.get("program_hash") if isinstance(provenance.get("program_hash"), str) else None,
+        stage_invoked_at=provenance.get("invoked_at") if isinstance(provenance.get("invoked_at"), str) else None,
+    )
+    state_payload = write_review_runtime_state(
+        stage_dir,
+        review_state="review_in_progress",
+        active_review_cycle_id=request_payload["review_cycle_id"],
+        review_requested_at=datetime.now(timezone.utc).isoformat(),
+        review_bound_author_digest=_current_author_digest(stage_dir, spec),
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        last_review_verdict=None,
+        closure_written_at=None,
+    )
+    receipt_payload = issue_spawned_reviewer_receipt(
+        stage_dir,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        launcher_session_id=launcher_session_id,
+        launcher_thread_id=launcher_thread_id,
+        spawned_agent_id=reviewer_session_id,
+        spawn_mode="review_session",
+    )
+    return {
+        "lineage_id": lineage_root.name,
+        "stage": spec.stage_id,
+        "stage_dir": str(stage_dir),
+        "current_stage": current_stage,
+        "review_cycle_id": request_payload["review_cycle_id"],
+        "request_path": str((stage_dir / "review" / "request" / "adversarial_review_request.yaml").relative_to(lineage_root)),
+        "receipt_path": str((stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").relative_to(lineage_root)),
+        "archived_paths": archived_paths,
+        "review_runtime_state": state_payload,
+        "request_payload": request_payload,
+        "receipt_payload": receipt_payload,
+    }

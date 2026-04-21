@@ -37,6 +37,31 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         "run_manifest.json",
     ]:
         (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
+    (stage_dir / "author" / "formal" / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-03-31",
+                "test": "2024-04-01/2024-06-30",
+                "backtest": "2024-07-01/2024-09-30",
+                "holdout": "2024-10-01/2024-12-31",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_yaml(
+        stage_dir / "author" / "formal" / "parameter_grid.yaml",
+        {
+            "parameters": [
+                {
+                    "param_id": "shock_threshold_bp",
+                    "values": [30, 50],
+                }
+            ]
+        },
+    )
 
     required_artifact_paths = [
         "mandate.md",
@@ -222,6 +247,54 @@ def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) 
 
     assert result.returncode == 0
     assert "Stage: mandate" in result.stdout
+
+
+def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
+    (stage_dir / "review" / "result" / "adversarial_review_result.yaml").unlink()
+    (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").unlink()
+    _write_yaml(
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
+        {
+            "review_loop_outcome": "CLOSURE_READY_PASS",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": ["fresh reviewer run"],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "downstream_permissions": ["mandate_next_stage_confirmation_pending"],
+        },
+    )
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(stage_dir.parent),
+            "--reviewer-id",
+            "reviewer-agent",
+            "--reviewer-role",
+            "reviewer",
+            "--reviewer-session-id",
+            "review-session",
+            "--reviewer-mode",
+            "adversarial",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert (stage_dir / "review" / "result" / "adversarial_review_result.yaml").exists()
+    assert (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").exists()
+    assert not (stage_dir / "review" / "result" / "reviewer_findings.raw.yaml").exists()
 
 
 def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) -> None:

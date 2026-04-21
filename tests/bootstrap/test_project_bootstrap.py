@@ -11,6 +11,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("skills").exists()
     assert Path("runtime/bin/qros-session").exists()
     assert Path("runtime/bin/qros-audit-reviewer").exists()
+    assert Path("runtime/bin/qros-start-review").exists()
     assert Path("runtime/bin/qros-spawn-reviewer").exists()
     assert Path("runtime/bin/qros-review").exists()
     assert Path("runtime/bin/qros-verify").exists()

@@ -5,6 +5,7 @@ from typing import Any
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    ADVERSARIAL_REVIEW_RESULT_FILENAME,
     SPAWNED_REVIEWER_RECEIPT_FILENAME,
     validate_receipt_against_request,
     validate_result_against_request,
@@ -12,6 +13,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
     load_reviewer_write_scope_audit,
+    run_reviewer_write_scope_audit,
     validate_reviewer_write_scope_audit,
 )
 from runtime.tools.review_skillgen.review_result_writer import ensure_runtime_review_result
@@ -27,7 +29,9 @@ def load_and_validate_protocol(
 ) -> dict[str, Any]:
     request_path = review_request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
     receipt_path = review_request_dir / SPAWNED_REVIEWER_RECEIPT_FILENAME
+    result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
     audit_path = review_result_dir / REVIEWER_WRITE_SCOPE_AUDIT_FILENAME
+    stage_dir = review_request_dir.parent.parent
 
     request_payload = request_loader(request_path)
     receipt_payload = receipt_loader(receipt_path)
@@ -50,7 +54,14 @@ def load_and_validate_protocol(
         runtime_identity=runtime_identity,
     )
 
-    audit_payload = load_reviewer_write_scope_audit(audit_path)
+    if (
+        not audit_path.exists()
+        or audit_path.stat().st_mtime < result_path.stat().st_mtime
+        or audit_path.stat().st_mtime < receipt_path.stat().st_mtime
+    ):
+        audit_payload = run_reviewer_write_scope_audit(stage_dir)
+    else:
+        audit_payload = load_reviewer_write_scope_audit(audit_path)
     validate_reviewer_write_scope_audit(
         receipt_payload=receipt_payload,
         audit_payload=audit_payload,

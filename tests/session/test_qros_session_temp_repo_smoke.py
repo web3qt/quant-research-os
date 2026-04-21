@@ -176,7 +176,8 @@ def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path
     review_pending_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id)
     assert review_pending_result.returncode == 0, review_pending_result.stderr
     assert "Current stage: mandate_review_confirmation_pending" in review_pending_result.stdout
-    assert "Run with --confirm-review or reply CONFIRM_REVIEW" in review_pending_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in review_pending_result.stdout
+    assert "qros-mandate-author" in review_pending_result.stdout
 
     confirm_review_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id, "--confirm-review")
     assert confirm_review_result.returncode == 0, confirm_review_result.stderr
@@ -184,11 +185,10 @@ def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path
     review_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id, "--json")
     assert review_result.returncode == 0, review_result.stderr
     payload = json.loads(review_result.stdout)
-    assert payload["current_stage"] == "mandate_review"
-    assert payload["current_skill"] == "qros-mandate-review"
-    assert payload["gate_status"] == "ADVERSARIAL_REVIEW_PENDING"
-    assert (
-        payload["next_action"]
-        == "Launch a spawned reviewer child, issue spawned_reviewer_receipt.yaml, then wait for adversarial_review_result.yaml."
-    )
-    assert (lineage_root / "01_mandate" / "review" / "request" / "adversarial_review_request.yaml").exists()
+    assert payload["current_stage"] == "mandate_review_confirmation_pending"
+    assert payload["current_skill"] == "qros-mandate-author"
+    assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
+    assert payload["gate_status"] == "REVIEW_CONFIRMATION_PENDING"
+    assert "qros-mandate-author" in payload["next_action"]
+    assert "review entry" in payload["next_action"]
+    assert not (lineage_root / "01_mandate" / "review" / "request" / "adversarial_review_request.yaml").exists()

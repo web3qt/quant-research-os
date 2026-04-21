@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 
 import yaml
@@ -32,6 +33,31 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         "run_manifest.json",
     ]:
         (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
+    (stage_dir / "author" / "formal" / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-03-31",
+                "test": "2024-04-01/2024-06-30",
+                "backtest": "2024-07-01/2024-09-30",
+                "holdout": "2024-10-01/2024-12-31",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_yaml(
+        stage_dir / "author" / "formal" / "parameter_grid.yaml",
+        {
+            "parameters": [
+                {
+                    "param_id": "shock_threshold_bp",
+                    "values": [30, 50],
+                }
+            ]
+        },
+    )
 
     return stage_dir
 
@@ -183,11 +209,9 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert "governance_signal_path" not in payload
     assert "governance_candidate_summary" not in payload
     trace_events = load_review_cycle_trace(stage_dir / "review" / "review_cycle_trace.jsonl")
-    assert [event["event_type"] for event in trace_events] == [
-        "receipt_issued",
-        "write_scope_audit_completed",
-        "review_evaluated",
-    ]
+    assert trace_events[0]["event_type"] == "receipt_issued"
+    assert trace_events[-1]["event_type"] == "review_evaluated"
+    assert [event["event_type"] for event in trace_events].count("write_scope_audit_completed") >= 1
     assert trace_events[-1]["final_verdict"] == "PASS"
     assert trace_events[-1]["closure_written"] is True
 

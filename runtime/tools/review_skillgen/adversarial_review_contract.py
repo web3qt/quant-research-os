@@ -21,7 +21,12 @@ SPAWNED_REVIEWER_RECEIPT_FILENAME = "spawned_reviewer_receipt.yaml"
 SPAWNED_REVIEWER_HANDOFF_MANIFEST_FILENAME = "spawned_reviewer_handoff_manifest.yaml"
 REVIEW_FINDINGS_FILENAME = "review_findings.yaml"
 REQUIRED_REVIEWER_MODE = "adversarial"
-REQUIRED_REVIEWER_EXECUTION_MODE = "spawned_agent"
+REVIEWER_EXECUTION_MODE_SPAWNED = "spawned_agent"
+REVIEWER_EXECUTION_MODE_SESSION = "review_session"
+ALLOWED_REVIEWER_EXECUTION_MODES = {
+    REVIEWER_EXECUTION_MODE_SPAWNED,
+    REVIEWER_EXECUTION_MODE_SESSION,
+}
 REQUIRED_REVIEWER_CONTEXT_SOURCE = "explicit_handoff_only"
 REQUIRED_REVIEWER_HISTORY_INHERITANCE = "none"
 REQUIRED_RESULT_WRITE_ROOT = "review/result"
@@ -558,6 +563,7 @@ def issue_spawned_reviewer_receipt(
     launcher_session_id: str,
     launcher_thread_id: str,
     spawned_agent_id: str,
+    spawn_mode: str = REVIEWER_EXECUTION_MODE_SPAWNED,
     launcher_owner: str = RUNTIME_LAUNCHER_OWNER,
 ) -> dict[str, Any]:
     from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
@@ -570,7 +576,7 @@ def issue_spawned_reviewer_receipt(
         "launcher_owner": launcher_owner,
         "launcher_session_id": launcher_session_id,
         "launcher_thread_id": launcher_thread_id,
-        "spawn_mode": REQUIRED_REVIEWER_EXECUTION_MODE,
+        "spawn_mode": spawn_mode,
         "spawned_agent_id": spawned_agent_id,
         "fork_context": False,
         "write_root": REQUIRED_RESULT_WRITE_ROOT,
@@ -634,6 +640,10 @@ def load_spawned_reviewer_receipt(path: str | Path) -> dict[str, Any]:
         "requested_reviewer_session_id": _require_string(payload, "requested_reviewer_session_id", path=receipt_path),
         "receipt_written_at": _require_string(payload, "receipt_written_at", path=receipt_path),
     }
+    if data["spawn_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
+        raise ValueError(
+            f"{receipt_path}: spawn_mode must be one of {sorted(ALLOWED_REVIEWER_EXECUTION_MODES)!r}"
+        )
     return data
 
 
@@ -758,8 +768,10 @@ def validate_receipt_contract(
         raise ValueError("spawned_reviewer_receipt.yaml review_cycle_id does not match the active request")
     if receipt_payload["launcher_owner"] != RUNTIME_LAUNCHER_OWNER:
         raise ValueError("spawned_reviewer_receipt.yaml launcher_owner is not the fixed runtime launcher")
-    if receipt_payload["spawn_mode"] != REQUIRED_REVIEWER_EXECUTION_MODE:
-        raise ValueError("spawned_reviewer_receipt.yaml spawn_mode must be spawned_agent")
+    if receipt_payload["spawn_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
+        raise ValueError(
+            "spawned_reviewer_receipt.yaml spawn_mode must be a supported review execution mode"
+        )
     if not receipt_payload["spawned_agent_id"].strip():
         raise ValueError("spawned_reviewer_receipt.yaml spawned_agent_id must be a non-empty string")
     if not receipt_payload["launcher_thread_id"].strip():
@@ -828,8 +840,14 @@ def validate_result_contract(
         raise ValueError("adversarial_review_result.yaml reviewer_session_id does not match spawned_reviewer_receipt.yaml")
     if receipt_payload["spawned_agent_id"] != result_payload["reviewer_agent_id"]:
         raise ValueError("adversarial_review_result.yaml reviewer_agent_id does not match spawned_reviewer_receipt.yaml")
-    if result_payload["reviewer_execution_mode"] != REQUIRED_REVIEWER_EXECUTION_MODE:
-        raise ValueError("adversarial_review_result.yaml reviewer_execution_mode must be spawned_agent")
+    if result_payload["reviewer_execution_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
+        raise ValueError(
+            "adversarial_review_result.yaml reviewer_execution_mode must be a supported review execution mode"
+        )
+    if result_payload["reviewer_execution_mode"] != receipt_payload["spawn_mode"]:
+        raise ValueError(
+            "adversarial_review_result.yaml reviewer_execution_mode does not match spawned_reviewer_receipt.yaml"
+        )
     if result_payload["reviewer_context_source"] != REQUIRED_REVIEWER_CONTEXT_SOURCE:
         raise ValueError("adversarial_review_result.yaml reviewer_context_source must be explicit_handoff_only")
     if result_payload["reviewer_history_inheritance"] != REQUIRED_REVIEWER_HISTORY_INHERITANCE:

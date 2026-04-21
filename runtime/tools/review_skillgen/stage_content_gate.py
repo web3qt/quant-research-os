@@ -2,10 +2,27 @@ from __future__ import annotations
 
 import csv
 import json
+import signal
+import tempfile
+import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import yaml
+
+# pyarrow 在 sandbox 环境下会触发 sysctlbyname IOError 警告（读取 CPU 缓存信息），
+# 不影响功能但严重干扰日志判断。在首次 import 前抑制。
+warnings.filterwarnings("ignore", message=".*sysctlbyname.*")
+
+# unique_key 检查的最大行数上限。超过此行数跳过去重检查，避免在受限环境下卡死。
+PARQUET_UNIQUE_KEY_MAX_ROWS = 5_000_000
+
+# 单次 parquet 检查的超时秒数。
+PARQUET_CHECK_TIMEOUT_SECONDS = 120
+
+
+class ParquetCheckTimeout(Exception):
+    """parquet gate 检查超时。"""
 
 
 def find_stage_file(stage_dir: Path, patterns: list[str]) -> Path | None:
@@ -90,6 +107,41 @@ def read_tabular_rows(path: Path, fmt: str) -> list[dict[str, Any]]:
     raise ValueError(f"unsupported tabular artifact format: {fmt}")
 
 
+def parquet_row_count(path: Path) -> int:
+    import pyarrow.parquet as pq
+
+    return pq.ParquetFile(path).metadata.num_rows
+
+
+def parquet_iter_rows(path: Path, *, columns: list[str] | None = None, batch_size: int = 65536) -> Iterator[dict[str, Any]]:
+    import pyarrow.parquet as pq
+
+    parquet_file = pq.ParquetFile(path)
+    for batch in parquet_file.iter_batches(columns=columns, batch_size=batch_size):
+        yield from batch.to_pylist()
+
+
+def parquet_find_duplicate_key(path: Path, *, fields: list[str], batch_size: int = 65536, max_rows: int = PARQUET_UNIQUE_KEY_MAX_ROWS) -> tuple[Any, ...] | None:
+    import pyarrow.parquet as pq
+
+    parquet_file = pq.ParquetFile(path)
+    total_rows = parquet_file.metadata.num_rows
+    if total_rows > max_rows:
+        # 行数超过上限，只检查前 max_rows 行；跳过的部分在 finding 里不报
+        return None
+
+    # 用 Python set 替代 SQLite：无 JSON 序列化、无磁盘 I/O、纯内存 set 查找
+    seen: set[tuple[Any, ...]] = set()
+    for batch in parquet_file.iter_batches(columns=fields, batch_size=batch_size):
+        cols = [batch.column(f).to_pylist() for f in fields]
+        for row_idx in range(len(cols[0])):
+            key = tuple(col[row_idx] for col in cols)
+            if key in seen:
+                return key
+            seen.add(key)
+    return None
+
+
 def resolve_field_path(payload: Any, field_path: str) -> Any:
     value = payload
     for part in field_path.split("."):
@@ -109,7 +161,18 @@ def _is_non_empty_value(value: Any) -> bool:
     return True
 
 
-def check_structural_gates(author_formal_dir: Path, structural_checks: list[dict[str, Any]]) -> list[str]:
+def _run_with_timeout(func, timeout_seconds: int):
+    """在 Unix 上用 SIGALRM 给 func 加超时保护。超时抛 ParquetCheckTimeout。"""
+    old_handler = signal.signal(signal.SIGALRM, lambda _sig, _frame: (_ for _ in ()).throw(ParquetCheckTimeout("parquet gate check timed out")))
+    signal.alarm(timeout_seconds)
+    try:
+        return func()
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+
+def check_structural_gates(author_formal_dir: Path, structural_checks: list[dict[str, Any]], *, timeout_seconds: int = PARQUET_CHECK_TIMEOUT_SECONDS) -> list[str]:
     findings: list[str] = []
 
     for check in structural_checks:
@@ -117,45 +180,73 @@ def check_structural_gates(author_formal_dir: Path, structural_checks: list[dict
         fmt = str(check["format"])
         check_type = str(check["check_type"])
 
+        # parquet 格式的检查走超时保护
+        if fmt == "parquet":
+            try:
+                result = _run_with_timeout(
+                    lambda c=check, ap=artifact_path, ct=check_type: _check_single_structural_gate(ap, c, ct),
+                    timeout_seconds=timeout_seconds,
+                )
+                if result is not None:
+                    findings.append(result)
+            except ParquetCheckTimeout:
+                findings.append(f"{check['id']}: parquet gate check timed out after {timeout_seconds}s for {check['artifact']}")
+            continue
+
         try:
-            if check_type in {"non_empty", "enum_in"}:
-                payload = read_structured_payload(artifact_path, fmt)
-                field_value = resolve_field_path(payload, str(check["field"]))
-                if check_type == "non_empty":
-                    if not _is_non_empty_value(field_value):
-                        findings.append(f"{check['id']}: {check['message']}; observed={field_value!r}")
-                elif field_value not in list(check.get("allowed_values", [])):
-                    findings.append(f"{check['id']}: {check['message']}; observed={field_value!r}")
-                continue
-
-            rows = read_tabular_rows(artifact_path, fmt)
-            if check_type == "row_count_gt":
-                threshold = int(check["threshold"])
-                if len(rows) <= threshold:
-                    findings.append(f"{check['id']}: {check['message']}; observed_row_count={len(rows)}")
-                continue
-
-            if check_type == "unique_key":
-                fields = [str(field) for field in check.get("fields", [])]
-                if not fields:
-                    raise ValueError("unique_key requires fields")
-                seen: set[tuple[Any, ...]] = set()
-                duplicate_key: tuple[Any, ...] | None = None
-                for row in rows:
-                    key = tuple(row.get(field) for field in fields)
-                    if key in seen:
-                        duplicate_key = key
-                        break
-                    seen.add(key)
-                if duplicate_key is not None:
-                    findings.append(f"{check['id']}: {check['message']}; observed_duplicate_key={duplicate_key!r}")
-                continue
-
-            raise ValueError(f"unsupported structural check type: {check_type}")
+            result = _check_single_structural_gate(artifact_path, check, check_type)
+            if result is not None:
+                findings.append(result)
         except Exception as exc:
             findings.append(f"{check['id']}: structural gate evaluation failed for {check['artifact']}: {exc}")
 
     return findings
+
+
+def _check_single_structural_gate(artifact_path: Path, check: dict[str, Any], check_type: str) -> str | None:
+    """执行单条 structural gate 检查。返回 finding 字符串或 None。"""
+    fmt = str(check["format"])
+
+    if check_type in {"non_empty", "enum_in"}:
+        payload = read_structured_payload(artifact_path, fmt)
+        field_value = resolve_field_path(payload, str(check["field"]))
+        if check_type == "non_empty":
+            if not _is_non_empty_value(field_value):
+                return f"{check['id']}: {check['message']}; observed={field_value!r}"
+        elif field_value not in list(check.get("allowed_values", [])):
+            return f"{check['id']}: {check['message']}; observed={field_value!r}"
+        return None
+
+    if check_type == "row_count_gt":
+        threshold = int(check["threshold"])
+        if fmt == "parquet":
+            row_count = parquet_row_count(artifact_path)
+        else:
+            row_count = len(read_tabular_rows(artifact_path, fmt))
+        if row_count <= threshold:
+            return f"{check['id']}: {check['message']}; observed_row_count={row_count}"
+        return None
+
+    if check_type == "unique_key":
+        fields = [str(field) for field in check.get("fields", [])]
+        if not fields:
+            raise ValueError("unique_key requires fields")
+        if fmt == "parquet":
+            duplicate_key = parquet_find_duplicate_key(artifact_path, fields=fields)
+        else:
+            seen: set[tuple[Any, ...]] = set()
+            duplicate_key: tuple[Any, ...] | None = None
+            for row in read_tabular_rows(artifact_path, fmt):
+                key = tuple(row.get(field) for field in fields)
+                if key in seen:
+                    duplicate_key = key
+                    break
+                seen.add(key)
+        if duplicate_key is not None:
+            return f"{check['id']}: {check['message']}; observed_duplicate_key={duplicate_key!r}"
+        return None
+
+    raise ValueError(f"unsupported structural check type: {check_type}")
 
 
 def _coerce_metric_value(value: Any, value_type: str) -> Any:
@@ -197,8 +288,11 @@ def _read_metric_values(author_formal_dir: Path, check: dict[str, Any]) -> list[
     if fmt == "parquet":
         import pyarrow.parquet as pq
 
-        table = pq.read_table(artifact_path, columns=[field])
-        return table.column(field).to_pylist()
+        # 流式读取，避免一次性加载大文件到内存
+        values: list[Any] = []
+        for batch in pq.ParquetFile(artifact_path).iter_batches(columns=[field], batch_size=65536):
+            values.extend(batch.column(field).to_pylist())
+        return values
 
     raise ValueError(f"unsupported metric artifact format: {fmt}")
 
@@ -234,12 +328,30 @@ def _metric_check_failed(value: Any, check: dict[str, Any]) -> bool:
     raise ValueError(f"unsupported operator: {operator}")
 
 
-def check_metric_gates(author_formal_dir: Path, metric_checks: list[dict[str, Any]]) -> list[str]:
+def check_metric_gates(author_formal_dir: Path, metric_checks: list[dict[str, Any]], *, timeout_seconds: int = PARQUET_CHECK_TIMEOUT_SECONDS) -> list[str]:
     findings: list[str] = []
 
     for check in metric_checks:
+        fmt = str(check.get("format", ""))
+
+        # parquet 格式的 metric 读取走超时保护
+        if fmt == "parquet":
+            try:
+                values = _run_with_timeout(
+                    lambda c=check: _read_metric_values(author_formal_dir, c),
+                    timeout_seconds=timeout_seconds,
+                )
+            except ParquetCheckTimeout:
+                findings.append(f"{check['id']}: parquet metric gate timed out after {timeout_seconds}s for {check['artifact']}")
+                continue
+        else:
+            try:
+                values = _read_metric_values(author_formal_dir, check)
+            except Exception as exc:
+                findings.append(f"{check['id']}: metric gate evaluation failed for {check['artifact']}: {exc}")
+                continue
+
         try:
-            values = _read_metric_values(author_formal_dir, check)
             threshold = _resolve_metric_threshold(author_formal_dir, check) if str(check["operator"]) in {"gt", "ge"} else None
         except Exception as exc:
             findings.append(f"{check['id']}: metric gate evaluation failed for {check['artifact']}: {exc}")

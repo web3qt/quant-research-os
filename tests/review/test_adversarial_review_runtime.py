@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,31 @@ def _prepare_mandate_stage(tmp_path: Path) -> tuple[Path, Path]:
 
     for name in MANDATE_REQUIRED_OUTPUTS:
         (stage_dir / "author" / "formal" / name).write_text("ok\n", encoding="utf-8")
+    (stage_dir / "author" / "formal" / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-03-31",
+                "test": "2024-04-01/2024-06-30",
+                "backtest": "2024-07-01/2024-09-30",
+                "holdout": "2024-10-01/2024-12-31",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_yaml(
+        stage_dir / "author" / "formal" / "parameter_grid.yaml",
+        {
+            "parameters": [
+                {
+                    "param_id": "shock_threshold_bp",
+                    "values": [30, 50],
+                }
+            ]
+        },
+    )
 
     ensure_stage_program(lineage_root, "mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
@@ -515,7 +541,7 @@ def test_run_research_session_waits_for_reviewer_write_scope_audit_before_closur
     assert status.stage_status == "awaiting_reviewer_write_scope_audit"
     assert status.blocking_reason_code == "REVIEW_AUDIT_PENDING"
     assert "reviewer_write_scope_audit.yaml" in (status.blocking_reason or "")
-    assert "qros-audit-reviewer" in status.next_action
+    assert "./.qros/bin/qros-review" in status.next_action
 
 
 def test_run_research_session_keeps_review_pending_when_result_exists_without_receipt(tmp_path: Path) -> None:
@@ -716,7 +742,7 @@ def test_run_stage_review_rejects_missing_spawned_agent_id(tmp_path: Path) -> No
         )
 
 
-def test_run_stage_review_rejects_missing_reviewer_write_scope_audit(tmp_path: Path) -> None:
+def test_run_stage_review_recreates_missing_reviewer_write_scope_audit(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
     _write_spawned_reviewer_receipt(stage_dir)
@@ -728,11 +754,13 @@ def test_run_stage_review_rejects_missing_reviewer_write_scope_audit(tmp_path: P
     )
     (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").unlink()
 
-    with pytest.raises(ValueError, match="reviewer_write_scope_audit"):
-        run_stage_review(
-            cwd=stage_dir,
-            reviewer_identity="reviewer-agent",
-            reviewer_role="adversarial-reviewer",
-            reviewer_session_id="reviewer-session",
-            reviewer_mode="adversarial",
-        )
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="adversarial-reviewer",
+        reviewer_session_id="reviewer-session",
+        reviewer_mode="adversarial",
+    )
+
+    assert payload["final_verdict"] == "PASS"
+    assert (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").exists()

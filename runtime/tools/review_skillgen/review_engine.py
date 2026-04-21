@@ -23,6 +23,8 @@ from runtime.tools.review_skillgen.context_inference import build_stage_context,
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
 from runtime.tools.review_skillgen.protocol_validator import load_and_validate_protocol
+from runtime.tools.review_skillgen.review_runtime_state import write_review_runtime_state
+from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest
 from runtime.tools.review_skillgen.review_scope_builder import (
     stage_content_artifact_paths_from_request,
     stage_content_provenance_paths_from_request,
@@ -373,6 +375,24 @@ def _runtime_identity(
     )
 
 
+def _runtime_identity_from_receipt(
+    *,
+    stage_dir: Path,
+    reviewer_identity: str | None,
+    reviewer_role: str | None,
+    reviewer_session_id: str | None,
+    reviewer_mode: str | None,
+) -> ReviewerRuntimeIdentity:
+    receipt_path = stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml"
+    receipt_payload = load_spawned_reviewer_receipt(receipt_path) if receipt_path.exists() else None
+    return _runtime_identity(
+        reviewer_identity=reviewer_identity or (receipt_payload.get("requested_reviewer_identity") if receipt_payload else None),
+        reviewer_role=reviewer_role,
+        reviewer_session_id=reviewer_session_id or (receipt_payload.get("requested_reviewer_session_id") if receipt_payload else None),
+        reviewer_mode=reviewer_mode,
+    )
+
+
 def _split_structural_checks(structural_checks: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     stage_content_checks: list[dict[str, Any]] = []
     upstream_binding_checks: list[dict[str, Any]] = []
@@ -429,7 +449,8 @@ def run_stage_review(
     stage_contract = gates["stages"][stage]
     stage_checks = checklist["stages"][stage]
 
-    runtime_identity = _runtime_identity(
+    runtime_identity = _runtime_identity_from_receipt(
+        stage_dir=stage_dir,
         reviewer_identity=reviewer_identity,
         reviewer_role=reviewer_role,
         reviewer_session_id=reviewer_session_id,
@@ -447,6 +468,11 @@ def run_stage_review(
     review_result = protocol_payload["review_result"]
     audit_payload = protocol_payload["audit_payload"]
     reviewer_findings = load_review_findings_if_present(review_result_dir / "review_findings.yaml")
+    author_digest = compute_author_materialization_digest(
+        artifact_root=author_formal_dir,
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
 
     stage_content_checks, upstream_binding_checks = _split_structural_checks(
         stage_contract.get("structural_gate_checks", [])
@@ -558,6 +584,17 @@ def run_stage_review(
     }
 
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
+        write_review_runtime_state(
+            stage_dir,
+            review_state="awaiting_author_fix",
+            active_review_cycle_id=review_result["review_cycle_id"],
+            review_requested_at=receipt_payload.get("receipt_written_at"),
+            review_bound_author_digest=author_digest,
+            reviewer_identity=review_result["reviewer_identity"],
+            reviewer_session_id=review_result["reviewer_session_id"],
+            last_review_verdict=None,
+            closure_written_at=None,
+        )
         append_review_cycle_event(
             stage_dir,
             event_type="review_evaluated",
@@ -619,6 +656,19 @@ def run_stage_review(
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
         },
+    )
+    closure_written_at = datetime.now(timezone.utc).isoformat()
+    final_state = "review_closed_pass" if final_verdict in {"PASS", "CONDITIONAL PASS"} else "review_closed_nonadvancing"
+    write_review_runtime_state(
+        stage_dir,
+        review_state=final_state,
+        active_review_cycle_id=review_result["review_cycle_id"],
+        review_requested_at=receipt_payload.get("receipt_written_at"),
+        review_bound_author_digest=author_digest,
+        reviewer_identity=review_result["reviewer_identity"],
+        reviewer_session_id=review_result["reviewer_session_id"],
+        last_review_verdict=final_verdict,
+        closure_written_at=closure_written_at,
     )
     append_review_cycle_event(
         stage_dir,
