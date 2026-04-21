@@ -25,19 +25,17 @@ def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    import polars as pl
 
     if not rows:
         raise ValueError(f"{path.name} requires at least one row")
-    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
-    pq.write_table(pa.table(columns), path)
+    pl.DataFrame(rows).write_parquet(path)
 
 
 def _read_parquet_rows(path: Path) -> list[dict[str, Any]]:
-    import pyarrow.parquet as pq
+    import polars as pl
 
-    return pq.read_table(path).to_pylist()
+    return pl.read_parquet(path).to_dicts()
 
 
 def _blank_csf_signal_ready_freeze_draft() -> dict[str, Any]:

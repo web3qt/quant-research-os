@@ -10,13 +10,6 @@ from typing import Any, Iterator
 
 import yaml
 
-# pyarrow 在 sandbox 环境下会触发 sysctlbyname IOError 警告（读取 CPU 缓存信息），
-# 不影响功能但严重干扰日志判断。在首次 import 前抑制。
-warnings.filterwarnings("ignore", message=".*sysctlbyname.*")
-
-# unique_key 检查的最大行数上限。超过此行数跳过去重检查，避免在受限环境下卡死。
-PARQUET_UNIQUE_KEY_MAX_ROWS = 5_000_000
-
 # 单次 parquet 检查的超时秒数。
 PARQUET_CHECK_TIMEOUT_SECONDS = 120
 
@@ -101,44 +94,34 @@ def read_tabular_rows(path: Path, fmt: str) -> list[dict[str, Any]]:
         with path.open("r", encoding="utf-8", newline="") as handle:
             return list(csv.DictReader(handle))
     if fmt == "parquet":
-        import pyarrow.parquet as pq
+        import polars as pl
 
-        return pq.read_table(path).to_pylist()
+        return pl.read_parquet(path).to_dicts()
     raise ValueError(f"unsupported tabular artifact format: {fmt}")
 
 
 def parquet_row_count(path: Path) -> int:
-    import pyarrow.parquet as pq
+    import polars as pl
 
-    return pq.ParquetFile(path).metadata.num_rows
-
-
-def parquet_iter_rows(path: Path, *, columns: list[str] | None = None, batch_size: int = 65536) -> Iterator[dict[str, Any]]:
-    import pyarrow.parquet as pq
-
-    parquet_file = pq.ParquetFile(path)
-    for batch in parquet_file.iter_batches(columns=columns, batch_size=batch_size):
-        yield from batch.to_pylist()
+    return pl.scan_parquet(path).select(pl.len()).collect().item()
 
 
-def parquet_find_duplicate_key(path: Path, *, fields: list[str], batch_size: int = 65536, max_rows: int = PARQUET_UNIQUE_KEY_MAX_ROWS) -> tuple[Any, ...] | None:
-    import pyarrow.parquet as pq
+def parquet_iter_rows(path: Path, *, columns: list[str] | None = None) -> Iterator[dict[str, Any]]:
+    import polars as pl
 
-    parquet_file = pq.ParquetFile(path)
-    total_rows = parquet_file.metadata.num_rows
-    if total_rows > max_rows:
-        # 行数超过上限，只检查前 max_rows 行；跳过的部分在 finding 里不报
-        return None
+    lf = pl.scan_parquet(path)
+    if columns:
+        lf = lf.select(columns)
+    yield from lf.collect().iter_rows(named=True)
 
-    # 用 Python set 替代 SQLite：无 JSON 序列化、无磁盘 I/O、纯内存 set 查找
-    seen: set[tuple[Any, ...]] = set()
-    for batch in parquet_file.iter_batches(columns=fields, batch_size=batch_size):
-        cols = [batch.column(f).to_pylist() for f in fields]
-        for row_idx in range(len(cols[0])):
-            key = tuple(col[row_idx] for col in cols)
-            if key in seen:
-                return key
-            seen.add(key)
+
+def parquet_find_duplicate_key(path: Path, *, fields: list[str]) -> tuple[Any, ...] | None:
+    import polars as pl
+
+    df = pl.scan_parquet(path).select(fields).collect()
+    dup_mask = df.is_duplicated()
+    if dup_mask.any():
+        return tuple(df.filter(dup_mask).row(0))
     return None
 
 
@@ -286,13 +269,9 @@ def _read_metric_values(author_formal_dir: Path, check: dict[str, Any]) -> list[
         return [row[field] for row in rows if field in row]
 
     if fmt == "parquet":
-        import pyarrow.parquet as pq
+        import polars as pl
 
-        # 流式读取，避免一次性加载大文件到内存
-        values: list[Any] = []
-        for batch in pq.ParquetFile(artifact_path).iter_batches(columns=[field], batch_size=65536):
-            values.extend(batch.column(field).to_pylist())
-        return values
+        return pl.scan_parquet(artifact_path).select(field).collect().to_series().to_list()
 
     raise ValueError(f"unsupported metric artifact format: {fmt}")
 

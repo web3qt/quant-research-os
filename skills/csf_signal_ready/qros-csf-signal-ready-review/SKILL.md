@@ -86,6 +86,14 @@ description: Codex review skill for CSF Signal Ready stage verification.
 - eligibility 与 factor computation 混成一团
 - test 才知道的 quantile / cutoff 被偷写回 signal
 
+## 审查数据引擎
+
+- 审查 parquet 产物时，应使用 Polars (`pl.scan_parquet` / `pl.read_parquet`) 进行数据验证
+- 行数统计使用 `pl.scan_parquet(path).select(pl.len()).collect().item()`
+- 唯一键检查使用 `df.is_duplicated()` 向量化操作
+- 字段非空检查使用 Polars 表达式（`pl.col(...).is_null()` / `pl.col(...).is_not_null()`）
+- 不得使用 pyarrow 或 pandas 替代 Polars 进行上述检查
+
 ## 审查清单
 
 阶段检查项：

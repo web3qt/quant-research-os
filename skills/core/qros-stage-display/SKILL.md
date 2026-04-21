@@ -111,6 +111,11 @@ description: Public, user-triggered display guidance for mandate + CSF stages. U
 - 不是“只有图表，文字只是脚注”
 - 也不是“长文报告里偶尔插一张图”
 
+### Data Engine
+- 默认数据引擎：Polars
+- parquet 读写一律使用 `pl.read_parquet` / `pl.scan_parquet`
+- 数据聚合、排序、去重优先使用 Polars 表达式而非 Python 循环
+
 ### Default Chart Strategy
 - 默认允许正式图表库
 - 图表是主角之一，而不是只做静态附图

@@ -44,6 +44,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ## Mandatory Discipline
 
+- 生成 `factor_panel.parquet`、`factor_coverage_report.parquet`、`factor_group_context.parquet` 等机器产物时，必须使用 Polars (`pl.DataFrame.write_parquet`)，不得使用 pyarrow 或 pandas
 - 只能消费已经通过 review closure 的 csf_data_ready 产物
 - 只能冻结 `research_route = cross_sectional_factor` 的因子定义
 - 必须显式冻结 `factor_role`、`factor_structure`、`portfolio_expression` 与 `neutralization_policy`
