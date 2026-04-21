@@ -130,7 +130,7 @@ Codex 安装副本在本机：
 目标是把 review 的职责边界收得更硬：
 
 - `author` 会话只负责 freeze / build / author 修复
-- `review` 会话由人显式在独立 session 中发起
+- `review` lane 由人显式进入对应 `qros-*-review` skill 发起
 - `author` resume 也由人显式发起
 - runtime 不再替主 author 会话偷偷编排 reviewer，而是只负责强记录当前 review state
 
@@ -141,7 +141,7 @@ Codex 安装副本在本机：
 - lane 更清楚：author 与 review 不再混在一个线程里来回切换
 - 独立性更自然：review 不再依赖“主线程内部再 spawn 一个 reviewer”来模拟独立审查
 - 人的控制感更强：是否发起 review、是否回 author lane，都是显式治理动作
-- 调试更简单：review 出问题时，看 review session 即可，不必在 author 主线程里扒开混合日志
+- 调试更简单：review 出问题时，看 spawned reviewer cycle 即可，不必在 author 主线程里扒开混合日志
 
 ### 不是“runtime 只记录当前阶段”
 
@@ -169,8 +169,8 @@ Codex 安装副本在本机：
 
 | 动作 | 谁显式发起 | runtime 负责什么 | 不允许什么 |
 | --- | --- | --- | --- |
-| 进入 review | 人显式发起独立 review session | 生成 request、绑定 active cycle、拒绝并发 review | author 线程静默自己切进 review |
-| reviewer 执行审查 | reviewer session | 校验 request / receipt / result / audit / closure 协议 | reviewer 自己改 author outputs |
+| 进入 review | 人显式进入对应 `qros-*-review` | 生成 request、绑定 active cycle、拒绝并发 review | author 线程静默自己切进 review |
+| reviewer 执行审查 | spawned reviewer 子代理 | 校验 request / receipt / result / audit / closure 协议 | reviewer 自己改 author outputs |
 | review 结束后回 author lane | 人显式恢复 author session | 给出 `awaiting_author_fix`、`resume_hint`、stale 判定 | runtime 自动无声切回 author |
 | review 通过后进入下游 | 人显式确认 next-stage handoff | closure 判真、推进 stage state | 旧 review result 在 author outputs 更新后继续被视为有效 |
 
@@ -179,9 +179,9 @@ Codex 安装副本在本机：
 如果按这个方向收口，一个最小且强约束的模型应该是：
 
 1. `qros-session` 只推进到 `*_review_confirmation_pending`
-2. 人在独立 session 中显式启动 `qros-*-review`
-3. review session 首步向 runtime 注册 active review cycle
-4. review session 完成 raw findings / deterministic closure
+2. 人在当前会话中显式启动 `qros-*-review`
+3. 该 review skill 用 `spawn_agent` 拉起 reviewer 子代理，并向 runtime 注册 active review cycle
+4. reviewer 子代理完成 raw findings，随后当前会话完成 deterministic closure
 5. author 会话只重新读取 runtime 状态，不负责 reviewer 编排
 
 ### 这里的关键原则

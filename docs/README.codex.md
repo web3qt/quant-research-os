@@ -65,7 +65,7 @@ If you need deterministic runtime debugging or manual recovery, use the project-
 
 ```bash
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-./.qros/bin/qros-start-review --reviewer-id reviewer-agent --reviewer-session-id reviewer-session
+./.qros/bin/qros-start-spawned-review --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --spawned-agent-id reviewer-child-agent
 ./.qros/bin/qros-review
 ```
 

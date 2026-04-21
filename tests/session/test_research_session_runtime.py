@@ -2440,7 +2440,8 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
     assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
-    assert "./.qros/bin/qros-start-review" in status.next_action
+    assert "qros-mandate-review" in status.next_action
+    assert "./.qros/bin/qros-start-spawned-review" in status.next_action
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(

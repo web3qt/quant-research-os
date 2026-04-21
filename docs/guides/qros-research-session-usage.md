@@ -81,7 +81,7 @@ Canonical program tree：
 
 每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 program hash、entrypoint、authoring session 和 output refs 记账。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。当前最先启用 deterministic review preflight 的是 `mandate_review_confirmation_pending`：如果 author outputs 连 `qros-review-preflight` 都过不了，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。新的治理方向下，review 不再由 author 主会话自动编排，而是由**人显式发起的独立 review session**执行；用户在新会话里直接运行对应的 `qros-*-review` 即可，该 review session 内部应先注册 active review cycle。review session 之后只需运行 `./.qros/bin/qros-review`；它会在内部完成 raw findings 规范化、write-scope audit 和 closure。
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。当前最先启用 deterministic review preflight 的是 `mandate_review_confirmation_pending`：如果 author outputs 连 `qros-review-preflight` 都过不了，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。新的治理方向下，review 不再要求你手动再开一个 Codex review session；显式动作改成进入对应的 `qros-*-review`。该 stage-specific review skill 会在**当前会话**里用 `spawn_agent` 拉起 reviewer 子代理，再调用 `./.qros/bin/qros-start-spawned-review` 注册 active review cycle，并在 reviewer 子代理完成后运行 `./.qros/bin/qros-review` 做 raw findings 规范化、write-scope audit 和 closure。
 
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 
@@ -117,7 +117,7 @@ Canonical program tree：
 2. 再阅读 `review/result/review_findings.yaml`
 3. 回 author lane 修复允许范围内的问题
 4. 刷新 `author/formal/*` 与 review request scope
-5. 重新起一个新的 reviewer cycle
+5. 显式重新进入对应 `qros-*-review`，起一个新的 reviewer cycle
 
 如果 reviewer 只写了：
 
@@ -311,7 +311,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 7. required program dir 不存在 -> 当前 stage 保持 author/build 态，但 `stage_status = awaiting_stage_program`
 8. program dir 存在但 `stage_program.yaml`、entrypoint 或 authored_by 合同不合法 -> `stage_status = awaiting_program_validation`
 9. program contract 合法但程序执行失败、provenance 缺失或 required outputs 不成立 -> `awaiting_program_execution` / 相应 blocking reason
-10. stage artifacts 与 `program_execution_manifest.json` 都成立，但 review 还没开始 -> `<stage>_review_confirmation_pending`，并要求人显式开独立 review session
+10. stage artifacts 与 `program_execution_manifest.json` 都成立，但 review 还没开始 -> `<stage>_review_confirmation_pending`，并要求人显式进入对应 `qros-*-review`
 11. review 已开始但 closure 还缺失 -> `<stage>_review`，review substate 会落在 `awaiting_adversarial_review`、`awaiting_author_fix` 或 `awaiting_review_closure`
 12. 任一非终态 stage 的 review closure exists 但 downstream handoff 未确认 -> `<stage>_next_stage_confirmation_pending`
 13. 对非终态 stage，收到 `CONFIRM_NEXT_STAGE` 后 -> 下游 `<next_stage>_confirmation_pending`
@@ -483,12 +483,12 @@ session runtime 会按下面这个顺序检查磁盘状态：
 
 在 review 阶段，session 现在会显式区分几类状态：
 
-- `awaiting_adversarial_review`：当前 stage 还没有 active review cycle，或 review session 尚未写出 review 结果
-- `awaiting_spawned_reviewer_completion`：active review cycle 已注册，当前只等待该 review session 落 `review/result/*`
+- `awaiting_adversarial_review`：当前 stage 还没有 active review cycle，或 reviewer 子代理尚未写出 review 结果
+- `awaiting_spawned_reviewer_completion`：active review cycle 已注册，当前只等待该 reviewer 子代理落 `review/result/*`
 - `awaiting_reviewer_write_scope_audit`：closure-ready result 已存在，但 deterministic closer 还没完成 audit / closure
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须显式回 author lane 修复
 - `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closer 写正式 closure artifacts
 
-也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。author session 与 review session 之间的切换也必须是显式的，不再由 author 主会话自动编排。
+也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。author lane 与 reviewer 子代理之间的切换也必须是显式的，不再由 author 主会话静默自审。
 
 在这层 review 闭环之上，QROS 还会为 **future-only** 的 institutional learning 写出治理候选信号；具体 contract 见上面的 `Governance-candidate lane` 小节。

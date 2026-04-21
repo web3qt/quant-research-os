@@ -149,6 +149,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 - 保持 diff 小、可审查、可回退。
 - 复用仓库现有术语，不要为同一个 stage、artifact 或 contract 再发明第二套命名。
 - 没有明确理由不要新增依赖。
+- 未经用户明确同意，不得提交、合并或以任何方式把代码送入 `main` / `master`。
 - 默认使用中文注释；尤其是 `runtime/tools/`、`runtime/scripts/`、`skills/` 里涉及各研究阶段实现、runtime gate、review/failure routing 的代码，新增注释应优先写成清晰、简短、面向维护者的中文说明。
 - 当修改影响用户工作流、artifact contract 或 stage 语义时，优先同时更新测试和文档。
 

@@ -20,23 +20,27 @@ description: Codex review skill for Test Evidence stage verification.
 - `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
 - 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
 
-## 独立 Review Session 要求
+## 独立 reviewer 子代理要求
 
-- 本 skill 必须在独立 review session 中执行，不得在当前 author 会话里自动编排 reviewer
-- 进入本 skill 后，第一步应在当前 review session **内部**运行 `./.qros/bin/qros-start-review`
-- `qros-start-review` 会注册 active review cycle，并写出 `review/request/*`
-- review session 只允许读取 `review/request/*` 与 `author/formal/*`
-- review session 只允许写入 `review/result/*`
-- review session 不得修改 `author/formal/*`
-- reviewer 正常只写 `reviewer_findings.raw.yaml`；`./.qros/bin/qros-review` 负责 canonical result、audit 与 closure
+- 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个 Codex review session
+- 进入本 skill 后，必须在**当前会话**里用 `spawn_agent` 拉起独立 reviewer 子代理，且 `fork_context` 必须是 `false`
+- 先用一个最小初始化消息创建 reviewer 子代理，要求它先等待 binding / handoff，不要在 receipt 写出前擅自写文件
+- reviewer 子代理创建后，主线程必须运行 `./.qros/bin/qros-start-spawned-review --spawned-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id>`
+- `qros-start-spawned-review` 负责注册 active review cycle，并写出 `review/request/*` 与 `spawned_reviewer_receipt.yaml`
+- 主线程随后必须用 `send_input` 把 request / handoff manifest / stage-specific gate 交给 reviewer 子代理
+- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
+- reviewer 子代理不得修改 `author/formal/*`
+- reviewer 子代理完成后，主线程必须运行 `./.qros/bin/qros-review`；它负责 canonical result、audit 与 closure
 
-## Author Lane 交接前提
+## 主线程交接前提
 
-- author lane 在发起 review 之前必须先完成 `review-ready` 自查，不要把 reviewer 当成第一轮 artifact completeness checker
-- author lane 交给 review session 的 scope 必须是**当前** author outputs，而不是旧 request、旧 digest 或修复前的 stale artifacts
+- 主线程在发起 review 之前必须先完成 `review-ready` 自查，不要把 reviewer 当成第一轮 artifact completeness checker
+- 主线程交给 reviewer 子代理的 scope 必须是**当前** author outputs，而不是旧 request、旧 digest 或修复前的 stale artifacts
 - handoff 必须明确这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设，而不是盲交 reviewer
-- 如果上一轮 verdict 是 `FIX_REQUIRED`，author lane 必须先读取 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，只在 author lane 修复，再由人显式重新启动 review session
-- 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替 author lane 猜测或补齐上下文
+- handoff 必须与 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths` 一致
+- 如果上一轮 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
+- 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替主线程猜测或补齐上下文
 
 ## 共用输入
 
@@ -149,7 +153,11 @@ description: Codex review skill for Test Evidence stage verification.
 
 ## 执行顺序
 
-1. 在独立 review session 中，先由本 skill 内部运行 `./.qros/bin/qros-start-review`
-2. 再按共享审查协议完成 shared review loop
-3. 再用本 skill 的 formal gate、checklist 和 audit-only 规则做 stage-specific 判定
-4. 若 verdict 需要 rollback 或 downstream 解释，以本文件的 stage-specific 规则为准
+1. 在当前会话中完成 `review-ready` 自查，并确认 handoff 与 launcher 字段一致
+2. 用 `spawn_agent` 创建独立 reviewer 子代理
+3. 运行 `./.qros/bin/qros-start-spawned-review` 写出 active request / handoff / receipt
+4. 用 `send_input` 向 reviewer 子代理交付 request / handoff 与本 stage 的 formal gate
+5. 等待 reviewer 子代理只写 `review/result/reviewer_findings.raw.yaml`
+6. 运行 `./.qros/bin/qros-review` 完成 canonical result、audit 与 closure
+7. 再用本 skill 的 formal gate、checklist 和 audit-only 规则解释 stage-specific verdict
+8. 若 verdict 需要 rollback 或 downstream 解释，以本文件的 stage-specific 规则为准

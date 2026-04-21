@@ -1959,7 +1959,7 @@ def _why_this_skill(
                 f"so {current_skill} is the active author-fix skill before review entry."
             )
         return (
-            f"Current stage {current_stage} is waiting for a separate explicit review session to start, "
+            f"Current stage {current_stage} is waiting for an explicit stage-specific review launch in the current session, "
             f"so {current_skill} is the fixed review skill for that next lane."
         )
     if current_stage.endswith("_review"):
@@ -1983,7 +1983,7 @@ def _blocking_reason(
     if current_stage == "idea_intake":
         return "Idea intake inputs or admission evidence are still incomplete."
     if current_stage.endswith("_review_confirmation_pending"):
-        return f"{_stage_base_name(current_stage)} review has not been started by an explicit review session yet."
+        return f"{_stage_base_name(current_stage)} review has not been started by an explicit qros-*-review launch yet."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         next_stage_base = NEXT_STAGE_BY_BASE.get(_stage_base_name(current_stage))
         if next_stage_base is None:
@@ -2020,7 +2020,7 @@ def _resume_hint(
                 f"then rerun qros-session --lineage-id {lineage_id}."
             )
         return (
-            f"Open a separate review session, run ./.qros/bin/qros-start-review for {_stage_base_name(current_stage)}, "
+            f"Enter {current_skill}, let it use spawn_agent and ./.qros/bin/qros-start-spawned-review for {_stage_base_name(current_stage)}, "
             f"then rerun qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review"):
@@ -2378,7 +2378,7 @@ def _review_substate(
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
-            f"Open a separate review session, run ./.qros/bin/qros-start-review for {stage_base}, then execute {review_skill}.",
+            f"Enter {review_skill} in the current session; that review skill should use spawn_agent, run ./.qros/bin/qros-start-spawned-review for {stage_base}, and then wait for reviewer output.",
         )
     if review_receipt is None and proof_chain_error is not None:
         if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -2413,8 +2413,8 @@ def _review_substate(
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
-            f"{stage_base} is waiting for an explicit review session to register {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin.",
-            f"Open a separate review session, run ./.qros/bin/qros-start-review, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"{stage_base} is waiting for a spawned reviewer child to register {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin.",
+            f"Enter {review_skill} in the current session, spawn the reviewer child, run ./.qros/bin/qros-start-spawned-review, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
@@ -2428,7 +2428,7 @@ def _review_substate(
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, then explicitly resume {author_skill} in a separate author session, refresh author/formal outputs, and later start a fresh review session with {review_skill} (fresh reviewer cycle).",
+            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh spawned-agent reviewer cycle.",
         )
     if review_audit is None:
         return (
@@ -2442,14 +2442,14 @@ def _review_substate(
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_FAILED",
             f"{stage_base} has a reviewer write-scope audit problem: {audit_error}",
-            f"Discard the invalid review cycle, explicitly resume the author lane if needed, then start a fresh review session.",
+            f"Discard the invalid review cycle, explicitly resume the author lane if needed, then re-enter {review_skill} for a fresh reviewer child cycle.",
         )
     if review_audit["audit_status"] != "PASS":
         return (
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_FAILED",
             f"{stage_base} reviewer write-scope audit did not pass.",
-            f"Inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME}, discard the invalid review cycle, and restart review from a fresh explicit review session.",
+            f"Inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME}, discard the invalid review cycle, and restart review by re-entering {review_skill}.",
         )
     return (
         "awaiting_review_closure",
@@ -3215,6 +3215,7 @@ def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
 
 def _review_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_dir = _stage_dir_for_session_stage(lineage_root, current_stage)
+    review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
     if stage_dir is None:
         return "REVIEW_PENDING", "Complete the review workflow."
     request_exists = _review_request_path(stage_dir).exists()
@@ -3226,7 +3227,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            "Open a separate review session and run ./.qros/bin/qros-start-review to register the active review cycle.",
+            f"Enter {review_skill} in the current session; it should spawn a reviewer child and run ./.qros/bin/qros-start-spawned-review to register the active review cycle.",
         )
     if not receipt_exists and proof_chain_error is not None:
         if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -3270,7 +3271,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (
             "AUTHOR_FIX_REQUIRED",
-            "Read review/result/review_findings.yaml and adversarial_review_result.yaml, explicitly resume the author lane, refresh author/formal outputs, then start a fresh review session (fresh reviewer cycle).",
+            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, explicitly resume the author lane, refresh author/formal outputs, then re-enter {review_skill} for a fresh reviewer cycle.",
         )
     if review_audit is None:
         return (
@@ -3324,7 +3325,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
         return (
             "REVIEW_CONFIRMATION_PENDING",
-            f"Open a separate review session and run {review_skill}. That review session should register the active cycle before reviewing.",
+            f"Enter {review_skill} in the current session. That stage-specific review skill should use spawn_agent, run ./.qros/bin/qros-start-spawned-review, and then complete review with ./.qros/bin/qros-review.",
         )
 
 

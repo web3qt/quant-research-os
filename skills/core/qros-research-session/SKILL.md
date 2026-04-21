@@ -148,27 +148,27 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 
 ## Review Discipline
 
-- author 主会话不得自动编排 reviewer；review 必须由人显式在独立 review session 中发起
+- author 主会话不得自动编排 reviewer；review 必须由人显式进入对应的 `qros-*-review` skill 发起
 - 当前主会话只推进到 `*_review_confirmation_pending`，并在 `review-ready` 自查通过后停住
-- 独立 review session 启动时，先运行 `./.qros/bin/qros-start-review`
-- `qros-start-review` 负责注册 active review cycle，并写出 `review/request/*`
-- review session 只允许读取 `review/request/*` 与 `author/formal/*`
-- review session 只允许写入 `review/result/*`
-- review session 不得修改 `author/formal/*`
-- review session 不得自己撰写 `review/result/adversarial_review_result.yaml` 或 `review/result/review_findings.yaml`
+- 进入 stage-specific review skill 后，当前会话必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
+- 当前会话随后必须运行 `./.qros/bin/qros-start-spawned-review` 注册 active review cycle，并写出 `review/request/*`
+- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
+- reviewer 子代理不得修改 `author/formal/*`
+- 当前主线程不得自己撰写 `review/result/adversarial_review_result.yaml` 或 `review/result/review_findings.yaml`
 - reviewer 正常只写 `reviewer_findings.raw.yaml`
 - `./.qros/bin/qros-review` 是唯一 deterministic closer；它负责 canonical result、write-scope audit 和 closure
 
 ## Main-Agent Review Loop
 
-- 在 author lane 交给独立 review session 之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
+- 在 author lane 交给独立 reviewer 子代理之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
 - `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
 - 如需要 deterministic 预检，优先运行 `runtime/bin/qros-review-preflight`
 - 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
 - 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
-- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后由人显式发起新的 review session
+- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后由人显式重新进入对应 `qros-*-review` skill
 - author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs
 
 ## Working Rules
@@ -200,7 +200,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 24. Drive mandate completion with the same discipline as `qros-mandate-author`
 25. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
 26. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，不得自动进入 `mandate_review`
-27. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由人显式开独立 review session
+27. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由人显式进入对应 `qros-*-review` skill
 28. Confirm `extraction_contract`
 29. Confirm `quality_semantics`
 30. Confirm `universe_admission`
@@ -214,7 +214,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 38. Drive data_ready completion with the same discipline as `qros-data-ready-author`
 39. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
 40. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，不得自动进入 `data_ready_review`
-41. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再由人显式发起新的 review session
+41. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再由人显式重新进入对应 `qros-*-review` skill
 42. Confirm `signal_expression`
 43. Confirm `param_identity`
 44. Confirm `time_semantics`

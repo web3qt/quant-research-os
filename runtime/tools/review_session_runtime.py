@@ -71,14 +71,12 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
     )
 
 
-def start_review_session(
+def _prepare_review_cycle(
     *,
-    cwd: Path | None = None,
-    explicit_context: dict[str, Any] | None = None,
+    cwd: Path | None,
+    explicit_context: dict[str, Any] | None,
     reviewer_identity: str,
     reviewer_session_id: str,
-    launcher_session_id: str,
-    launcher_thread_id: str,
 ) -> dict[str, Any]:
     context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
     stage_dir = Path(context["stage_dir"]).resolve()
@@ -105,7 +103,8 @@ def start_review_session(
     if not isinstance(author_session_id, str) or not author_session_id.strip():
         raise ValueError(f"{stage_dir}: authoring_session_id is missing from provenance")
 
-    archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=_current_author_digest(stage_dir, spec))
+    current_digest = _current_author_digest(stage_dir, spec)
+    archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=current_digest)
 
     request_payload = ensure_adversarial_review_request(
         stage_dir,
@@ -125,14 +124,96 @@ def start_review_session(
         review_state="review_in_progress",
         active_review_cycle_id=request_payload["review_cycle_id"],
         review_requested_at=datetime.now(timezone.utc).isoformat(),
-        review_bound_author_digest=_current_author_digest(stage_dir, spec),
+        review_bound_author_digest=current_digest,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         last_review_verdict=None,
         closure_written_at=None,
     )
+    return {
+        "stage_dir": stage_dir,
+        "lineage_root": lineage_root,
+        "current_stage": current_stage,
+        "spec": spec,
+        "archived_paths": archived_paths,
+        "request_payload": request_payload,
+        "state_payload": state_payload,
+    }
+
+
+def _build_review_cycle_payload(
+    *,
+    prepared: dict[str, Any],
+    receipt_payload: dict[str, Any],
+) -> dict[str, Any]:
+    stage_dir = prepared["stage_dir"]
+    lineage_root = prepared["lineage_root"]
+    spec = prepared["spec"]
+    request_payload = prepared["request_payload"]
+    return {
+        "lineage_id": lineage_root.name,
+        "stage": spec.stage_id,
+        "stage_dir": str(stage_dir),
+        "current_stage": prepared["current_stage"],
+        "review_cycle_id": request_payload["review_cycle_id"],
+        "request_path": str((stage_dir / "review" / "request" / "adversarial_review_request.yaml").relative_to(lineage_root)),
+        "receipt_path": str((stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").relative_to(lineage_root)),
+        "archived_paths": prepared["archived_paths"],
+        "review_runtime_state": prepared["state_payload"],
+        "request_payload": request_payload,
+        "receipt_payload": receipt_payload,
+    }
+
+
+def start_spawned_review_cycle(
+    *,
+    cwd: Path | None = None,
+    explicit_context: dict[str, Any] | None = None,
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    launcher_session_id: str,
+    launcher_thread_id: str,
+    spawned_agent_id: str,
+) -> dict[str, Any]:
+    # 当前 launcher 会话只负责注册 spawned-agent review cycle，不直接产出 reviewer judgement。
+    prepared = _prepare_review_cycle(
+        cwd=cwd,
+        explicit_context=explicit_context,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+    )
     receipt_payload = issue_spawned_reviewer_receipt(
-        stage_dir,
+        prepared["stage_dir"],
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        launcher_session_id=launcher_session_id,
+        launcher_thread_id=launcher_thread_id,
+        spawned_agent_id=spawned_agent_id,
+        spawn_mode="spawned_agent",
+    )
+    return _build_review_cycle_payload(
+        prepared=prepared,
+        receipt_payload=receipt_payload,
+    )
+
+
+def start_review_session(
+    *,
+    cwd: Path | None = None,
+    explicit_context: dict[str, Any] | None = None,
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    launcher_session_id: str,
+    launcher_thread_id: str,
+) -> dict[str, Any]:
+    prepared = _prepare_review_cycle(
+        cwd=cwd,
+        explicit_context=explicit_context,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+    )
+    receipt_payload = issue_spawned_reviewer_receipt(
+        prepared["stage_dir"],
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,
@@ -140,16 +221,7 @@ def start_review_session(
         spawned_agent_id=reviewer_session_id,
         spawn_mode="review_session",
     )
-    return {
-        "lineage_id": lineage_root.name,
-        "stage": spec.stage_id,
-        "stage_dir": str(stage_dir),
-        "current_stage": current_stage,
-        "review_cycle_id": request_payload["review_cycle_id"],
-        "request_path": str((stage_dir / "review" / "request" / "adversarial_review_request.yaml").relative_to(lineage_root)),
-        "receipt_path": str((stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").relative_to(lineage_root)),
-        "archived_paths": archived_paths,
-        "review_runtime_state": state_payload,
-        "request_payload": request_payload,
-        "receipt_payload": receipt_payload,
-    }
+    return _build_review_cycle_payload(
+        prepared=prepared,
+        receipt_payload=receipt_payload,
+    )
