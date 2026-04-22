@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
+from runtime.tools.review_skillgen.artifact_realism import check_machine_artifact_realism
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_engine import _split_review_checks, _split_structural_checks
 from runtime.tools.review_skillgen.stage_content_gate import (
@@ -14,11 +15,17 @@ from runtime.tools.review_skillgen.stage_content_gate import (
     check_structural_gates,
 )
 from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
+from runtime.tools.lineage_program_runtime import StageProgramRuntimeError, validate_stage_program
+from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 
 
 ROOT = Path(__file__).resolve().parents[3]
 GATES_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
 CHECKLIST_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
+
+_STAGE_PROGRAM_SPEC_ALIASES = {
+    "train_calibration": "train_freeze",
+}
 
 
 def run_review_preflight(
@@ -50,6 +57,7 @@ def run_review_preflight(
     stage_content_review_checks, upstream_binding_review_checks = _split_review_checks(stage_checks.get("checks", []))
 
     content_findings: list[str] = []
+    content_findings.extend(_validate_stage_program_for_review(stage, lineage_root))
     content_findings.extend(
         f"Missing required output: {item}"
         for item in check_required_outputs(author_formal_dir, stage_contract.get("required_outputs", []))
@@ -59,6 +67,7 @@ def run_review_preflight(
     content_findings.extend(content_blocking)
     content_findings.extend(check_structural_gates(author_formal_dir, stage_content_checks))
     content_findings.extend(check_metric_gates(author_formal_dir, stage_contract.get("metric_gate_checks", [])))
+    content_findings.extend(check_machine_artifact_realism(author_formal_dir, stage_contract.get("machine_artifacts", [])))
 
     upstream_findings = validate_upstream_bindings(
         stage=stage,
@@ -76,3 +85,15 @@ def run_review_preflight(
         "upstream_binding_findings": upstream_findings,
         "status": "PASS" if not content_findings and not upstream_findings else "FAIL",
     }
+
+
+def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[str]:
+    spec_key = _STAGE_PROGRAM_SPEC_ALIASES.get(stage, stage)
+    spec = STAGE_PROGRAM_SPECS.get(spec_key)
+    if spec is None:
+        return []
+    try:
+        validate_stage_program(lineage_root, str(spec["stage_id"]), str(spec["route"]))
+    except StageProgramRuntimeError as exc:
+        return [f"{exc.reason_code}: {exc.message}"]
+    return []

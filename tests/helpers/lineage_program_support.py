@@ -3,19 +3,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS, materialize_stage_program
+from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
+
+from tests.helpers.fixture_stage_program_support import materialize_fixture_stage_program
 
 
 def ensure_stage_program(lineage_root: Path, stage_key: str) -> Path:
-    return materialize_stage_program(
+    return materialize_fixture_stage_program(
         lineage_root,
         stage_key,
         authored_by_agent_id="test-agent",
         authored_by_agent_role="executor",
         authoring_session_id="test-session",
     )
-
-
 
 def write_fake_stage_provenance(lineage_root: Path, stage_key: str) -> Path:
     spec = STAGE_PROGRAM_SPECS[stage_key]

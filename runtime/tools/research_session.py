@@ -58,7 +58,6 @@ from runtime.tools.lineage_program_runtime import (
     invoke_stage_if_admitted,
     load_provenance_manifest,
     stage_outputs_complete,
-    validate_stage_program,
 )
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
@@ -90,7 +89,6 @@ from runtime.tools.signal_ready_runtime import (
     SIGNAL_READY_FREEZE_GROUP_ORDER,
     scaffold_signal_ready,
 )
-from runtime.tools.stage_program_scaffold import materialize_stage_program
 from runtime.tools.backtest_runtime import (
     BACKTEST_READY_DRAFT_FILE,
     BACKTEST_READY_GROUP_ORDER,
@@ -899,12 +897,7 @@ def ensure_data_ready_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_data_ready_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "data_ready_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "data_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "data_ready_author")
 
 
 def ensure_csf_data_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -923,23 +916,7 @@ def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
         return []
     if next_csf_data_ready_freeze_group(lineage_root) is not None:
         return []
-    inspection = inspect_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
-    if inspection.error_code == "STAGE_PROGRAM_MISSING":
-        try:
-            materialize_stage_program(
-                lineage_root,
-                "csf_data_ready",
-                authored_by_agent_id="codex",
-                authored_by_agent_role="executor",
-                authoring_session_id="auto-csf-data-ready-program",
-            )
-            validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
-        except StageProgramRuntimeError:
-            return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_data_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_data_ready_author")
 
 
 def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -954,12 +931,7 @@ def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "signal_ready_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "signal_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "signal_ready_author")
 
 
 def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -974,12 +946,7 @@ def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_csf_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "csf_signal_ready_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_signal_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_signal_ready_author")
 
 
 def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -994,12 +961,7 @@ def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "train_freeze_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "train_freeze_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "train_freeze_author")
 
 
 def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -1014,12 +976,7 @@ def ensure_csf_train_freeze_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_csf_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "csf_train_freeze_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_train_freeze_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_train_freeze_author")
 
 
 def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
@@ -1034,12 +991,7 @@ def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "test_evidence_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "test_evidence_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "test_evidence_author")
 
 
 def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
@@ -1054,12 +1006,7 @@ def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_csf_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "csf_test_evidence_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_test_evidence_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_test_evidence_author")
 
 
 def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -1074,12 +1021,7 @@ def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "backtest_ready_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "backtest_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "backtest_ready_author")
 
 
 def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -1094,12 +1036,7 @@ def ensure_csf_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_csf_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "csf_backtest_ready_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_backtest_ready_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_backtest_ready_author")
 
 
 def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
@@ -1114,12 +1051,7 @@ def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "holdout_validation_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "holdout_validation_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "holdout_validation_author")
 
 
 def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
@@ -1134,12 +1066,7 @@ def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
 
 
 def build_csf_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
-    if detect_session_stage(lineage_root) != "csf_holdout_validation_author":
-        return []
-    try:
-        return _invoke_program_stage(lineage_root, "csf_holdout_validation_author")
-    except StageProgramRuntimeError:
-        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "csf_holdout_validation_author")
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -1832,6 +1759,7 @@ def summarize_session_status(
         current_stage=current_stage,
         current_skill=resolved_current_skill,
         requires_failure_handling=requires_failure_handling,
+        required_program_dir=required_program_dir,
         runtime_stage_status=stage_status,
     )
     review_state_snapshot = _review_state_snapshot(
@@ -2000,18 +1928,46 @@ def _blocking_reason(
     return None
 
 
+def _post_mandate_program_comment_requirement(current_stage: SessionStage) -> str:
+    if _stage_base_name(current_stage) == "mandate":
+        return ""
+    return " and include Chinese comments for key generation logic"
+
+
 def _resume_hint(
     *,
     lineage_id: str,
     current_stage: SessionStage,
     current_skill: str,
     requires_failure_handling: bool,
+    required_program_dir: str | None = None,
     runtime_stage_status: str | None = None,
 ) -> str:
     if requires_failure_handling:
         return (
             f"Invoke {current_skill} for lineage {lineage_id} in the same research repo, "
             f"then rerun qros-session --lineage-id {lineage_id}."
+        )
+    if runtime_stage_status == "awaiting_stage_program":
+        if _stage_base_name(current_stage) == "mandate":
+            if required_program_dir is not None:
+                return (
+                    f"Run {current_skill} to author the lineage-local stage program under "
+                    f"{required_program_dir}, then rerun qros-session --lineage-id {lineage_id}."
+                )
+            return (
+                f"Run {current_skill} to author the lineage-local stage program, "
+                f"then rerun qros-session --lineage-id {lineage_id}."
+            )
+        comment_requirement = _post_mandate_program_comment_requirement(current_stage)
+        if required_program_dir is not None:
+            return (
+                f"Run {current_skill}; Codex must explicitly author the lineage-local stage program under "
+                f"{required_program_dir}{comment_requirement}, then rerun qros-session --lineage-id {lineage_id}."
+            )
+        return (
+            f"Run {current_skill}; Codex must explicitly author the lineage-local stage program"
+            f"{comment_requirement}, then rerun qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review_confirmation_pending"):
         if runtime_stage_status == "awaiting_author_fix":
@@ -2173,6 +2129,8 @@ def _review_entry_preflight_payload(
     if not all((author_formal_dir / name).exists() for name in spec.required_outputs):
         return None
     try:
+        # 当前 rollout 只在 mandate review-entry 启用 deterministic preflight；
+        # 继续保持“required outputs 已齐才触发”的既有语义，避免把半成品误报成 reviewer-lane 失败。
         return run_review_preflight(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -2350,6 +2308,16 @@ def _invoke_program_stage(lineage_root: Path, current_stage: SessionStage) -> li
     for ref in result.output_refs:
         written.add(ref)
     return sorted(written)
+
+
+def _invoke_author_stage_without_autogen(lineage_root: Path, author_stage: SessionStage) -> list[str]:
+    # 生产路径只执行已存在的作者 program，不做任何隐式补齐。
+    if detect_session_stage(lineage_root) != author_stage:
+        return []
+    try:
+        return _invoke_program_stage(lineage_root, author_stage)
+    except StageProgramRuntimeError:
+        return []
 
 
 def _review_substate(
@@ -2612,6 +2580,19 @@ def _program_runtime_status(
             next_action,
         )
     if inspection.error_code == "STAGE_PROGRAM_MISSING":
+        # 关键生成逻辑：缺 program 时不做自动补齐，只把 Codex 要补写的 lineage-local 程序讲清楚。
+        if _stage_base_name(current_stage) == "mandate":
+            return (
+                "awaiting_stage_program",
+                "STAGE_PROGRAM_MISSING",
+                inspection.required_program_dir,
+                inspection.required_program_entrypoint,
+                inspection.program_contract_status,
+                provenance_status,
+                inspection.error_message,
+                f"Author the lineage-local stage program under {inspection.required_program_dir} before this stage can run.",
+            )
+        comment_requirement = _post_mandate_program_comment_requirement(current_stage)
         return (
             "awaiting_stage_program",
             "STAGE_PROGRAM_MISSING",
@@ -2619,8 +2600,15 @@ def _program_runtime_status(
             inspection.required_program_entrypoint,
             inspection.program_contract_status,
             provenance_status,
-            inspection.error_message,
-            f"Author the lineage-local stage program under {inspection.required_program_dir}.",
+            (
+                f"{inspection.error_message} Codex must explicitly author the lineage-local stage program "
+                f"under {inspection.required_program_dir}{comment_requirement} before this stage can run."
+            ),
+            (
+                f"Run {STAGE_ACTIVE_SKILLS.get(current_stage, 'qros-research-session')}; Codex must explicitly author "
+                f"the lineage-local stage program under {inspection.required_program_dir}{comment_requirement}, then rerun qros-session "
+                f"--lineage-id {lineage_root.name}."
+            ),
         )
     if inspection.error_code is not None:
         return (

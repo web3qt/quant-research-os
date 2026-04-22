@@ -34,7 +34,9 @@ python runtime/scripts/run_verification_tier.py --tier smoke
 `full-smoke` 是更重的路线级/回放级演练，包含 `smoke` 全部内容，并额外覆盖：
 
 - CSF route routing
-- `csf_data_ready_author` auto-program seam
+- post-mandate stage-program authoring contract
+- mandatory review preflight before reviewer lane
+- `program_hash` over the whole `program_dir`
 - reflection chain
 - anti-drift metamorphic semantics
 - closure writer inferred-context path contract
@@ -60,7 +62,8 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
   - review / next-stage orchestration
   - route split / CSF routing
   - anti-drift snapshots 或 canonical session stage naming
-  - lineage-local stage-program auto-author seams
+  - lineage-local stage-program authoring contract 或 whole-`program_dir` `program_hash` 语义
+  - preflight mandatory / thin-wrapper rejection / fake-artifact rejection
 
 ## Dry Run / Listing
 

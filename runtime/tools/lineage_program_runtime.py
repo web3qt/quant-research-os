@@ -13,6 +13,7 @@ from typing import Any, Literal, Sequence
 import yaml
 
 from runtime.tools.review_skillgen.context_inference import build_stage_context
+from runtime.tools.stage_program_identity import validate_stage_program_identity
 
 
 StageId = Literal[
@@ -303,7 +304,7 @@ def validate_stage_program(lineage_root: Path, stage_id: StageId, route: RouteId
     )
 
     program_hash = _compute_program_hash(program_dir)
-    return ValidatedStageProgram(
+    validated = ValidatedStageProgram(
         stage_id=stage_id,
         route=route,
         lineage_id=lineage_id,
@@ -319,6 +320,10 @@ def validate_stage_program(lineage_root: Path, stage_id: StageId, route: RouteId
         authored_by=authored_by,
         program_hash=program_hash,
     )
+    identity_error = validate_stage_program_identity(validated)
+    if identity_error is not None:
+        raise StageProgramRuntimeError("STAGE_PROGRAM_INVALID", identity_error)
+    return validated
 
 
 

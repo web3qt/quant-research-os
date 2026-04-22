@@ -45,12 +45,15 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 不得在 holdout 阶段改参数、改 `best_h`、改 symbol 白名单、改交易规则
 - 必须同时保留单窗口和合并窗口结果口径
 - 必须在当前研究仓真实生成单窗口、合并窗口和对比结果，而不是只落合同说明
+- 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
+- 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
+- thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - placeholder `parquet/csv/json/md`、空目录或只有说明文档都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 holdout_validation？`
 - `holdout` 只能产生验证结论、重跑边界和 child lineage 触发条件，不能回写主线规则
 
-- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+- 若本阶段需要新增或修改代码，必须为真实产生产物的程序中的关键步骤、关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
 - 语言规则统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外口径。
 
 ## Gate Discipline

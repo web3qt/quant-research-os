@@ -51,6 +51,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 只能消费已经通过 review closure 的 mandate 产物
 - 只能冻结 `research_route = cross_sectional_factor` 的面板底座
 - 必须在当前 research repo 里真实生成 `date x asset` 面板、覆盖证据和共享派生层
+- 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
+- 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
+- thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 必须把本阶段真实使用的面板构建程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 不得产出任何时序主线措辞、预测 horizon 口径或单资产触发语义
 - 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
@@ -58,7 +61,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 csf_data_ready？`
 - 不得静默修改 mandate 冻结的 universe 口径、时间边界或路由
 
-- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+- 若本阶段需要新增或修改代码，必须为真实产生产物的程序中的关键步骤、关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
 - 语言规则统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外口径。
 
 ## Gate Discipline

@@ -163,7 +163,8 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 
 - 在 author lane 交给独立 reviewer 子代理之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
 - `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
-- 如需要 deterministic 预检，优先运行 `runtime/bin/qros-review-preflight`
+- 当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这是 mandate-first / mandate-only rollout truth，对 reviewer lane 来说不是 optional check，而是进入 review 前的 mandatory reviewer-lane gate
+- 对其余 post-mandate `*_review_confirmation_pending`，当前 runtime 还没有统一强制这道 deterministic preflight；主 Agent 仍必须完成 `review-ready` 自查与 handoff 准备，但不要宣称这些阶段已经全量接入同一条 reviewer-lane gate
 - 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
@@ -297,7 +298,7 @@ Auto-act when:
 - scaffolding `00_idea_intake/`
 - detecting the current stage
 - reporting current state
-- when the stage is `csf_data_ready_author`, all freeze groups are already confirmed, and the only remaining blocker is a missing lineage-local stage program, auto-materialize the first-pass runnable program and continue
+- when a post-mandate author stage reports that the only remaining blocker is a missing lineage-local stage program, stop the normal flow and require Codex to explicitly author or refresh the lineage-local stage program in the current research repo; there is no silent auto-materialize path
 
 Ask the user only when:
 

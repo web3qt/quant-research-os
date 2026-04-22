@@ -46,12 +46,15 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 当前阶段只冻结交易规则与回测合同，不回写上游 signal/train/test 结论
 - 必须保留双引擎与策略组合 ledger 的正式口径
 - 必须在当前研究仓真实生成 vectorbt 与 backtrader 两套回测结果、engine compare、组合台账和 capacity 证据
+- 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
+- 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
+- thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - placeholder `parquet/csv/json/md`、空目录或只有说明文档都不能算正式完成
 - 每一组都要先回显 freeze draft，再确认该组
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 backtest_ready？`
 - 不得在 backtest 阶段重新选币或重估 best_h
 
-- 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
+- 若本阶段需要新增或修改代码，必须为真实产生产物的程序中的关键步骤、关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
 - 语言规则统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外口径。
 
 ## Gate Discipline

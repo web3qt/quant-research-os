@@ -1,0 +1,491 @@
+from pathlib import Path
+import textwrap
+
+import json
+import pyarrow as pa
+import pyarrow.parquet as pq
+import yaml
+
+from runtime.tools.review_skillgen.review_preflight import run_review_preflight
+from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
+from tests.helpers.lineage_program_support import ensure_stage_program
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def _write_parquet(path: Path, rows: list[dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
+def _write_yaml(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_thin_wrapper_stage_program(lineage_root: Path, stage_key: str) -> Path:
+    spec = STAGE_PROGRAM_SPECS[stage_key]
+    program_dir = lineage_root / spec["program_dir"]
+    program_dir.mkdir(parents=True, exist_ok=True)
+    (program_dir / "README.md").write_text("# thin wrapper\n", encoding="utf-8")
+    (program_dir / "run_stage.py").write_text(
+        textwrap.dedent(
+            f"""\
+            #!/usr/bin/env python3
+            from __future__ import annotations
+
+            # 这里故意只做框架转发，验证 preflight 会在 reviewer launch 前拦截。
+            from {spec["module"]} import {spec["function"]}
+
+
+            def main() -> int:
+                return {spec["function"]}(None) is not None
+
+
+            if __name__ == "__main__":
+                raise SystemExit(main())
+            """
+        ),
+        encoding="utf-8",
+    )
+    _write_yaml(
+        program_dir / "stage_program.yaml",
+        {
+            "stage_id": spec["stage_id"],
+            "route": spec["route"],
+            "lineage_id": lineage_root.name,
+            "entrypoint": "run_stage.py",
+            "entry_type": "python",
+            "inputs": [
+                {"kind": "artifact", "path": path, "required": True}
+                for path in spec["inputs"]
+            ],
+            "outputs": [
+                {"kind": "machine", "path": path, "required": True}
+                for path in spec["outputs"]
+            ],
+            "depends_on_programs": ["mandate"] if stage_key != "mandate" else [],
+            "shared_libs": [],
+            "authored_by": {
+                "agent_id": "test-agent",
+                "agent_role": "executor",
+                "session_id": "test-session",
+            },
+        },
+    )
+    return program_dir
+
+
+def _prepare_csf_test_evidence_outputs(stage_dir: Path) -> None:
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(author_formal_dir / "rank_ic_summary.json", {"mean_rank_ic": 0.24, "status": "ok"})
+    _write_parquet(
+        author_formal_dir / "rank_ic_timeseries.parquet",
+        [
+            {"date": "2026-04-01", "rank_ic": 0.11},
+            {"date": "2026-04-02", "rank_ic": 0.18},
+        ],
+    )
+    _write_parquet(
+        author_formal_dir / "bucket_returns.parquet",
+        [
+            {"bucket": 1, "mean_return": 0.01},
+            {"bucket": 2, "mean_return": 0.02},
+        ],
+    )
+    _write_parquet(
+        author_formal_dir / "breadth_coverage_report.parquet",
+        [
+            {"date": "2026-04-01", "coverage": 0.97},
+            {"date": "2026-04-02", "coverage": 0.98},
+        ],
+    )
+    _write_parquet(
+        author_formal_dir / "filter_condition_panel.parquet",
+        [
+            {"date": "2026-04-01", "asset": "BTCUSDT", "signal": 0.1},
+            {"date": "2026-04-02", "asset": "ETHUSDT", "signal": 0.2},
+        ],
+    )
+    _write_parquet(
+        author_formal_dir / "target_strategy_condition_compare.parquet",
+        [
+            {"strategy": "target", "gated_mean": 0.05, "ungated_mean": 0.03},
+            {"strategy": "reference", "gated_mean": 0.04, "ungated_mean": 0.02},
+        ],
+    )
+    _write_json(author_formal_dir / "monotonicity_report.json", {"status": "ok", "observed": [1, 2, 3]})
+    _write_json(author_formal_dir / "subperiod_stability_report.json", {"status": "ok", "windows": 4})
+    _write_json(author_formal_dir / "gated_vs_ungated_summary.json", {"status": "ok", "delta": 0.02})
+    _write_json(author_formal_dir / "program_execution_manifest.json", {"status": "success", "stage": "csf_test_evidence"})
+    _write_json(author_formal_dir / "run_manifest.json", {"command": "qros-stage-run", "status": "recorded"})
+    _write_json(author_formal_dir / "frozen_spec.json", {"source_stage": "csf_train_freeze", "status": "frozen"})
+    _write_text(
+        author_formal_dir / "csf_test_gate_table.csv",
+        "variant_id,decision,reason\nvariant_a,pass,baseline\nvariant_b,reject,reference\n",
+    )
+    _write_text(
+        author_formal_dir / "csf_selected_variants_test.csv",
+        "variant_id,selected\nvariant_a,true\n",
+    )
+    _write_text(
+        author_formal_dir / "csf_test_contract.md",
+        "# CSF Test Contract\n\nThis stage reuses frozen test evidence.\n",
+    )
+    _write_text(
+        author_formal_dir / "artifact_catalog.md",
+        "# Artifact Catalog\n\n- rank_ic_summary.json\n- rank_ic_timeseries.parquet\n",
+    )
+    _write_text(
+        author_formal_dir / "field_dictionary.md",
+        "# Field Dictionary\n\n- mean_rank_ic: average rank IC for the test window.\n",
+    )
+    _write_text(
+        author_formal_dir / "csf_test_gate_decision.md",
+        "# CSF Test Gate Decision\n\nverdict: PASS\n",
+    )
+    _write_text(
+        author_formal_dir / "review_notes.md",
+        "review notes document the machine-artifact realism boundary.\n",
+    )
+
+
+def _prepare_csf_signal_ready_outputs(stage_dir: Path, *, fake_panel: bool = False) -> None:
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    panel_rows = (
+        [
+            {"date": "2026-04-01", "asset": "BTCUSDT", "factor": "占位", "weight": 0.1},
+            {"date": "2026-04-02", "asset": "ETHUSDT", "factor": "real", "weight": 0.2},
+        ]
+        if fake_panel
+        else [
+            {"date": "2026-04-01", "asset": "BTCUSDT", "factor": "momentum", "weight": 0.1},
+            {"date": "2026-04-02", "asset": "ETHUSDT", "factor": "quality", "weight": 0.2},
+        ]
+    )
+    _write_parquet(author_formal_dir / "factor_panel.parquet", panel_rows)
+    _write_parquet(
+        author_formal_dir / "factor_coverage_report.parquet",
+        [
+            {"date": "2026-04-01", "coverage": 0.97},
+            {"date": "2026-04-02", "coverage": 0.98},
+        ],
+    )
+    _write_text(
+        author_formal_dir / "factor_manifest.yaml",
+        "\n".join(
+            [
+                "factor_id: csf_signal_ready_fixture",
+                "factor_version: v1",
+                "factor_direction: high_better",
+                "panel_primary_key: [date, asset]",
+                "final_score_field: factor",
+            ]
+        )
+        + "\n",
+    )
+    _write_text(
+        author_formal_dir / "component_factor_manifest.yaml",
+        "score_combination_formula: weighted_sum\n",
+    )
+    _write_text(
+        author_formal_dir / "route_inheritance_contract.yaml",
+        "\n".join(
+            [
+                "research_route: cross_sectional_factor",
+                "factor_role: regime_filter",
+                "factor_structure: single_factor",
+                "portfolio_expression: long_short_market_neutral",
+                "neutralization_policy: group_neutral",
+                "inheritance_mode: exact_copy",
+                "target_strategy_reference_requirement_status: required_satisfied",
+                "group_taxonomy_reference_requirement_status: required_satisfied",
+            ]
+        )
+        + "\n",
+    )
+    _write_text(
+        author_formal_dir / "factor_field_dictionary.md",
+        "# Field Dictionary\n\n- factor: factor name.\n- weight: assigned weight.\n",
+    )
+    _write_text(
+        author_formal_dir / "factor_contract.md",
+        "# Factor Contract\n\nThis stage reuses frozen signal evidence.\n",
+    )
+    _write_json(author_formal_dir / "run_manifest.json", {"command": "qros-stage-run", "status": "recorded"})
+    _write_text(
+        author_formal_dir / "artifact_catalog.md",
+        "# Artifact Catalog\n\n- factor_panel.parquet\n- factor_coverage_report.parquet\n",
+    )
+    _write_text(
+        author_formal_dir / "field_dictionary.md",
+        "# Field Dictionary\n\n- factor: factor name.\n- weight: assigned weight.\n",
+    )
+    _write_text(
+        author_formal_dir / "csf_signal_ready_gate_decision.md",
+        "# Signal Gate Decision\n\nverdict: PASS\n",
+    )
+
+
+def _prepare_data_ready_outputs(stage_dir: Path, *, bad_nested_file: bool = False) -> None:
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    aligned_bars_dir = author_formal_dir / "aligned_bars"
+    aligned_bars_dir.mkdir(parents=True, exist_ok=True)
+    (aligned_bars_dir / "2026").mkdir(parents=True, exist_ok=True)
+    _write_text(aligned_bars_dir / "2026" / "0001.csv", "timestamp,price\n2026-04-01T00:00:00Z,100.0\n")
+    _write_text(aligned_bars_dir / "2026" / "0002.csv", "timestamp,price\n2026-04-01T01:00:00Z,101.0\n")
+    nested_dir = aligned_bars_dir / "late" / "deeper"
+    nested_dir.mkdir(parents=True, exist_ok=True)
+    _write_text(
+        nested_dir / ("0003_bad.csv" if bad_nested_file else "0003_good.csv"),
+        "timestamp,price\n2026-04-01T02:00:00Z,102.0\n" if not bad_nested_file else "timestamp,price\n占位,102.0\n",
+    )
+    rolling_stats_dir = author_formal_dir / "rolling_stats"
+    rolling_stats_dir.mkdir(parents=True, exist_ok=True)
+    _write_text(rolling_stats_dir / "stats.csv", "window,mean\n24,100.5\n")
+    _write_parquet(
+        author_formal_dir / "qc_report.parquet",
+        [
+            {"symbol": "BTCUSDT", "issue_count": 0},
+            {"symbol": "ETHUSDT", "issue_count": 0},
+        ],
+    )
+    _write_json(author_formal_dir / "dataset_manifest.json", {"dataset_version": "v1", "universe_version": "u1"})
+    _write_text(author_formal_dir / "validation_report.md", "# Validation Report\n\nAll checks passed.\n")
+    _write_text(author_formal_dir / "data_contract.md", "# Data Contract\n\nAligned bars are frozen.\n")
+    _write_text(author_formal_dir / "dedupe_rule.md", "# Dedupe Rule\n\nUse close_time only.\n")
+    _write_text(author_formal_dir / "universe_summary.md", "# Universe Summary\n\nBTC and ETH coverage verified.\n")
+    _write_text(author_formal_dir / "universe_exclusions.csv", "symbol,reason\nXRPUSDT,illiquid\n")
+    _write_text(author_formal_dir / "universe_exclusions.md", "# Universe Exclusions\n\nXRPUSDT excluded for illiquidity.\n")
+    _write_text(author_formal_dir / "data_ready_gate_decision.md", "# Data Ready Gate Decision\n\nverdict: PASS\n")
+    _write_json(author_formal_dir / "run_manifest.json", {"command": "qros-stage-run", "status": "recorded"})
+    _write_text(author_formal_dir / "artifact_catalog.md", "# Artifact Catalog\n\n- aligned_bars/\n- rolling_stats/\n")
+    _write_text(author_formal_dir / "field_dictionary.md", "# Field Dictionary\n\n- timestamp: bar timestamp.\n- price: close price.\n")
+    _write_text(author_formal_dir / "rebuild_data_ready.py", "print('rebuild data ready')\n")
+
+
+def test_review_preflight_fails_when_machine_artifact_is_placeholder_text(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "05_csf_test_evidence"
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    ensure_stage_program(stage_dir.parent, "csf_test_evidence")
+    _prepare_csf_test_evidence_outputs(stage_dir)
+    _write_text(
+        author_formal_dir / "csf_selected_variants_test.csv",
+        "variant_id,selected\nplaceholder,true\n",
+    )
+    _write_yaml(
+        stage_dir / "author" / "draft" / "csf_test_evidence_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "csf_test_evidence",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(author_formal_dir),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "FAIL"
+    assert not any("Missing required" in finding for finding in payload["content_findings"])
+    assert payload["content_findings"] == [
+        "ARTIFACT-REALISM-001: placeholder machine artifact rejected for csf_selected_variants_test.csv"
+    ]
+
+
+def test_review_preflight_rejects_thin_wrapper_stage_program_before_launcher(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "05_csf_test_evidence"
+    _write_thin_wrapper_stage_program(stage_dir.parent, "csf_test_evidence")
+    _prepare_csf_test_evidence_outputs(stage_dir)
+    _write_yaml(
+        stage_dir / "author" / "draft" / "csf_test_evidence_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "csf_test_evidence",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(stage_dir / "author" / "formal"),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "FAIL"
+    assert payload["content_findings"] == [
+        next(
+            finding
+            for finding in payload["content_findings"]
+            if finding.startswith("STAGE_PROGRAM_INVALID:")
+            and "post-mandate stage program cannot be a thin wrapper around framework builders" in finding
+        )
+    ]
+    assert payload["upstream_binding_findings"] == []
+
+
+def test_review_preflight_rejects_fake_but_readable_parquet_content(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "03_csf_signal_ready"
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    ensure_stage_program(stage_dir.parent, "csf_signal_ready")
+    _write_yaml(
+        stage_dir.parent / "01_mandate" / "author" / "formal" / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "regime_filter",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    _prepare_csf_signal_ready_outputs(stage_dir, fake_panel=True)
+    _write_yaml(
+        stage_dir / "author" / "draft" / "csf_signal_ready_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "csf_signal_ready",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(author_formal_dir),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "FAIL"
+    assert payload["content_findings"] == [
+        "ARTIFACT-REALISM-001: placeholder machine artifact rejected for factor_panel.parquet"
+    ]
+    assert payload["upstream_binding_findings"] == []
+
+
+def test_review_preflight_allows_benign_machine_readable_content(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "03_csf_signal_ready"
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    ensure_stage_program(stage_dir.parent, "csf_signal_ready")
+    _write_yaml(
+        stage_dir.parent / "01_mandate" / "author" / "formal" / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "regime_filter",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    _prepare_csf_signal_ready_outputs(stage_dir, fake_panel=False)
+    _write_yaml(
+        stage_dir / "author" / "draft" / "csf_signal_ready_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "csf_signal_ready",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(author_formal_dir),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "PASS"
+    assert payload["content_findings"] == []
+    assert payload["upstream_binding_findings"] == []
+
+
+def test_review_preflight_ignores_placeholder_text_outside_machine_artifacts_scope(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "02_data_ready"
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    ensure_stage_program(stage_dir.parent, "data_ready")
+    _prepare_data_ready_outputs(stage_dir, bad_nested_file=False)
+    _write_text(author_formal_dir / "validation_report.md", "占位 validation note\n")
+    _write_yaml(
+        stage_dir / "author" / "draft" / "data_ready_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "data_ready",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(author_formal_dir),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "PASS"
+    assert payload["content_findings"] == []
+    assert payload["upstream_binding_findings"] == []
+
+
+def test_review_preflight_scans_directory_machine_artifacts_descendants(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc_alt_k" / "02_data_ready"
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    ensure_stage_program(stage_dir.parent, "data_ready")
+    _prepare_data_ready_outputs(stage_dir, bad_nested_file=True)
+    _write_yaml(
+        stage_dir / "author" / "draft" / "data_ready_freeze_draft.yaml",
+        {
+            "groups": {
+                "contract": {"confirmed": True, "draft": {"artifact_mode": "machine"}, "missing_items": []},
+            }
+        },
+    )
+
+    payload = run_review_preflight(
+        explicit_context={
+            "stage": "data_ready",
+            "stage_dir": str(stage_dir),
+            "lineage_root": str(stage_dir.parent),
+            "author_formal_dir": str(author_formal_dir),
+            "lineage_id": "btc_alt_k",
+        }
+    )
+
+    assert payload["status"] == "FAIL"
+    assert any("aligned_bars/late/deeper/0003_bad.csv" in finding for finding in payload["content_findings"])
+    assert any("placeholder machine artifact rejected" in finding for finding in payload["content_findings"])
+    assert payload["upstream_binding_findings"] == []

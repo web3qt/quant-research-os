@@ -2,10 +2,10 @@ from pathlib import Path
 
 import yaml
 
-from tests.helpers.lineage_program_support import write_fake_stage_provenance
-from runtime.tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
 from runtime.tools.research_session import run_research_session
-from runtime.tools.stage_program_scaffold import materialize_stage_program
+from runtime.tools.lineage_program_runtime import inspect_stage_program, validate_stage_program
+from tests.helpers.fixture_stage_program_support import materialize_fixture_stage_program
+from tests.helpers.lineage_program_support import write_fake_stage_provenance
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -123,10 +123,10 @@ def _confirmed_csf_data_ready_draft() -> dict:
     }
 
 
-def test_materialize_stage_program_for_csf_data_ready_is_valid(tmp_path: Path) -> None:
+def test_materialize_fixture_stage_program_for_csf_data_ready_is_valid(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
 
-    program_dir = materialize_stage_program(lineage_root, "csf_data_ready")
+    program_dir = materialize_fixture_stage_program(lineage_root, "csf_data_ready")
 
     assert program_dir == lineage_root / "program/cross_sectional_factor/data_ready"
     inspection = inspect_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
@@ -137,7 +137,9 @@ def test_materialize_stage_program_for_csf_data_ready_is_valid(tmp_path: Path) -
     assert validated.stage_id == "data_ready"
 
 
-def test_run_research_session_auto_generates_and_runs_csf_data_ready_program(tmp_path: Path) -> None:
+def test_run_research_session_uses_explicit_fixture_stage_program_for_csf_data_ready(
+    tmp_path: Path,
+) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_alt"
     _prepare_mandate_ready_for_csf(lineage_root)
@@ -154,11 +156,13 @@ def test_run_research_session_auto_generates_and_runs_csf_data_ready_program(tmp
             "source_stage": "mandate_review_complete",
         },
     )
+    program_dir = materialize_fixture_stage_program(lineage_root, "csf_data_ready")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_alt")
 
-    assert (lineage_root / "program/cross_sectional_factor/data_ready/stage_program.yaml").exists()
-    assert (lineage_root / "program/cross_sectional_factor/data_ready/run_stage.py").exists()
+    assert program_dir == lineage_root / "program/cross_sectional_factor/data_ready"
+    assert (program_dir / "stage_program.yaml").exists()
+    assert (program_dir / "run_stage.py").exists()
     assert (stage_dir / "author" / "formal" / "panel_manifest.json").exists()
     assert (stage_dir / "author" / "formal" / "run_manifest.json").exists()
     assert status.current_stage == "csf_data_ready_review_confirmation_pending"
@@ -173,40 +177,3 @@ def test_run_research_session_does_not_autogenerate_csf_program_before_freeze_gr
 
     assert status.current_stage == "csf_data_ready_confirmation_pending"
     assert not (lineage_root / "program/cross_sectional_factor/data_ready").exists()
-
-
-def test_run_research_session_surfaces_invalid_generated_csf_program_without_advancing(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    import runtime.tools.research_session as research_session
-
-    outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_alt"
-    _prepare_mandate_ready_for_csf(lineage_root)
-    stage_dir = lineage_root / "02_csf_data_ready"
-    (stage_dir / "author" / "draft").mkdir(parents=True, exist_ok=True)
-    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _confirmed_csf_data_ready_draft())
-    _write_yaml(
-        stage_dir / "author" / "draft" / "data_ready_transition_approval.yaml",
-        {
-            "lineage_id": "btc_alt",
-            "decision": "CONFIRM_DATA_READY",
-            "approved_by": "tester",
-            "approved_at": "2026-04-07T08:10:00Z",
-            "source_stage": "mandate_review_complete",
-        },
-    )
-
-    def _broken_generator(*args, **kwargs):  # type: ignore[no-untyped-def]
-        program_dir = lineage_root / "program/cross_sectional_factor/data_ready"
-        program_dir.mkdir(parents=True, exist_ok=True)
-        (program_dir / "stage_program.yaml").write_text("stage_id: wrong\n", encoding="utf-8")
-        return program_dir
-
-    monkeypatch.setattr(research_session, "materialize_stage_program", _broken_generator)
-
-    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_alt")
-
-    assert status.current_stage == "csf_data_ready_author"
-    assert status.blocking_reason_code == "STAGE_PROGRAM_INVALID"
