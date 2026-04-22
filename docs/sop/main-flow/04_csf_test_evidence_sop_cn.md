@@ -53,6 +53,8 @@
 - `csf_test_gate_table.csv`
 - `csf_selected_variants_test.csv`
 - `csf_test_contract.md`
+- `csf_test_gate_decision.md`
+- `run_manifest.json`
 
 ---
 
@@ -75,6 +77,8 @@
 - `csf_test_gate_table.csv`
 - `csf_selected_variants_test.csv`
 - `csf_test_contract.md`
+- `csf_test_gate_decision.md`
+- `run_manifest.json`
 
 ---
 

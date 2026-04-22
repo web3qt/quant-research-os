@@ -289,6 +289,64 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    (stage_formal_dir / "csf_train_freeze_gate_decision.md").write_text(
+        "\n".join(
+            [
+                "# CSF Train Freeze Gate Decision",
+                "",
+                "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 复用约束: {reuse_constraints}",
+                f"- Frozen signal contract reference: {frozen_signal_contract_reference}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_formal_dir / "run_manifest.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_train_freeze",
+                "lineage_id": lineage_root.name,
+                "source_stage": "csf_signal_ready",
+                "input_roots": [
+                    "../03_csf_signal_ready/author/formal/factor_manifest.yaml",
+                    "../03_csf_signal_ready/author/formal/component_factor_manifest.yaml",
+                    "../03_csf_signal_ready/author/formal/factor_panel.parquet",
+                    "../03_csf_signal_ready/author/formal/factor_coverage_report.parquet",
+                    "../03_csf_signal_ready/author/formal/factor_group_context.parquet",
+                    "../03_csf_signal_ready/author/formal/factor_contract.md",
+                    "author/draft/csf_train_freeze_draft.yaml",
+                ],
+                "stage_outputs": [
+                    "csf_train_freeze.yaml",
+                    "train_factor_quality.parquet",
+                    "train_variant_ledger.csv",
+                    "train_variant_rejects.csv",
+                    "train_bucket_diagnostics.parquet",
+                    "train_neutralization_diagnostics.parquet",
+                    "csf_train_contract.md",
+                    "csf_train_freeze_gate_decision.md",
+                    "run_manifest.json",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ],
+                "program_dir": "program/cross_sectional_factor/train_freeze",
+                "program_entrypoint": "run_stage.py",
+                "program_execution_manifest": "program_execution_manifest.json",
+                "replay_command": f"python3 {lineage_root / 'program' / 'cross_sectional_factor' / 'train_freeze' / 'run_stage.py'} --lineage-root {lineage_root}",
+                "candidate_variant_ids": candidate_variant_ids,
+                "kept_variant_ids": kept_variant_ids,
+                "rejected_variant_ids": rejected_variant_ids,
+                "selection_rule": selection_rule,
+                "frozen_signal_contract_reference": frozen_signal_contract_reference,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (stage_formal_dir / "artifact_catalog.md").write_text(
         "\n".join(
             [
@@ -301,8 +359,9 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 "- train_bucket_diagnostics.parquet",
                 "- train_neutralization_diagnostics.parquet",
                 "- csf_train_contract.md",
+                "- csf_train_freeze_gate_decision.md",
+                "- run_manifest.json",
                 "- field_dictionary.md",
-                "- frozen signal axes are explicitly excluded from train governance",
             ]
         )
         + "\n",

@@ -44,6 +44,8 @@
 5. 冻结 `min_cross_section_size`、`min_effective_coverage`、`asset_drop_rule`、`date_drop_rule`。
 6. 明确写清 `frozen_signal_contract_reference`、`train_governable_axes`、`non_governable_axes_after_signal` 和 `non_governable_axis_reject_rule`。
 7. 记账所有 admissible variants 和 reject variants。
+8. 写出 `csf_train_freeze_gate_decision.md`，把当前 formal gate 语义与 pending 状态落盘。
+9. 写出 `run_manifest.json`，记录 source stage、stage outputs、program provenance 与 replay command。
 
 ---
 
@@ -55,6 +57,8 @@
 - `train_variant_rejects.csv`
 - `train_bucket_diagnostics.parquet`
 - `csf_train_contract.md`
+- `csf_train_freeze_gate_decision.md`
+- `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 

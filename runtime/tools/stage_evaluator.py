@@ -176,6 +176,8 @@ CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS = (
     "train_bucket_diagnostics.parquet",
     "train_neutralization_diagnostics.parquet",
     "csf_train_contract.md",
+    "csf_train_freeze_gate_decision.md",
+    "run_manifest.json",
     "artifact_catalog.md",
     "field_dictionary.md",
 )
@@ -193,6 +195,8 @@ CSF_TEST_EVIDENCE_REQUIRED_OUTPUTS = (
     "csf_test_gate_table.csv",
     "csf_selected_variants_test.csv",
     "csf_test_contract.md",
+    "csf_test_gate_decision.md",
+    "run_manifest.json",
     "artifact_catalog.md",
     "field_dictionary.md",
 )

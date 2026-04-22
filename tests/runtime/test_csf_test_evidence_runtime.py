@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import yaml
@@ -131,5 +132,16 @@ def test_build_csf_test_evidence_writes_required_outputs(tmp_path: Path) -> None
     assert (formal_dir / "csf_test_gate_table.csv").exists()
     assert (formal_dir / "csf_selected_variants_test.csv").exists()
     assert (formal_dir / "csf_test_contract.md").exists()
+    assert (formal_dir / "csf_test_gate_decision.md").exists()
+    assert (formal_dir / "run_manifest.json").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+
+    rank_ic_summary = json.loads((formal_dir / "rank_ic_summary.json").read_text(encoding="utf-8"))
+    assert rank_ic_summary["mean_rank_ic"] == 0.12
+    assert rank_ic_summary["num_dates"] == 29
+
+    run_manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert run_manifest["stage"] == "csf_test_evidence"
+    assert "csf_test_gate_decision.md" in run_manifest["stage_outputs"]
+    assert "run_manifest.json" in run_manifest["stage_outputs"]

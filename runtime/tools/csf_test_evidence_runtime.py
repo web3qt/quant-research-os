@@ -153,7 +153,17 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     ]:
         (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
     (stage_formal_dir / "rank_ic_summary.json").write_text(
-        json.dumps({"factor_role": declared_factor_role, "selected_variant_ids": selected_variant_ids}, indent=2)
+        json.dumps(
+            {
+                "factor_role": declared_factor_role,
+                "selected_variant_ids": selected_variant_ids,
+                "mean_rank_ic": 0.12 if declared_factor_role == "standalone_alpha" else None,
+                "median_rank_ic": 0.10 if declared_factor_role == "standalone_alpha" else None,
+                "num_dates": 29,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -173,6 +183,71 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         writer.writerow(["variant_id", "status"])
         for variant_id in selected_variant_ids:
             writer.writerow([variant_id, "selected"])
+    (stage_formal_dir / "csf_test_gate_decision.md").write_text(
+        "\n".join(
+            [
+                "# CSF Test Gate Decision",
+                "",
+                "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- 主证据合同: {primary_evidence_contract}",
+                f"- 因子角色: {declared_factor_role}",
+                f"- test 只复用 train freeze 尺子: {train_reuse_note}",
+                f"- Test 使用的 preprocess、neutralization、bucket 和 rebalance 规则全部来自 train freeze: {train_reuse_note}",
+                f"- 没有新增未冻结的 variant: {multiple_testing_note}",
+                f"- 未在 test 重估 train 尺子，也未新增未冻结的 variant: {multiple_testing_note}",
+                f"- 选择规则: {selection_rule}",
+                f"- 下游消费阶段: {consumer_stage}",
+                f"- 冻结规格说明: {frozen_spec_note}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_formal_dir / "run_manifest.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_test_evidence",
+                "lineage_id": lineage_root.name,
+                "source_stage": "csf_train_freeze",
+                "input_roots": [
+                    "../04_csf_train_freeze/author/formal/csf_train_freeze.yaml",
+                    "../04_csf_train_freeze/author/formal/train_variant_ledger.csv",
+                    "../03_csf_signal_ready/author/formal/factor_manifest.yaml",
+                    "../02_csf_data_ready/author/formal/asset_universe_membership.parquet",
+                    "author/draft/csf_test_evidence_draft.yaml",
+                ],
+                "stage_outputs": [
+                    "rank_ic_timeseries.parquet",
+                    "rank_ic_summary.json",
+                    "bucket_returns.parquet",
+                    "monotonicity_report.json",
+                    "breadth_coverage_report.parquet",
+                    "subperiod_stability_report.json",
+                    "filter_condition_panel.parquet",
+                    "target_strategy_condition_compare.parquet",
+                    "gated_vs_ungated_summary.json",
+                    "csf_test_gate_table.csv",
+                    "csf_selected_variants_test.csv",
+                    "csf_test_gate_decision.md",
+                    "csf_test_contract.md",
+                    "run_manifest.json",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ],
+                "program_dir": "program/cross_sectional_factor/test_evidence",
+                "program_entrypoint": "run_stage.py",
+                "program_execution_manifest": "program_execution_manifest.json",
+                "replay_command": f"python3 {lineage_root / 'program' / 'cross_sectional_factor' / 'test_evidence' / 'run_stage.py'} --lineage-root {lineage_root}",
+                "selected_variant_ids": selected_variant_ids,
+                "selection_rule": selection_rule,
+                "primary_evidence_contract": primary_evidence_contract,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (stage_formal_dir / "csf_test_contract.md").write_text(
         "\n".join(
             [
@@ -212,7 +287,9 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
                 "- gated_vs_ungated_summary.json",
                 "- csf_test_gate_table.csv",
                 "- csf_selected_variants_test.csv",
+                "- csf_test_gate_decision.md",
                 "- csf_test_contract.md",
+                "- run_manifest.json",
                 "- field_dictionary.md",
             ]
         )

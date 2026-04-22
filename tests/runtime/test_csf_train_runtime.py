@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -146,6 +147,8 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
     assert (formal_dir / "train_bucket_diagnostics.parquet").exists()
     assert (formal_dir / "train_neutralization_diagnostics.parquet").exists()
     assert (formal_dir / "csf_train_contract.md").exists()
+    assert (formal_dir / "csf_train_freeze_gate_decision.md").exists()
+    assert (formal_dir / "run_manifest.json").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
 
@@ -171,3 +174,8 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
 
     train_quality = pq.read_table(formal_dir / "train_factor_quality.parquet").to_pylist()
     assert len(train_quality) > 0
+
+    run_manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert run_manifest["stage"] == "csf_train_freeze"
+    assert "csf_train_freeze_gate_decision.md" in run_manifest["stage_outputs"]
+    assert "run_manifest.json" in run_manifest["stage_outputs"]

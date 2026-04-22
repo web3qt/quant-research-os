@@ -779,6 +779,8 @@ stages:
       - train_variant_rejects.csv
       - train_bucket_diagnostics.parquet
       - csf_train_contract.md
+      - csf_train_freeze_gate_decision.md
+      - run_manifest.json
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
@@ -786,9 +788,11 @@ stages:
       - train_factor_quality.parquet
       - train_variant_ledger.csv
       - train_variant_rejects.csv
+      - run_manifest.json
     human_artifacts:
       - train_bucket_diagnostics.parquet
       - csf_train_contract.md
+      - csf_train_freeze_gate_decision.md
       - artifact_catalog.md
       - field_dictionary.md
     formal_gate:
@@ -902,13 +906,17 @@ stages:
       - csf_test_gate_table.csv
       - csf_selected_variants_test.csv
       - csf_test_contract.md
+      - csf_test_gate_decision.md
+      - run_manifest.json
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
       - csf_test_gate_table.csv
       - csf_selected_variants_test.csv
+      - run_manifest.json
     human_artifacts:
       - csf_test_contract.md
+      - csf_test_gate_decision.md
       - artifact_catalog.md
       - field_dictionary.md
     formal_gate:
