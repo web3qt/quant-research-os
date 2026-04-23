@@ -20,6 +20,7 @@ def test_repo_local_wrappers_exist() -> None:
     assert Path("runtime/bin/qros-session").exists()
     assert Path("runtime/bin/qros-progress").exists()
     assert Path("runtime/bin/qros-audit-reviewer").exists()
+    assert Path("runtime/bin/qros-review-cycle").exists()
     assert Path("runtime/bin/qros-start-review").exists()
     assert Path("runtime/bin/qros-start-spawned-review").exists()
     assert Path("runtime/bin/qros-spawn-reviewer").exists()

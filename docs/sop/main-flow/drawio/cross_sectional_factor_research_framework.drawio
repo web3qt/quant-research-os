@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="cross-sectional-factor-mind-map" name="Mind Map">
-        <mxGraphModel dx="1533" dy="456" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3800" pageHeight="2400" math="0" shadow="0">
+        <mxGraphModel dx="1533" dy="456" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3800" pageHeight="2400" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -443,7 +443,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="cross-sectional-factor-flow" name="Flow">
-        <mxGraphModel dx="2787" dy="735" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4600" pageHeight="2200" math="0" shadow="0">
+        <mxGraphModel dx="2787" dy="735" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4600" pageHeight="2200" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>

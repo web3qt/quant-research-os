@@ -14,13 +14,13 @@
   - Portfolio Review
   - Trading
 - depends_on:
-  - 00_mandate
-  - 01_data_ready_failure_sop
-  - 02_signal_ready_failure_sop
-  - 03_train_freeze_failure_sop
-  - 04_test_evidence_failure_sop
-  - 05_backtest_failure_sop
-  - 06_holdout_failure_sop
+  - 01_mandate
+  - 02_data_ready_failure_sop
+  - 03_signal_ready_failure_sop
+  - 04_train_freeze_failure_sop
+  - 05_test_evidence_failure_sop
+  - 06_backtest_failure_sop
+  - 07_holdout_failure_sop
 
 ---
 
@@ -131,16 +131,16 @@
 定义：在当前 stage 允许范围内，围绕一个明确假设做一次受控修改，不改变研究主问题。
 
 典型例子：
-- 在 `05_backtest` 中只调整执行器退出语义
+- 在 `06_backtest` 中只调整执行器退出语义
 - 在 `01/02` 中修复已识别的数据/时点问题
 
 ### 4.3 `STAGE_ROLLBACK`
 定义：当前问题说明原 stage 不能继续，必须回退到更早 stage 补证据或重做冻结，但研究主问题尚未改变。
 
 典型例子：
-- `05_backtest` 暴露 `04_test_evidence` 不稳
-- `04_test_evidence` 暴露 `03_train_freeze` 被污染
-- `03_train_freeze` 暴露 `02_signal_ready` 前视问题
+- `06_backtest` 暴露 `05_test_evidence` 不稳
+- `05_test_evidence` 暴露 `04_train_freeze` 被污染
+- `04_train_freeze` 暴露 `03_signal_ready` 前视问题
 
 ### 4.4 `CHILD_LINEAGE`
 定义：当前修改已经改变研究主问题、交易语义、Universe 身份或风控角色，必须新开谱系。
@@ -193,9 +193,9 @@
 
 ### 问题 4：当前修改是否还能沿用原证据链？
 如果不能继续沿用：
-- 原 `04_test_evidence`
-- 原 `05_backtest`
-- 原 `06_holdout`
+- 原 `05_test_evidence`
+- 原 `06_backtest`
+- 原 `07_holdout`
 
 则不得算作原线小修，必须：
 - `STAGE_ROLLBACK`
@@ -235,7 +235,7 @@
 
 ### 不需要
 - 新开谱系
-- 重写 `00_mandate`
+- 重写 `01_mandate`
 
 ---
 
@@ -301,7 +301,7 @@
 8. 策略频率、交易身份或 portfolio role 被实质重写
 
 ### 必须产出
-- 新的 `00_mandate`
+- 新的 `01_mandate`
 - 新的 `research_scope.md`
 - 新的 `artifact_catalog.md`
 - 新的 lineage id
@@ -318,7 +318,7 @@
 ### 触发条件
 - 主假设不成立
 - 多轮 retry / rollback 后仍无合理修复空间
-- holdout / shadow 证伪
+- holdout / post_holdout_observation 证伪
 - 经济性长期不成立
 - 继续投入不符合资源配置纪律
 

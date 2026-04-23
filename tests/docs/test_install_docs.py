@@ -10,24 +10,46 @@ def test_install_docs_reference_supported_commands() -> None:
 
     combined = "\n".join([readme, installation, quickstart, session_usage, codex_guide])
 
-    assert "git clone" in combined
     assert "./.qros" in combined
     assert "~/.codex/skills" in combined
-    assert "git pull" in combined
-    assert "./setup --host codex --mode user-global" in combined
     assert "pipx install qros" not in combined
     assert "uv tool install qros" not in combined
+    assert "Manual Installation" not in combined
+    assert "Manual fallback" not in combined
+    assert "手动安装" not in combined
     assert "qros-research-session" in combined
     assert "qros-research-session help" in combined
     assert "qros-progress" in combined
+    assert "开始或继续一条研究线" in combined
+    assert "查看当前研究进度" in combined
+    assert "查看 QROS 使用帮助" in combined
+    assert "更新 QROS 到远程最新版本" in combined
     assert "./.qros/bin/qros-progress" in combined
     assert "qros-update" in combined
     assert "./.qros/bin/qros-session" in combined
+    assert "./.qros/bin/qros-review-cycle" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
     assert "Restart Codex" in combined
     assert "Uninstalling" in combined
+
+
+def test_install_docs_describe_research_repo_first_fetch_flow() -> None:
+    install_doc = Path(".codex/INSTALL.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    quickstart = Path("docs/guides/quickstart-codex.md").read_text(encoding="utf-8")
+    installation = Path("docs/guides/installation.md").read_text(encoding="utf-8")
+    update_skill = Path("skills/core/qros-update/SKILL.md").read_text(encoding="utf-8")
+
+    combined = "\n".join([install_doc, readme, quickstart, installation, update_skill])
+
+    assert "active research repo" in combined
+    assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
+    assert "Restart Codex" in combined
+    assert "qros-research-session" in combined
+    assert "qros-update" in combined
+    assert "current repo's `./.qros/`" in update_skill
 
 
 def test_install_docs_reference_stage_field_guide() -> None:

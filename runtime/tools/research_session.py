@@ -2004,7 +2004,7 @@ def _resume_hint(
                 f"then rerun qros-session --lineage-id {lineage_id}."
             )
         return (
-            f"Enter {current_skill}, let it use spawn_agent and ./.qros/bin/qros-start-spawned-review for {_stage_base_name(current_stage)}, "
+            f"Enter {current_skill}, let it use spawn_agent and ./.qros/bin/qros-review-cycle prepare for {_stage_base_name(current_stage)}, "
             f"then rerun qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review"):
@@ -2374,7 +2374,7 @@ def _review_substate(
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
-            f"Enter {review_skill} in the current session; that review skill should use spawn_agent, run ./.qros/bin/qros-start-spawned-review for {stage_base}, and then wait for reviewer output.",
+            f"Enter {review_skill} in the current session; that review skill should use spawn_agent, run ./.qros/bin/qros-review-cycle prepare for {stage_base}, and then wait for reviewer output.",
         )
     if review_receipt is None and proof_chain_error is not None:
         if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -2410,7 +2410,7 @@ def _review_substate(
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is waiting for a spawned reviewer child to register {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin.",
-            f"Enter {review_skill} in the current session, spawn the reviewer child, run ./.qros/bin/qros-start-spawned-review, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"Enter {review_skill} in the current session, spawn the reviewer child, run ./.qros/bin/qros-review-cycle prepare, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
@@ -3355,7 +3355,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Enter {review_skill} in the current session; it should spawn a reviewer child and run ./.qros/bin/qros-start-spawned-review to register the active review cycle.",
+            f"Enter {review_skill} in the current session; it should spawn a reviewer child and run ./.qros/bin/qros-review-cycle prepare to register the active review cycle.",
         )
     if not receipt_exists and proof_chain_error is not None:
         if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -3453,7 +3453,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
         return (
             "REVIEW_CONFIRMATION_PENDING",
-            f"Enter {review_skill} in the current session. That stage-specific review skill should use spawn_agent, run ./.qros/bin/qros-start-spawned-review, and then complete review with ./.qros/bin/qros-review.",
+            f"Enter {review_skill} in the current session. That stage-specific review skill should use spawn_agent, run ./.qros/bin/qros-review-cycle prepare, and then complete review with ./.qros/bin/qros-review.",
         )
 
 

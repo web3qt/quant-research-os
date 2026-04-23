@@ -18,11 +18,12 @@ def test_root_agents_declares_real_governance_entrypoints() -> None:
     assert "runtime/AGENTS.md" in content
     assert "docs/AGENTS.md" in content
     assert "tests/AGENTS.md" in content
-    assert "instruction 分层示例" in content
-    assert "不是主仓真实治理面" in content
+    assert "instruction 分层示例" not in content
+    assert "不是主仓真实治理面" not in content
     assert "runtime/tools/" in content
     assert "runtime/scripts/" in content
     assert "runtime/bin/" in content
+    assert "harness/" not in content
     assert (
         "python -m pytest tests/contracts/test_agents_layout.py "
         "tests/bootstrap/test_project_bootstrap.py tests/docs/test_install_docs.py" in content
@@ -33,10 +34,11 @@ def test_root_agents_declares_real_governance_entrypoints() -> None:
     assert "runtime/scripts/run_verification_tier.py" in content
 
 
-def test_docs_readme_marks_harness_as_example_only() -> None:
+def test_removed_harness_tree_is_not_part_of_active_docs() -> None:
     content = Path("docs/README.md").read_text(encoding="utf-8")
 
-    assert "示例子树，不是主仓真实治理面" in content
+    assert not Path("harness").exists()
+    assert "harness/" not in content
     assert "../contracts/AGENTS.md" in content
     assert "../skills/AGENTS.md" in content
     assert "../runtime/AGENTS.md" in content

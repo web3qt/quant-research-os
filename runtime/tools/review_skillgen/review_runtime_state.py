@@ -13,6 +13,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 
 
 REVIEW_RUNTIME_STATE_FILENAME = "review_runtime_state.yaml"
+MATERIALIZATION_DIGEST_LEDGER_FILENAME = "materialization_digest_ledger.yaml"
 REVIEW_RUNTIME_STATE_ALLOWED_VALUES = {
     "review_not_started",
     "review_in_progress",
@@ -41,6 +42,15 @@ _ACTIVE_CLOSURE_FILES = (
 
 def review_runtime_state_path(stage_dir: Path) -> Path:
     return stage_dir / "review" / "state" / REVIEW_RUNTIME_STATE_FILENAME
+
+
+def materialization_digest_ledger_path_from_artifact_root(artifact_root: Path) -> Path:
+    resolved = artifact_root.resolve()
+    if resolved.name == "formal" and resolved.parent.name == "author":
+        stage_dir = resolved.parents[1]
+    else:
+        stage_dir = resolved
+    return stage_dir / "review" / "state" / MATERIALIZATION_DIGEST_LEDGER_FILENAME
 
 
 def load_review_runtime_state(path: str | Path) -> dict[str, Any]:
@@ -117,16 +127,70 @@ def _file_digest(path: Path) -> str:
     return _digest_bytes([path.read_bytes()])
 
 
-def _path_digest(path: Path, *, root: Path) -> str:
+def _load_materialization_digest_ledger(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"files": {}}
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(payload, dict):
+        return {"files": {}}
+    files = payload.get("files")
+    if not isinstance(files, dict):
+        payload["files"] = {}
+    return payload
+
+
+def _write_materialization_digest_ledger(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _file_cache_metadata(path: Path) -> dict[str, Any]:
+    stat = path.stat()
+    return {
+        "kind": "file",
+        "size": stat.st_size,
+        "mtime_ns": stat.st_mtime_ns,
+    }
+
+
+def _cached_file_digest(path: Path, *, root: Path, ledger: dict[str, Any]) -> str:
+    rel = path.relative_to(root).as_posix()
+    files = ledger.setdefault("files", {})
+    metadata = _file_cache_metadata(path)
+    cached = files.get(rel)
+    if isinstance(cached, dict) and cached.get("metadata") == metadata:
+        digest = cached.get("digest")
+        if isinstance(digest, str) and digest:
+            return digest
+
+    digest = _file_digest(path)
+    files[rel] = {
+        "metadata": metadata,
+        "digest": digest,
+    }
+    return digest
+
+
+def _path_digest(path: Path, *, root: Path, ledger: dict[str, Any] | None = None) -> str:
     if path.is_file():
         rel = path.relative_to(root).as_posix().encode("utf-8")
-        return _digest_bytes([b"FILE:", rel, b"\0", _file_digest(path).encode("utf-8")])
+        file_digest = (
+            _cached_file_digest(path, root=root, ledger=ledger)
+            if ledger is not None
+            else _file_digest(path)
+        )
+        return _digest_bytes([b"FILE:", rel, b"\0", file_digest.encode("utf-8")])
 
     if path.is_dir():
         parts: list[bytes] = [b"DIR:", path.relative_to(root).as_posix().encode("utf-8"), b"\0"]
         for child in sorted(item for item in path.rglob("*") if item.is_file()):
             rel = child.relative_to(root).as_posix().encode("utf-8")
-            parts.extend([rel, b"\0", _file_digest(child).encode("utf-8"), b"\0"])
+            file_digest = (
+                _cached_file_digest(child, root=root, ledger=ledger)
+                if ledger is not None
+                else _file_digest(child)
+            )
+            parts.extend([rel, b"\0", file_digest.encode("utf-8"), b"\0"])
         return _digest_bytes(parts)
 
     return _digest_bytes([b"MISSING:", path.relative_to(root).as_posix().encode("utf-8")])
@@ -139,6 +203,8 @@ def compute_author_materialization_digest(
     required_provenance_paths: Sequence[str] = ("program_execution_manifest.json",),
 ) -> str:
     artifact_root = artifact_root.resolve()
+    ledger_path = materialization_digest_ledger_path_from_artifact_root(artifact_root)
+    ledger = _load_materialization_digest_ledger(ledger_path)
     parts: list[bytes] = []
     for name in list(required_outputs) + list(required_provenance_paths):
         target = artifact_root / name
@@ -146,11 +212,15 @@ def compute_author_materialization_digest(
             [
                 name.encode("utf-8"),
                 b"\0",
-                _path_digest(target, root=artifact_root).encode("utf-8"),
+                _path_digest(target, root=artifact_root, ledger=ledger).encode("utf-8"),
                 b"\0",
             ]
         )
-    return _digest_bytes(parts)
+    materialization_digest = _digest_bytes(parts)
+    ledger["materialization_digest"] = materialization_digest
+    ledger["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _write_materialization_digest_ledger(ledger_path, ledger)
+    return materialization_digest
 
 
 def archive_active_review_cycle(

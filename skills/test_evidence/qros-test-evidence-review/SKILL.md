@@ -25,8 +25,8 @@ description: Codex review skill for Test Evidence stage verification.
 - 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个 Codex review session
 - 进入本 skill 后，必须在**当前会话**里用 `spawn_agent` 拉起独立 reviewer 子代理，且 `fork_context` 必须是 `false`
 - 先用一个最小初始化消息创建 reviewer 子代理，要求它先等待 binding / handoff，不要在 receipt 写出前擅自写文件
-- reviewer 子代理创建后，主线程必须运行 `./.qros/bin/qros-start-spawned-review --spawned-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id>`
-- `qros-start-spawned-review` 负责注册 active review cycle，并写出 `review/request/*` 与 `spawned_reviewer_receipt.yaml`
+- reviewer 子代理创建后，主线程优先运行 `./.qros/bin/qros-review-cycle prepare --spawned-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id>`
+- `qros-review-cycle prepare` 负责注册 active review cycle，写出 `review/request/*` 与 `spawned_reviewer_receipt.yaml`，并输出 reviewer handoff prompt 与 closer command
 - 主线程随后必须用 `send_input` 把 request / handoff manifest / stage-specific gate 交给 reviewer 子代理
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
 - reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
@@ -155,7 +155,7 @@ description: Codex review skill for Test Evidence stage verification.
 
 1. 在当前会话中完成 `review-ready` 自查，并确认 handoff 与 launcher 字段一致
 2. 用 `spawn_agent` 创建独立 reviewer 子代理
-3. 运行 `./.qros/bin/qros-start-spawned-review` 写出 active request / handoff / receipt
+3. 运行 `./.qros/bin/qros-review-cycle prepare` 写出 active request / handoff / receipt，并复用输出的 reviewer handoff prompt
 4. 用 `send_input` 向 reviewer 子代理交付 request / handoff 与本 stage 的 formal gate
 5. 等待 reviewer 子代理只写 `review/result/reviewer_findings.raw.yaml`
 6. 运行 `./.qros/bin/qros-review` 完成 canonical result、audit 与 closure

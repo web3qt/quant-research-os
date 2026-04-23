@@ -33,7 +33,7 @@ Depends On:
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其前置阶段的执行展开 |
 | `contracts/intake/qualification_scorecard_schema.yaml` | Scorecard 字段真值 | 本 SOP 的评分维度必须与 schema 一致 |
 | `contracts/intake/idea_gate_decision_schema.yaml` | Gate decision 字段真值 | 本 SOP 的 gate 词汇必须与 schema 一致 |
-| `00_mandate_sop_cn.md` | Mandate 执行合同 | Idea Intake 的下游消费者，本阶段产出是其输入 |
+| `01_mandate_sop_cn.md` | Mandate 执行合同 | Idea Intake 的下游消费者，本阶段产出是其输入 |
 
 ---
 
@@ -449,7 +449,7 @@ must_restart_qualification_when:
 当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，不得直接调用 mandate-author。必须先通过交互式确认：
 
 ```bash
-python runtime/scripts/run_research_session.py \
+python runtime/.qros/bin/qros-session \
   --outputs-root outputs \
   --lineage-id <lineage_id> \
   --confirm-mandate
@@ -520,5 +520,5 @@ Mandate 阶段只消费以下 Intake 输出：
 | Idea Gate Decision Schema | `contracts/intake/idea_gate_decision_schema.yaml` | Gate decision 字段真值 |
 | Schema 示例 | `docs/sop/intake/examples/` | 填写示例参考 |
 | Intake 流程指南 | `docs/guides/idea-intake-to-mandate-flow.md` | 用户视角的操作指南 |
-| Mandate SOP | `docs/sop/main-flow/00_mandate_sop_cn.md` | 下游阶段执行合同 |
-| Mandate 失败 SOP | `docs/sop/failures/00_mandate_failure_sop_cn.md` | 尚未建立 |
+| Mandate SOP | `docs/sop/main-flow/01_mandate_sop_cn.md` | 下游阶段执行合同 |
+| Mandate 失败 SOP | `docs/sop/failures/01_mandate_failure_sop_cn.md` | 尚未建立 |

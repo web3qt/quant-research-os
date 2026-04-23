@@ -4,41 +4,15 @@ Guide for using QROS with OpenAI Codex via native skill discovery.
 
 ## Quick Install
 
-Tell Codex:
+Open Codex from the active research repo root first. Then tell Codex:
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
 ```
 
-## Manual Installation
+## Install Result
 
-### Prerequisites
-
-- OpenAI Codex CLI
-- Git
-
-### Steps
-
-1. Clone the repo:
-
-```bash
-git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-research-os
-cd ~/workspace/quant-research-os
-```
-
-2. Build the installed Codex skill tree:
-
-```bash
-./setup --host codex --mode user-global
-```
-
-3. Restart Codex.
-
-4. In each research repo root, bootstrap the local runtime:
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
+The fetched installer asks Codex to clone or refresh the QROS source repo, install the flat `qros-*` skills under `~/.codex/skills/`, and bootstrap the active research repo's `./.qros/` runtime. Restart Codex after that, then start with `qros-research-session` from the same active research repo.
 
 ## How It Works
 
@@ -58,14 +32,19 @@ QROS skills become visible as flat installed directories:
 
 Skills are the normal entrypoint:
 
-- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
-- `qros-mandate-review`
+| Intent | Command |
+| --- | --- |
+| 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
+| 查看 QROS 使用帮助 | `qros-research-session help` |
+| 查看当前研究进度 | `qros-progress` |
+| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
+| 手动进入某阶段 review | `qros-mandate-review` |
 
 If you need deterministic runtime debugging or manual recovery, use the project-local wrappers:
 
 ```bash
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-./.qros/bin/qros-start-spawned-review --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --spawned-agent-id reviewer-child-agent
+./.qros/bin/qros-review-cycle prepare --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --spawned-agent-id reviewer-child-agent
 ./.qros/bin/qros-review
 ```
 
@@ -79,15 +58,9 @@ qros-update
 
 It refreshes the published `main` install and the current repo's `./.qros/`.
 
-Manual fallback:
+Run it from the active research repo root.
 
-```bash
-cd ~/workspace/quant-research-os
-git pull
-./setup --host codex --mode user-global
-```
-
-If you installed an older QROS contract before the move to direct `~/.codex/skills` installs, rerun the same command and restart Codex so stale local skill directories are replaced.
+If you installed an older QROS contract before the move to direct `~/.codex/skills` installs, run `qros-update` from the active research repo root and Restart Codex so stale local skill directories are replaced.
 
 ## Uninstalling
 
@@ -120,17 +93,6 @@ test -f ~/.codex/qros/install-manifest.json
 ls ./.qros/bin
 ```
 
-3. If you just updated the repo, rerun:
-
-```bash
-cd ~/workspace/quant-research-os
-./setup --host codex --mode user-global
-```
-
-Then rerun repo-local bootstrap from the active research repo root:
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
+3. If skill content looks stale, run `qros-update` from the active research repo root.
 
 4. Restart Codex. Skills are discovered at startup.

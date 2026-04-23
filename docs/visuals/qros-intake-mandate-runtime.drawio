@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="qros-intake-mandate-runtime" name="Idea Intake Runtime">
-        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1900" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1900" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -194,7 +194,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="qros-standard-stage-runtime" name="Standard Stage Runtime">
-        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -334,7 +334,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="qros-review-failure-routing" name="Review Failure Routing">
-        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1700" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1700" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -411,7 +411,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="qros-csf-route-switch" name="CSF Route Switch">
-        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1700" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -461,7 +461,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="qros-stage-program-hard-gate" name="Stage Program Hard Gate">
-        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1800" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1800" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>

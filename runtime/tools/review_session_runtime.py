@@ -154,6 +154,7 @@ def _build_review_cycle_payload(
         "lineage_id": lineage_root.name,
         "stage": spec.stage_id,
         "stage_dir": str(stage_dir),
+        "lineage_root": str(lineage_root),
         "current_stage": prepared["current_stage"],
         "review_cycle_id": request_payload["review_cycle_id"],
         "request_path": str((stage_dir / "review" / "request" / "adversarial_review_request.yaml").relative_to(lineage_root)),
@@ -162,6 +163,119 @@ def _build_review_cycle_payload(
         "review_runtime_state": prepared["state_payload"],
         "request_payload": request_payload,
         "receipt_payload": receipt_payload,
+    }
+
+
+def _display_path(path: Path, *, display_root: Path | None) -> str:
+    resolved = path.resolve()
+    if display_root is not None:
+        try:
+            return resolved.relative_to(display_root.resolve()).as_posix()
+        except ValueError:
+            pass
+    return str(resolved)
+
+
+def _reviewer_handoff_prompt(
+    *,
+    payload: dict[str, Any],
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    display_root: Path | None,
+) -> str:
+    stage_dir = Path(payload["stage_dir"]).resolve()
+    request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
+    author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
+    result_path = _display_path(
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
+        display_root=display_root,
+    )
+    return "\n".join(
+        [
+            f"Handoff for QROS {payload['stage']} adversarial review.",
+            "",
+            f"Lineage: {payload['lineage_id']}",
+            f"Stage: {payload['stage']}",
+            f"Review cycle: {payload['review_cycle_id']}",
+            f"Reviewer identity: {reviewer_identity}",
+            f"Reviewer session id / agent id: {reviewer_session_id}",
+            "",
+            "Hard constraints:",
+            "- Do not run qros-review.",
+            "- Do not write closure artifacts.",
+            "- Do not modify author/formal or review/request files.",
+            "",
+            "Permitted reads only:",
+            f"- {request_root}/*",
+            f"- {author_root}/*",
+            "",
+            "Permitted write only:",
+            f"- {result_path}",
+            "",
+            "Write reviewer_findings.raw.yaml with top-level fields:",
+            "review_loop_outcome",
+            "blocking_findings",
+            "reservation_findings",
+            "info_findings",
+            "residual_risks",
+        ]
+    )
+
+
+def _closer_command(
+    *,
+    payload: dict[str, Any],
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    display_root: Path | None,
+) -> str:
+    stage_dir = _display_path(Path(payload["stage_dir"]), display_root=display_root)
+    lineage_root = _display_path(Path(payload["lineage_root"]), display_root=display_root)
+    return (
+        "./.qros/bin/qros-review "
+        f"--stage-dir {stage_dir} "
+        f"--lineage-root {lineage_root} "
+        f"--reviewer-id {reviewer_identity} "
+        "--reviewer-role reviewer "
+        f"--reviewer-session-id {reviewer_session_id} "
+        "--reviewer-mode adversarial"
+    )
+
+
+def prepare_review_cycle_for_handoff(
+    *,
+    cwd: Path | None = None,
+    explicit_context: dict[str, Any] | None = None,
+    reviewer_identity: str,
+    reviewer_session_id: str,
+    launcher_session_id: str,
+    launcher_thread_id: str,
+    spawned_agent_id: str,
+) -> dict[str, Any]:
+    payload = start_spawned_review_cycle(
+        cwd=cwd,
+        explicit_context=explicit_context,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+        launcher_session_id=launcher_session_id,
+        launcher_thread_id=launcher_thread_id,
+        spawned_agent_id=spawned_agent_id,
+    )
+    display_root = cwd.resolve() if cwd is not None else None
+    return {
+        **payload,
+        "reviewer_handoff_prompt": _reviewer_handoff_prompt(
+            payload=payload,
+            reviewer_identity=reviewer_identity,
+            reviewer_session_id=reviewer_session_id,
+            display_root=display_root,
+        ),
+        "closer_command": _closer_command(
+            payload=payload,
+            reviewer_identity=reviewer_identity,
+            reviewer_session_id=reviewer_session_id,
+            display_root=display_root,
+        ),
     }
 
 

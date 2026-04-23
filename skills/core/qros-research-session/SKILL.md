@@ -155,7 +155,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - author 主会话不得自动编排 reviewer；review 必须由人显式进入对应的 `qros-*-review` skill 发起
 - 当前主会话只推进到 `*_review_confirmation_pending`，并在 `review-ready` 自查通过后停住
 - 进入 stage-specific review skill 后，当前会话必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
-- 当前会话随后必须运行 `./.qros/bin/qros-start-spawned-review` 注册 active review cycle，并写出 `review/request/*`
+- 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt / closer command
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
 - reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
 - reviewer 子代理不得修改 `author/formal/*`

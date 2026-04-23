@@ -59,6 +59,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
         "bin/qros-audit-reviewer",
         "bin/qros-progress",
         "bin/qros-review",
+        "bin/qros-review-cycle",
         "bin/qros-review-preflight",
         "bin/qros-session",
         "bin/qros-spawn-reviewer",

@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="idea-mandate-contracts" name="Idea Intake and Mandate Freeze Groups">
-        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -137,7 +137,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="PVJ6pTMgvOj_nVhjS6fO" name="csf_data_ready">
-        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -199,7 +199,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="90nI2IjqNbBVoiRDJWzf" name="csf_signal_ready">
-        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -258,7 +258,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-train-freeze-contracts" name="csf_train_freeze">
-        <mxGraphModel dx="3773" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="3773" dy="433" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -341,7 +341,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-test-evidence-contracts" name="csf_test_evidence">
-        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -436,7 +436,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-backtest-ready-contracts" name="csf_backtest_ready">
-        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -531,7 +531,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="csf-holdout-validation-contracts" name="csf_holdout_validation">
-        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" shadow="0">
+        <mxGraphModel dx="1273" dy="521" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2500" pageHeight="2500" background="#FBF7E6" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>

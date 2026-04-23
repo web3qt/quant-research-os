@@ -15,7 +15,7 @@
   - contracts/stages/workflow_stage_gates.yaml
   - contracts/review/review_checklist_master.yaml
   - docs/sop/review/stage_completion_standard_cn.md
-  - docs/sop/failures/05_backtest_failure_sop_cn.md
+  - docs/sop/failures/06_backtest_failure_sop_cn.md
   - docs/sop/failures/lineage_change_control_sop_cn.md
 
 ---
@@ -28,7 +28,7 @@
 
 它主要用于两类场景：
 
-1. 正式 `05_backtest` 阶段的高强度复核
+1. 正式 `06_backtest` 阶段的高强度复核
 2. 历史遗留或非 formal lineage 回测的只读审计
 
 这份清单不是为了重新设计策略，而是为了判断：
@@ -49,7 +49,7 @@
 
 适用于：
 
-- `05_backtest` formal closure review
+- `06_backtest` formal closure review
 - 从旧研究迁移到正式 stage-gated workflow 之前的回测审计
 - 收益显著偏强、执行假设偏敏感、或机制演进频繁的策略
 
@@ -68,7 +68,7 @@
 3. `docs/sop/review/stage_completion_standard_cn.md`
 4. 当前 backtest 的 gate 文档、review 文档、关键脚本与关键输出
 5. 若当前 backtest 已失败或存在治理问题，再读：
-   - `05_backtest_failure_sop_cn.md`
+   - `06_backtest_failure_sop_cn.md`
    - `lineage_change_control_sop_cn.md`
 
 ---
@@ -279,7 +279,7 @@ Reservation 不能被伪装成 `PASS`，只能支持：
 - `audit_target`
 - `original_lineage_verdict`
 - `current_backtest_trust_verdict`
-- `shadow_or_promotion_readiness`
+- `post_holdout_observation_readiness`
 - `blocking_checks_failed`
 - `reservation_checks_triggered`
 - `rollback_stage`

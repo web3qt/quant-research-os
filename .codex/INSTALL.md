@@ -2,11 +2,25 @@
 
 Enable QROS skills in Codex via native skill discovery.
 
+## Recommended Codex Flow
+
+Start Codex from the active research repo root, then ask Codex:
+
+```text
+Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
+```
+
+Codex should install QROS globally, bootstrap the current research repo's `./.qros/`, then you should Restart Codex. After restart, begin with:
+
+```text
+qros-research-session 帮我研究这个想法：<your idea>
+```
+
 ## Prerequisites
 
 - Git
 
-## Installation
+## Codex Execution Steps
 
 1. Clone the QROS repository somewhere outside the runtime target:
 
@@ -21,12 +35,18 @@ cd ~/workspace/quant-research-os
 ./setup --host codex --mode user-global
 ```
 
-3. Restart Codex to discover the skills.
-
-4. For each research repo, bootstrap a project-local runtime from that repo's root:
+3. From the active research repo root, bootstrap a project-local runtime:
 
 ```bash
 ~/workspace/quant-research-os/setup --host codex --mode repo-local
+```
+
+4. Restart Codex to discover the skills.
+
+5. Start the workflow from the active research repo:
+
+```text
+qros-research-session 帮我研究这个想法：<your idea>
 ```
 
 ## Verify
@@ -61,21 +81,9 @@ qros-update
 
 It refreshes both the global install and the current repo's `./.qros/` runtime.
 
-Manual fallback:
+Run `qros-update` from the active research repo root so the refreshed repo-local runtime is written to that repo.
 
-```bash
-cd ~/workspace/quant-research-os
-git pull
-./setup --host codex --mode user-global
-```
-
-Then rerun project-local bootstrap inside each research repo that should pick up the updated runtime:
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
-
-Rerunning `setup` refreshes the flat installed skill tree under `~/.codex/skills` and the local runtime under `./.qros/`.
+If update state looks stale, run `qros-update` from the active research repo root and then Restart Codex.
 
 ## Uninstalling
 

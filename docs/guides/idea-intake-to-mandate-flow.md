@@ -36,12 +36,13 @@
 - `idea_gate_decision.yaml`
 - `artifact_catalog.md`
 
-可以先用下面的命令生成这套模板：
+正常用户不需要手动生成这套模板。直接从 active research repo 运行：
 
-```bash
-./setup --host codex --mode repo-local
-python runtime/scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
+```text
+qros-research-session 帮我研究这个想法：<your idea>
 ```
+
+runtime 会在缺少 `00_idea_intake/` 时自动 scaffold intake artifacts。
 
 对于一个全新的 raw idea，正确行为不是直接从一句话推断完整 intake 结论。应先进行 intake 访谈，至少确认：
 
@@ -118,7 +119,7 @@ qualification 至少评估以下 6 项：
 当 `idea_gate_decision.yaml.verdict == GO_TO_MANDATE` 时，先显式确认：
 
 ```bash
-python runtime/scripts/run_research_session.py --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
+python runtime/.qros/bin/qros-session --outputs-root outputs --lineage-id <lineage_id> --confirm-mandate
 ```
 
 确认后才允许生成：

@@ -95,9 +95,7 @@ Codex 安装副本在本机：
 
 ## 固定 Skill 映射
 
-`qros-session` 对 review stage 的 skill 映射写死在：
-
-- [runtime/tools/research_session.py](/Users/mac08/workspace/web3qt/quant-research-os/runtime/tools/research_session.py:462)
+`qros-session` 对 review stage 的 skill 映射由 runtime 的 research session 模块维护，并由测试锁定。
 
 当前第一波固定映射如下：
 

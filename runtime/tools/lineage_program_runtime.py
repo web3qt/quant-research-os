@@ -333,6 +333,12 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
     stage_dir = lineage_root / spec.stage_dir_name
     author_formal_dir = _author_formal_dir(stage_dir)
     author_formal_dir.mkdir(parents=True, exist_ok=True)
+    _run_prebuild_schema_gate_if_declared(
+        lineage_root=lineage_root,
+        stage_dir=stage_dir,
+        author_formal_dir=author_formal_dir,
+        validated=validated,
+    )
     command = _command_for_entrypoint(validated)
     env = {
         **os.environ,
@@ -379,6 +385,149 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
         input_refs=tuple(ref.path for ref in validated.inputs),
         provenance_path=provenance_path,
     )
+
+
+def _run_prebuild_schema_gate_if_declared(
+    *,
+    lineage_root: Path,
+    stage_dir: Path,
+    author_formal_dir: Path,
+    validated: ValidatedStageProgram,
+) -> None:
+    payload = yaml.safe_load(validated.manifest_path.read_text(encoding="utf-8")) or {}
+    gate = payload.get("prebuild_schema_gate")
+    if gate is None:
+        return
+    if not isinstance(gate, dict):
+        raise StageProgramRuntimeError("STAGE_PROGRAM_PREBUILD_FAILED", "prebuild_schema_gate must be a mapping")
+
+    entrypoint_args = gate.get("entrypoint_args", [])
+    if not isinstance(entrypoint_args, list) or not all(isinstance(item, str) for item in entrypoint_args):
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            "prebuild_schema_gate.entrypoint_args must be a list of strings",
+        )
+    report_path_value = gate.get("report_path", "prebuild_schema_report.json")
+    if not isinstance(report_path_value, str) or not report_path_value.strip():
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            "prebuild_schema_gate.report_path must be a non-empty string",
+        )
+    report_path = author_formal_dir / report_path_value.strip()
+
+    # 预构建门禁只写 schema report，避免在字段合同错误时触发昂贵全量构建。
+    command = _command_for_entrypoint(validated) + entrypoint_args
+    env = {
+        **os.environ,
+        "QROS_LINEAGE_ROOT": str(lineage_root),
+        "QROS_STAGE_ID": validated.stage_id,
+        "QROS_STAGE_ROUTE": validated.route,
+        "QROS_STAGE_ROOT": str(stage_dir),
+        "QROS_STAGE_DIR": str(author_formal_dir),
+        "QROS_AUTHOR_FORMAL_DIR": str(author_formal_dir),
+        "QROS_PROGRAM_DIR": str(validated.program_dir),
+        "QROS_PREBUILD_SCHEMA_GATE": "1",
+        "QROS_PREBUILD_SCHEMA_REPORT": str(report_path),
+    }
+    result = subprocess.run(command, cwd=lineage_root, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        stderr = (result.stderr or result.stdout or "").strip()
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            stderr or f"Stage program prebuild schema gate exited with status {result.returncode}",
+        )
+    if not report_path.exists():
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            f"prebuild schema report was not written: {report_path.relative_to(author_formal_dir)}",
+        )
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            f"prebuild schema report is not valid JSON: {exc}",
+        ) from exc
+    _validate_prebuild_schema_report(gate, report)
+
+
+def _validate_prebuild_schema_report(gate: dict[str, Any], report: Any) -> None:
+    if not isinstance(report, dict):
+        raise StageProgramRuntimeError("STAGE_PROGRAM_PREBUILD_FAILED", "prebuild schema report must be a mapping")
+    expected_artifacts = gate.get("artifacts", {})
+    observed_artifacts = report.get("artifacts", {})
+    if not isinstance(expected_artifacts, dict) or not isinstance(observed_artifacts, dict):
+        raise StageProgramRuntimeError(
+            "STAGE_PROGRAM_PREBUILD_FAILED",
+            "prebuild schema gate and report must contain artifacts mappings",
+        )
+    findings: list[str] = []
+    for artifact_name, expected in expected_artifacts.items():
+        if not isinstance(artifact_name, str) or not isinstance(expected, dict):
+            findings.append(f"{artifact_name}: gate artifact expectation must be a mapping")
+            continue
+        observed = observed_artifacts.get(artifact_name)
+        if not isinstance(observed, dict):
+            findings.append(f"{artifact_name}: missing from prebuild schema report")
+            continue
+        _check_expected_list_subset(
+            findings,
+            artifact_name=artifact_name,
+            expected=expected,
+            observed=observed,
+            expected_key="required_columns",
+            observed_key="columns",
+        )
+        _check_expected_list_subset(
+            findings,
+            artifact_name=artifact_name,
+            expected=expected,
+            observed=observed,
+            expected_key="primary_key",
+            observed_key="primary_key",
+        )
+        _check_expected_list_subset(
+            findings,
+            artifact_name=artifact_name,
+            expected=expected,
+            observed=observed,
+            expected_key="coverage_fields",
+            observed_key="coverage_fields",
+        )
+        _check_expected_list_subset(
+            findings,
+            artifact_name=artifact_name,
+            expected=expected,
+            observed=observed,
+            expected_key="required_fields",
+            observed_key="fields",
+        )
+    if findings:
+        raise StageProgramRuntimeError("STAGE_PROGRAM_PREBUILD_FAILED", "; ".join(findings))
+
+
+def _check_expected_list_subset(
+    findings: list[str],
+    *,
+    artifact_name: str,
+    expected: dict[str, Any],
+    observed: dict[str, Any],
+    expected_key: str,
+    observed_key: str,
+) -> None:
+    expected_values = expected.get(expected_key)
+    if expected_values is None:
+        return
+    observed_values = observed.get(observed_key, [])
+    if not isinstance(expected_values, list) or not all(isinstance(item, str) for item in expected_values):
+        findings.append(f"{artifact_name}: {expected_key} must be a list of strings")
+        return
+    if not isinstance(observed_values, list) or not all(isinstance(item, str) for item in observed_values):
+        findings.append(f"{artifact_name}: report {observed_key} must be a list of strings")
+        return
+    missing = sorted(set(expected_values) - set(observed_values))
+    if missing:
+        findings.append(f"{artifact_name}: missing {expected_key}: {', '.join(missing)}")
 
 
 

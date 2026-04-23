@@ -53,23 +53,6 @@
 - `runtime/bin/`：稳定的用户入口，例如 `qros-session` 与 `qros-review`
 - `docs/`：SOP、使用说明、review 文档、操作文档
 - `tests/`：workflow 行为和文档回归测试
-- `harness/`：用于演示和测试分层 `AGENTS.md` 组织方式的示例子树
-
-## Harness 说明
-
-`harness/` 是一个“分层 AGENTS 组织方式”的演示与测试子树，用来说明：
-
-- 根 `AGENTS.md` 应该如何做地图
-- 子目录 `AGENTS.md` 应该如何承接更细规则
-- 什么时候适合把规则下沉到离内容更近的目录
-
-当前 `harness/` 子树包含：
-
-- `harness/AGENTS.md`：harness 子树自己的根地图
-- `harness/docs/AGENTS.md`：文档型子目录规则示例
-- `harness/skills/AGENTS.md`：skill / workflow 子目录规则示例
-- `harness/tools/AGENTS.md`：runtime / helper 子目录规则示例
-- `harness/tests/AGENTS.md`：测试子目录规则示例
 
 当前真实生效的目录级规则入口是：
 
@@ -91,20 +74,9 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 这意味着：
 
 - 根目录启动时，默认会读到本文件
-- 根目录启动时，不会自动把 `harness/AGENTS.md` 和 `harness/*/AGENTS.md` 当作已加载指令
+- 根目录启动时，不会自动读取子目录里的 `AGENTS.md`
 
-因此，在“总是从仓库根启动”的使用方式下，`harness/` 子树只应被理解为 instruction 分层示例，而不是主仓真实治理面。真实编辑规则应放在目标文件路径祖先链上的 `AGENTS.md` 中，例如根目录、`contracts/`、`skills/`、`runtime/`、`docs/`、`tests/`。
-
-### 什么时候进入 harness 子树
-
-当任务本身是下面这些类型时，再进入 `harness/` 或它的更深子目录启动 Codex：
-
-- 设计或评估分层 `AGENTS.md` 地图结构
-- 试验文档型子目录如何承接规则
-- 试验 skill / tools / tests 目录的专属指令写法
-- 验证“从某个子目录启动时，Codex 会实际读取哪些 instruction files”
-
-如果任务和 QROS 主仓的真实 skills、runtime、docs、tests 无关，而是专门讨论 instruction map / harness 设计，优先把它视为 `harness/` 子树任务。
+因此，真实编辑规则应放在目标文件路径祖先链上的 `AGENTS.md` 中，例如根目录、`contracts/`、`skills/`、`runtime/`、`docs/`、`tests/`。
 
 ## 命令
 

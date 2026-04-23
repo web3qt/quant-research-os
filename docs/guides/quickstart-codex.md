@@ -2,33 +2,26 @@
 
 ## 1. Install
 
+Open Codex from the active research repo root first.
+
 If you want the shortest Codex-native path, tell Codex:
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
 ```
 
-Or install manually:
-
-```bash
-git clone <QROS_REPO_URL> ~/workspace/quant-research-os
-cd ~/workspace/quant-research-os
-./setup --host codex --mode user-global
-```
-
-Then, from the current research repo root:
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
+Codex will install the global QROS skills, bootstrap the current research repo's `./.qros/`, and then ask you to Restart Codex. After restart, run `qros-research-session` from the same active research repo.
 
 ## 2. Start From The Unified Skill
 
-In Codex, start with:
+In Codex, choose the command by intent:
 
-- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
-- `qros-research-session help`
-- `qros-update`
+| Intent | Command |
+| --- | --- |
+| 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
+| 查看 QROS 使用帮助 | `qros-research-session help` |
+| 查看当前研究进度 | `qros-progress` |
+| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 

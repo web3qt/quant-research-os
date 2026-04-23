@@ -16,12 +16,12 @@
 - depends_on:
   - docs/sop/main-flow/research_workflow_sop.md
   - contracts/stages/workflow_stage_gates.yaml
-  - 01_data_ready_failure_sop
-  - 02_signal_ready_failure_sop
-  - 03_train_freeze_failure_sop
-  - 04_test_evidence_failure_sop
-  - 05_backtest_failure_sop
-  - 06_holdout_failure_sop
+  - 02_data_ready_failure_sop
+  - 03_signal_ready_failure_sop
+  - 04_train_freeze_failure_sop
+  - 05_test_evidence_failure_sop
+  - 06_backtest_failure_sop
+  - 07_holdout_failure_sop
   - lineage_change_control_sop
 
 ---
@@ -86,7 +86,7 @@
 1. `Mandate`
 2. `Data Ready`
 3. `Signal Ready`
-4. `Train Calibration`
+4. `Train Freeze`
 5. `Test Evidence`
 6. `Backtest Ready`
 7. `Holdout Validation`
@@ -189,7 +189,7 @@
 - 同环境重跑
 - 独立环境重跑
 - spot recomputation（抽 symbol、抽 param_id、抽日期）
-- 双引擎/双实现对照（适用于 `Backtest`、`Shadow`）
+- 双引擎/双实现对照（适用于 `Backtest`、`post-holdout observation`）
 
 ### 常见失败模式
 - 只能“作者自己跑出来”
@@ -295,7 +295,7 @@
 - 低样本比例是否极高
 - 某些参数是否几乎无有效信号
 
-#### `Train Calibration`
+#### `Train Freeze`
 - 拒绝率是否异常高
 - 阈值分位是否异常不稳定
 - 是否出现利用训练收益选参数的迹象
@@ -408,7 +408,7 @@
 适用于：
 - `Backtest`
 - `Holdout`
-- `Shadow`
+- `post-holdout observation`
 
 至少验证：
 - 核心方向一致

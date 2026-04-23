@@ -14,71 +14,28 @@ QROS 是一个面向 agent 的阶段式研究治理框架。它不替你发明 a
 
 ## 🚀 Codex 用户怎么开始
 
+先在你要研究的 active research repo 根目录打开 Codex。
+
 如果你本身就在 `Codex` 里工作，最短安装入口可以直接写成：
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
 ```
 
-安装完成后，在 Codex 里直接开始：
+安装完成后，在 Codex 里按用途选择：
 
-```text
-$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT ，横截面研究
-$qros-research-session help
-$qros-progress
-```
+| 你想做什么 | 在 Codex 里输入 |
+| --- | --- |
+| 开始或继续一条研究线 | `$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT，横截面研究` |
+| 查看 QROS 使用帮助 | `$qros-research-session help` |
+| 查看当前研究进度 | `$qros-progress` |
+| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
+
+如果这是第一次安装，按安装说明刷新当前 repo 的 `./.qros/` 后需要 **Restart Codex**，再运行 `$qros-research-session`。
 
 `$qros-progress` 是只读进度查询入口：默认读取当前 repo 的 `outputs/`，选择最近修改的 lineage，告诉你当前 stage、active skill、gate 状态和 next action；它不写 artifact，也不推进 stage。
 
-更新时，在 Codex 里直接运行：
-
-```text
-$qros-update
-```
-
 > 📌 推荐默认只记这一条主路径：安装好以后，先从 `$qros-research-session` 开始，不要先去背一堆 skill 名。
-
-<details>
-<summary><strong>手动安装、更新与验证</strong></summary>
-
-手动安装：
-
-```bash
-git clone https://github.com/web3qt/quant-research-os.git ~/workspace/quant-research-os
-cd ~/workspace/quant-research-os
-./setup --host codex --mode user-global
-```
-
-然后 **Restart Codex**，再在当前 research repo 根执行：
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
-
-更新安装：
-
-```bash
-git pull && ./setup --host codex --mode user-global
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
-
-如果你已经在 Codex 里，优先直接运行 `qros-update`，它会顺手刷新当前 repo 的 `./.qros/`。
-
-最小验证：
-
-```bash
-./.qros/bin/qros-verify --tier smoke
-```
-
-手动诊断或恢复：
-
-```bash
-./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
-./.qros/bin/qros-progress
-./.qros/bin/qros-review
-```
-
-</details>
 
 ## 🗺️ 当前主流程阶段图
 
@@ -119,7 +76,6 @@ QROS 负责固定阶段顺序、freeze/review gate、failure routing 和 lineage
 | `runtime/tools/` | stage runtime、gate 校验、program/provenance 处理 |
 | `docs/` | 安装、SOP、字段说明、使用路径 |
 | `tests/` | bootstrap、安装、workflow、runtime、anti-drift 回归 |
-| `harness/` | 分层 `AGENTS.md` 的演示与验证子树，不是主流程 demo |
 
 第一次接触 grouped freeze 字段，先看：
 

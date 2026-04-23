@@ -8,6 +8,8 @@ First version supports:
 
 ## Recommended For Codex Users
 
+先在你要研究的 active research repo 根目录打开 Codex。
+
 如果你本身就是在 Codex 里工作，推荐像 `superpowers` 那样走“让 Codex 自己读取安装说明”的路径：
 
 ```text
@@ -16,21 +18,9 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 
 这条路径更接近 Codex 的 skill-first 使用方式，也更适合第一次安装。
 
-Install entry point:
+Codex will clone or refresh the QROS source repo, write flat installed skills directly into Codex's native discovery path, and bootstrap the current research repo's local runtime.
 
-```bash
-git clone <QROS_REPO_URL> ~/workspace/quant-research-os
-cd ~/workspace/quant-research-os
-./setup --host codex --mode user-global
-```
-
-This keeps the repo clone as the authored source while writing flat installed skills directly into Codex's native discovery path.
-
-Then, from each research repo root, bootstrap a local runtime:
-
-```bash
-~/workspace/quant-research-os/setup --host codex --mode repo-local
-```
+首次安装或刷新 skills 后需要 Restart Codex。重启后，从同一个 active research repo 运行 `qros-research-session`。
 
 ## Install Layout
 
@@ -60,17 +50,9 @@ qros-update
 
 It refreshes both the global install and the current repo's `./.qros/` runtime.
 
-Manual fallback:
+请从 active research repo 根目录运行 `qros-update`，这样它会刷新全局 skills，同时刷新该 repo 的 `./.qros/`。
 
-```bash
-cd ~/workspace/quant-research-os
-git pull
-./setup --host codex --mode user-global
-```
-
-Codex will see the updated skills after `setup` refreshes `~/.codex/skills`.
-
-如果你之前装的是旧版（例如还走 `~/.agents/skills` 或保留了旧 display 相关安装产物），这里也要完整重新跑一遍，然后**重启 Codex**，不要只 `git pull`。
+如果你之前装的是旧版（例如还走 `~/.agents/skills` 或保留了旧 display 相关安装产物），直接运行 `qros-update`，然后 **Restart Codex**，不要只更新源码仓。
 
 ## Check
 
@@ -92,8 +74,12 @@ It verifies:
 
 In Codex, start with:
 
-- `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
-- `qros-research-session help`
+| 你想做什么 | 在 Codex 里输入 |
+| --- | --- |
+| 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
+| 查看 QROS 使用帮助 | `qros-research-session help` |
+| 查看当前研究进度 | `qros-progress` |
+| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
 
 The recommended user path is skill-first. The repo clone is the authored source; `user-global` makes Codex see the installed skills, and `repo-local` makes the current research repo get its own runtime.
 
@@ -108,6 +94,6 @@ Use `./.qros/bin/qros-session`, `./.qros/bin/qros-review`, and `./.qros/bin/qros
 ## Troubleshooting
 
 - `Codex` cannot see the skills: verify `~/.codex/skills/` contains `qros-*`
-- Skill content looks stale: run `cd ~/workspace/quant-research-os && git pull && ./setup --host codex --mode user-global`，然后在当前 research repo 根再跑一次 `~/workspace/quant-research-os/setup --host codex --mode repo-local`，最后重启 Codex
+- Skill content looks stale: run `qros-update` from the active research repo root, then Restart Codex
 - Need workflow guidance: open `docs/guides/quickstart-codex.md`
 - Need the unified entry docs: open `docs/guides/qros-research-session-usage.md`

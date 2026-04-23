@@ -7,6 +7,8 @@ description: Update QROS to the latest published main and refresh the current re
 
 Use this skill when the user asks to update QROS, refresh to the latest released version, sync the latest main branch, or rebuild the current repo's `./.qros/` runtime.
 
+Run this skill from the active research repo root. The current working directory determines which repo-local `./.qros/` runtime is refreshed.
+
 ## Goal
 
 Bring the user to the latest published `origin/main` version of QROS and leave the current working repo ready to use immediately.

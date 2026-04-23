@@ -44,7 +44,6 @@
 - `templates/`：生成模板层
 - `docs/`：解释层
 - `tests/`：验证层
-- `harness/`：分层 `AGENTS.md` 组织方式的示例子树，不是主仓真实治理面
 
 也就是说，`docs/` 不是整个项目的总入口树，只是其中的人类解释层。
 
@@ -63,16 +62,6 @@
 - `docs/archive/plans/`
   历史设计稿、实施计划和工作记录。
 
-## `harness/` 不是 docs 的一部分
-
-`harness/` 虽然也有 `docs/`、`skills/`、`runtime/tools/`、`tests/` 子目录，但它不属于主产品文档树。
-
-它服务的是根 `AGENTS.md` 的 instruction 组织与验证，主要用途是：
-
-- 演示分层 `AGENTS.md` 地图
-- 验证不同启动目录下的 instruction 读取边界
-- 给 Codex 的 instruction / orchestration 机制提供支撑性样例
-
 主仓真实目录级规则入口在：
 
 - `../contracts/AGENTS.md`
@@ -80,11 +69,6 @@
 - `../runtime/AGENTS.md`
 - `AGENTS.md`
 - `../tests/AGENTS.md`
-
-所以：
-
-- 普通使用者先不用进 `harness/`
-- 只有当你在研究“Codex 如何读 AGENTS.md、如何做目录级 instruction 分层”时，才需要看它
 
 ## 读文档时的规则
 

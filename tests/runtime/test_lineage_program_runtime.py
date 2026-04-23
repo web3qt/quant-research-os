@@ -5,6 +5,7 @@ import yaml
 from tests.helpers.lineage_program_support import ensure_stage_program
 from tests.session.test_idea_runtime_scripts import _mandate_freeze_draft, _route_assessment
 from runtime.tools.lineage_program_runtime import (
+    StageProgramRuntimeError,
     StageProgramSpec,
     inspect_stage_program,
     invoke_stage_if_admitted,
@@ -17,6 +18,111 @@ from runtime.tools.lineage_program_runtime import (
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_prebuild_gate_program(
+    lineage_root: Path,
+    *,
+    dry_run_columns: list[str],
+) -> None:
+    program_dir = lineage_root / "program" / "cross_sectional_factor" / "signal_ready"
+    program_dir.mkdir(parents=True)
+    (program_dir / "README.md").write_text("# Signal Ready Program\n", encoding="utf-8")
+    (program_dir / "run_stage.py").write_text(
+        f"""#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lineage-root", type=Path, required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    stage_dir = args.lineage_root / "03_csf_signal_ready" / "author" / "formal"
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    if args.dry_run:
+        # 预检只写 schema report，避免触发全量构建。
+        (stage_dir / "prebuild_schema_report.json").write_text(json.dumps({{
+            "artifacts": {{
+                "factor_panel.parquet": {{
+                    "columns": {dry_run_columns!r},
+                    "primary_key": ["date", "asset"],
+                    "coverage_fields": ["factor_coverage_ratio"]
+                }},
+                "factor_manifest.yaml": {{
+                    "fields": ["factor_id", "factor_direction", "final_score_field"]
+                }}
+            }}
+        }}), encoding="utf-8")
+        return 0
+
+    # 全量构建只有 dry-run 通过后才应执行。
+    for name in (
+        "factor_panel.parquet",
+        "factor_manifest.yaml",
+        "component_factor_manifest.yaml",
+        "factor_coverage_report.parquet",
+        "factor_group_context.parquet",
+        "route_inheritance_contract.yaml",
+        "factor_contract.md",
+        "factor_field_dictionary.md",
+        "csf_signal_ready_gate_decision.md",
+        "run_manifest.json",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ):
+        (stage_dir / name).write_text("ok\\n", encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+""",
+        encoding="utf-8",
+    )
+    (program_dir / "stage_program.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "stage_id": "signal_ready",
+                "route": "cross_sectional_factor",
+                "lineage_id": lineage_root.name,
+                "entrypoint": "run_stage.py",
+                "entry_type": "python",
+                "inputs": [],
+                "outputs": [
+                    {"kind": "machine", "path": "03_csf_signal_ready/author/formal/factor_panel.parquet", "required": True}
+                ],
+                "depends_on_programs": ["mandate"],
+                "shared_libs": [],
+                "authored_by": {
+                    "agent_id": "test-agent",
+                    "agent_role": "executor",
+                    "session_id": "test-session",
+                },
+                "prebuild_schema_gate": {
+                    "entrypoint_args": ["--dry-run"],
+                    "report_path": "prebuild_schema_report.json",
+                    "artifacts": {
+                        "factor_panel.parquet": {
+                            "required_columns": ["date", "asset", "score"],
+                            "primary_key": ["date", "asset"],
+                            "coverage_fields": ["factor_coverage_ratio"],
+                        },
+                        "factor_manifest.yaml": {
+                            "required_fields": ["factor_id", "factor_direction", "final_score_field"],
+                        },
+                    },
+                },
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
 
 
 def _data_ready_freeze_draft() -> dict:
@@ -151,6 +257,83 @@ def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_p
     assert provenance["status"] == "success"
     assert (result.stage_dir / "author" / "formal" / "dataset_manifest.json").exists()
     assert (result.stage_dir / "author" / "formal" / "program_execution_manifest.json").exists()
+
+
+def test_invoke_stage_if_admitted_blocks_full_build_when_prebuild_schema_gate_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_prebuild_gate_program(lineage_root, dry_run_columns=["date", "asset"])
+
+    try:
+        invoke_stage_if_admitted(
+            lineage_root,
+            StageProgramSpec(
+                stage_id="signal_ready",
+                route="cross_sectional_factor",
+                stage_dir_name="03_csf_signal_ready",
+                required_outputs=(
+                    "factor_panel.parquet",
+                    "factor_manifest.yaml",
+                    "component_factor_manifest.yaml",
+                    "factor_coverage_report.parquet",
+                    "factor_group_context.parquet",
+                    "route_inheritance_contract.yaml",
+                    "factor_contract.md",
+                    "factor_field_dictionary.md",
+                    "csf_signal_ready_gate_decision.md",
+                    "run_manifest.json",
+                    "artifact_catalog.md",
+                    "field_dictionary.md",
+                ),
+            ),
+        )
+    except StageProgramRuntimeError as exc:
+        assert exc.reason_code == "STAGE_PROGRAM_PREBUILD_FAILED"
+        assert "score" in exc.message
+    else:
+        raise AssertionError("expected prebuild failure")
+
+    formal_dir = lineage_root / "03_csf_signal_ready" / "author" / "formal"
+    assert (formal_dir / "prebuild_schema_report.json").exists()
+    assert not (formal_dir / "factor_panel.parquet").exists()
+    assert not (formal_dir / "program_execution_manifest.json").exists()
+
+
+def test_invoke_stage_if_admitted_runs_full_build_after_prebuild_schema_gate_passes(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_prebuild_gate_program(
+        lineage_root,
+        dry_run_columns=["date", "asset", "score", "factor_coverage_ratio"],
+    )
+
+    result = invoke_stage_if_admitted(
+        lineage_root,
+        StageProgramSpec(
+            stage_id="signal_ready",
+            route="cross_sectional_factor",
+            stage_dir_name="03_csf_signal_ready",
+            required_outputs=(
+                "factor_panel.parquet",
+                "factor_manifest.yaml",
+                "component_factor_manifest.yaml",
+                "factor_coverage_report.parquet",
+                "factor_group_context.parquet",
+                "route_inheritance_contract.yaml",
+                "factor_contract.md",
+                "factor_field_dictionary.md",
+                "csf_signal_ready_gate_decision.md",
+                "run_manifest.json",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ),
+        ),
+    )
+
+    formal_dir = result.stage_dir / "author" / "formal"
+    assert (formal_dir / "prebuild_schema_report.json").exists()
+    assert (formal_dir / "factor_panel.parquet").exists()
+    assert (formal_dir / "program_execution_manifest.json").exists()
+
+
 def test_invoke_stage_if_admitted_supports_route_neutral_mandate_programs(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "case_mandate"
     intake_dir = lineage_root / "00_idea_intake"
