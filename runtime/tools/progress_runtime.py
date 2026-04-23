@@ -5,6 +5,7 @@ from pathlib import Path
 
 from runtime.tools.research_session import (
     _gate_status_and_next_action,
+    _latest_failure_package_runtime_status,
     _latest_review_failure_status,
     current_research_route,
     current_route_contract,
@@ -42,9 +43,17 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)
     )
+    failure_package_status = _latest_failure_package_runtime_status(lineage_root)
     if requires_failure_handling and failure_stage is not None:
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
+    if failure_package_status is not None:
+        gate_status = failure_package_status.gate_status
+        next_action = failure_package_status.next_action
+        review_verdict = failure_package_status.review_verdict
+        requires_failure_handling = True
+        failure_stage = failure_package_status.failure_stage
+        failure_reason_summary = failure_package_status.failure_reason_summary
 
     why_now, open_risks = session_transition_summary(lineage_root, current_stage)
     route_contract = current_route_contract(lineage_root)
@@ -68,6 +77,15 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
+        current_skill=failure_package_status.current_skill if failure_package_status else None,
+        why_this_skill=failure_package_status.why_this_skill if failure_package_status else None,
+        blocking_reason=failure_package_status.blocking_reason if failure_package_status else None,
+        resume_hint=failure_package_status.resume_hint if failure_package_status else None,
+        runtime_stage_status_override=failure_package_status.stage_status if failure_package_status else None,
+        runtime_blocking_reason_code_override=(
+            failure_package_status.blocking_reason_code if failure_package_status else None
+        ),
+        runtime_next_action_override=failure_package_status.next_action if failure_package_status else None,
     )
 
 

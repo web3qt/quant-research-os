@@ -116,6 +116,8 @@ For `data_ready` and later stages, those artifacts are expected to be real stage
 
 Review failure is not ordinary debugging. If a stage review ends with `PASS FOR RETRY`, `RETRY`, `NO-GO`, or `CHILD LINEAGE`, the session should stop normal stage progression, surface `requires_failure_handling`, and switch into `qros-stage-failure-handler`.
 
+If a controlled retry writes `failure_packages/*/post_retry_decision.yaml` with `normal_progression_allowed: false`, runtime should surface `FAILURE_DISPOSITION_REQUIRED`. The original lineage must not re-enter review or next-stage progression until the failure package records `failure_disposition.yaml` with `NO_GO` or `CHILD_LINEAGE`; after that disposition, ordinary progression on the original lineage remains blocked.
+
 ## 5. Internal Runtime Note
 
 QROS still uses scripts internally for deterministic state transitions, but those are runtime internals, not the primary user workflow.

@@ -98,6 +98,51 @@ def _write_next_stage_confirmation(stage_dir: Path, *, stage: str) -> None:
     )
 
 
+def _write_failure_post_retry_decision(
+    stage_dir: Path,
+    *,
+    failure_id: str = "backtest_exec_fail_20260423T045312Z",
+    failed_stage: str = "csf_backtest_ready",
+    normal_progression_allowed: bool = False,
+) -> Path:
+    failure_package_dir = stage_dir / "failure_packages" / failure_id
+    _write_yaml(
+        failure_package_dir / "post_retry_decision.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "failed_stage": failed_stage,
+            "failure_class": "EXEC_FAIL",
+            "controlled_retry_count": 1,
+            "retry_result": "hard_gate_still_failed",
+            "recommended_next_decision": "NO_GO_OR_CHILD_LINEAGE_REQUIRED",
+            "normal_progression_allowed": normal_progression_allowed,
+            "reason": (
+                "Stage-local accounting correction improved the result but did not clear "
+                "mean_net_return > 0."
+            ),
+        },
+    )
+    return failure_package_dir
+
+
+def _write_failure_disposition(
+    failure_package_dir: Path,
+    *,
+    decision: str,
+) -> None:
+    _write_yaml(
+        failure_package_dir / "failure_disposition.yaml",
+        {
+            "lineage_id": failure_package_dir.parents[2].name,
+            "failed_stage": failure_package_dir.parents[1].name.removeprefix("06_"),
+            "decision": decision,
+            "normal_progression_allowed": False,
+            "decided_at": "2026-04-23T05:10:00Z",
+            "reason": "Formal disposition recorded after controlled retry stayed below the hard gate.",
+        },
+    )
+
+
 def _write_adversarial_review_request(
     stage_dir: Path,
     *,
@@ -2287,6 +2332,104 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
         assert status.failure_stage == expected_stage
         assert "failure" in status.next_action.lower()
         assert status.failure_reason_summary == f"{expected_stage} requires failure handling because review verdict is {verdict}."
+
+
+def test_run_research_session_requires_failure_disposition_after_blocking_failure_package(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_alt_k"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "short_only_rank",
+            "neutralization_policy": "none",
+        },
+    )
+    backtest_dir = lineage_root / "06_csf_backtest_ready"
+    _write_minimal_stage_outputs(backtest_dir, stage="csf_backtest_ready")
+    _write_failure_post_retry_decision(backtest_dir)
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_alt_k")
+
+    assert status.current_stage == "csf_backtest_ready_review_confirmation_pending"
+    assert status.stage_status == "failure_disposition_required"
+    assert status.blocking_reason_code == "FAILURE_DISPOSITION_REQUIRED"
+    assert status.gate_status == "FAILURE_DISPOSITION_REQUIRED"
+    assert status.current_skill == "qros-stage-failure-handler"
+    assert status.requires_failure_handling is True
+    assert status.failure_stage == "csf_backtest_ready"
+    assert "failure_disposition.yaml" in status.next_action
+    assert "NO_GO" in status.next_action
+    assert "CHILD_LINEAGE" in status.next_action
+
+
+def test_run_research_session_does_not_write_review_confirmation_when_failure_disposition_required(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_alt_k"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "short_only_rank",
+            "neutralization_policy": "none",
+        },
+    )
+    backtest_dir = lineage_root / "06_csf_backtest_ready"
+    _write_minimal_stage_outputs(backtest_dir, stage="csf_backtest_ready")
+    _write_failure_post_retry_decision(backtest_dir)
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_alt_k",
+        review_decision="CONFIRM_REVIEW",
+    )
+
+    assert status.blocking_reason_code == "FAILURE_DISPOSITION_REQUIRED"
+    assert not (backtest_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
+
+
+def test_run_research_session_keeps_disposed_failure_from_reentering_review(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_alt_k"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "short_only_rank",
+            "neutralization_policy": "none",
+        },
+    )
+    backtest_dir = lineage_root / "06_csf_backtest_ready"
+    _write_minimal_stage_outputs(backtest_dir, stage="csf_backtest_ready")
+    failure_package_dir = _write_failure_post_retry_decision(backtest_dir)
+    _write_failure_disposition(failure_package_dir, decision="NO_GO")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_alt_k")
+
+    assert status.current_stage == "csf_backtest_ready_review_confirmation_pending"
+    assert status.stage_status == "failure_disposition_recorded"
+    assert status.blocking_reason_code == "FAILURE_DISPOSITION_RECORDED"
+    assert status.gate_status == "FAILURE_DISPOSITION_RECORDED"
+    assert status.current_skill == "qros-lineage-change-control"
+    assert status.requires_failure_handling is True
+    assert status.failure_stage == "csf_backtest_ready"
+    assert "NO_GO" in (status.failure_reason_summary or "")
+    assert "must not re-enter review" in status.next_action
 
 
 def test_run_research_session_ignores_removed_review_governance_lane(tmp_path: Path) -> None:

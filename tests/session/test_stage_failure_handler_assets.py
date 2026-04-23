@@ -37,6 +37,8 @@ def test_qros_research_session_requires_automatic_failure_routing() -> None:
     assert "NO-GO" in session_skill
     assert "CHILD LINEAGE" in session_skill
     assert "requires_failure_handling" in session_skill
+    assert "FAILURE_DISPOSITION_REQUIRED" in session_skill
+    assert "FAILURE_DISPOSITION_RECORDED" in session_skill
     assert "stop normal stage progression" in session_skill.lower() or "停止正常推进" in session_skill
 
 
@@ -51,3 +53,5 @@ def test_failure_mode_is_documented_in_usage_docs() -> None:
         assert "RETRY" in content
         assert "NO-GO" in content
         assert "CHILD LINEAGE" in content
+        assert "FAILURE_DISPOSITION_REQUIRED" in content
+        assert "failure_disposition.yaml" in content

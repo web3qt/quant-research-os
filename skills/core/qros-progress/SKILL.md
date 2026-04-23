@@ -64,6 +64,8 @@ description: Use when the user asks for latest QROS research progress, current l
 如果输出显示：
 
 - `current_skill = qros-stage-failure-handler`，应进入 failure handling，而不是继续普通 stage 推进。
+- `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`，应在 latest failure package 写出 `failure_disposition.yaml`，只能选择 `NO_GO` 或 `CHILD_LINEAGE`。
+- `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`，原 lineage 仍不得重新进入普通 review / next-stage，应走 `qros-lineage-change-control` 或 child lineage。
 - `blocking_reason_code = STAGE_PROGRAM_MISSING`，应让 author lane 显式补 lineage-local stage program。
 - `blocking_reason_code = REVIEW_CONFIRMATION_REQUIRED`，应进入对应 review skill 的显式 review 流程。
 - `current_stage` 以 `_next_stage_confirmation_pending` 结尾，应先让用户确认是否进入下一阶段。

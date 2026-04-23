@@ -127,6 +127,8 @@ lineage_program_contract:
       - awaiting_program_execution
       - awaiting_review_closure
       - blocked_requires_failure_handling
+      - failure_disposition_required
+      - failure_disposition_recorded
       - review_complete
     blocking_reason_code:
       - NONE
@@ -138,6 +140,8 @@ lineage_program_contract:
       - OUTPUTS_INVALID
       - REVIEW_PENDING
       - FAILURE_HANDLER_REQUIRED
+      - FAILURE_DISPOSITION_REQUIRED
+      - FAILURE_DISPOSITION_RECORDED
 
 review_sequence:
   - identify_current_stage

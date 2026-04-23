@@ -132,6 +132,8 @@ author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史
 
 阶段 review 失败不是普通调试（不是普通 debug）。当当前 stage review verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 时，QROS 不应继续普通阶段推进，而应根据 runtime 的 `requires_failure_handling` 信号切换到 `qros-stage-failure-handler`。
 
+failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post_retry_decision.yaml` 写明 `normal_progression_allowed: false`，`qros-session` / `qros-progress` 会进入 `FAILURE_DISPOSITION_REQUIRED`，并要求在该 failure package 下写出正式 `failure_disposition.yaml`。该 disposition 只能把原 lineage 关闭为 `NO_GO`，或声明必须开 `CHILD_LINEAGE`；在 disposition 写出前，不允许重新进入 review 或 next-stage。即使 disposition 已写出，原 lineage 也不得继续普通 review / holdout 推进。
+
 对 `csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation`，当前 runtime 还额外执行 hard metric gates，而不是只看 artifact 是否齐全：
 
 - `standalone_alpha` 的 `mean_rank_ic <= 0` 时，不得从 `csf_test_evidence` 放行

@@ -127,6 +127,10 @@ Review failure is not ordinary debugging.
 
 When runtime status reports `requires_failure_handling = true`, the current conversation must switch into `qros-stage-failure-handler`.
 
+When runtime status reports `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`, the current conversation must not resume review or next-stage progression. The agent must record a formal `failure_disposition.yaml` in the latest failure package with `decision: NO_GO` or `decision: CHILD_LINEAGE`.
+
+When runtime status reports `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`, the original lineage remains blocked from ordinary review or next-stage progression. Continue only through `qros-lineage-change-control` or a child lineage path.
+
 The automatic failure-routing trigger verdicts are:
 
 - `PASS FOR RETRY`

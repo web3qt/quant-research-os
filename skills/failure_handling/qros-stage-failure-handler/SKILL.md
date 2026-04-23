@@ -40,6 +40,7 @@ description: Use when qros stage review verdicts are PASS FOR RETRY, RETRY, NO-G
   - `NO-GO`
   - `CHILD LINEAGE`
 - 或 `qros-research-session` 报告 `requires_failure_handling = true`
+- 或 `qros-research-session` / `qros-progress` 报告 `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`
 
 一旦满足进入条件：
 

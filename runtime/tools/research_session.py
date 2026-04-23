@@ -465,6 +465,21 @@ class SessionContext:
     failure_reason_summary: str | None = None
 
 
+@dataclass(frozen=True)
+class FailurePackageRuntimeStatus:
+    stage_status: str
+    blocking_reason_code: str
+    gate_status: str
+    current_skill: str
+    why_this_skill: str
+    blocking_reason: str
+    next_action: str
+    resume_hint: str
+    review_verdict: str
+    failure_stage: str
+    failure_reason_summary: str
+
+
 STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "idea_intake": "qros-idea-intake-author",
     "idea_intake_confirmation_pending": "qros-idea-intake-author",
@@ -1725,6 +1740,9 @@ def summarize_session_status(
     requires_failure_handling: bool = False,
     failure_stage: str | None = None,
     failure_reason_summary: str | None = None,
+    runtime_stage_status_override: str | None = None,
+    runtime_blocking_reason_code_override: str | None = None,
+    runtime_next_action_override: str | None = None,
 ) -> SessionContext:
     (
         stage_status,
@@ -1741,6 +1759,12 @@ def summarize_session_status(
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
     )
+    if runtime_stage_status_override is not None:
+        stage_status = runtime_stage_status_override
+    if runtime_blocking_reason_code_override is not None:
+        blocking_reason_code = runtime_blocking_reason_code_override
+    if runtime_next_action_override is not None:
+        runtime_next_action = runtime_next_action_override
     resolved_current_skill = current_skill or _current_skill_for_stage(
         current_stage=current_stage,
         requires_failure_handling=requires_failure_handling,
@@ -2685,9 +2709,10 @@ def run_research_session(
 
     artifacts_written: list[str] = []
     current_stage = detect_session_stage(lineage_root)
+    failure_package_status = _latest_failure_package_runtime_status(lineage_root)
 
     # 只有当前真正停在对应 confirmation gate，才允许把确认决策正式写盘。
-    if idea_intake_decision is not None and current_stage in {
+    if failure_package_status is None and idea_intake_decision is not None and current_stage in {
         "idea_intake",
         "idea_intake_confirmation_pending",
     }:
@@ -2695,12 +2720,12 @@ def run_research_session(
             write_idea_intake_transition_decision(lineage_root, decision=idea_intake_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if mandate_decision is not None and current_stage == "mandate_confirmation_pending":
+    if failure_package_status is None and mandate_decision is not None and current_stage == "mandate_confirmation_pending":
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if data_ready_decision is not None and current_stage in {
+    if failure_package_status is None and data_ready_decision is not None and current_stage in {
         "data_ready_confirmation_pending",
         "csf_data_ready_confirmation_pending",
     }:
@@ -2708,7 +2733,7 @@ def run_research_session(
             write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if signal_ready_decision is not None and current_stage in {
+    if failure_package_status is None and signal_ready_decision is not None and current_stage in {
         "signal_ready_confirmation_pending",
         "csf_signal_ready_confirmation_pending",
     }:
@@ -2716,7 +2741,7 @@ def run_research_session(
             write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if train_freeze_decision is not None and current_stage in {
+    if failure_package_status is None and train_freeze_decision is not None and current_stage in {
         "train_freeze_confirmation_pending",
         "csf_train_freeze_confirmation_pending",
     }:
@@ -2724,7 +2749,7 @@ def run_research_session(
             write_train_freeze_transition_decision(lineage_root, decision=train_freeze_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if test_evidence_decision is not None and current_stage in {
+    if failure_package_status is None and test_evidence_decision is not None and current_stage in {
         "test_evidence_confirmation_pending",
         "csf_test_evidence_confirmation_pending",
     }:
@@ -2732,7 +2757,7 @@ def run_research_session(
             write_test_evidence_transition_decision(lineage_root, decision=test_evidence_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if backtest_ready_decision is not None and current_stage in {
+    if failure_package_status is None and backtest_ready_decision is not None and current_stage in {
         "backtest_ready_confirmation_pending",
         "csf_backtest_ready_confirmation_pending",
     }:
@@ -2740,7 +2765,7 @@ def run_research_session(
             write_backtest_ready_transition_decision(lineage_root, decision=backtest_ready_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if holdout_validation_decision is not None and current_stage in {
+    if failure_package_status is None and holdout_validation_decision is not None and current_stage in {
         "holdout_validation_confirmation_pending",
         "csf_holdout_validation_confirmation_pending",
     }:
@@ -2751,7 +2776,7 @@ def run_research_session(
         )
         current_stage = detect_session_stage(lineage_root)
 
-    if review_decision is not None and current_stage.endswith("_review_confirmation_pending"):
+    if failure_package_status is None and review_decision is not None and current_stage.endswith("_review_confirmation_pending"):
         preflight_payload = _review_entry_preflight_payload(
             lineage_root=lineage_root,
             current_stage=current_stage,
@@ -2766,7 +2791,7 @@ def run_research_session(
                 artifacts_written.append(written)
         current_stage = detect_session_stage(lineage_root)
 
-    if next_stage_decision is not None and current_stage.endswith("_next_stage_confirmation_pending"):
+    if failure_package_status is None and next_stage_decision is not None and current_stage.endswith("_next_stage_confirmation_pending"):
         written = write_next_stage_transition_decision(
             lineage_root,
             current_stage=current_stage,
@@ -2776,107 +2801,107 @@ def run_research_session(
             artifacts_written.append(written)
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "idea_intake":
+    if failure_package_status is None and current_stage == "idea_intake":
         artifacts_written.extend(ensure_intake_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "mandate_author":
+    if failure_package_status is None and current_stage == "mandate_author":
         artifacts_written.extend(build_mandate_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "data_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "data_ready_confirmation_pending":
         artifacts_written.extend(ensure_data_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "data_ready_author":
+    if failure_package_status is None and current_stage == "data_ready_author":
         artifacts_written.extend(build_data_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "signal_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "signal_ready_confirmation_pending":
         artifacts_written.extend(ensure_signal_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "signal_ready_author":
+    if failure_package_status is None and current_stage == "signal_ready_author":
         artifacts_written.extend(build_signal_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "train_freeze_confirmation_pending":
+    if failure_package_status is None and current_stage == "train_freeze_confirmation_pending":
         artifacts_written.extend(ensure_train_freeze_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "train_freeze_author":
+    if failure_package_status is None and current_stage == "train_freeze_author":
         artifacts_written.extend(build_train_freeze_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "test_evidence_confirmation_pending":
+    if failure_package_status is None and current_stage == "test_evidence_confirmation_pending":
         artifacts_written.extend(ensure_test_evidence_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "test_evidence_author":
+    if failure_package_status is None and current_stage == "test_evidence_author":
         artifacts_written.extend(build_test_evidence_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "backtest_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "backtest_ready_confirmation_pending":
         artifacts_written.extend(ensure_backtest_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "backtest_ready_author":
+    if failure_package_status is None and current_stage == "backtest_ready_author":
         artifacts_written.extend(build_backtest_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "holdout_validation_confirmation_pending":
+    if failure_package_status is None and current_stage == "holdout_validation_confirmation_pending":
         artifacts_written.extend(ensure_holdout_validation_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "holdout_validation_author":
+    if failure_package_status is None and current_stage == "holdout_validation_author":
         artifacts_written.extend(build_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_data_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_data_ready_confirmation_pending":
         artifacts_written.extend(ensure_csf_data_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_data_ready_author":
+    if failure_package_status is None and current_stage == "csf_data_ready_author":
         artifacts_written.extend(build_csf_data_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_signal_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_signal_ready_confirmation_pending":
         artifacts_written.extend(ensure_csf_signal_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_signal_ready_author":
+    if failure_package_status is None and current_stage == "csf_signal_ready_author":
         artifacts_written.extend(build_csf_signal_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_train_freeze_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_train_freeze_confirmation_pending":
         artifacts_written.extend(ensure_csf_train_freeze_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_train_freeze_author":
+    if failure_package_status is None and current_stage == "csf_train_freeze_author":
         artifacts_written.extend(build_csf_train_freeze_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_test_evidence_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_test_evidence_confirmation_pending":
         artifacts_written.extend(ensure_csf_test_evidence_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_test_evidence_author":
+    if failure_package_status is None and current_stage == "csf_test_evidence_author":
         artifacts_written.extend(build_csf_test_evidence_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_backtest_ready_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_backtest_ready_confirmation_pending":
         artifacts_written.extend(ensure_csf_backtest_ready_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_backtest_ready_author":
+    if failure_package_status is None and current_stage == "csf_backtest_ready_author":
         artifacts_written.extend(build_csf_backtest_ready_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_holdout_validation_confirmation_pending":
+    if failure_package_status is None and current_stage == "csf_holdout_validation_confirmation_pending":
         artifacts_written.extend(ensure_csf_holdout_validation_scaffold(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
-    if current_stage == "csf_holdout_validation_author":
+    if failure_package_status is None and current_stage == "csf_holdout_validation_author":
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
@@ -2887,6 +2912,13 @@ def run_research_session(
     if requires_failure_handling and failure_stage is not None:
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
+    if failure_package_status is not None:
+        gate_status = failure_package_status.gate_status
+        next_action = failure_package_status.next_action
+        review_verdict = failure_package_status.review_verdict
+        requires_failure_handling = True
+        failure_stage = failure_package_status.failure_stage
+        failure_reason_summary = failure_package_status.failure_reason_summary
     why_now, open_risks = session_transition_summary(lineage_root, current_stage)
     current_route = current_research_route(lineage_root)
     route_contract = current_route_contract(lineage_root)
@@ -2910,6 +2942,15 @@ def run_research_session(
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
+        current_skill=failure_package_status.current_skill if failure_package_status else None,
+        why_this_skill=failure_package_status.why_this_skill if failure_package_status else None,
+        blocking_reason=failure_package_status.blocking_reason if failure_package_status else None,
+        resume_hint=failure_package_status.resume_hint if failure_package_status else None,
+        runtime_stage_status_override=failure_package_status.stage_status if failure_package_status else None,
+        runtime_blocking_reason_code_override=(
+            failure_package_status.blocking_reason_code if failure_package_status else None
+        ),
+        runtime_next_action_override=failure_package_status.next_action if failure_package_status else None,
     )
 
 
@@ -3003,6 +3044,101 @@ def _review_verdict_from_stage_dir(stage_dir: Path) -> str | None:
     if isinstance(verdict, str) and verdict.strip():
         return verdict
     return None
+
+
+def _stage_name_from_stage_dir(stage_dir: Path) -> str:
+    name = stage_dir.name
+    if len(name) > 3 and name[:2].isdigit() and name[2] == "_":
+        return name[3:]
+    return name
+
+
+def _read_failure_disposition_decision(failure_package_dir: Path) -> str | None:
+    disposition_path = failure_package_dir / "failure_disposition.yaml"
+    if not disposition_path.exists():
+        return None
+    payload = _read_yaml(disposition_path)
+    decision = payload.get("decision")
+    if isinstance(decision, str) and decision.strip():
+        return decision.strip()
+    return None
+
+
+def _latest_failure_package_runtime_status(lineage_root: Path) -> FailurePackageRuntimeStatus | None:
+    candidates: list[tuple[float, Path, dict]] = []
+    for post_retry_path in lineage_root.glob("*/failure_packages/*/post_retry_decision.yaml"):
+        payload = _read_yaml(post_retry_path)
+        if payload.get("normal_progression_allowed") is not False:
+            continue
+        candidates.append((post_retry_path.stat().st_mtime, post_retry_path, payload))
+    if not candidates:
+        return None
+
+    _, post_retry_path, payload = max(candidates, key=lambda item: (item[0], str(item[1])))
+    failure_package_dir = post_retry_path.parent
+    stage_dir = failure_package_dir.parent.parent
+    failed_stage = str(payload.get("failed_stage") or _stage_name_from_stage_dir(stage_dir))
+    disposition_decision = _read_failure_disposition_decision(failure_package_dir)
+
+    if disposition_decision is None:
+        blocking_reason = (
+            f"Latest failure package for {failed_stage} blocks normal progression until "
+            "failure_disposition.yaml records NO_GO or CHILD_LINEAGE."
+        )
+        next_action = (
+            f"Write {failure_package_dir.relative_to(lineage_root)}/failure_disposition.yaml with decision "
+            "NO_GO or CHILD_LINEAGE before any review or next-stage action can continue."
+        )
+        return FailurePackageRuntimeStatus(
+            stage_status="failure_disposition_required",
+            blocking_reason_code="FAILURE_DISPOSITION_REQUIRED",
+            gate_status="FAILURE_DISPOSITION_REQUIRED",
+            current_skill="qros-stage-failure-handler",
+            why_this_skill=(
+                f"{failed_stage} has a blocking failure package after controlled retry, "
+                "so failure disposition is the active workflow."
+            ),
+            blocking_reason=blocking_reason,
+            next_action=next_action,
+            resume_hint=(
+                f"Use qros-stage-failure-handler for lineage {lineage_root.name} and record "
+                f"{failure_package_dir.relative_to(lineage_root)}/failure_disposition.yaml, then rerun "
+                f"qros-session --lineage-id {lineage_root.name}."
+            ),
+            review_verdict="FAILURE_DISPOSITION_REQUIRED",
+            failure_stage=failed_stage,
+            failure_reason_summary=blocking_reason,
+        )
+
+    blocking_reason = (
+        f"{failed_stage} failure disposition {disposition_decision} is recorded; "
+        "normal progression on the original lineage remains blocked."
+    )
+    next_action = (
+        f"Formal failure disposition {disposition_decision} is recorded for {failed_stage}; "
+        "the original lineage must not re-enter review or next-stage progression."
+    )
+    if disposition_decision == "CHILD_LINEAGE":
+        next_action += " Open a child lineage before continuing research."
+    return FailurePackageRuntimeStatus(
+        stage_status="failure_disposition_recorded",
+        blocking_reason_code="FAILURE_DISPOSITION_RECORDED",
+        gate_status="FAILURE_DISPOSITION_RECORDED",
+        current_skill="qros-lineage-change-control",
+        why_this_skill=(
+            f"{failed_stage} has formal failure disposition {disposition_decision}, "
+            "so lineage change control is the active workflow."
+        ),
+        blocking_reason=blocking_reason,
+        next_action=next_action,
+        resume_hint=(
+            f"Use qros-lineage-change-control for lineage {lineage_root.name}; do not resume ordinary "
+            f"review or next-stage progression on {failed_stage}."
+        ),
+        review_verdict=disposition_decision,
+        failure_stage=failed_stage,
+        failure_reason_summary=blocking_reason,
+    )
 
 
 def _latest_review_failure_status(
