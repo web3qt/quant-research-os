@@ -9,3 +9,5 @@ def test_readme_foregrounds_summary_role_priorities() -> None:
     assert "cross_sectional_factor" in combined
     assert "框架仓" in readme
     assert "qros-research-session" in combined
+    assert "qros-progress" in combined
+    assert "只读" in combined

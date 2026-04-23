@@ -25,7 +25,10 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 ```text
 $qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT ，横截面研究
 $qros-research-session help
+$qros-progress
 ```
+
+`$qros-progress` 是只读进度查询入口：默认读取当前 repo 的 `outputs/`，选择最近修改的 lineage，告诉你当前 stage、active skill、gate 状态和 next action；它不写 artifact，也不推进 stage。
 
 更新时，在 Codex 里直接运行：
 
@@ -71,6 +74,7 @@ git pull && ./setup --host codex --mode user-global
 
 ```bash
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+./.qros/bin/qros-progress
 ./.qros/bin/qros-review
 ```
 

@@ -41,8 +41,11 @@
 
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
+- `qros-progress`
 
 之后 agent 会接管并推进整个 session。
+
+`qros-progress` 是只读进度查询入口，不是推进入口。它默认读取当前 repo 的 `outputs/` 并选择最近修改的 lineage，返回 `current_stage`、`current_skill`、`gate_status`、`blocking_reason`、`next_action` 和 `open_risks`。它不写 artifact、不 scaffold、不确认 transition，也不会替代 `qros-research-session`、stage author skill、review skill 或 failure handling skill。
 
 Codex 会通过 `./setup --mode user-global` 生成的扁平安装树 `~/.codex/skills/` 找到这个 skill。当前 research repo 再通过 `~/workspace/quant-research-os/setup --host codex --mode repo-local` 获得自己的 `./.qros/` 本地 runtime。
 
@@ -202,6 +205,16 @@ Lineage: btc_leads_alts
 - 想稳定读取 `current_stage / current_skill / next_action / resume_hint` 这些字段的场景
 
 `--snapshot` 仍然输出 canonical anti-drift decision snapshot，不会附带 reflection 面板内容。
+
+如果只想看研究员当前最关心的最新进度，而不是进入 session 推进流程，优先用只读命令：
+
+```bash
+./.qros/bin/qros-progress
+./.qros/bin/qros-progress --lineage-id <lineage_id>
+./.qros/bin/qros-progress --json
+```
+
+无 `--lineage-id` 时，`qros-progress` 展示最近修改 lineage 的状态；输出中的 `Lineage` 会明确标出实际选择的是哪条线。
 
 如果你需要把流程级验证也跑成固定命令，而不是每次临时拼 pytest 文件列表，可以直接用：
 
