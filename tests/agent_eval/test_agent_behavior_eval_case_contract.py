@@ -65,6 +65,14 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "csf_backtest_ready_runs_artifact_validator_before_review",
         "csf_backtest_ready_runs_semantic_validator_before_review",
         "csf_backtest_ready_rejects_variant_drift",
+        "explicit_csf_holdout_validation_author_skill_first",
+        "naive_csf_holdout_validation_prompt_triggers_author_skill",
+        "csf_holdout_validation_rejects_missing_csf_backtest_ready_review_closure",
+        "csf_holdout_validation_rejects_unconfirmed_freeze_groups",
+        "csf_holdout_validation_rejects_placeholder_compare_completion",
+        "csf_holdout_validation_runs_artifact_validator_before_review",
+        "csf_holdout_validation_runs_semantic_validator_before_review",
+        "csf_holdout_validation_rejects_direction_flip",
     }
 
 
@@ -219,6 +227,35 @@ def test_csf_backtest_ready_eval_cases_lock_gate_specific_event_assertions() -> 
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-backtest-ready-author"
+        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+
+
+def test_csf_holdout_validation_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    for case_id in (
+        "csf_holdout_validation_runs_artifact_validator_before_review",
+        "csf_holdout_validation_runs_semantic_validator_before_review",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-holdout-validation-author"
+        assert case["expected_events"]["ordered_substrings"] == [
+            "qros-validate-stage --stage csf_holdout_validation",
+            "csf_holdout_validation semantic validator",
+            "qros-review-preflight",
+            "qros-review-cycle prepare",
+        ]
+        assert case["validators"] == [{"stage": "csf_holdout_validation"}]
+
+    for case_id in (
+        "csf_holdout_validation_rejects_missing_csf_backtest_ready_review_closure",
+        "csf_holdout_validation_rejects_unconfirmed_freeze_groups",
+        "csf_holdout_validation_rejects_placeholder_compare_completion",
+        "csf_holdout_validation_rejects_direction_flip",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-holdout-validation-author"
         assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
 
 

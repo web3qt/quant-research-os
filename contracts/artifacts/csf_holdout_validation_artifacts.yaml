@@ -1,0 +1,160 @@
+schema_id: csf-holdout-validation-artifacts-v1
+schema_version: v1
+stage: csf_holdout_validation
+stage_dir: 07_csf_holdout_validation/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  csf_holdout_run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_holdout_validation
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - csf_backtest_ready
+      - path: holdout_window_source
+        type: string
+      - path: time_split
+        type: map
+      - path: reuse_rule
+        type: string
+      - path: drift_scope
+        type: string
+      - path: backtest_contract_source
+        type: string
+      - path: test_contract_source
+        type: string
+      - path: variant_reuse_rule
+        type: string
+      - path: no_reestimate_rule
+        type: string
+      - path: direction_flip_rule
+        type: string
+      - path: coverage_rule
+        type: string
+      - path: regime_shift_rule
+        type: string
+      - path: retryable_conditions
+        type: list[string]
+      - path: child_lineage_trigger
+        type: string
+      - path: rollback_boundary
+        type: string
+      - path: input_roots
+        type: list[string]
+      - path: stage_outputs
+        type: list[string]
+      - path: program_dir
+        type: string
+      - path: program_entrypoint
+        type: string
+      - path: program_execution_manifest
+        type: string
+      - path: replay_command
+        type: string
+      - path: selected_variant_ids
+        type: list[string]
+      - path: portfolio_expression
+        type: string
+      - path: delivery_contract.machine_artifacts
+        type: list[string]
+      - path: delivery_contract.consumer_stage
+        type: enum
+        values:
+          - terminal
+      - path: delivery_contract.field_doc_rule
+        type: string
+
+  holdout_factor_diagnostics.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - coverage_ratio
+      - breadth
+      - direction_match
+      - bucket_stability_score
+    non_empty: true
+
+  holdout_test_compare.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - backtest_mean_net_return
+      - holdout_mean_net_return
+      - direction_match
+    non_empty: true
+
+  holdout_portfolio_compare.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - backtest_max_drawdown
+      - holdout_max_drawdown
+      - holdout_mean_net_return
+      - net_return_delta
+    non_empty: true
+
+  rolling_holdout_stability.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_holdout_validation
+      - path: selected_variant_ids
+        type: list[string]
+      - path: direction_match
+        type: boolean
+      - path: stability_status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: rolling_window_count
+        type: integer
+
+  regime_shift_audit.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_holdout_validation
+      - path: selected_variant_ids
+        type: list[string]
+      - path: regime_shift_detected
+        type: boolean
+      - path: audit_status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: explanation
+        type: string
+
+  csf_holdout_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Holdout Gate Decision
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

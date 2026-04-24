@@ -1,11 +1,21 @@
+import json
 from pathlib import Path
+
+import pyarrow.parquet as pq
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_holdout_runtime import (
     build_csf_holdout_validation_from_backtest,
     scaffold_csf_holdout_validation,
 )
+from tests.runtime.test_csf_backtest_runtime import (
+    _csf_backtest_ready_draft,
+    _prepare_csf_test_stage,
+    _write_yaml as _write_backtest_yaml,
+)
+from runtime.tools.csf_backtest_runtime import build_csf_backtest_ready_from_test_evidence
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -67,29 +77,17 @@ def _csf_holdout_validation_draft(*, confirmed: bool) -> dict:
 
 
 def _prepare_csf_backtest_stage(lineage_root: Path) -> None:
-    mandate_dir = lineage_root / "01_mandate"
-    mandate_formal_dir = mandate_dir / "author" / "formal"
-    mandate_formal_dir.mkdir(parents=True)
-    (mandate_formal_dir / "time_split.json").write_text('{"holdout":"2024-10-01/2024-12-31"}\n', encoding="utf-8")
+    _prepare_csf_test_stage(lineage_root)
+    mandate_formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    payload = json.loads('{"holdout":"2024-10-01/2024-12-31"}')
+    (mandate_formal_dir / "time_split.json").write_text(json.dumps(payload) + "\n", encoding="utf-8")
     stage_dir = lineage_root / "06_csf_backtest_ready"
-    formal_dir = stage_dir / "author" / "formal"
-    formal_dir.mkdir(parents=True)
-    for name in [
-        "portfolio_contract.yaml",
-        "portfolio_weight_panel.parquet",
-        "rebalance_ledger.csv",
-        "turnover_capacity_report.parquet",
-        "cost_assumption_report.md",
-        "portfolio_summary.parquet",
-        "name_level_metrics.parquet",
-        "drawdown_report.json",
-        "target_strategy_compare.parquet",
-        "csf_backtest_gate_table.csv",
-        "csf_backtest_contract.md",
-        "artifact_catalog.md",
-        "field_dictionary.md",
-    ]:
-        (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_backtest_yaml(
+        stage_dir / "author" / "draft" / "csf_backtest_ready_draft.yaml",
+        _csf_backtest_ready_draft(confirmed=True),
+    )
+    build_csf_backtest_ready_from_test_evidence(lineage_root)
 
 
 def test_scaffold_csf_holdout_validation_creates_grouped_draft(tmp_path: Path) -> None:
@@ -129,3 +127,16 @@ def test_build_csf_holdout_validation_writes_required_outputs(tmp_path: Path) ->
     assert (formal_dir / "csf_holdout_gate_decision.md").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+
+    assert pq.read_table(formal_dir / "holdout_factor_diagnostics.parquet").num_rows > 0
+    assert pq.read_table(formal_dir / "holdout_test_compare.parquet").num_rows > 0
+    assert pq.read_table(formal_dir / "holdout_portfolio_compare.parquet").num_rows > 0
+
+    run_manifest = json.loads((formal_dir / "csf_holdout_run_manifest.json").read_text(encoding="utf-8"))
+    assert run_manifest["stage"] == "csf_holdout_validation"
+    assert run_manifest["source_stage"] == "csf_backtest_ready"
+    assert "holdout_portfolio_compare.parquet" in run_manifest["stage_outputs"]
+
+    result = validate_stage_artifacts(formal_dir, load_artifact_contract("csf_holdout_validation"))
+    assert result.valid is True
+    assert result.errors == []

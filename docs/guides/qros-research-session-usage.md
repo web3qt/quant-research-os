@@ -173,6 +173,8 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 
 `csf_backtest_ready` 也采用 contract-first 口径：`contracts/artifacts/csf_backtest_ready_artifacts.yaml` 是 backtest formal artifact shape 真值，skill 只解释确认顺序、组合语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_backtest_ready`，并通过 csf_backtest_ready semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_backtest_ready` review。该 preflight 会检查 `portfolio_contract.yaml`、`portfolio_weight_panel.parquet`、`turnover_capacity_report.parquet`、`portfolio_summary.parquet`、`csf_backtest_gate_table.csv`、`csf_backtest_gate_decision.md`、`target_strategy_compare.parquet` 与上游 `csf_test_evidence` selected variants 的绑定。
 
+`csf_holdout_validation` 也采用 contract-first 口径：`contracts/artifacts/csf_holdout_validation_artifacts.yaml` 是 holdout formal artifact shape 真值，skill 只解释确认顺序、最终验证语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_holdout_validation`，并通过 csf_holdout_validation semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_holdout_validation` review。该 preflight 会检查 `csf_holdout_run_manifest.json`、`holdout_factor_diagnostics.parquet`、`holdout_test_compare.parquet`、`holdout_portfolio_compare.parquet`、`rolling_holdout_stability.json`、`regime_shift_audit.json` 与上游 `csf_backtest_ready` frozen portfolio / selected variants 的绑定。
+
 ## Internal Runtime
 
 deterministic backend 的入口在克隆下来的仓库里：

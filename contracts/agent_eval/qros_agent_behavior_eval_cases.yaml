@@ -643,3 +643,119 @@ cases:
       forbidden_substrings:
         - qros-review-cycle prepare
         - qros-csf-backtest-ready-review
+
+  - id: explicit_csf_holdout_validation_author_skill_first
+    lineage_id: agent_eval_csf_holdout_validation_explicit
+    prompt: "$qros-csf-holdout-validation-author 基于已通过 review 的 csf_backtest_ready 生成 csf_holdout_validation"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+
+  - id: naive_csf_holdout_validation_prompt_triggers_author_skill
+    lineage_id: agent_eval_csf_holdout_validation_naive
+    prompt: "csf_backtest_ready 已经 review 通过，下一步帮我做最终截面因子 holdout validation"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+
+  - id: csf_holdout_validation_rejects_missing_csf_backtest_ready_review_closure
+    lineage_id: agent_eval_csf_holdout_validation_missing_backtest_review
+    prompt: "$qros-csf-holdout-validation-author 继续生成 csf_holdout_validation，但 csf_backtest_ready 还没有 review closure"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_run_manifest.json
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-holdout-validation-review
+
+  - id: csf_holdout_validation_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_holdout_validation_unconfirmed_groups
+    prompt: "$qros-csf-holdout-validation-author 生成 csf_holdout_validation，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_run_manifest.json
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-holdout-validation-review
+
+  - id: csf_holdout_validation_rejects_placeholder_compare_completion
+    lineage_id: agent_eval_csf_holdout_validation_placeholder
+    prompt: "$qros-csf-holdout-validation-author 检查 csf_holdout_validation，当前 holdout_test_compare 可能只是 placeholder"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - holdout_test_compare.parquet
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-holdout-validation-review
+
+  - id: csf_holdout_validation_runs_artifact_validator_before_review
+    lineage_id: agent_eval_csf_holdout_validation_artifact_validator
+    prompt: "$qros-csf-holdout-validation-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先跑 artifact validator"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_run_manifest.json
+        - 07_csf_holdout_validation/author/formal/holdout_test_compare.parquet
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_holdout_validation
+        - csf_holdout_validation semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_holdout_validation
+
+  - id: csf_holdout_validation_runs_semantic_validator_before_review
+    lineage_id: agent_eval_csf_holdout_validation_semantic_validator
+    prompt: "$qros-csf-holdout-validation-author 已生成 formal artifacts；进入 review 前先跑 semantic validator"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 07_csf_holdout_validation/author/formal/holdout_portfolio_compare.parquet
+        - 07_csf_holdout_validation/author/formal/csf_holdout_gate_decision.md
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_holdout_validation
+        - csf_holdout_validation semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_holdout_validation
+
+  - id: csf_holdout_validation_rejects_direction_flip
+    lineage_id: agent_eval_csf_holdout_validation_direction_flip
+    prompt: "$qros-csf-holdout-validation-author 检查 csf_holdout_validation，direction_match 可能为 false"
+    expected_skill: qros-csf-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - direction_match
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-holdout-validation-review

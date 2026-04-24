@@ -121,3 +121,22 @@ def test_agent_behavior_eval_docs_list_csf_backtest_ready_cases() -> None:
 
     assert "qros-validate-stage --stage csf_backtest_ready" in content
     assert "csf_backtest_ready semantic validator" in content
+
+
+def test_agent_behavior_eval_docs_list_csf_holdout_validation_cases() -> None:
+    content = Path("docs/guides/qros-agent-behavior-eval.md").read_text(encoding="utf-8")
+
+    for case_id in (
+        "explicit_csf_holdout_validation_author_skill_first",
+        "naive_csf_holdout_validation_prompt_triggers_author_skill",
+        "csf_holdout_validation_rejects_missing_csf_backtest_ready_review_closure",
+        "csf_holdout_validation_rejects_unconfirmed_freeze_groups",
+        "csf_holdout_validation_rejects_placeholder_compare_completion",
+        "csf_holdout_validation_runs_artifact_validator_before_review",
+        "csf_holdout_validation_runs_semantic_validator_before_review",
+        "csf_holdout_validation_rejects_direction_flip",
+    ):
+        assert case_id in content
+
+    assert "qros-validate-stage --stage csf_holdout_validation" in content
+    assert "csf_holdout_validation semantic validator" in content

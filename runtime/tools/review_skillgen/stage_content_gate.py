@@ -46,7 +46,7 @@ def check_global_evidence(stage_dir: Path, stage_checks: dict[str, Any]) -> list
     if find_stage_file(stage_dir, ["field_dictionary.md", "*_fields.md"]) is None:
         findings.append("Missing required global evidence: field_dictionary.md or *_fields.md")
 
-    if find_stage_file(stage_dir, ["run_manifest.json", "repro_manifest.json"]) is None:
+    if find_stage_file(stage_dir, ["run_manifest.json", "repro_manifest.json", "*run_manifest.json"]) is None:
         findings.append("Missing required global evidence: run_manifest.json or repro_manifest.json")
 
     recommended_gate_doc = stage_checks.get("recommended_gate_doc")
@@ -322,6 +322,9 @@ def check_metric_gates(author_formal_dir: Path, metric_checks: list[dict[str, An
                 )
             except ParquetCheckTimeout:
                 findings.append(f"{check['id']}: parquet metric gate timed out after {timeout_seconds}s for {check['artifact']}")
+                continue
+            except Exception as exc:
+                findings.append(f"{check['id']}: metric gate evaluation failed for {check['artifact']}: {exc}")
                 continue
         else:
             try:

@@ -19,6 +19,7 @@ ARTIFACT_CONTRACTS = {
     "csf_train_freeze": ROOT / "contracts" / "artifacts" / "csf_train_freeze_artifacts.yaml",
     "csf_test_evidence": ROOT / "contracts" / "artifacts" / "csf_test_evidence_artifacts.yaml",
     "csf_backtest_ready": ROOT / "contracts" / "artifacts" / "csf_backtest_ready_artifacts.yaml",
+    "csf_holdout_validation": ROOT / "contracts" / "artifacts" / "csf_holdout_validation_artifacts.yaml",
 }
 
 

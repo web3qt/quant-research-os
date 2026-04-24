@@ -6,6 +6,7 @@ from typing import Any
 from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
 from runtime.tools.csf_data_ready_contract_runtime import validate_csf_data_ready_semantics
+from runtime.tools.csf_holdout_validation_contract_runtime import validate_csf_holdout_validation_semantics
 from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_ready_semantics
 from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
 from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
@@ -114,6 +115,7 @@ def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
         "csf_train_freeze",
         "csf_test_evidence",
         "csf_backtest_ready",
+        "csf_holdout_validation",
     }:
         return []
     try:
@@ -139,4 +141,7 @@ def _check_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Pa
     if stage == "csf_backtest_ready":
         result = validate_csf_backtest_ready_semantics(author_formal_dir, lineage_root)
         return [f"CSF-BACKTEST-SEMANTIC-001: {error}" for error in result.errors]
+    if stage == "csf_holdout_validation":
+        result = validate_csf_holdout_validation_semantics(author_formal_dir, lineage_root)
+        return [f"CSF-HOLDOUT-SEMANTIC-001: {error}" for error in result.errors]
     return []

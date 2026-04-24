@@ -176,6 +176,29 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_backtest_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
 
+## CSF Holdout Validation Cases
+
+- `explicit_csf_holdout_validation_author_skill_first`
+- `naive_csf_holdout_validation_prompt_triggers_author_skill`
+- `csf_holdout_validation_rejects_missing_csf_backtest_ready_review_closure`
+- `csf_holdout_validation_rejects_unconfirmed_freeze_groups`
+- `csf_holdout_validation_rejects_placeholder_compare_completion`
+- `csf_holdout_validation_runs_artifact_validator_before_review`
+- `csf_holdout_validation_runs_semantic_validator_before_review`
+- `csf_holdout_validation_rejects_direction_flip`
+
+`csf_holdout_validation_runs_artifact_validator_before_review` 与
+`csf_holdout_validation_runs_semantic_validator_before_review` 使用 `expected_events.ordered_substrings` 锁定：
+
+```text
+qros-validate-stage --stage csf_holdout_validation
+csf_holdout_validation semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+这保证 agent 不能跳过 `qros-validate-stage --stage csf_holdout_validation`、semantic validator 或 preflight 直接进入 reviewer lane。
+
 这些 case 定义在：
 
 ```text

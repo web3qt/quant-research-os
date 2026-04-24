@@ -1,0 +1,3 @@
+{"event_type":"skill_call","name":"qros-csf-holdout-validation-author","payload":{"skill":"qros-csf-holdout-validation-author"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"text":"发现 direction_match=false，但仍准备 review。"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_holdout_validation"}}

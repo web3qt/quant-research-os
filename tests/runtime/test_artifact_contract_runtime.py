@@ -672,6 +672,121 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
 
+def _write_minimal_valid_csf_holdout_validation_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        stage_dir / "csf_holdout_run_manifest.json",
+        {
+            "stage": "csf_holdout_validation",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "csf_backtest_ready",
+            "holdout_window_source": "time_split.json::holdout",
+            "time_split": {"holdout": "2024-10-01/2024-12-31"},
+            "reuse_rule": "Holdout reuses frozen backtest outputs.",
+            "drift_scope": "Compare against test and backtest windows.",
+            "backtest_contract_source": "06_csf_backtest_ready/author/formal/portfolio_contract.yaml",
+            "test_contract_source": "05_csf_test_evidence/author/formal/csf_test_gate_table.csv",
+            "variant_reuse_rule": "Do not change selected variants in holdout.",
+            "no_reestimate_rule": "No parameter re-estimation in holdout.",
+            "direction_flip_rule": "Direction flip is blocking.",
+            "coverage_rule": "Coverage collapse is blocking.",
+            "regime_shift_rule": "Audit regime shifts explicitly.",
+            "retryable_conditions": ["artifact defect"],
+            "child_lineage_trigger": "Open child lineage for mechanism changes.",
+            "rollback_boundary": "Only holdout rerun/reporting changes are allowed.",
+            "input_roots": [
+                "../06_csf_backtest_ready/author/formal/portfolio_contract.yaml",
+                "../06_csf_backtest_ready/author/formal/csf_backtest_gate_table.csv",
+            ],
+            "stage_outputs": [
+                "csf_holdout_run_manifest.json",
+                "holdout_factor_diagnostics.parquet",
+                "holdout_test_compare.parquet",
+                "holdout_portfolio_compare.parquet",
+                "rolling_holdout_stability.json",
+                "regime_shift_audit.json",
+                "csf_holdout_gate_decision.md",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "program_dir": "program/cross_sectional_factor/holdout_validation",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "replay_command": "python3 program/cross_sectional_factor/holdout_validation/run_stage.py",
+            "selected_variant_ids": ["baseline_v1"],
+            "portfolio_expression": "long_short_market_neutral",
+            "delivery_contract": {
+                "machine_artifacts": [
+                    "csf_holdout_run_manifest.json",
+                    "holdout_test_compare.parquet",
+                    "holdout_portfolio_compare.parquet",
+                ],
+                "consumer_stage": "terminal",
+                "field_doc_rule": "Every machine artifact needs field documentation.",
+            },
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "holdout_factor_diagnostics.parquet",
+        [
+            {
+                "date": "2024-10-01",
+                "variant_id": "baseline_v1",
+                "coverage_ratio": 0.98,
+                "breadth": 120,
+                "direction_match": True,
+                "bucket_stability_score": 0.75,
+            }
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "holdout_test_compare.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "backtest_mean_net_return": 0.012,
+                "holdout_mean_net_return": 0.01,
+                "direction_match": True,
+            }
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "holdout_portfolio_compare.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "backtest_max_drawdown": -0.08,
+                "holdout_max_drawdown": -0.07,
+                "holdout_mean_net_return": 0.01,
+                "net_return_delta": -0.002,
+            }
+        ],
+    )
+    _write_json(
+        stage_dir / "rolling_holdout_stability.json",
+        {
+            "stage": "csf_holdout_validation",
+            "selected_variant_ids": ["baseline_v1"],
+            "direction_match": True,
+            "stability_status": "pass",
+            "rolling_window_count": 3,
+        },
+    )
+    _write_json(
+        stage_dir / "regime_shift_audit.json",
+        {
+            "stage": "csf_holdout_validation",
+            "selected_variant_ids": ["baseline_v1"],
+            "regime_shift_detected": False,
+            "audit_status": "pass",
+            "explanation": "No material regime shift detected in the fixture.",
+        },
+    )
+    (stage_dir / "csf_holdout_gate_decision.md").write_text("# CSF Holdout Gate Decision\n", encoding="utf-8")
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -1038,3 +1153,31 @@ def test_validate_stage_artifacts_reports_csf_backtest_ready_missing_parquet_col
 
     assert result.valid is False
     assert "portfolio_weight_panel.parquet: missing required parquet column weight" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_holdout_validation_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_holdout_validation_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_holdout_validation"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_csf_holdout_validation_missing_parquet_column(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_holdout_validation_formal(stage_dir)
+    _write_parquet_rows(
+        stage_dir / "holdout_test_compare.parquet",
+        [{"variant_id": "baseline_v1", "backtest_mean_net_return": 0.012, "holdout_mean_net_return": 0.01}],
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_holdout_validation"))
+
+    assert result.valid is False
+    assert "holdout_test_compare.parquet: missing required parquet column direction_match" in result.errors

@@ -223,7 +223,7 @@ CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = (
     "csf_holdout_run_manifest.json",
     "holdout_factor_diagnostics.parquet",
     "holdout_test_compare.parquet",
-    "holdout_portfolio_compare.csv",
+    "holdout_portfolio_compare.parquet",
     "rolling_holdout_stability.json",
     "regime_shift_audit.json",
     "csf_holdout_gate_decision.md",

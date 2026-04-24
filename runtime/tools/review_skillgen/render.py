@@ -85,6 +85,7 @@ def _render_deterministic_preflight(stage_key: str) -> str:
         "csf_train_freeze": "CSF-TRAIN-SEMANTIC-001",
         "csf_test_evidence": "CSF-TEST-SEMANTIC-001",
         "csf_backtest_ready": "CSF-BACKTEST-SEMANTIC-001",
+        "csf_holdout_validation": "CSF-HOLDOUT-SEMANTIC-001",
     }
     artifact_contracts = {
         "csf_data_ready": "contracts/artifacts/csf_data_ready_artifacts.yaml",
@@ -92,6 +93,7 @@ def _render_deterministic_preflight(stage_key: str) -> str:
         "csf_train_freeze": "contracts/artifacts/csf_train_freeze_artifacts.yaml",
         "csf_test_evidence": "contracts/artifacts/csf_test_evidence_artifacts.yaml",
         "csf_backtest_ready": "contracts/artifacts/csf_backtest_ready_artifacts.yaml",
+        "csf_holdout_validation": "contracts/artifacts/csf_holdout_validation_artifacts.yaml",
     }
     semantic_code = semantic_codes.get(stage_key)
     if semantic_code is None:
