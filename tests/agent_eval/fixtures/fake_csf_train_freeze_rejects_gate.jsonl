@@ -1,0 +1,3 @@
+{"event_type":"skill_call","name":"qros-csf-train-freeze-author","payload":{"source":"explicit"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-preflight --stage csf_train_freeze"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"text":"train_variant_ledger.csv placeholder detected; reject review entry"}}

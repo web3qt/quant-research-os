@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 
 
@@ -130,9 +132,11 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
             "component_factor_manifest.yaml",
             "factor_coverage_report.parquet",
             "factor_group_context.parquet",
+            "route_inheritance_contract.yaml",
             "factor_contract.md",
             "factor_field_dictionary.md",
             "csf_signal_ready_gate_decision.md",
+            "run_manifest.json",
             "artifact_catalog.md",
             "field_dictionary.md",
         ]
@@ -161,8 +165,8 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     residualization_formula = _required_draft_value(neutralization_contract, "residualization_formula")
     ranking_scope = _required_draft_value(ranking_bucket_contract, "ranking_scope")
     bucket_schema = _required_draft_value(ranking_bucket_contract, "bucket_schema")
-    quantile_count = _required_draft_value(ranking_bucket_contract, "quantile_count")
-    min_names_per_bucket = _required_draft_value(ranking_bucket_contract, "min_names_per_bucket")
+    quantile_count = _required_int_draft_value(ranking_bucket_contract, "quantile_count")
+    min_names_per_bucket = _required_int_draft_value(ranking_bucket_contract, "min_names_per_bucket")
     rebalance_frequency = _required_draft_value(rebalance_contract, "rebalance_frequency")
     signal_lag_rule = _required_draft_value(rebalance_contract, "signal_lag_rule")
     holding_period_rule = _required_draft_value(rebalance_contract, "holding_period_rule")
@@ -188,6 +192,8 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
     _dump_yaml(
         stage_formal_dir / "csf_train_freeze.yaml",
         {
+            "stage": "csf_train_freeze",
+            "lineage_id": lineage_root.name,
             "preprocess_contract": {
                 "winsorize_policy": winsorize_policy,
                 "standardize_policy": standardize_policy,
@@ -222,18 +228,28 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
                 "non_governable_axes_after_signal": non_governable_axes_after_signal,
                 "non_governable_axis_reject_rule": non_governable_axis_reject_rule,
             },
+            "delivery_contract": {
+                "machine_artifacts": machine_artifacts,
+                "consumer_stage": consumer_stage,
+                "reuse_constraints": reuse_constraints,
+            },
         },
     )
     _write_parquet_rows(
         stage_formal_dir / "train_factor_quality.parquet",
         [
-            {"variant_id": kept_variant_ids[0] if kept_variant_ids else "baseline_v1", "quality_score": 1.0},
+            {
+                "variant_id": variant_id,
+                "quality_score": 1.0,
+                "quality_status": "kept",
+            }
+            for variant_id in (kept_variant_ids or ["baseline_v1"])
         ],
     )
     _write_parquet_rows(
         stage_formal_dir / "train_bucket_diagnostics.parquet",
         [
-            {"bucket_id": "q1", "min_names": int(quantile_count), "ranking_scope": ranking_scope},
+            {"bucket_id": "q1", "min_names": min_names_per_bucket, "ranking_scope": ranking_scope},
         ],
     )
     _write_parquet_rows(
@@ -386,6 +402,12 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    shape_result = validate_stage_artifacts(stage_formal_dir, load_artifact_contract("csf_train_freeze"))
+    if not shape_result.valid:
+        raise ValueError("csf_train_freeze artifact validation failed: " + "; ".join(shape_result.errors))
+    semantic_result = validate_csf_train_freeze_semantics(stage_formal_dir, lineage_root)
+    if not semantic_result.valid:
+        raise ValueError("csf_train_freeze semantic validation failed: " + "; ".join(semantic_result.errors))
     return stage_dir
 
 
@@ -404,6 +426,17 @@ def _required_draft_value(draft: dict[str, Any], key: str) -> str:
     if not value:
         raise ValueError(f"csf_train_freeze draft missing required value: {key}")
     return value
+
+
+def _required_int_draft_value(draft: dict[str, Any], key: str) -> int:
+    value = _required_draft_value(draft, key)
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"csf_train_freeze draft field must be integer: {key}") from exc
+    if parsed <= 0:
+        raise ValueError(f"csf_train_freeze draft field must be positive integer: {key}")
+    return parsed
 
 
 def _string_list(values: Any) -> list[str]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import csv
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +16,7 @@ ARTIFACT_CONTRACTS = {
     "mandate": ROOT / "contracts" / "artifacts" / "mandate_artifacts.yaml",
     "csf_data_ready": ROOT / "contracts" / "artifacts" / "csf_data_ready_artifacts.yaml",
     "csf_signal_ready": ROOT / "contracts" / "artifacts" / "csf_signal_ready_artifacts.yaml",
+    "csf_train_freeze": ROOT / "contracts" / "artifacts" / "csf_train_freeze_artifacts.yaml",
 }
 
 
@@ -63,6 +65,9 @@ def validate_stage_artifacts(stage_dir: Path, contract: dict[str, Any]) -> Artif
             continue
         if artifact_type == "parquet":
             errors.extend(_validate_parquet_artifact(artifact_name, artifact_path, artifact_contract))
+            continue
+        if artifact_type == "csv":
+            errors.extend(_validate_csv_artifact(artifact_name, artifact_path, artifact_contract))
             continue
         if artifact_type == "directory":
             errors.extend(_validate_directory_artifact(artifact_name, artifact_path, artifact_contract))
@@ -167,6 +172,24 @@ def _validate_parquet_artifact(artifact_name: str, artifact_path: Path, artifact
             errors.append(f"{artifact_name}: missing required parquet column {column}")
     if artifact_contract.get("non_empty") is True and row_count == 0:
         errors.append(f"{artifact_name}: expected non-empty parquet rows")
+    return errors
+
+
+def _validate_csv_artifact(artifact_name: str, artifact_path: Path, artifact_contract: dict[str, Any]) -> list[str]:
+    try:
+        with artifact_path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            columns = set(reader.fieldnames or [])
+            row_count = sum(1 for _ in reader)
+    except Exception as exc:
+        return [f"{artifact_name}: csv read failed: {exc}"]
+
+    errors: list[str] = []
+    for column in artifact_contract.get("required_columns", []):
+        if column not in columns:
+            errors.append(f"{artifact_name}: missing required csv column {column}")
+    if artifact_contract.get("non_empty") is True and row_count == 0:
+        errors.append(f"{artifact_name}: expected non-empty csv rows")
     return errors
 
 

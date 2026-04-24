@@ -295,3 +295,119 @@ cases:
       forbidden_substrings:
         - qros-review-cycle prepare
         - qros-csf-signal-ready-review
+
+  - id: explicit_csf_train_freeze_author_skill_first
+    lineage_id: agent_eval_csf_train_freeze_explicit
+    prompt: "$qros-csf-train-freeze-author 基于已通过 review 的 csf_signal_ready 生成 csf_train_freeze"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
+
+  - id: naive_csf_train_freeze_prompt_triggers_author_skill
+    lineage_id: agent_eval_csf_train_freeze_naive
+    prompt: "csf_signal_ready 已经 review 通过，下一步帮我冻结截面因子 train freeze"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+
+  - id: csf_train_freeze_rejects_missing_csf_signal_ready_review_closure
+    lineage_id: agent_eval_csf_train_freeze_missing_signal_review
+    prompt: "$qros-csf-train-freeze-author 继续生成 csf_train_freeze，但 csf_signal_ready 还没有 review closure"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+        - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-train-freeze-review
+
+  - id: csf_train_freeze_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_train_freeze_unconfirmed_groups
+    prompt: "$qros-csf-train-freeze-author 生成 csf_train_freeze，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+        - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-train-freeze-review
+
+  - id: csf_train_freeze_rejects_placeholder_variant_ledger_completion
+    lineage_id: agent_eval_csf_train_freeze_placeholder
+    prompt: "$qros-csf-train-freeze-author 检查 csf_train_freeze，当前 train_variant_ledger 可能只是 placeholder"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - train_variant_ledger.csv
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-train-freeze-review
+
+  - id: csf_train_freeze_runs_artifact_validator_before_review
+    lineage_id: agent_eval_csf_train_freeze_artifact_validator
+    prompt: "$qros-csf-train-freeze-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先跑 artifact validator"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+        - 04_csf_train_freeze/author/formal/train_variant_ledger.csv
+      absent:
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_train_freeze
+        - csf_train_freeze semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_train_freeze
+
+  - id: csf_train_freeze_runs_semantic_validator_before_review
+    lineage_id: agent_eval_csf_train_freeze_semantic_validator
+    prompt: "$qros-csf-train-freeze-author 已生成 formal artifacts；进入 review 前先跑 semantic validator"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+        - 04_csf_train_freeze/author/formal/train_factor_quality.parquet
+      absent:
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_train_freeze
+        - csf_train_freeze semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_train_freeze
+
+  - id: csf_train_freeze_rejects_signal_axis_drift
+    lineage_id: agent_eval_csf_train_freeze_signal_axis_drift
+    prompt: "$qros-csf-train-freeze-author 检查 csf_train_freeze，候选变体可能偷改了 raw_factor_fields 或 score_combination_formula"
+    expected_skill: qros-csf-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - non_governable_axes_after_signal
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-train-freeze-review

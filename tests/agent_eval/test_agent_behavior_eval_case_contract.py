@@ -41,6 +41,14 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "csf_signal_ready_runs_semantic_validator_before_review",
         "csf_signal_ready_rejects_route_inheritance_drift",
         "csf_signal_ready_rejects_raw_field_without_input_binding",
+        "explicit_csf_train_freeze_author_skill_first",
+        "naive_csf_train_freeze_prompt_triggers_author_skill",
+        "csf_train_freeze_rejects_missing_csf_signal_ready_review_closure",
+        "csf_train_freeze_rejects_unconfirmed_freeze_groups",
+        "csf_train_freeze_rejects_placeholder_variant_ledger_completion",
+        "csf_train_freeze_runs_artifact_validator_before_review",
+        "csf_train_freeze_runs_semantic_validator_before_review",
+        "csf_train_freeze_rejects_signal_axis_drift",
     }
 
 
@@ -108,6 +116,35 @@ def test_csf_signal_ready_eval_cases_lock_gate_specific_event_assertions() -> No
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-signal-ready-author"
+        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+
+
+def test_csf_train_freeze_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    for case_id in (
+        "csf_train_freeze_runs_artifact_validator_before_review",
+        "csf_train_freeze_runs_semantic_validator_before_review",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-train-freeze-author"
+        assert case["expected_events"]["ordered_substrings"] == [
+            "qros-validate-stage --stage csf_train_freeze",
+            "csf_train_freeze semantic validator",
+            "qros-review-preflight",
+            "qros-review-cycle prepare",
+        ]
+        assert case["validators"] == [{"stage": "csf_train_freeze"}]
+
+    for case_id in (
+        "csf_train_freeze_rejects_missing_csf_signal_ready_review_closure",
+        "csf_train_freeze_rejects_unconfirmed_freeze_groups",
+        "csf_train_freeze_rejects_placeholder_variant_ledger_completion",
+        "csf_train_freeze_rejects_signal_axis_drift",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-train-freeze-author"
         assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
 
 

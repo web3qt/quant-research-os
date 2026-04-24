@@ -287,6 +287,146 @@ def _write_minimal_valid_csf_signal_ready_formal(stage_dir: Path) -> None:
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
 
+def _write_minimal_valid_csf_train_freeze_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_yaml(
+        stage_dir / "csf_train_freeze.yaml",
+        {
+            "stage": "csf_train_freeze",
+            "lineage_id": "btc_alt_transmission_v1",
+            "preprocess_contract": {
+                "winsorize_policy": "cross_section_2sided_quantile",
+                "standardize_policy": "zscore_by_date",
+                "missing_fill_policy": "no_fill",
+                "coverage_floor_rule": "drop cross-sections below 95% coverage",
+            },
+            "neutralization_contract": {
+                "neutralization_policy": "group_neutral",
+                "beta_estimation_window": "60d",
+                "group_taxonomy_reference": "sector_bucket_v1",
+                "residualization_formula": "factor_value - group_mean(factor_value)",
+            },
+            "ranking_bucket_contract": {
+                "ranking_scope": "full_universe",
+                "bucket_schema": "quintile",
+                "quantile_count": 5,
+                "min_names_per_bucket": 10,
+            },
+            "rebalance_contract": {
+                "rebalance_frequency": "1d",
+                "signal_lag_rule": "trade next bar after score freeze",
+                "holding_period_rule": "hold 5 trading days",
+                "overlap_policy": "allow_overlap",
+            },
+            "search_governance_contract": {
+                "candidate_variant_ids": ["baseline_v1", "beta_neutral_v1"],
+                "kept_variant_ids": ["baseline_v1"],
+                "rejected_variant_ids": ["beta_neutral_v1"],
+                "selection_rule": "exclude variants that change frozen signal-expression axes",
+                "frozen_signal_contract_reference": "03_csf_signal_ready/author/formal/factor_contract.md",
+                "train_governable_axes": ["winsorize_policy", "bucket_schema", "rebalance_frequency"],
+                "non_governable_axes_after_signal": [
+                    "raw_factor_fields",
+                    "derived_factor_fields",
+                    "score_combination_formula",
+                ],
+                "non_governable_axis_reject_rule": "reject variant and reopen csf_signal_ready for signal-axis changes",
+            },
+            "delivery_contract": {
+                "machine_artifacts": [
+                    "csf_train_freeze.yaml",
+                    "train_factor_quality.parquet",
+                    "train_variant_ledger.csv",
+                    "train_variant_rejects.csv",
+                ],
+                "consumer_stage": "csf_test_evidence",
+                "reuse_constraints": "test must reuse frozen train rules without re-estimating them",
+            },
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "train_factor_quality.parquet",
+        [{"variant_id": "baseline_v1", "quality_score": 1.0, "quality_status": "kept"}],
+    )
+    (stage_dir / "train_variant_ledger.csv").write_text(
+        "\n".join(
+            [
+                "variant_id,status,selection_rule",
+                "baseline_v1,kept,exclude variants that change frozen signal-expression axes",
+                "beta_neutral_v1,rejected,exclude variants that change frozen signal-expression axes",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "train_variant_rejects.csv").write_text(
+        "\n".join(
+            [
+                "variant_id,reject_reason",
+                "beta_neutral_v1,attempted to change a frozen signal axis",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_parquet_rows(
+        stage_dir / "train_bucket_diagnostics.parquet",
+        [{"bucket_id": "q1", "min_names": 10, "ranking_scope": "full_universe"}],
+    )
+    _write_parquet_rows(
+        stage_dir / "train_neutralization_diagnostics.parquet",
+        [
+            {
+                "neutralization_policy": "group_neutral",
+                "group_taxonomy_reference": "sector_bucket_v1",
+                "beta_estimation_window": "60d",
+            }
+        ],
+    )
+    (stage_dir / "csf_train_contract.md").write_text("# CSF Train Contract\n", encoding="utf-8")
+    (stage_dir / "csf_train_freeze_gate_decision.md").write_text(
+        "# CSF Train Freeze Gate Decision\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        stage_dir / "run_manifest.json",
+        {
+            "stage": "csf_train_freeze",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "csf_signal_ready",
+            "program_dir": "program/cross_sectional_factor/train_freeze",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "input_roots": [
+                "../03_csf_signal_ready/author/formal/factor_manifest.yaml",
+                "../03_csf_signal_ready/author/formal/factor_contract.md",
+                "author/draft/csf_train_freeze_draft.yaml",
+            ],
+            "stage_outputs": [
+                "csf_train_freeze.yaml",
+                "train_factor_quality.parquet",
+                "train_variant_ledger.csv",
+                "train_variant_rejects.csv",
+                "train_bucket_diagnostics.parquet",
+                "train_neutralization_diagnostics.parquet",
+                "csf_train_contract.md",
+                "csf_train_freeze_gate_decision.md",
+                "run_manifest.json",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "replay_command": "python3 program/cross_sectional_factor/train_freeze/run_stage.py",
+            "candidate_variant_ids": ["baseline_v1", "beta_neutral_v1"],
+            "kept_variant_ids": ["baseline_v1"],
+            "rejected_variant_ids": ["beta_neutral_v1"],
+            "selection_rule": "exclude variants that change frozen signal-expression axes",
+            "frozen_signal_contract_reference": "03_csf_signal_ready/author/formal/factor_contract.md",
+        },
+    )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -554,3 +694,46 @@ def test_validate_stage_artifacts_reports_csf_signal_ready_empty_factor_panel(tm
 
     assert result.valid is False
     assert "factor_panel.parquet: expected non-empty parquet rows" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_train_freeze_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_train_freeze_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_train_freeze"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_csf_train_freeze_missing_csv_column(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_train_freeze_formal(stage_dir)
+    (stage_dir / "train_variant_ledger.csv").write_text(
+        "variant_id,status\nbaseline_v1,kept\n",
+        encoding="utf-8",
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_train_freeze"))
+
+    assert result.valid is False
+    assert "train_variant_ledger.csv: missing required csv column selection_rule" in result.errors
+
+
+def test_validate_stage_artifacts_reports_csf_train_freeze_unknown_yaml_field(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_train_freeze_formal(stage_dir)
+    payload = yaml.safe_load((stage_dir / "csf_train_freeze.yaml").read_text(encoding="utf-8"))
+    payload["test_selected_winner"] = "leak"
+    _write_yaml(stage_dir / "csf_train_freeze.yaml", payload)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_train_freeze"))
+
+    assert result.valid is False
+    assert "csf_train_freeze.yaml: unknown top-level field test_selected_winner" in result.errors

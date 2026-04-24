@@ -788,6 +788,7 @@ stages:
       - train_variant_ledger.csv
       - train_variant_rejects.csv
       - train_bucket_diagnostics.parquet
+      - train_neutralization_diagnostics.parquet
       - csf_train_contract.md
       - csf_train_freeze_gate_decision.md
       - run_manifest.json
@@ -798,9 +799,10 @@ stages:
       - train_factor_quality.parquet
       - train_variant_ledger.csv
       - train_variant_rejects.csv
+      - train_bucket_diagnostics.parquet
+      - train_neutralization_diagnostics.parquet
       - run_manifest.json
     human_artifacts:
-      - train_bucket_diagnostics.parquet
       - csf_train_contract.md
       - csf_train_freeze_gate_decision.md
       - artifact_catalog.md

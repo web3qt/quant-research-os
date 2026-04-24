@@ -107,6 +107,29 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_signal_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
 
+## CSF Train Freeze Cases
+
+- `explicit_csf_train_freeze_author_skill_first`
+- `naive_csf_train_freeze_prompt_triggers_author_skill`
+- `csf_train_freeze_rejects_missing_csf_signal_ready_review_closure`
+- `csf_train_freeze_rejects_unconfirmed_freeze_groups`
+- `csf_train_freeze_rejects_placeholder_variant_ledger_completion`
+- `csf_train_freeze_runs_artifact_validator_before_review`
+- `csf_train_freeze_runs_semantic_validator_before_review`
+- `csf_train_freeze_rejects_signal_axis_drift`
+
+`csf_train_freeze_runs_artifact_validator_before_review` 与
+`csf_train_freeze_runs_semantic_validator_before_review` 使用 `expected_events.ordered_substrings` 锁定：
+
+```text
+qros-validate-stage --stage csf_train_freeze
+csf_train_freeze semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+这保证 agent 不能跳过 `qros-validate-stage --stage csf_train_freeze`、semantic validator 或 preflight 直接进入 reviewer lane。
+
 这些 case 定义在：
 
 ```text

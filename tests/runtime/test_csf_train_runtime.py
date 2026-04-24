@@ -62,7 +62,7 @@ def _csf_train_freeze_draft(*, confirmed: bool) -> dict:
                     "kept_variant_ids": ["baseline_v1"],
                     "rejected_variant_ids": [],
                     "selection_rule": "baseline-only first wave",
-                    "frozen_signal_contract_reference": "btc_shock_alt_fragility:v1",
+                    "frozen_signal_contract_reference": "03_csf_signal_ready/author/formal/factor_contract.md",
                     "train_governable_axes": [
                         "btc_shock_return_bps",
                         "beta_lookback_bars",
@@ -82,7 +82,12 @@ def _csf_train_freeze_draft(*, confirmed: bool) -> dict:
             "delivery_contract": {
                 "confirmed": confirmed,
                 "draft": {
-                    "machine_artifacts": ["csf_train_freeze.yaml", "train_variant_ledger.csv"],
+                    "machine_artifacts": [
+                        "csf_train_freeze.yaml",
+                        "train_factor_quality.parquet",
+                        "train_variant_ledger.csv",
+                        "train_variant_rejects.csv",
+                    ],
                     "consumer_stage": "csf_test_evidence",
                     "reuse_constraints": "Test must reuse the frozen train contract only.",
                 },
@@ -102,9 +107,11 @@ def _prepare_csf_signal_ready_stage(lineage_root: Path) -> None:
         "component_factor_manifest.yaml",
         "factor_coverage_report.parquet",
         "factor_group_context.parquet",
+        "route_inheritance_contract.yaml",
         "factor_contract.md",
         "factor_field_dictionary.md",
         "csf_signal_ready_gate_decision.md",
+        "run_manifest.json",
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
@@ -154,7 +161,10 @@ def test_build_csf_train_freeze_writes_required_outputs(tmp_path: Path) -> None:
 
     freeze_payload = yaml.safe_load((formal_dir / "csf_train_freeze.yaml").read_text(encoding="utf-8"))
     search_governance = freeze_payload["search_governance_contract"]
-    assert search_governance["frozen_signal_contract_reference"] == "btc_shock_alt_fragility:v1"
+    assert (
+        search_governance["frozen_signal_contract_reference"]
+        == "03_csf_signal_ready/author/formal/factor_contract.md"
+    )
     assert search_governance["train_governable_axes"] == [
         "btc_shock_return_bps",
         "beta_lookback_bars",

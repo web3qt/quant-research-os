@@ -1,0 +1,172 @@
+schema_id: csf-train-freeze-artifacts-v1
+schema_version: v1
+stage: csf_train_freeze
+stage_dir: 04_csf_train_freeze/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  csf_train_freeze.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_train_freeze
+      - path: lineage_id
+        type: string
+      - path: preprocess_contract.winsorize_policy
+        type: string
+      - path: preprocess_contract.standardize_policy
+        type: string
+      - path: preprocess_contract.missing_fill_policy
+        type: string
+      - path: preprocess_contract.coverage_floor_rule
+        type: string
+      - path: neutralization_contract.neutralization_policy
+        type: enum
+        values:
+          - none
+          - market_beta_neutral
+          - group_neutral
+      - path: neutralization_contract.beta_estimation_window
+        type: string
+      - path: neutralization_contract.group_taxonomy_reference
+        type: string
+      - path: neutralization_contract.residualization_formula
+        type: string
+      - path: ranking_bucket_contract.ranking_scope
+        type: string
+      - path: ranking_bucket_contract.bucket_schema
+        type: string
+      - path: ranking_bucket_contract.quantile_count
+        type: integer
+      - path: ranking_bucket_contract.min_names_per_bucket
+        type: integer
+      - path: rebalance_contract.rebalance_frequency
+        type: string
+      - path: rebalance_contract.signal_lag_rule
+        type: string
+      - path: rebalance_contract.holding_period_rule
+        type: string
+      - path: rebalance_contract.overlap_policy
+        type: string
+      - path: search_governance_contract.candidate_variant_ids
+        type: list[string]
+      - path: search_governance_contract.kept_variant_ids
+        type: list[string]
+      - path: search_governance_contract.rejected_variant_ids
+        type: list[string]
+      - path: search_governance_contract.selection_rule
+        type: string
+      - path: search_governance_contract.frozen_signal_contract_reference
+        type: string
+      - path: search_governance_contract.train_governable_axes
+        type: list[string]
+      - path: search_governance_contract.non_governable_axes_after_signal
+        type: list[string]
+      - path: search_governance_contract.non_governable_axis_reject_rule
+        type: string
+      - path: delivery_contract.machine_artifacts
+        type: list[string]
+      - path: delivery_contract.consumer_stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: delivery_contract.reuse_constraints
+        type: string
+
+  train_factor_quality.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - quality_score
+      - quality_status
+    non_empty: true
+
+  train_variant_ledger.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - status
+      - selection_rule
+    non_empty: true
+
+  train_variant_rejects.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - reject_reason
+
+  train_bucket_diagnostics.parquet:
+    type: parquet
+    required_columns:
+      - bucket_id
+      - min_names
+      - ranking_scope
+    non_empty: true
+
+  train_neutralization_diagnostics.parquet:
+    type: parquet
+    required_columns:
+      - neutralization_policy
+      - group_taxonomy_reference
+      - beta_estimation_window
+    non_empty: true
+
+  csf_train_contract.md:
+    type: markdown
+    required_sections:
+      - CSF Train Contract
+
+  csf_train_freeze_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Train Freeze Gate Decision
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_train_freeze
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - csf_signal_ready
+      - path: program_dir
+        type: string
+      - path: program_entrypoint
+        type: string
+      - path: program_execution_manifest
+        type: string
+      - path: input_roots
+        type: list[string]
+      - path: stage_outputs
+        type: list[string]
+      - path: replay_command
+        type: string
+      - path: candidate_variant_ids
+        type: list[string]
+      - path: kept_variant_ids
+        type: list[string]
+      - path: rejected_variant_ids
+        type: list[string]
+      - path: selection_rule
+        type: string
+      - path: frozen_signal_contract_reference
+        type: string
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

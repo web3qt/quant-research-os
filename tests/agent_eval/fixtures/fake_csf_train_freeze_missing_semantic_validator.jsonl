@@ -1,0 +1,4 @@
+{"event_type":"skill_call","name":"qros-csf-train-freeze-author","payload":{"source":"explicit"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-validate-stage --stage csf_train_freeze --lineage-id agent_eval_csf_train_freeze_semantic_validator"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-preflight --stage csf_train_freeze"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_train_freeze"}}

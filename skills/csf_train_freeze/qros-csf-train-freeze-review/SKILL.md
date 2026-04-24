@@ -22,7 +22,7 @@ description: Codex review skill for CSF Train Freeze stage verification.
 
 ## 独立 reviewer 子代理要求
 
-- 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个 Codex review session
+- 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个独立 review session / Codex review session
 - 进入本 skill 后，必须在**当前会话**里用 `spawn_agent` 拉起独立 reviewer 子代理，且 `fork_context` 必须是 `false`
 - 先用一个最小初始化消息创建 reviewer 子代理，要求它先等待 binding / handoff，不要在 receipt 写出前擅自写文件
 - reviewer 子代理创建后，主线程优先运行 `./.qros/bin/qros-review-cycle prepare --spawned-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id>`
@@ -41,6 +41,10 @@ description: Codex review skill for CSF Train Freeze stage verification.
 - handoff 必须与 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths` 一致
 - 如果上一轮 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
 - 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替主线程猜测或补齐上下文
+- reviewer 不替 runtime 重定义字段；artifact shape 以 `contracts/artifacts/csf_train_freeze_artifacts.yaml` 与 deterministic preflight 为准
+- 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage csf_train_freeze`，并通过 deterministic preflight
+- preflight 中的 `ARTIFACT-CONTRACT-001` 与 `CSF-TRAIN-SEMANTIC-001` 都是 review 前阻断项
+- preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险
 
 ## 共用输入
 
@@ -65,7 +69,10 @@ description: Codex review skill for CSF Train Freeze stage verification.
 - train_variant_ledger.csv
 - train_variant_rejects.csv
 - train_bucket_diagnostics.parquet
+- train_neutralization_diagnostics.parquet
 - csf_train_contract.md
+- csf_train_freeze_gate_decision.md
+- run_manifest.json
 - artifact_catalog.md
 - field_dictionary.md
 

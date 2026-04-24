@@ -78,6 +78,34 @@ def _render_downstream(stage_contract: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _render_deterministic_preflight(stage_key: str) -> str:
+    semantic_codes = {
+        "csf_data_ready": "CSF-DATA-SEMANTIC-001",
+        "csf_signal_ready": "CSF-SIGNAL-SEMANTIC-001",
+        "csf_train_freeze": "CSF-TRAIN-SEMANTIC-001",
+    }
+    artifact_contracts = {
+        "csf_data_ready": "contracts/artifacts/csf_data_ready_artifacts.yaml",
+        "csf_signal_ready": "contracts/artifacts/csf_signal_ready_artifacts.yaml",
+        "csf_train_freeze": "contracts/artifacts/csf_train_freeze_artifacts.yaml",
+    }
+    semantic_code = semantic_codes.get(stage_key)
+    if semantic_code is None:
+        return (
+            "- 进入 reviewer lane 前必须先完成 deterministic review-ready 自查；"
+            "若 preflight 有 blocking finding，必须先修 author outputs。"
+        )
+    artifact_contract = artifact_contracts[stage_key]
+    return "\n".join(
+        [
+            f"- reviewer 不替 runtime 重定义字段；artifact shape 以 `{artifact_contract}` 与 deterministic preflight 为准",
+            f"- 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage {stage_key}`，并通过 deterministic preflight",
+            f"- preflight 中的 `ARTIFACT-CONTRACT-001` 与 `{semantic_code}` 都是 review 前阻断项",
+            "- preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险",
+        ]
+    )
+
+
 def render_stage_skill(
     stage_key: str,
     skill_name: str,
@@ -104,4 +132,5 @@ def render_stage_skill(
         .replace("{{AUDIT_ONLY_BLOCK}}", _render_audit_only(stage_contract))
         .replace("{{ROLLBACK_BLOCK}}", _render_rollback(stage_contract))
         .replace("{{DOWNSTREAM_BLOCK}}", _render_downstream(stage_contract))
+        .replace("{{DETERMINISTIC_PREFLIGHT_BLOCK}}", _render_deterministic_preflight(stage_key))
     )
