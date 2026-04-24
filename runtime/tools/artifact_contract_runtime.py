@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT_CONTRACTS = {
     "idea_intake": ROOT / "contracts" / "artifacts" / "idea_intake_artifacts.yaml",
     "mandate": ROOT / "contracts" / "artifacts" / "mandate_artifacts.yaml",
+    "csf_data_ready": ROOT / "contracts" / "artifacts" / "csf_data_ready_artifacts.yaml",
 }
 
 
@@ -58,6 +59,15 @@ def validate_stage_artifacts(stage_dir: Path, contract: dict[str, Any]) -> Artif
             continue
         if artifact_type == "toml":
             errors.extend(_validate_mapping_artifact(artifact_name, artifact_path, artifact_contract, contract, parser="toml"))
+            continue
+        if artifact_type == "parquet":
+            errors.extend(_validate_parquet_artifact(artifact_name, artifact_path, artifact_contract))
+            continue
+        if artifact_type == "directory":
+            errors.extend(_validate_directory_artifact(artifact_name, artifact_path, artifact_contract))
+            continue
+        if artifact_type == "script":
+            errors.extend(_validate_script_artifact(artifact_name, artifact_path))
             continue
         errors.append(f"{artifact_name}: unsupported artifact type {artifact_type!r}")
 
@@ -140,6 +150,66 @@ def _load_mapping_payload(path: Path, *, parser: str) -> Any:
     raise ArtifactContractError(f"unsupported mapping parser: {parser}")
 
 
+def _validate_parquet_artifact(artifact_name: str, artifact_path: Path, artifact_contract: dict[str, Any]) -> list[str]:
+    try:
+        import pyarrow.parquet as pq
+
+        parquet_file = pq.ParquetFile(artifact_path)
+        columns = set(parquet_file.schema_arrow.names)
+        row_count = parquet_file.metadata.num_rows
+    except Exception as exc:
+        return [f"{artifact_name}: parquet read failed: {exc}"]
+
+    errors: list[str] = []
+    for column in artifact_contract.get("required_columns", []):
+        if column not in columns:
+            errors.append(f"{artifact_name}: missing required parquet column {column}")
+    if artifact_contract.get("non_empty") is True and row_count == 0:
+        errors.append(f"{artifact_name}: expected non-empty parquet rows")
+    return errors
+
+
+def _validate_directory_artifact(
+    artifact_name: str,
+    artifact_path: Path,
+    artifact_contract: dict[str, Any],
+) -> list[str]:
+    if not artifact_path.is_dir():
+        return [f"{artifact_name}: expected directory"]
+
+    errors: list[str] = []
+    for child_contract in artifact_contract.get("required_files", []):
+        child_relpath = str(child_contract["path"])
+        child_artifact_name = f"{artifact_name}/{child_relpath}"
+        child_path = artifact_path / child_relpath
+        if not child_path.exists():
+            errors.append(f"{child_artifact_name}: missing required artifact")
+            continue
+
+        child_type = child_contract.get("type")
+        if child_type == "parquet":
+            errors.extend(_validate_parquet_artifact(child_artifact_name, child_path, child_contract))
+            continue
+        if child_type == "script":
+            errors.extend(_validate_script_artifact(child_artifact_name, child_path))
+            continue
+        errors.append(f"{child_artifact_name}: unsupported directory child type {child_type!r}")
+    return errors
+
+
+def _validate_script_artifact(artifact_name: str, artifact_path: Path) -> list[str]:
+    errors: list[str] = []
+    if not artifact_path.is_file():
+        return [f"{artifact_name}: expected script file"]
+    try:
+        artifact_path.read_text(encoding="utf-8")
+    except Exception as exc:
+        errors.append(f"{artifact_name}: script read failed: {exc}")
+    if artifact_path.stat().st_mode & 0o111 == 0:
+        errors.append(f"{artifact_name}: expected executable script")
+    return errors
+
+
 def _unknown_top_level_fields_forbidden(artifact_contract: dict[str, Any], stage_contract: dict[str, Any]) -> bool:
     artifact_policy = artifact_contract.get("unknown_top_level_fields")
     if artifact_policy is not None:
@@ -189,6 +259,8 @@ def _matches_type(value: Any, expected_type: str) -> bool:
         return isinstance(value, str)
     if expected_type == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
+    if expected_type == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
     if expected_type == "boolean":
         return isinstance(value, bool)
     if expected_type == "map":

@@ -42,6 +42,18 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 如果上一轮 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
 - 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替主线程猜测或补齐上下文
 
+## Deterministic Preflight Truth
+
+reviewer 不替 runtime 重定义字段。`contracts/artifacts/csf_data_ready_artifacts.yaml` 是本阶段 formal artifact shape 的真值层；reviewer 只能审查当前 formal outputs 是否满足合同、机制和残留风险，不能临时发明字段或替 author 补字段。
+
+进入 reviewer lane 前，必须先看 deterministic preflight 结果。对 `csf_data_ready`，preflight 必须覆盖：
+
+- artifact contract validation：文件树、JSON 字段、parquet columns、目录内 parquet 和 script shape
+- semantic validation：`date x asset` 主键、非空表、唯一键、coverage floor 和 shared feature base
+- upstream binding validation：mandate `research_route.yaml`、taxonomy reference、`panel_manifest.json` 与 `run_manifest.json` 绑定
+
+如果 deterministic preflight 未通过，reviewer 不继续替 author 做人工兜底，应把失败点写成 blocking finding / `FIX_REQUIRED`。preflight 通过后，reviewer 再审查机制和残留风险。
+
 ## 共用输入
 
 - `contracts/stages/workflow_stage_gates.yaml`

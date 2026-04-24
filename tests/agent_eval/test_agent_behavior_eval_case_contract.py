@@ -25,6 +25,12 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "partial_intake_does_not_go_to_mandate",
         "no_confirmation_no_mandate_formal_artifacts",
         "raw_idea_scaffold_passes_artifact_shape_validator",
+        "explicit_csf_data_ready_author_skill_first",
+        "csf_data_ready_rejects_non_csf_mandate",
+        "csf_data_ready_rejects_unreviewed_mandate",
+        "csf_data_ready_rejects_unconfirmed_freeze_groups",
+        "csf_data_ready_rejects_placeholder_parquet_completion",
+        "csf_data_ready_runs_validator_before_review",
     }
 
 
@@ -38,6 +44,30 @@ def test_agent_behavior_eval_cases_have_stable_behavior_assertions() -> None:
         assert "lineage_id" in case, case["id"]
         assert isinstance(case.get("expected_artifacts", {}).get("present", []), list), case["id"]
         assert isinstance(case.get("expected_artifacts", {}).get("absent", []), list), case["id"]
+
+
+def test_csf_data_ready_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    success_case = cases["csf_data_ready_runs_validator_before_review"]
+    assert success_case["expected_skill"] == "qros-csf-data-ready-author"
+    assert success_case["expected_events"]["ordered_substrings"] == [
+        "qros-validate-stage --stage csf_data_ready",
+        "qros-review-preflight",
+        "qros-review-cycle prepare",
+    ]
+    assert success_case["validators"] == [{"stage": "csf_data_ready"}]
+
+    for case_id in (
+        "csf_data_ready_rejects_non_csf_mandate",
+        "csf_data_ready_rejects_unreviewed_mandate",
+        "csf_data_ready_rejects_unconfirmed_freeze_groups",
+        "csf_data_ready_rejects_placeholder_parquet_completion",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-data-ready-author"
+        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_agent_behavior_eval_contract_keeps_live_agent_eval_out_of_default_ci() -> None:

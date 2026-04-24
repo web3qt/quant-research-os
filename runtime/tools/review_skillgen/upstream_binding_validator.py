@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,21 @@ def _load_yaml_mapping(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _check_csf_data_ready_route_binding(lineage_root: Path) -> list[str]:
+def _load_json_mapping(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path} must load to a mapping")
+    return payload
+
+
+def _read_parquet_column_values(path: Path, column: str) -> set[str]:
+    import pyarrow.parquet as pq
+
+    table = pq.read_table(path, columns=[column])
+    return {str(value).strip() for value in table.column(column).to_pylist() if str(value).strip()}
+
+
+def _check_csf_data_ready_route_binding(lineage_root: Path, author_formal_dir: Path) -> list[str]:
     route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if not route_path.exists():
         return ["CSF-DATA-BIND-001: mandate research_route.yaml is missing for csf_data_ready route binding"]
@@ -24,7 +39,73 @@ def _check_csf_data_ready_route_binding(lineage_root: Path) -> list[str]:
         return [
             "CSF-DATA-BIND-001: csf_data_ready requires mandate research_route.yaml to stay on cross_sectional_factor"
         ]
-    return []
+
+    findings: list[str] = []
+    findings.extend(_check_csf_data_ready_manifest_binding(author_formal_dir))
+    findings.extend(_check_csf_data_ready_taxonomy_binding(route_payload, author_formal_dir))
+    return findings
+
+
+def _check_csf_data_ready_manifest_binding(author_formal_dir: Path) -> list[str]:
+    findings: list[str] = []
+    panel_manifest_path = author_formal_dir / "panel_manifest.json"
+    run_manifest_path = author_formal_dir / "run_manifest.json"
+
+    if panel_manifest_path.exists():
+        try:
+            panel_manifest = _load_json_mapping(panel_manifest_path)
+        except Exception as exc:
+            findings.append(f"CSF-DATA-BIND-004: panel_manifest.json binding evaluation failed: {exc}")
+        else:
+            if panel_manifest.get("stage") != "csf_data_ready":
+                findings.append("CSF-DATA-BIND-004: panel_manifest.json stage must be csf_data_ready")
+
+    if run_manifest_path.exists():
+        try:
+            run_manifest = _load_json_mapping(run_manifest_path)
+        except Exception as exc:
+            findings.append(f"CSF-DATA-BIND-005: run_manifest.json binding evaluation failed: {exc}")
+        else:
+            if run_manifest.get("source_stage") != "mandate":
+                findings.append("CSF-DATA-BIND-005: run_manifest.json source_stage must be mandate")
+            if run_manifest.get("consumer_stage") != "csf_signal_ready":
+                findings.append("CSF-DATA-BIND-006: run_manifest.json consumer_stage must be csf_signal_ready")
+
+    return findings
+
+
+def _check_csf_data_ready_taxonomy_binding(route_payload: dict[str, Any], author_formal_dir: Path) -> list[str]:
+    neutralization_policy = str(route_payload.get("neutralization_policy", "")).strip()
+    if neutralization_policy != "group_neutral":
+        return []
+
+    findings: list[str] = []
+    expected_reference = str(route_payload.get("group_taxonomy_reference", "")).strip()
+    if not expected_reference:
+        findings.append(
+            "CSF-DATA-BIND-002: mandate group_taxonomy_reference must be non-empty when neutralization_policy is group_neutral"
+        )
+
+    taxonomy_path = author_formal_dir / "asset_taxonomy_snapshot.parquet"
+    if not taxonomy_path.exists():
+        findings.append("CSF-DATA-BIND-002: group_neutral csf_data_ready requires asset_taxonomy_snapshot.parquet")
+        return findings
+
+    if not expected_reference:
+        return findings
+
+    try:
+        observed_references = _read_parquet_column_values(taxonomy_path, "group_taxonomy_reference")
+    except Exception as exc:
+        findings.append(f"CSF-DATA-BIND-003: asset_taxonomy_snapshot.parquet binding evaluation failed: {exc}")
+        return findings
+
+    if observed_references != {expected_reference}:
+        findings.append(
+            "CSF-DATA-BIND-003: asset_taxonomy_snapshot.group_taxonomy_reference must match mandate "
+            f"group_taxonomy_reference; observed={sorted(observed_references)!r} expected={expected_reference!r}"
+        )
+    return findings
 
 
 def _check_csf_signal_ready_route_binding(lineage_root: Path, author_formal_dir: Path) -> list[str]:
@@ -109,8 +190,8 @@ def validate_upstream_bindings(
 ) -> list[str]:
     findings = check_structural_gates(author_formal_dir, structural_binding_checks)
 
-    if (author_formal_dir / "panel_manifest.json").exists():
-        findings.extend(_check_csf_data_ready_route_binding(lineage_root))
+    if stage == "csf_data_ready":
+        findings.extend(_check_csf_data_ready_route_binding(lineage_root, author_formal_dir))
     if (author_formal_dir / "route_inheritance_contract.yaml").exists() or structural_binding_checks:
         findings.extend(_check_csf_signal_ready_route_binding(lineage_root, author_formal_dir))
     if (author_formal_dir / "csf_train_freeze.yaml").exists():

@@ -8,6 +8,12 @@ import yaml
 
 from runtime.tools.idea_runtime import scaffold_idea_intake
 from tests.helpers.repo_paths import REPO_ROOT
+from tests.runtime.test_csf_data_ready_runtime import (
+    _csf_data_ready_draft,
+    _prepare_mandate_stage,
+    _write_yaml as _write_csf_yaml,
+)
+from runtime.tools.csf_data_ready_runtime import build_csf_data_ready_from_mandate
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -164,3 +170,64 @@ def test_validate_stage_artifacts_script_reports_invalid_mandate_shape(tmp_path:
 
     assert result.returncode == 1
     assert "research_scope.md: missing required artifact" in result.stderr
+
+
+def test_validate_stage_artifacts_script_accepts_valid_csf_data_ready(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_csf_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    build_csf_data_ready_from_mandate(lineage_root)
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_data_ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode == 0
+    assert "csf_data_ready artifact shape valid" in result.stdout
+
+
+def test_validate_stage_artifacts_script_reports_invalid_csf_data_ready_shape(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_csf_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    build_csf_data_ready_from_mandate(lineage_root)
+    (stage_dir / "author" / "formal" / "shared_feature_base" / "returns_panel.parquet").unlink()
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_data_ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode == 1
+    assert "shared_feature_base/returns_panel.parquet: missing required artifact" in result.stderr

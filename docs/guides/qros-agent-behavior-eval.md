@@ -10,6 +10,7 @@
 - 必要 artifact 是否存在
 - 禁止提前生成的 artifact 是否不存在
 - `qros-validate-stage` 对 `idea_intake` shape 是否通过
+- `expected_events` 中声明的 validator / preflight / review 命令顺序是否出现
 
 ## 执行边界
 
@@ -61,6 +62,25 @@ python runtime/scripts/run_agent_behavior_eval.py \
 - `partial_intake_does_not_go_to_mandate`
 - `no_confirmation_no_mandate_formal_artifacts`
 - `raw_idea_scaffold_passes_artifact_shape_validator`
+
+## CSF Data Ready Cases
+
+- `explicit_csf_data_ready_author_skill_first`
+- `csf_data_ready_rejects_non_csf_mandate`
+- `csf_data_ready_rejects_unreviewed_mandate`
+- `csf_data_ready_rejects_unconfirmed_freeze_groups`
+- `csf_data_ready_rejects_placeholder_parquet_completion`
+- `csf_data_ready_runs_validator_before_review`
+
+`csf_data_ready_runs_validator_before_review` 使用 `expected_events.ordered_substrings` 锁定：
+
+```text
+qros-validate-stage --stage csf_data_ready
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+这保证 agent 不能跳过 `qros-validate-stage --stage csf_data_ready` 或 preflight 直接进入 reviewer lane。
 
 这些 case 定义在：
 

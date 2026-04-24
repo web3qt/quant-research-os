@@ -420,6 +420,12 @@
 
 ### CSF Data Ready
 
+#### Contract-first rule
+
+`contracts/artifacts/csf_data_ready_artifacts.yaml` 是 `csf_data_ready` formal artifact shape 的字段真值。skill 只能解释执行顺序和 freeze groups，不得把 `SKILL.md` 当作字段真值。
+
+author build 完成后必须运行 `qros-validate-stage --stage csf_data_ready`，再进入 deterministic preflight。contract-first 的边界是：字段、类型、必需 artifact、parquet columns 和目录 shape 由 artifact contract 与 runtime validator 负责；本字段指南只解释为什么这些 freeze group 存在。
+
 #### `panel_contract`
 
 这组冻结“面板主键和面板时间语义”。

@@ -161,6 +161,8 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 所以这些阶段的 `.parquet` 产物不能只是占位文本，必须至少是可读取的最小真实 parquet。
 对于 `csf_signal_ready`，这些最小真实 parquet 还应尽量从上游 `csf_data_ready` 冻结产物派生，而不是静态硬编码资产列表。
 
+`csf_data_ready` 现在采用 contract-first 口径：`contracts/artifacts/csf_data_ready_artifacts.yaml` 是 formal artifact shape 真值，skill 和文档只解释执行顺序、字段含义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_data_ready`，并在进入 review 前通过 deterministic preflight；validator/preflight 不通过，不得进入 `csf_data_ready` review。这里不改变上面的 session rollout truth：`qros-session` 自动强制 review-entry preflight 仍是 mandate-first / mandate-only，但 `qros-csf-data-ready-review` 的 reviewer lane 入口必须使用 standalone preflight。
+
 ## Internal Runtime
 
 deterministic backend 的入口在克隆下来的仓库里：

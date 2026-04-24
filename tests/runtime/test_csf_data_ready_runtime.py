@@ -1,8 +1,10 @@
 from pathlib import Path
 
 import pyarrow.parquet as pq
+import pytest
 import yaml
 
+from runtime.tools import csf_data_ready_runtime
 from runtime.tools.csf_data_ready_runtime import (
     build_csf_data_ready_from_mandate,
     scaffold_csf_data_ready,
@@ -154,3 +156,76 @@ def test_build_csf_data_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert len(beta_inputs) > 0
     assert len({(row["date"], row["asset"]) for row in eligibility}) == len(eligibility)
     assert manifest["coverage_floor_min_ratio"] == 0.95
+
+
+def test_build_csf_data_ready_runs_artifact_shape_validator_before_returning(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    calls: list[Path] = []
+
+    class InvalidResult:
+        valid = False
+        errors = ["panel_manifest.json: missing required field stage"]
+
+    def fake_load_artifact_contract(stage: str) -> dict:
+        assert stage == "csf_data_ready"
+        return {"stage": stage}
+
+    def fake_validate_stage_artifacts(formal_dir: Path, contract: dict) -> InvalidResult:
+        calls.append(formal_dir)
+        assert contract == {"stage": "csf_data_ready"}
+        return InvalidResult()
+
+    monkeypatch.setattr(csf_data_ready_runtime, "load_artifact_contract", fake_load_artifact_contract, raising=False)
+    monkeypatch.setattr(csf_data_ready_runtime, "validate_stage_artifacts", fake_validate_stage_artifacts, raising=False)
+
+    with pytest.raises(ValueError, match="csf_data_ready formal artifacts do not match artifact contract"):
+        build_csf_data_ready_from_mandate(lineage_root)
+
+    assert calls == [stage_dir / "author" / "formal"]
+
+
+def test_build_csf_data_ready_runs_semantic_validator_before_returning(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    calls: list[Path] = []
+
+    class ValidShapeResult:
+        valid = True
+        errors: list[str] = []
+
+    class InvalidSemanticResult:
+        valid = False
+        errors = ["cross_section_coverage.parquet: min coverage_ratio 0.6 below coverage_floor_min_ratio 0.95"]
+
+    def fake_validate_stage_artifacts(formal_dir: Path, contract: dict) -> ValidShapeResult:
+        return ValidShapeResult()
+
+    def fake_validate_csf_data_ready_semantics(formal_dir: Path) -> InvalidSemanticResult:
+        calls.append(formal_dir)
+        return InvalidSemanticResult()
+
+    monkeypatch.setattr(csf_data_ready_runtime, "validate_stage_artifacts", fake_validate_stage_artifacts)
+    monkeypatch.setattr(
+        csf_data_ready_runtime,
+        "validate_csf_data_ready_semantics",
+        fake_validate_csf_data_ready_semantics,
+        raising=False,
+    )
+
+    with pytest.raises(ValueError, match="csf_data_ready formal artifacts do not pass semantic validation"):
+        build_csf_data_ready_from_mandate(lineage_root)
+
+    assert calls == [stage_dir / "author" / "formal"]

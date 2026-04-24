@@ -65,3 +65,88 @@ cases:
         - 01_mandate/author/formal/mandate.md
     validators:
       - stage: idea_intake
+
+  - id: explicit_csf_data_ready_author_skill_first
+    lineage_id: agent_eval_csf_data_ready_explicit
+    prompt: "$qros-csf-data-ready-author 基于已通过 review 的 CSF mandate 生成 csf_data_ready"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_csf_data_ready/review/request/adversarial_review_request.yaml
+
+  - id: csf_data_ready_rejects_non_csf_mandate
+    lineage_id: agent_eval_csf_data_ready_non_csf
+    prompt: "$qros-csf-data-ready-author 继续生成数据底座，但 mandate research_route 是 time_series_signal"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_csf_data_ready/author/formal/panel_manifest.json
+        - 02_csf_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-data-ready-review
+
+  - id: csf_data_ready_rejects_unreviewed_mandate
+    lineage_id: agent_eval_csf_data_ready_unreviewed
+    prompt: "$qros-csf-data-ready-author 继续生成 csf_data_ready，但 mandate 还没有 review closure"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_csf_data_ready/author/formal/panel_manifest.json
+        - 02_csf_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-data-ready-review
+
+  - id: csf_data_ready_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_data_ready_unconfirmed_groups
+    prompt: "$qros-csf-data-ready-author 生成 csf_data_ready，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_csf_data_ready/author/formal/panel_manifest.json
+        - 02_csf_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-data-ready-review
+
+  - id: csf_data_ready_rejects_placeholder_parquet_completion
+    lineage_id: agent_eval_csf_data_ready_placeholder
+    prompt: "$qros-csf-data-ready-author 检查 csf_data_ready，当前 parquet 可能只是 placeholder"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_csf_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - qros-review-preflight
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-data-ready-review
+
+  - id: csf_data_ready_runs_validator_before_review
+    lineage_id: agent_eval_csf_data_ready_validator
+    prompt: "$qros-csf-data-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-csf-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 02_csf_data_ready/author/formal/panel_manifest.json
+        - 02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet
+      absent:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_data_ready
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_data_ready

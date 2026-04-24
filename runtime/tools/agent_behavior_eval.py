@@ -99,6 +99,7 @@ def evaluate_behavior_case(
         lambda: _assert_expected_runtime(case, runtime_status),
         lambda: assert_artifacts_present(lineage_root, case.get("expected_artifacts", {}).get("present", [])),
         lambda: assert_artifacts_absent(lineage_root, case.get("expected_artifacts", {}).get("absent", [])),
+        lambda: _assert_expected_events(case, events),
         lambda: _assert_validators(case, lineage_root),
     ]
     for check in checks:
@@ -200,3 +201,43 @@ def _assert_validators(case: dict[str, Any], lineage_root: Path) -> None:
         result = validate_stage_artifacts(stage_dir, contract)
         if not result.valid:
             raise AssertionError(f"{stage} artifact validator failed: {'; '.join(result.errors)}")
+
+
+def _assert_expected_events(case: dict[str, Any], events: list[AgentEvent]) -> None:
+    expected_events = case.get("expected_events", {})
+    if not expected_events:
+        return
+
+    event_texts = [_event_search_text(event) for event in events]
+    for substring in expected_events.get("required_substrings", []):
+        if not any(str(substring) in event_text for event_text in event_texts):
+            raise AssertionError(f"required event substring missing: {substring}")
+
+    for substring in expected_events.get("forbidden_substrings", []):
+        if any(str(substring) in event_text for event_text in event_texts):
+            raise AssertionError(f"forbidden event substring observed: {substring}")
+
+    next_index = 0
+    for substring in expected_events.get("ordered_substrings", []):
+        observed_index = _find_event_substring_at_or_after(event_texts, str(substring), next_index)
+        if observed_index is None:
+            raise AssertionError(f"ordered event substring missing: {substring}")
+        next_index = observed_index + 1
+
+
+def _event_search_text(event: AgentEvent) -> str:
+    return "\n".join(
+        [
+            event.event_type,
+            event.name,
+            json.dumps(event.payload, sort_keys=True, ensure_ascii=False),
+            json.dumps(event.raw, sort_keys=True, ensure_ascii=False),
+        ]
+    )
+
+
+def _find_event_substring_at_or_after(event_texts: list[str], substring: str, start_index: int) -> int | None:
+    for index in range(start_index, len(event_texts)):
+        if substring in event_texts[index]:
+            return index
+    return None

@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+from runtime.tools.csf_data_ready_contract_runtime import validate_csf_data_ready_semantics
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 
@@ -496,6 +498,18 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    validation = validate_stage_artifacts(stage_formal_dir, load_artifact_contract("csf_data_ready"))
+    if not validation.valid:
+        raise ValueError(
+            "csf_data_ready formal artifacts do not match artifact contract: "
+            + "; ".join(validation.errors)
+        )
+    semantic_validation = validate_csf_data_ready_semantics(stage_formal_dir)
+    if not semantic_validation.valid:
+        raise ValueError(
+            "csf_data_ready formal artifacts do not pass semantic validation: "
+            + "; ".join(semantic_validation.errors)
+        )
     return stage_dir
 
 

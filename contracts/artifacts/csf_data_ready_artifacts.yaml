@@ -1,0 +1,163 @@
+schema_id: csf-data-ready-artifacts-v1
+schema_version: v1
+stage: csf_data_ready
+stage_dir: 02_csf_data_ready/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  panel_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_data_ready
+      - path: lineage_id
+        type: string
+      - path: panel_primary_key
+        type: list[string]
+      - path: cross_section_time_key
+        type: string
+      - path: asset_key
+        type: string
+      - path: shared_feature_outputs
+        type: list[string]
+      - path: machine_artifacts
+        type: list[string]
+      - path: coverage_floor_min_ratio
+        type: number
+
+  asset_universe_membership.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+      - in_universe
+    non_empty: true
+
+  cross_section_coverage.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - coverage_ratio
+      - asset_count
+    non_empty: true
+
+  eligibility_base_mask.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+      - eligible
+    non_empty: true
+
+  shared_feature_base:
+    type: directory
+    required_files:
+      - path: returns_panel.parquet
+        type: parquet
+        required_columns:
+          - date
+          - asset
+          - return_1d
+        non_empty: true
+      - path: liquidity_panel.parquet
+        type: parquet
+        required_columns:
+          - date
+          - asset
+          - dollar_volume
+        non_empty: true
+      - path: beta_inputs.parquet
+        type: parquet
+        required_columns:
+          - date
+          - asset
+          - beta_proxy
+        non_empty: true
+
+  asset_taxonomy_snapshot.parquet:
+    type: parquet
+    required_columns:
+      - asset
+      - date
+      - group_taxonomy_reference
+      - group_bucket
+    non_empty: true
+
+  csf_data_contract.md:
+    type: markdown
+    required_sections:
+      - CSF 数据合同
+
+  csf_data_ready_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Data Ready Gate Decision
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_data_ready
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - mandate
+      - path: panel_primary_key
+        type: list[string]
+      - path: cross_section_time_key
+        type: string
+      - path: asset_key
+        type: string
+      - path: universe_membership_rule
+        type: string
+      - path: group_taxonomy_reference
+        type: string
+      - path: eligibility_base_rule
+        type: string
+      - path: coverage_floor_rule
+        type: string
+      - path: shared_feature_outputs
+        type: list[string]
+      - path: machine_artifacts
+        type: list[string]
+      - path: consumer_stage
+        type: enum
+        values:
+          - csf_signal_ready
+      - path: frozen_inputs_note
+        type: string
+      - path: runtime_root_hint
+        type: string
+      - path: runtime_module
+        type: string
+      - path: runtime_function
+        type: string
+      - path: source_git_revision
+        type: string
+      - path: program_artifacts
+        type: list[string]
+      - path: replay_working_directory
+        type: string
+      - path: replay_command
+        type: string
+
+  rebuild_csf_data_ready.py:
+    type: script
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

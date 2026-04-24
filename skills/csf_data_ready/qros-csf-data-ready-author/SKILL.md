@@ -13,6 +13,18 @@ description: Use when a reviewed mandate must be frozen into formal csf_data_rea
 
 QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `02_csf_data_ready` 需要交付的面板与覆盖证据，而不是把空目录、placeholder 文件或只有合同语义的说明文档当作 csf_data_ready 完成。
 
+## Artifact Contract Truth
+
+`contracts/artifacts/csf_data_ready_artifacts.yaml` 是本阶段 formal artifact shape 的机器真值层。不得把 `SKILL.md` 当作字段真值；本 skill 只负责引导执行顺序、freeze confirmation、真实物化和校验动作。
+
+执行要求：
+
+- 必须先确认 freeze groups，再运行 lineage-local stage program 真实生成 formal artifacts
+- 不得手写或自行扩展未在 `contracts/artifacts/csf_data_ready_artifacts.yaml` 声明的 formal artifact shape
+- 完成 build 后必须运行 `qros-validate-stage --stage csf_data_ready`
+- 进入 review 前必须运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 都通过
+- validator/preflight 不通过，不得进入 `csf_data_ready` review
+
 ## Required Inputs
 
 - `01_mandate/mandate.md`
@@ -67,13 +79,13 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 ## Gate Discipline
 
 ### 面板主键必须显式
-`panel_manifest.json` 必须明确写出 `date_key`、`asset_key`、`panel_frequency` 和 `coverage_rule`，不得把面板当作隐式时序表。
+`panel_manifest.json` 必须按 `contracts/artifacts/csf_data_ready_artifacts.yaml` 明确写出 `panel_primary_key`、`cross_section_time_key`、`asset_key`、`shared_feature_outputs` 和 `coverage_floor_min_ratio`，不得把面板当作隐式时序表。
 
 ### 准入语义必须保留
 `eligibility_base_mask.parquet` 只负责记录基础可研究掩码，不得混入具体因子定义。
 
 ### 分组中性化底座必须版本化
-若后续允许 `neutralization_policy = group_neutral`，`shared_feature_base/` 中的 group taxonomy 必须版本化并可追溯。
+若后续允许 `neutralization_policy = group_neutral`，`asset_taxonomy_snapshot.parquet` 中的 `group_taxonomy_reference` 必须与 mandate 冻结值一致，且可追溯。
 
 ## Working Rules
 
@@ -89,4 +101,6 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 10. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
 11. 保存 `rebuild_csf_data_ready.py` 或等价 stage-local 程序快照
 12. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-13. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_data_ready 完成
+13. 运行 `qros-validate-stage --stage csf_data_ready`
+14. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过
+15. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_data_ready 完成

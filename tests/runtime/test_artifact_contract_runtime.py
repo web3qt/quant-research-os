@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.idea_runtime import scaffold_idea_intake
@@ -9,6 +12,19 @@ from runtime.tools.idea_runtime import scaffold_idea_intake
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _write_parquet_rows(path: Path, rows: list[dict[str, object]]) -> None:
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
+
+
+def _write_empty_parquet(path: Path, schema: dict[str, pa.DataType]) -> None:
+    pq.write_table(pa.table({key: pa.array([], type=value) for key, value in schema.items()}), path)
 
 
 def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
@@ -70,6 +86,103 @@ def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
+def _write_minimal_valid_csf_data_ready_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        stage_dir / "panel_manifest.json",
+        {
+            "stage": "csf_data_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "panel_primary_key": ["date", "asset"],
+            "cross_section_time_key": "date",
+            "asset_key": "asset",
+            "shared_feature_outputs": ["returns_panel", "liquidity_panel", "beta_inputs"],
+            "machine_artifacts": [
+                "panel_manifest.json",
+                "asset_universe_membership.parquet",
+                "cross_section_coverage.parquet",
+                "eligibility_base_mask.parquet",
+            ],
+            "coverage_floor_min_ratio": 0.95,
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "asset_universe_membership.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "in_universe": True}],
+    )
+    _write_parquet_rows(
+        stage_dir / "cross_section_coverage.parquet",
+        [{"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 1}],
+    )
+    _write_parquet_rows(
+        stage_dir / "eligibility_base_mask.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "eligible": True}],
+    )
+    shared_feature_base = stage_dir / "shared_feature_base"
+    shared_feature_base.mkdir()
+    _write_parquet_rows(
+        shared_feature_base / "returns_panel.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "return_1d": 0.01}],
+    )
+    _write_parquet_rows(
+        shared_feature_base / "liquidity_panel.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "dollar_volume": 1000.0}],
+    )
+    _write_parquet_rows(
+        shared_feature_base / "beta_inputs.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "beta_proxy": 1.0}],
+    )
+    _write_parquet_rows(
+        stage_dir / "asset_taxonomy_snapshot.parquet",
+        [
+            {
+                "asset": "BTCUSDT",
+                "date": "2024-01-01",
+                "group_taxonomy_reference": "sector_bucket_v1",
+                "group_bucket": "core",
+            }
+        ],
+    )
+    (stage_dir / "csf_data_contract.md").write_text("# CSF 数据合同\n", encoding="utf-8")
+    (stage_dir / "csf_data_ready_gate_decision.md").write_text("# CSF Data Ready Gate Decision\n", encoding="utf-8")
+    _write_json(
+        stage_dir / "run_manifest.json",
+        {
+            "stage": "csf_data_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "mandate",
+            "panel_primary_key": ["date", "asset"],
+            "cross_section_time_key": "date",
+            "asset_key": "asset",
+            "universe_membership_rule": "Use frozen mandate universe per date.",
+            "group_taxonomy_reference": "sector_bucket_v1",
+            "eligibility_base_rule": "Drop illiquid assets.",
+            "coverage_floor_rule": "Require 95% coverage.",
+            "shared_feature_outputs": ["returns_panel", "liquidity_panel", "beta_inputs"],
+            "machine_artifacts": [
+                "panel_manifest.json",
+                "asset_universe_membership.parquet",
+                "cross_section_coverage.parquet",
+                "eligibility_base_mask.parquet",
+            ],
+            "consumer_stage": "csf_signal_ready",
+            "frozen_inputs_note": "Downstream consumes frozen panel base.",
+            "runtime_root_hint": "/tmp/qros",
+            "runtime_module": "tools/csf_data_ready_runtime.py",
+            "runtime_function": "build_csf_data_ready_from_mandate",
+            "source_git_revision": "abc123",
+            "program_artifacts": ["rebuild_csf_data_ready.py"],
+            "replay_working_directory": "02_csf_data_ready",
+            "replay_command": "python3 rebuild_csf_data_ready.py",
+        },
+    )
+    rebuild_script = stage_dir / "rebuild_csf_data_ready.py"
+    rebuild_script.write_text("#!/usr/bin/env python3\nprint('rebuild')\n", encoding="utf-8")
+    rebuild_script.chmod(0o755)
     (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
@@ -202,6 +315,67 @@ def test_validate_stage_artifacts_accepts_list_of_maps(tmp_path: Path) -> None:
     )
 
     result = validate_stage_artifacts(stage_dir, load_artifact_contract("mandate"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_missing_required_directory_file(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_data_ready_formal(stage_dir)
+    (stage_dir / "shared_feature_base" / "returns_panel.parquet").unlink()
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_data_ready"))
+
+    assert result.valid is False
+    assert "shared_feature_base/returns_panel.parquet: missing required artifact" in result.errors
+
+
+def test_validate_stage_artifacts_reports_parquet_missing_required_column(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_data_ready_formal(stage_dir)
+    _write_parquet_rows(
+        stage_dir / "asset_universe_membership.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT"}],
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_data_ready"))
+
+    assert result.valid is False
+    assert "asset_universe_membership.parquet: missing required parquet column in_universe" in result.errors
+
+
+def test_validate_stage_artifacts_reports_empty_parquet_when_non_empty_required(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_data_ready_formal(stage_dir)
+    _write_empty_parquet(
+        stage_dir / "asset_universe_membership.parquet",
+        {
+            "date": pa.string(),
+            "asset": pa.string(),
+            "in_universe": pa.bool_(),
+        },
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_data_ready"))
+
+    assert result.valid is False
+    assert "asset_universe_membership.parquet: expected non-empty parquet rows" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_data_ready_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_data_ready_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_data_ready"))
 
     assert result.valid is True
     assert result.errors == []
