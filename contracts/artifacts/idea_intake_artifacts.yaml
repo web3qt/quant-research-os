@@ -1,0 +1,327 @@
+schema_id: idea-intake-artifacts-v1
+schema_version: v1
+stage: idea_intake
+stage_dir: 00_idea_intake
+unknown_yaml_top_level_fields: forbid
+
+artifacts:
+  idea_brief.md:
+    type: markdown
+    required_sections:
+      - Idea Brief
+      - 原始想法
+      - 来源
+
+  intake_interview.md:
+    type: markdown
+    required_sections:
+      - Intake Interview
+
+  observation_hypothesis_map.md:
+    type: markdown
+    required_sections:
+      - Observation Hypothesis Map
+      - 观察
+      - 主假设
+      - 对立假设
+
+  research_question_set.md:
+    type: markdown
+    required_sections:
+      - Research Questions
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  scope_canvas.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: market
+        type: string
+        default: ""
+      - path: data_source
+        type: string
+        default: ""
+      - path: instrument_type
+        type: string
+        default: ""
+      - path: universe
+        type: string
+        default: ""
+      - path: bar_size
+        type: string
+        default: ""
+      - path: holding_horizons
+        type: list[string]
+        default: []
+      - path: target_task
+        type: string
+        default: ""
+      - path: excluded_scope
+        type: list[string]
+        default: []
+      - path: budget_days
+        type: integer
+        default: 0
+      - path: max_iterations
+        type: integer
+        default: 0
+
+  qualification_scorecard.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: idea_id
+        type: string
+      - path: reviewer_identity
+        type: string
+        default: codex
+      - path: summary
+        type: string
+        default: ""
+      - path: dimensions
+        type: map
+      - path: dimensions.observability.score
+        type: integer
+        default: 0
+      - path: dimensions.observability.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.observability.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.observability.kill_reason
+        type: list[string]
+        default: []
+      - path: dimensions.mechanism_plausibility.score
+        type: integer
+        default: 0
+      - path: dimensions.mechanism_plausibility.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.mechanism_plausibility.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.mechanism_plausibility.kill_reason
+        type: list[string]
+        default: []
+      - path: dimensions.tradeability.score
+        type: integer
+        default: 0
+      - path: dimensions.tradeability.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.tradeability.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.tradeability.kill_reason
+        type: list[string]
+        default: []
+      - path: dimensions.data_feasibility.score
+        type: integer
+        default: 0
+      - path: dimensions.data_feasibility.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.data_feasibility.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.data_feasibility.kill_reason
+        type: list[string]
+        default: []
+      - path: dimensions.scoping_clarity.score
+        type: integer
+        default: 0
+      - path: dimensions.scoping_clarity.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.scoping_clarity.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.scoping_clarity.kill_reason
+        type: list[string]
+        default: []
+      - path: dimensions.distinctiveness.score
+        type: integer
+        default: 0
+      - path: dimensions.distinctiveness.evidence
+        type: list[string]
+        default: []
+      - path: dimensions.distinctiveness.uncertainty
+        type: list[string]
+        default: []
+      - path: dimensions.distinctiveness.kill_reason
+        type: list[string]
+        default: []
+
+  idea_gate_decision.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: idea_id
+        type: string
+      - path: verdict
+        type: enum
+        values:
+          - GO_TO_MANDATE
+          - NEEDS_REFRAME
+          - DROP
+        default: NEEDS_REFRAME
+      - path: why
+        type: list[string]
+        default: []
+      - path: route_assessment
+        type: map
+      - path: route_assessment.candidate_routes
+        type: list[string]
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+        default: []
+      - path: route_assessment.recommended_route
+        type: string
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+        default: ""
+      - path: route_assessment.why_recommended
+        type: list[string]
+        default: []
+      - path: route_assessment.why_not_other_routes
+        type: map
+        default: {}
+      - path: route_assessment.route_risks
+        type: list[string]
+        default: []
+      - path: route_assessment.route_decision_pending
+        type: boolean
+        default: true
+      - path: approved_scope
+        type: map
+        default: {}
+      - path: required_reframe_actions
+        type: list[string]
+        default: []
+      - path: rollback_target
+        type: string
+        default: 00_idea_intake
+
+  mandate_freeze_draft.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    groups:
+      - research_intent
+      - scope_contract
+      - data_contract
+      - execution_contract
+    fields:
+      - path: groups
+        type: map
+      - path: groups.research_intent.confirmed
+        type: boolean
+        default: false
+      - path: groups.research_intent.draft.research_question
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.primary_hypothesis
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.counter_hypothesis
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.research_route
+        type: string
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+        default: ""
+      - path: groups.research_intent.draft.factor_role
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.factor_structure
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.portfolio_expression
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.neutralization_policy
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.target_strategy_reference
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.group_taxonomy_reference
+        type: string
+        default: ""
+      - path: groups.research_intent.draft.excluded_routes
+        type: list[string]
+        default: []
+      - path: groups.research_intent.draft.route_rationale
+        type: list[string]
+        default: []
+      - path: groups.research_intent.draft.success_criteria
+        type: list[string]
+        default: []
+      - path: groups.research_intent.draft.failure_criteria
+        type: list[string]
+        default: []
+      - path: groups.research_intent.draft.excluded_topics
+        type: list[string]
+        default: []
+      - path: groups.scope_contract.confirmed
+        type: boolean
+        default: false
+      - path: groups.scope_contract.draft.market
+        type: string
+        default: ""
+      - path: groups.scope_contract.draft.universe
+        type: string
+        default: ""
+      - path: groups.scope_contract.draft.target_task
+        type: string
+        default: ""
+      - path: groups.scope_contract.draft.excluded_scope
+        type: list[string]
+        default: []
+      - path: groups.scope_contract.draft.budget_days
+        type: integer
+        default: 0
+      - path: groups.scope_contract.draft.max_iterations
+        type: integer
+        default: 0
+      - path: groups.data_contract.confirmed
+        type: boolean
+        default: false
+      - path: groups.data_contract.draft.data_source
+        type: string
+        default: ""
+      - path: groups.data_contract.draft.bar_size
+        type: string
+        default: ""
+      - path: groups.data_contract.draft.holding_horizons
+        type: list[string]
+        default: []
+      - path: groups.data_contract.draft.timestamp_semantics
+        type: string
+        default: ""
+      - path: groups.data_contract.draft.no_lookahead_guardrail
+        type: string
+        default: ""
+      - path: groups.execution_contract.confirmed
+        type: boolean
+        default: false
+      - path: groups.execution_contract.draft.time_split_note
+        type: string
+        default: ""
+      - path: groups.execution_contract.draft.parameter_boundary_note
+        type: string
+        default: ""
+      - path: groups.execution_contract.draft.artifact_contract_note
+        type: string
+        default: ""
+      - path: groups.execution_contract.draft.crowding_capacity_note
+        type: string
+        default: ""

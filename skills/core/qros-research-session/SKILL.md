@@ -181,51 +181,53 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 1. Resolve or create the lineage
 2. Detect the current stage from disk
 3. Auto-scaffold `00_idea_intake/` when it does not exist
-4. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
-5. 对于一个全新的 raw idea，必须先停在 `idea_intake_confirmation_pending`，不得把用户第一句话直接当成完整 qualification 结论
-6. 如果当前入口是 `raw_idea` 且没有显式 `lineage_id`，不得无声恢复另一条旧 lineage；只有用户明确给出 `lineage_id` 或明确表达“继续那条线”时，才允许 resume
-6. 先显式确认 `observation`
-7. 再显式确认 `primary hypothesis` 与 `counter-hypothesis`
-8. 再显式确认 `candidate_routes`、`recommended_route`、`route_risks`
-9. 再显式确认 `market`、`universe`、`target_task`
-10. 再显式确认 `data_source` 与 `bar_size`
-11. 再显式确认 `kill criteria` 或 `reframe` 条件
-12. 在这些 intake 关键项没有得到用户回答前，不得静默填写完整 `qualification_scorecard.yaml` 或直接给出 `GO_TO_MANDATE`
-13. Only after the intake interview is explicitly confirmed may the agent internally write the equivalent of `CONFIRM_IDEA_INTAKE`
-14. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
-15. Start a grouped mandate freeze conversation instead of silently writing `01_mandate`
-16. Confirm `research_intent`
-17. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
-18. Confirm `scope_contract`
-19. Confirm `data_contract`, especially 数据来源哪里来 and what `bar_size` is frozen, for example `1m`, `5m`, or `15m`
-20. Confirm `execution_contract`
-21. Show one final mandate summary
-22. Ask the user one explicit question: `是否确认进入 mandate？`
-23. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
-24. Drive mandate completion with the same discipline as `qros-mandate-author`
-25. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
-26. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，不得自动进入 `mandate_review`
-27. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由人显式进入对应 `qros-*-review` skill
-28. Confirm `extraction_contract`
-29. Confirm `quality_semantics`
-30. Confirm `universe_admission`
-31. Confirm `shared_derived_layer`
-32. Confirm `delivery_contract`
-33. For `data_ready`, ensure the active research repo actually materializes dense aligned data, shared caches, and QC or coverage evidence required by the stage contract
-34. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `data_ready` completion
-35. Show one final data_ready summary
-36. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
-37. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
-38. Drive data_ready completion with the same discipline as `qros-data-ready-author`
-39. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
-40. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，不得自动进入 `data_ready_review`
-41. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再由人显式重新进入对应 `qros-*-review` skill
-42. Confirm `signal_expression`
-43. Confirm `param_identity`
-44. Confirm `time_semantics`
-45. Confirm `signal_schema`
-46. Confirm `delivery_contract`
-47. For `signal_ready`, ensure the active research repo actually materializes baseline signal timeseries, param manifests and coverage evidence required by the stage contract
+4. For `idea_intake`, artifact shape 以 contract 为准：`contracts/artifacts/idea_intake_artifacts.yaml`
+5. After scaffold or before attempting `GO_TO_MANDATE`, run `qros-validate-stage --stage idea_intake`; if it fails, fix the artifact shape before continuing
+6. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
+7. 对于一个全新的 raw idea，必须先停在 `idea_intake_confirmation_pending`，不得把用户第一句话直接当成完整 qualification 结论
+8. 如果当前入口是 `raw_idea` 且没有显式 `lineage_id`，不得无声恢复另一条旧 lineage；只有用户明确给出 `lineage_id` 或明确表达“继续那条线”时，才允许 resume
+9. 先显式确认 `observation`
+10. 再显式确认 `primary hypothesis` 与 `counter-hypothesis`
+11. 再显式确认 `candidate_routes`、`recommended_route`、`route_risks`
+12. 再显式确认 `market`、`universe`、`target_task`
+13. 再显式确认 `data_source` 与 `bar_size`
+14. 再显式确认 `kill criteria` 或 `reframe` 条件
+15. 在这些 intake 关键项没有得到用户回答前，不得静默填写完整 `qualification_scorecard.yaml` 或直接给出 `GO_TO_MANDATE`
+16. Only after the intake interview is explicitly confirmed may the agent internally write the equivalent of `CONFIRM_IDEA_INTAKE`
+17. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
+18. Start a grouped mandate freeze conversation instead of silently writing `01_mandate`
+19. Confirm `research_intent`
+20. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
+21. Confirm `scope_contract`
+22. Confirm `data_contract`, especially 数据来源哪里来 and what `bar_size` is frozen, for example `1m`, `5m`, or `15m`
+23. Confirm `execution_contract`
+24. Show one final mandate summary
+25. Ask the user one explicit question: `是否确认进入 mandate？`
+26. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
+27. Drive mandate completion with the same discipline as `qros-mandate-author`
+28. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
+29. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，不得自动进入 `mandate_review`
+30. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由人显式进入对应 `qros-*-review` skill
+31. Confirm `extraction_contract`
+32. Confirm `quality_semantics`
+33. Confirm `universe_admission`
+34. Confirm `shared_derived_layer`
+35. Confirm `delivery_contract`
+36. For `data_ready`, ensure the active research repo actually materializes dense aligned data, shared caches, and QC or coverage evidence required by the stage contract
+37. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `data_ready` completion
+38. Show one final data_ready summary
+39. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
+40. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
+41. Drive data_ready completion with the same discipline as `qros-data-ready-author`
+42. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
+43. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，不得自动进入 `data_ready_review`
+44. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再由人显式重新进入对应 `qros-*-review` skill
+45. Confirm `signal_expression`
+46. Confirm `param_identity`
+47. Confirm `time_semantics`
+48. Confirm `signal_schema`
+49. Confirm `delivery_contract`
+50. For `signal_ready`, ensure the active research repo actually materializes baseline signal timeseries, param manifests and coverage evidence required by the stage contract
 48. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `signal_ready` completion
 49. Show one final signal_ready summary
 50. Ask the user one explicit question: `是否按以上内容冻结 signal_ready？`

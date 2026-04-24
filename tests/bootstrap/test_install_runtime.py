@@ -66,6 +66,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
         "bin/qros-start-review",
         "bin/qros-start-spawned-review",
         "bin/qros-update",
+        "bin/qros-validate-stage",
         "bin/qros-verify",
     ]
 

@@ -29,12 +29,20 @@
 ## `00_idea_intake` Required Artifacts
 
 - `idea_brief.md`
+- `intake_interview.md`
 - `observation_hypothesis_map.md`
 - `research_question_set.md`
+- `artifact_catalog.md`
 - `scope_canvas.yaml`
 - `qualification_scorecard.yaml`
 - `idea_gate_decision.yaml`
-- `artifact_catalog.md`
+- `mandate_freeze_draft.yaml`
+
+`00_idea_intake` 的 artifact shape 真值层是
+`contracts/artifacts/idea_intake_artifacts.yaml`。字段一致必须由
+contract、runtime scaffold 和 validator 保证；内容一致不应该强求，
+自然语言内容只要求结构、枚举、必填项和默认值形状稳定。skill 是执行引导，
+负责访谈顺序和禁止跳步，不负责重新定义字段。
 
 正常用户不需要手动生成这套模板。直接从 active research repo 运行：
 
@@ -43,6 +51,11 @@ qros-research-session 帮我研究这个想法：<your idea>
 ```
 
 runtime 会在缺少 `00_idea_intake/` 时自动 scaffold intake artifacts。
+如果需要手动确认磁盘 shape，运行：
+
+```bash
+qros-validate-stage --stage idea_intake --lineage-id <lineage_id>
+```
 
 对于一个全新的 raw idea，正确行为不是直接从一句话推断完整 intake 结论。应先进行 intake 访谈，至少确认：
 

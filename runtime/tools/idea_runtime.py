@@ -6,6 +6,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 
@@ -183,6 +184,10 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
         },
     )
     _dump_yaml(intake_dir / MANDATE_FREEZE_DRAFT_FILE, _blank_mandate_freeze_draft())
+    validation = validate_stage_artifacts(intake_dir, load_artifact_contract("idea_intake"))
+    if not validation.valid:
+        joined_errors = "; ".join(validation.errors)
+        raise ValueError(f"idea_intake scaffold does not match artifact contract: {joined_errors}")
     return intake_dir
 
 

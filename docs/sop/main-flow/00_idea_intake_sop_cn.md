@@ -13,6 +13,7 @@ Audience:
 
 Depends On:
 - `research_workflow_sop`
+- `contracts/artifacts/idea_intake_artifacts.yaml`
 - `contracts/intake/qualification_scorecard_schema.yaml`
 - `contracts/intake/idea_gate_decision_schema.yaml`
 
@@ -31,9 +32,14 @@ Depends On:
 | 文档 | 角色 | 本 SOP 如何使用 |
 |------|------|-----------------|
 | `research_workflow_sop.md` | 全流程解释层 | 本 SOP 是其前置阶段的执行展开 |
+| `contracts/artifacts/idea_intake_artifacts.yaml` | Artifact shape 真值层 | 规定 `00_idea_intake` 文件树、YAML 字段、类型、枚举和 markdown section |
 | `contracts/intake/qualification_scorecard_schema.yaml` | Scorecard 字段真值 | 本 SOP 的评分维度必须与 schema 一致 |
 | `contracts/intake/idea_gate_decision_schema.yaml` | Gate decision 字段真值 | 本 SOP 的 gate 词汇必须与 schema 一致 |
 | `01_mandate_sop_cn.md` | Mandate 执行合同 | Idea Intake 的下游消费者，本阶段产出是其输入 |
+
+字段一致必须由 contract、runtime scaffold 和 validator 保证；内容一致不强求，
+只要求结构、枚举、必填项和默认值形状一致。skill 是执行引导，负责访谈顺序、
+确认节奏和禁止跳步，不负责重新定义 artifact 字段。
 
 ---
 
@@ -106,6 +112,10 @@ Idea Intake 分为三个阶段：**访谈收敛 → Qualification 评分 → Gat
      python runtime/scripts/scaffold_idea_intake.py --lineage-root outputs/<lineage_id>
      ```
   3. 确认目录结构已生成：`outputs/<lineage_id>/00_idea_intake/`。
+  4. 如需手动验证 artifact shape，运行：
+     ```bash
+     qros-validate-stage --stage idea_intake --lineage-id <lineage_id>
+     ```
 - **输出**：空白 artifact 模板集合。
 - **验证点**：目录是否存在？模板文件是否齐全？
 

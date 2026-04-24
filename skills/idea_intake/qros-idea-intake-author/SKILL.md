@@ -12,12 +12,23 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 ## Required Outputs
 
 - `idea_brief.md`
+- `intake_interview.md`
 - `observation_hypothesis_map.md`
 - `research_question_set.md`
+- `artifact_catalog.md`
 - `scope_canvas.yaml`
 - `qualification_scorecard.yaml`
 - `idea_gate_decision.yaml`
-- `artifact_catalog.md`
+- `mandate_freeze_draft.yaml`
+
+## Artifact Shape Contract
+
+- 第一阶段 artifact shape 以 `contracts/artifacts/idea_intake_artifacts.yaml` 为准
+- 不得手写第一阶段 artifact shape；必须先使用 runtime scaffold
+- 字段一致由 contract / runtime validator 保证，内容一致不强求
+- 不得新增未声明 YAML top-level 字段作为 formal artifact
+- 完成 `idea_intake` 前必须运行 `qros-validate-stage --stage idea_intake`
+- validator 不通过，不得进入 GO_TO_MANDATE
 
 ## Mandatory Discipline
 
