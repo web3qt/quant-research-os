@@ -56,6 +56,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("contracts/intake/qualification_scorecard_schema.yaml").exists()
     assert Path("contracts/intake/idea_gate_decision_schema.yaml").exists()
     assert Path("contracts/artifacts/idea_intake_artifacts.yaml").exists()
+    assert Path("contracts/artifacts/mandate_artifacts.yaml").exists()
     assert Path("contracts/agent_eval/qros_agent_behavior_eval_cases.yaml").exists()
     assert Path("contracts/review/review_checklist_master.yaml").exists()
     assert Path("contracts/stages/stage_evaluator.schema.json").exists()

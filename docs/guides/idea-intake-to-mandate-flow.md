@@ -141,6 +141,16 @@ python runtime/.qros/bin/qros-session --outputs-root outputs --lineage-id <linea
 python runtime/scripts/build_mandate_from_intake.py --lineage-root outputs/<lineage_id>
 ```
 
+`01_mandate/author/formal` 的正式 artifact shape 由 `contracts/artifacts/mandate_artifacts.yaml` 定义。`qros-mandate-author` 不再维护字段真值，只维护 freeze 顺序、确认规则和 validator 调用纪律。
+
+构建 mandate 后必须运行：
+
+```bash
+qros-validate-stage --stage mandate --lineage-id <lineage_id>
+```
+
+如果 validator 失败，不得进入 mandate review。
+
 完成 mandate 产物后，继续运行：
 
 ```bash

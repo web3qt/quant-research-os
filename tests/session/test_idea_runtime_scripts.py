@@ -374,6 +374,7 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert 'data_source = "Binance UM futures klines"' in (mandate_formal_dir / "run_config.toml").read_text(
         encoding="utf-8"
     )
+    assert "non_rust_exceptions = []" in (mandate_formal_dir / "run_config.toml").read_text(encoding="utf-8")
     assert "Built mandate artifacts" in result.stdout
 
 

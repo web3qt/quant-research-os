@@ -436,13 +436,21 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 f'target_task = "{target_task}"',
                 f'data_source = "{data_source}"',
                 f'bar_size = "{bar_size}"',
+                "non_rust_exceptions = []",
             ]
         )
         + "\n",
         encoding="utf-8",
     )
     (mandate_formal_dir / "artifact_catalog.md").write_text(
-        "# 产物清单\n\n- mandate.md\n- research_scope.md\n- research_route.yaml\n- time_split.json\n- parameter_grid.yaml\n- run_config.toml\n",
+        "# 产物清单\n\n"
+        "- mandate.md\n"
+        "- research_scope.md\n"
+        "- research_route.yaml\n"
+        "- time_split.json\n"
+        "- parameter_grid.yaml\n"
+        "- run_config.toml\n"
+        "- field_dictionary.md\n",
         encoding="utf-8",
     )
     (mandate_formal_dir / "field_dictionary.md").write_text(
@@ -468,6 +476,10 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    validation = validate_stage_artifacts(mandate_formal_dir, load_artifact_contract("mandate"))
+    if not validation.valid:
+        joined_errors = "; ".join(validation.errors)
+        raise ValueError(f"mandate formal artifacts do not match artifact contract: {joined_errors}")
     return mandate_dir
 
 

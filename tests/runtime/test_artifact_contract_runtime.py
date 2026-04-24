@@ -11,6 +11,69 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
+    (stage_dir / "mandate.md").write_text(
+        "\n".join(
+            [
+                "# Mandate",
+                "## 目标",
+                "## 研究意图",
+                "## 路线理由",
+                "## 成功标准",
+                "## 失败标准",
+                "## 已冻结执行输入",
+                "## 执行合同",
+                "## Gate 依据",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "research_scope.md").write_text("# Research Scope\n", encoding="utf-8")
+    _write_yaml(
+        stage_dir / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+            "target_strategy_reference": "",
+            "group_taxonomy_reference": "sector_bucket_v1",
+            "excluded_routes": ["time_series_signal"],
+            "route_rationale": ["Cross-asset ranking expresses the edge best."],
+            "route_change_policy": {
+                "before_downstream_freeze": "rollback_to_mandate",
+                "after_downstream_freeze": "child_lineage",
+            },
+            "route_contract_version": "v1",
+        },
+    )
+    (stage_dir / "time_split.json").write_text(
+        '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m","holding_horizons":["15m"],"policy_note":"locked"}\n',
+        encoding="utf-8",
+    )
+    _write_yaml(stage_dir / "parameter_grid.yaml", {"parameters": [], "note": "locked parameter family"})
+    (stage_dir / "run_config.toml").write_text(
+        "\n".join(
+            [
+                'stage = "mandate"',
+                'lineage_id = "btc_alt_transmission_v1"',
+                'market = "Binance perpetual"',
+                'universe = "top liquidity alts"',
+                'target_task = "event-driven relative return study"',
+                'data_source = "Binance UM futures klines"',
+                'bar_size = "5m"',
+                "non_rust_exceptions = []",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -77,3 +140,68 @@ def test_validate_stage_artifacts_reports_missing_markdown_section(tmp_path: Pat
 
     assert result.valid is False
     assert "observation_hypothesis_map.md: missing markdown section 观察" in result.errors
+
+
+def test_validate_stage_artifacts_reports_json_type_mismatch(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    stage_dir.mkdir()
+    _write_minimal_valid_mandate_formal(stage_dir)
+    (stage_dir / "time_split.json").write_text(
+        '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m","holding_horizons":"15m","policy_note":"locked"}\n',
+        encoding="utf-8",
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("mandate"))
+
+    assert result.valid is False
+    assert "time_split.json: holding_horizons expected list[string], found str" in result.errors
+
+
+def test_validate_stage_artifacts_reports_toml_missing_field(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    stage_dir.mkdir()
+    _write_minimal_valid_mandate_formal(stage_dir)
+    (stage_dir / "run_config.toml").write_text(
+        "\n".join(
+            [
+                'stage = "mandate"',
+                'lineage_id = "btc_alt_transmission_v1"',
+                'market = "Binance perpetual"',
+                'universe = "top liquidity alts"',
+                'target_task = "event-driven relative return study"',
+                'data_source = "Binance UM futures klines"',
+                'bar_size = "5m"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("mandate"))
+
+    assert result.valid is False
+    assert "run_config.toml: missing required field non_rust_exceptions" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_list_of_maps(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    stage_dir.mkdir()
+    _write_minimal_valid_mandate_formal(stage_dir)
+    _write_yaml(
+        stage_dir / "parameter_grid.yaml",
+        {
+            "parameters": [{"name": "lookback", "type": "integer", "min": 5, "max": 60, "step": 5}],
+            "note": "locked parameter family",
+        },
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("mandate"))
+
+    assert result.valid is True
+    assert result.errors == []

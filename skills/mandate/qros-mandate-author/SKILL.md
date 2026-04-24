@@ -63,6 +63,10 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 - 四组全部确认后，才允许最终 `是否确认进入 mandate`
 - 禁止 post-hoc restatement
 - 禁止根据后验结果静默改题
+- `contracts/artifacts/mandate_artifacts.yaml` 是 `01_mandate/author/formal` 的字段真值层
+- 不得把 SKILL.md 作为字段真值；skill 只负责执行顺序、freeze 访谈和 runtime 调用
+- 生成正式 mandate artifacts 后，必须运行 `qros-validate-stage --stage mandate`
+- validator 不通过，不得进入 mandate review
 
 - 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
 - 语言规则统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外口径。
@@ -119,3 +123,5 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 11. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`、`research_route.yaml`
 12. 验证每个机器可读产物都有 companion field documentation（见上）
 13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+14. 运行 `qros-validate-stage --stage mandate`
+15. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review

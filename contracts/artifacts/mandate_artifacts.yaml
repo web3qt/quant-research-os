@@ -1,0 +1,141 @@
+schema_id: mandate-artifacts-v1
+schema_version: v1
+stage: mandate
+stage_dir: 01_mandate/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  mandate.md:
+    type: markdown
+    required_sections:
+      - Mandate
+      - 目标
+      - 研究意图
+      - 路线理由
+      - 成功标准
+      - 失败标准
+      - 已冻结执行输入
+      - 执行合同
+      - Gate 依据
+
+  research_scope.md:
+    type: markdown
+    required_sections:
+      - Research Scope
+
+  research_route.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: research_route
+        type: enum
+        values:
+          - time_series_signal
+          - cross_sectional_factor
+      - path: factor_role
+        type: string
+        allowed_values_if_nonempty:
+          - standalone_alpha
+          - regime_filter
+          - combo_filter
+      - path: factor_structure
+        type: string
+        allowed_values_if_nonempty:
+          - single_factor
+          - multi_factor_score
+      - path: portfolio_expression
+        type: string
+        allowed_values_if_nonempty:
+          - long_short_market_neutral
+          - long_only_rank
+          - short_only_rank
+          - benchmark_relative_long_only
+          - group_relative_long_short
+          - target_strategy_filter
+          - target_strategy_overlay
+      - path: neutralization_policy
+        type: string
+        allowed_values_if_nonempty:
+          - none
+          - market_beta_neutral
+          - group_neutral
+      - path: target_strategy_reference
+        type: string
+      - path: group_taxonomy_reference
+        type: string
+      - path: excluded_routes
+        type: list[string]
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+      - path: route_rationale
+        type: list[string]
+      - path: route_change_policy
+        type: map
+      - path: route_change_policy.before_downstream_freeze
+        type: string
+      - path: route_change_policy.after_downstream_freeze
+        type: string
+      - path: route_contract_version
+        type: string
+
+  time_split.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: train
+        type: string
+      - path: test
+        type: string
+      - path: backtest
+        type: string
+      - path: holdout
+        type: string
+      - path: bar_size
+        type: string
+      - path: holding_horizons
+        type: list[string]
+      - path: policy_note
+        type: string
+
+  parameter_grid.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: parameters
+        type: list[map]
+      - path: note
+        type: string
+
+  run_config.toml:
+    type: toml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - mandate
+      - path: lineage_id
+        type: string
+      - path: market
+        type: string
+      - path: universe
+        type: string
+      - path: target_task
+        type: string
+      - path: data_source
+        type: string
+      - path: bar_size
+        type: string
+      - path: non_rust_exceptions
+        type: list[string]
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

@@ -25,3 +25,13 @@ def test_author_skills_exist_and_reference_key_artifacts() -> None:
     assert "GO_TO_MANDATE" in mandate_text
     assert "mandate.md" in mandate_text
     assert "post-hoc" in mandate_text.lower()
+    assert "contracts/artifacts/mandate_artifacts.yaml" in mandate_text
+    assert "qros-validate-stage" in mandate_text
+    assert "不得把 SKILL.md 作为字段真值" in mandate_text
+
+
+def test_idea_to_mandate_flow_documents_mandate_contract_validation() -> None:
+    flow_text = Path("docs/guides/idea-intake-to-mandate-flow.md").read_text(encoding="utf-8")
+
+    assert "qros-validate-stage --stage mandate" in flow_text
+    assert "contracts/artifacts/mandate_artifacts.yaml" in flow_text

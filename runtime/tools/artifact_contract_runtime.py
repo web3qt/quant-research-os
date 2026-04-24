@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -10,6 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT_CONTRACTS = {
     "idea_intake": ROOT / "contracts" / "artifacts" / "idea_intake_artifacts.yaml",
+    "mandate": ROOT / "contracts" / "artifacts" / "mandate_artifacts.yaml",
 }
 
 
@@ -50,6 +53,12 @@ def validate_stage_artifacts(stage_dir: Path, contract: dict[str, Any]) -> Artif
         if artifact_type == "yaml":
             errors.extend(_validate_yaml_artifact(artifact_name, artifact_path, artifact_contract, contract))
             continue
+        if artifact_type == "json":
+            errors.extend(_validate_mapping_artifact(artifact_name, artifact_path, artifact_contract, contract, parser="json"))
+            continue
+        if artifact_type == "toml":
+            errors.extend(_validate_mapping_artifact(artifact_name, artifact_path, artifact_contract, contract, parser="toml"))
+            continue
         errors.append(f"{artifact_name}: unsupported artifact type {artifact_type!r}")
 
     return ArtifactValidationResult(errors=errors)
@@ -83,14 +92,25 @@ def _validate_yaml_artifact(
     artifact_contract: dict[str, Any],
     stage_contract: dict[str, Any],
 ) -> list[str]:
+    return _validate_mapping_artifact(artifact_name, artifact_path, artifact_contract, stage_contract, parser="yaml")
+
+
+def _validate_mapping_artifact(
+    artifact_name: str,
+    artifact_path: Path,
+    artifact_contract: dict[str, Any],
+    stage_contract: dict[str, Any],
+    *,
+    parser: str,
+) -> list[str]:
     errors: list[str] = []
     try:
-        payload = yaml.safe_load(artifact_path.read_text(encoding="utf-8"))
+        payload = _load_mapping_payload(artifact_path, parser=parser)
     except Exception as exc:
-        return [f"{artifact_name}: yaml parse failed: {exc}"]
+        return [f"{artifact_name}: {parser} parse failed: {exc}"]
 
     if not isinstance(payload, dict):
-        return [f"{artifact_name}: expected yaml map, found {type(payload).__name__}"]
+        return [f"{artifact_name}: expected {parser} map, found {type(payload).__name__}"]
 
     if _unknown_top_level_fields_forbidden(artifact_contract, stage_contract):
         allowed = _allowed_top_level_fields(artifact_contract)
@@ -110,10 +130,23 @@ def _validate_yaml_artifact(
     return errors
 
 
+def _load_mapping_payload(path: Path, *, parser: str) -> Any:
+    if parser == "yaml":
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+    if parser == "json":
+        return json.loads(path.read_text(encoding="utf-8"))
+    if parser == "toml":
+        return tomllib.loads(path.read_text(encoding="utf-8"))
+    raise ArtifactContractError(f"unsupported mapping parser: {parser}")
+
+
 def _unknown_top_level_fields_forbidden(artifact_contract: dict[str, Any], stage_contract: dict[str, Any]) -> bool:
     artifact_policy = artifact_contract.get("unknown_top_level_fields")
     if artifact_policy is not None:
         return artifact_policy == "forbid"
+    machine_policy = stage_contract.get("unknown_machine_top_level_fields")
+    if machine_policy is not None:
+        return machine_policy == "forbid"
     return stage_contract.get("unknown_yaml_top_level_fields") == "forbid"
 
 
@@ -162,6 +195,8 @@ def _matches_type(value: Any, expected_type: str) -> bool:
         return isinstance(value, dict)
     if expected_type == "list[string]":
         return isinstance(value, list) and all(isinstance(item, str) for item in value)
+    if expected_type == "list[map]":
+        return isinstance(value, list) and all(isinstance(item, dict) for item in value)
     return False
 
 
