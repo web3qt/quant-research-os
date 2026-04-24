@@ -20,6 +20,16 @@ description: Codex review skill for CSF Signal Ready stage verification.
 - `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
 - 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
 
+## Contract / Preflight Discipline
+
+- reviewer 不替 runtime 重定义字段
+- `contracts/artifacts/csf_signal_ready_artifacts.yaml` 是 formal artifact shape 真值
+- reviewer lane 前必须先通过 deterministic preflight
+- preflight 必须覆盖 artifact contract validation、semantic validation 与 upstream binding validation
+- semantic validation 至少检查 factor panel、final score 字段、coverage、input field source、group context 和 deterministic combination
+- upstream binding validation 至少检查 `route_inheritance_contract.yaml`、mandate route digest、`csf_data_ready` eligible universe 与 taxonomy 绑定
+- deterministic preflight 不通过，不得 spawn reviewer 子代理
+
 ## 独立 reviewer 子代理要求
 
 - 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个 Codex review session

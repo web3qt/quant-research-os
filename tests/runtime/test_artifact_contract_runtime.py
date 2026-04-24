@@ -187,6 +187,106 @@ def _write_minimal_valid_csf_data_ready_formal(stage_dir: Path) -> None:
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
 
+def _write_minimal_valid_csf_signal_ready_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_parquet_rows(
+        stage_dir / "factor_panel.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "factor_value": 1.0}],
+    )
+    _write_yaml(
+        stage_dir / "factor_manifest.yaml",
+        {
+            "stage": "csf_signal_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "factor_id": "btc_lead_alt_follow",
+            "factor_version": "v1",
+            "factor_direction": "high_better",
+            "factor_structure": "single_factor",
+            "panel_primary_key": ["date", "asset"],
+            "raw_factor_fields": ["return_1d", "dollar_volume", "beta_proxy"],
+            "derived_factor_fields": ["lead_follow_score"],
+            "final_score_field": "factor_value",
+            "as_of_semantics": "Factor values are frozen at the cross-section close.",
+            "coverage_min_ratio": 1.0,
+            "coverage_contract": "Require complete coverage for the fixture.",
+            "missing_value_policy": "Preserve nulls and report eligibility separately.",
+            "input_field_map": [
+                {
+                    "raw_field": "return_1d",
+                    "source_artifact": "shared_feature_base/returns_panel.parquet",
+                    "source_column": "return_1d",
+                }
+            ],
+        },
+    )
+    _write_yaml(
+        stage_dir / "component_factor_manifest.yaml",
+        {
+            "stage": "csf_signal_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "factor_structure": "single_factor",
+            "component_factor_ids": [],
+            "score_combination_formula": "single_factor_passthrough",
+            "combination_policy": "deterministic_passthrough",
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "factor_coverage_report.parquet",
+        [{"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 1}],
+    )
+    _write_parquet_rows(
+        stage_dir / "factor_group_context.parquet",
+        [{"date": "2024-01-01", "asset": "BTCUSDT", "group_context": "core"}],
+    )
+    _write_yaml(
+        stage_dir / "route_inheritance_contract.yaml",
+        {
+            "source_route_artifact": "../../01_mandate/author/formal/research_route.yaml",
+            "source_route_digest_sha256": "abc123",
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+            "target_strategy_reference": "",
+            "group_taxonomy_reference": "sector_bucket_v1",
+            "target_strategy_reference_requirement_status": "not_required",
+            "group_taxonomy_reference_requirement_status": "required_satisfied",
+            "inheritance_mode": "exact_copy",
+        },
+    )
+    (stage_dir / "factor_contract.md").write_text("# 因子合同\n", encoding="utf-8")
+    (stage_dir / "factor_field_dictionary.md").write_text("# 因子字段字典\n", encoding="utf-8")
+    (stage_dir / "csf_signal_ready_gate_decision.md").write_text(
+        "# CSF Signal Ready Gate Decision\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        stage_dir / "run_manifest.json",
+        {
+            "stage": "csf_signal_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "csf_data_ready",
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+            "program_dir": "program/cross_sectional_factor/signal_ready",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "input_roots": [
+                "../02_csf_data_ready/author/formal/panel_manifest.json",
+                "../../01_mandate/author/formal/research_route.yaml",
+            ],
+            "stage_outputs": ["factor_panel.parquet", "factor_manifest.yaml"],
+            "replay_command": "python3 program/cross_sectional_factor/signal_ready/run_stage.py",
+        },
+    )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -379,3 +479,78 @@ def test_validate_stage_artifacts_accepts_valid_csf_data_ready_shape(tmp_path: P
 
     assert result.valid is True
     assert result.errors == []
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_signal_ready_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_signal_ready_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_signal_ready"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_csf_signal_ready_missing_required_artifact(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_signal_ready_formal(stage_dir)
+    (stage_dir / "component_factor_manifest.yaml").unlink()
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_signal_ready"))
+
+    assert result.valid is False
+    assert "component_factor_manifest.yaml: missing required artifact" in result.errors
+
+
+def test_validate_stage_artifacts_reports_csf_signal_ready_factor_manifest_unknown_field(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_signal_ready_formal(stage_dir)
+    payload = yaml.safe_load((stage_dir / "factor_manifest.yaml").read_text(encoding="utf-8"))
+    payload["uncontracted_signal_axis"] = "leak"
+    _write_yaml(stage_dir / "factor_manifest.yaml", payload)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_signal_ready"))
+
+    assert result.valid is False
+    assert "factor_manifest.yaml: unknown top-level field uncontracted_signal_axis" in result.errors
+
+
+def test_validate_stage_artifacts_reports_csf_signal_ready_factor_panel_missing_static_column(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_signal_ready_formal(stage_dir)
+    _write_parquet_rows(stage_dir / "factor_panel.parquet", [{"asset": "BTCUSDT", "factor_value": 1.0}])
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_signal_ready"))
+
+    assert result.valid is False
+    assert "factor_panel.parquet: missing required parquet column date" in result.errors
+
+
+def test_validate_stage_artifacts_reports_csf_signal_ready_empty_factor_panel(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_signal_ready_formal(stage_dir)
+    _write_empty_parquet(
+        stage_dir / "factor_panel.parquet",
+        {
+            "date": pa.string(),
+            "asset": pa.string(),
+            "factor_value": pa.float64(),
+        },
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_signal_ready"))
+
+    assert result.valid is False
+    assert "factor_panel.parquet: expected non-empty parquet rows" in result.errors

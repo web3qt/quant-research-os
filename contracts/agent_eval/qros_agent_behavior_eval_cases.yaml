@@ -150,3 +150,148 @@ cases:
         - qros-review-cycle prepare
     validators:
       - stage: csf_data_ready
+
+  - id: explicit_csf_signal_ready_author_skill_first
+    lineage_id: agent_eval_csf_signal_ready_explicit
+    prompt: "$qros-csf-signal-ready-author 基于已通过 review 的 csf_data_ready 生成 csf_signal_ready"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+
+  - id: naive_csf_signal_ready_prompt_triggers_author_skill
+    lineage_id: agent_eval_csf_signal_ready_naive
+    prompt: "csf_data_ready 已经 review 通过，下一步帮我冻结截面因子 signal ready"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+
+  - id: csf_signal_ready_rejects_missing_csf_data_ready_review_closure
+    lineage_id: agent_eval_csf_signal_ready_missing_data_review
+    prompt: "$qros-csf-signal-ready-author 继续生成 csf_signal_ready，但 csf_data_ready 还没有 review closure"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review
+
+  - id: csf_signal_ready_rejects_non_csf_mandate_route
+    lineage_id: agent_eval_csf_signal_ready_non_csf
+    prompt: "$qros-csf-signal-ready-author 继续生成 signal，但 mandate research_route 是 time_series_signal"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review
+
+  - id: csf_signal_ready_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_signal_ready_unconfirmed_groups
+    prompt: "$qros-csf-signal-ready-author 生成 csf_signal_ready，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review
+
+  - id: csf_signal_ready_rejects_placeholder_factor_panel_completion
+    lineage_id: agent_eval_csf_signal_ready_placeholder
+    prompt: "$qros-csf-signal-ready-author 检查 csf_signal_ready，当前 factor_panel 可能只是 placeholder"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - qros-review-preflight
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review
+
+  - id: csf_signal_ready_runs_artifact_validator_before_review
+    lineage_id: agent_eval_csf_signal_ready_artifact_validator
+    prompt: "$qros-csf-signal-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先跑 artifact validator"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+        - 03_csf_signal_ready/author/formal/factor_manifest.yaml
+      absent:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_signal_ready
+        - csf_signal_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_signal_ready
+
+  - id: csf_signal_ready_runs_semantic_validator_before_review
+    lineage_id: agent_eval_csf_signal_ready_semantic_validator
+    prompt: "$qros-csf-signal-ready-author 已生成 formal artifacts；进入 review 前先跑 semantic validator"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 03_csf_signal_ready/author/formal/factor_panel.parquet
+        - 03_csf_signal_ready/author/formal/component_factor_manifest.yaml
+      absent:
+        - 04_csf_train_freeze/author/formal/csf_train_freeze.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_signal_ready
+        - csf_signal_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_signal_ready
+
+  - id: csf_signal_ready_rejects_route_inheritance_drift
+    lineage_id: agent_eval_csf_signal_ready_route_drift
+    prompt: "$qros-csf-signal-ready-author 检查 csf_signal_ready，route_inheritance_contract 可能和 mandate 漂移"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - CSF-SIGNAL-BIND
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review
+
+  - id: csf_signal_ready_rejects_raw_field_without_input_binding
+    lineage_id: agent_eval_csf_signal_ready_unbound_raw_field
+    prompt: "$qros-csf-signal-ready-author 检查 csf_signal_ready，raw_factor_fields 可能没有 input_field_map 绑定"
+    expected_skill: qros-csf-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - input_field_map
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-signal-ready-review

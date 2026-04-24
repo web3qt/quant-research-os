@@ -7,6 +7,10 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+from runtime.tools.csf_signal_ready_contract_runtime import (
+    validate_csf_signal_ready_semantics as validate_csf_signal_ready_semantic_contract,
+)
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 
 
@@ -56,6 +60,7 @@ def _blank_csf_signal_ready_freeze_draft() -> dict[str, Any]:
                 "draft": {
                     "panel_primary_key": ["date", "asset"],
                     "as_of_semantics": "",
+                    "coverage_min_ratio": 1.0,
                     "coverage_contract": "",
                 },
                 "missing_items": [],
@@ -138,6 +143,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     factor_structure = _required_draft_value(factor_identity, "factor_structure")
     panel_primary_key = _string_list(panel_contract.get("panel_primary_key", []))
     as_of_semantics = _required_draft_value(panel_contract, "as_of_semantics")
+    coverage_min_ratio = _number_value(panel_contract.get("coverage_min_ratio", 1.0), default=1.0)
     coverage_contract = _required_draft_value(panel_contract, "coverage_contract")
     raw_factor_fields = _string_list(factor_expression.get("raw_factor_fields", []))
     derived_factor_fields = _string_list(factor_expression.get("derived_factor_fields", []))
@@ -235,6 +241,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
     _dump_yaml(
         stage_formal_dir / "factor_manifest.yaml",
         {
+            "stage": "csf_signal_ready",
+            "lineage_id": lineage_root.name,
             "factor_id": factor_id,
             "factor_version": factor_version,
             "factor_direction": factor_direction,
@@ -243,13 +251,22 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             "raw_factor_fields": raw_factor_fields,
             "derived_factor_fields": derived_factor_fields,
             "final_score_field": final_score_field,
+            "as_of_semantics": as_of_semantics,
+            "coverage_min_ratio": coverage_min_ratio,
+            "coverage_contract": coverage_contract,
+            "missing_value_policy": missing_value_policy,
+            "input_field_map": _input_field_map(raw_factor_fields),
         },
     )
     _dump_yaml(
         stage_formal_dir / "component_factor_manifest.yaml",
         {
+            "stage": "csf_signal_ready",
+            "lineage_id": lineage_root.name,
+            "factor_structure": factor_structure,
             "component_factor_ids": component_factor_ids,
             "score_combination_formula": score_combination_formula,
+            "combination_policy": "deterministic_formula",
         },
     )
     _write_parquet_rows(stage_formal_dir / "factor_coverage_report.parquet", coverage_rows)
@@ -351,12 +368,9 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
                     "factor_panel.parquet",
                     "field_dictionary.md",
                     "route_inheritance_contract.yaml",
+                    "run_manifest.json",
                 ],
                 "replay_command": f"python3 {lineage_root / 'program' / 'cross_sectional_factor' / 'signal_ready' / 'run_stage.py'} --lineage-root {lineage_root}",
-                "notes": [
-                    "Route identity is inherited from mandate through route_inheritance_contract.yaml.",
-                    "This stage must not redefine factor_role, factor_structure, portfolio_expression, or neutralization_policy.",
-                ],
             },
             indent=2,
             ensure_ascii=False,
@@ -402,6 +416,8 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    _validate_csf_signal_ready_artifact_shape(stage_formal_dir)
+    _validate_csf_signal_ready_semantics(stage_formal_dir, lineage_root)
     return stage_dir
 
 
@@ -426,3 +442,44 @@ def _string_list(values: Any) -> list[str]:
     if not isinstance(values, list):
         return []
     return [str(item).strip() for item in values if str(item).strip()]
+
+
+def _number_value(value: Any, *, default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _input_field_map(raw_factor_fields: list[str]) -> list[dict[str, str]]:
+    source_artifacts = {
+        "return_1d": "shared_feature_base/returns_panel.parquet",
+        "dollar_volume": "shared_feature_base/liquidity_panel.parquet",
+        "beta_proxy": "shared_feature_base/beta_inputs.parquet",
+    }
+    return [
+        {
+            "raw_field": field,
+            "source_artifact": source_artifacts.get(field, "shared_feature_base/returns_panel.parquet"),
+            "source_column": field,
+        }
+        for field in raw_factor_fields
+    ]
+
+
+def _validate_csf_signal_ready_artifact_shape(stage_formal_dir: Path) -> None:
+    result = validate_stage_artifacts(stage_formal_dir, load_artifact_contract("csf_signal_ready"))
+    if not result.valid:
+        errors = "\n".join(f"- {error}" for error in result.errors)
+        raise ValueError(f"csf_signal_ready artifact validation failed:\n{errors}")
+
+
+def _validate_csf_signal_ready_semantics(stage_formal_dir: Path, lineage_root: Path) -> None:
+    result = validate_csf_signal_ready_semantic_contract(stage_formal_dir, lineage_root)
+    if not result.valid:
+        errors = "\n".join(f"- {error}" for error in result.errors)
+        raise ValueError(f"csf_signal_ready semantic validation failed:\n{errors}")

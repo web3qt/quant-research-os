@@ -1,6 +1,7 @@
 from pathlib import Path
 import textwrap
 
+import hashlib
 import json
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -8,6 +9,7 @@ import yaml
 
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
+from tests.helpers.stage_fixtures import prepare_csf_data_ready
 from tests.helpers.lineage_program_support import ensure_stage_program
 
 
@@ -165,51 +167,93 @@ def _prepare_csf_signal_ready_outputs(stage_dir: Path, *, fake_panel: bool = Fal
     author_formal_dir.mkdir(parents=True, exist_ok=True)
     panel_rows = (
         [
-            {"date": "2026-04-01", "asset": "BTCUSDT", "factor": "占位", "weight": 0.1},
-            {"date": "2026-04-02", "asset": "ETHUSDT", "factor": "real", "weight": 0.2},
+            {"date": "2024-01-01", "asset": "SOLUSDT", "factor_value": 1.0, "placeholder_note": "占位"},
+            {"date": "2024-01-01", "asset": "DOGEUSDT", "factor_value": -1.0, "placeholder_note": "real"},
         ]
         if fake_panel
         else [
-            {"date": "2026-04-01", "asset": "BTCUSDT", "factor": "momentum", "weight": 0.1},
-            {"date": "2026-04-02", "asset": "ETHUSDT", "factor": "quality", "weight": 0.2},
+            {"date": "2024-01-01", "asset": "SOLUSDT", "factor_value": 1.0},
+            {"date": "2024-01-01", "asset": "DOGEUSDT", "factor_value": -1.0},
         ]
     )
     _write_parquet(author_formal_dir / "factor_panel.parquet", panel_rows)
     _write_parquet(
         author_formal_dir / "factor_coverage_report.parquet",
         [
-            {"date": "2026-04-01", "coverage": 0.97},
-            {"date": "2026-04-02", "coverage": 0.98},
+            {"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2},
+        ],
+    )
+    _write_parquet(
+        author_formal_dir / "factor_group_context.parquet",
+        [
+            {"date": "2024-01-01", "asset": "SOLUSDT", "group_context": "majors"},
+            {"date": "2024-01-01", "asset": "DOGEUSDT", "group_context": "memes"},
         ],
     )
     _write_text(
         author_formal_dir / "factor_manifest.yaml",
         "\n".join(
             [
+                "stage: csf_signal_ready",
+                f"lineage_id: {stage_dir.parent.name}",
                 "factor_id: csf_signal_ready_fixture",
                 "factor_version: v1",
                 "factor_direction: high_better",
+                "factor_structure: single_factor",
                 "panel_primary_key: [date, asset]",
-                "final_score_field: factor",
+                "raw_factor_fields: [return_1d, dollar_volume, beta_proxy]",
+                "derived_factor_fields: [lead_follow_score]",
+                "final_score_field: factor_value",
+                "as_of_semantics: Factor values are frozen at the cross-section close.",
+                "coverage_min_ratio: 1.0",
+                "coverage_contract: Require complete fixture coverage.",
+                "missing_value_policy: Preserve nulls and report eligibility separately.",
+                "input_field_map:",
+                "  - raw_field: return_1d",
+                "    source_artifact: shared_feature_base/returns_panel.parquet",
+                "    source_column: return_1d",
+                "  - raw_field: dollar_volume",
+                "    source_artifact: shared_feature_base/liquidity_panel.parquet",
+                "    source_column: dollar_volume",
+                "  - raw_field: beta_proxy",
+                "    source_artifact: shared_feature_base/beta_inputs.parquet",
+                "    source_column: beta_proxy",
             ]
         )
         + "\n",
     )
     _write_text(
         author_formal_dir / "component_factor_manifest.yaml",
-        "score_combination_formula: weighted_sum\n",
+        "\n".join(
+            [
+                "stage: csf_signal_ready",
+                f"lineage_id: {stage_dir.parent.name}",
+                "factor_structure: single_factor",
+                "component_factor_ids: []",
+                "score_combination_formula: single_factor_passthrough",
+                "combination_policy: deterministic_formula",
+            ]
+        )
+        + "\n",
     )
+    route_path = stage_dir.parent / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    route_payload = yaml.safe_load(route_path.read_text(encoding="utf-8")) or {}
+    route_text = route_path.read_text(encoding="utf-8")
     _write_text(
         author_formal_dir / "route_inheritance_contract.yaml",
         "\n".join(
             [
-                "research_route: cross_sectional_factor",
-                "factor_role: regime_filter",
-                "factor_structure: single_factor",
-                "portfolio_expression: long_short_market_neutral",
-                "neutralization_policy: group_neutral",
+                "source_route_artifact: ../../01_mandate/author/formal/research_route.yaml",
+                f"source_route_digest_sha256: {hashlib.sha256(route_text.encode('utf-8')).hexdigest()}",
+                f"research_route: {route_payload['research_route']}",
+                f"factor_role: {route_payload['factor_role']}",
+                f"factor_structure: {route_payload['factor_structure']}",
+                f"portfolio_expression: {route_payload['portfolio_expression']}",
+                f"neutralization_policy: {route_payload['neutralization_policy']}",
+                "target_strategy_reference: ''",
+                f"group_taxonomy_reference: {route_payload['group_taxonomy_reference']}",
                 "inheritance_mode: exact_copy",
-                "target_strategy_reference_requirement_status: required_satisfied",
+                "target_strategy_reference_requirement_status: not_required",
                 "group_taxonomy_reference_requirement_status: required_satisfied",
             ]
         )
@@ -217,24 +261,45 @@ def _prepare_csf_signal_ready_outputs(stage_dir: Path, *, fake_panel: bool = Fal
     )
     _write_text(
         author_formal_dir / "factor_field_dictionary.md",
-        "# Field Dictionary\n\n- factor: factor name.\n- weight: assigned weight.\n",
+        "# 因子字段字典\n\n- factor_value: factor score.\n",
     )
     _write_text(
         author_formal_dir / "factor_contract.md",
-        "# Factor Contract\n\nThis stage reuses frozen signal evidence.\n",
+        "# 因子合同\n\nThis stage reuses frozen signal evidence.\n",
     )
-    _write_json(author_formal_dir / "run_manifest.json", {"command": "qros-stage-run", "status": "recorded"})
+    _write_json(
+        author_formal_dir / "run_manifest.json",
+        {
+            "stage": "csf_signal_ready",
+            "lineage_id": stage_dir.parent.name,
+            "source_stage": "csf_data_ready",
+            "research_route": "cross_sectional_factor",
+            "factor_role": route_payload["factor_role"],
+            "factor_structure": route_payload["factor_structure"],
+            "portfolio_expression": route_payload["portfolio_expression"],
+            "neutralization_policy": route_payload["neutralization_policy"],
+            "program_dir": "program/cross_sectional_factor/signal_ready",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "input_roots": [
+                "../02_csf_data_ready/author/formal/panel_manifest.json",
+                "../../01_mandate/author/formal/research_route.yaml",
+            ],
+            "stage_outputs": ["factor_panel.parquet", "factor_manifest.yaml"],
+            "replay_command": "python3 program/cross_sectional_factor/signal_ready/run_stage.py",
+        },
+    )
     _write_text(
         author_formal_dir / "artifact_catalog.md",
-        "# Artifact Catalog\n\n- factor_panel.parquet\n- factor_coverage_report.parquet\n",
+        "# 产物清单\n\n- factor_panel.parquet\n- factor_coverage_report.parquet\n",
     )
     _write_text(
         author_formal_dir / "field_dictionary.md",
-        "# Field Dictionary\n\n- factor: factor name.\n- weight: assigned weight.\n",
+        "# 字段字典\n\n- factor_value: factor score.\n",
     )
     _write_text(
         author_formal_dir / "csf_signal_ready_gate_decision.md",
-        "# Signal Gate Decision\n\nverdict: PASS\n",
+        "# CSF Signal Ready Gate Decision\n\nverdict: PASS\n",
     )
 
 
@@ -351,15 +416,18 @@ def test_review_preflight_rejects_fake_but_readable_parquet_content(tmp_path: Pa
     stage_dir = tmp_path / "outputs" / "btc_alt_k" / "03_csf_signal_ready"
     author_formal_dir = stage_dir / "author" / "formal"
     author_formal_dir.mkdir(parents=True, exist_ok=True)
+    prepare_csf_data_ready(stage_dir.parent)
     ensure_stage_program(stage_dir.parent, "csf_signal_ready")
     _write_yaml(
         stage_dir.parent / "01_mandate" / "author" / "formal" / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
-            "factor_role": "regime_filter",
+            "factor_role": "standalone_alpha",
             "factor_structure": "single_factor",
             "portfolio_expression": "long_short_market_neutral",
             "neutralization_policy": "group_neutral",
+            "target_strategy_reference": "",
+            "group_taxonomy_reference": "sector_bucket_v1",
         },
     )
     _prepare_csf_signal_ready_outputs(stage_dir, fake_panel=True)
@@ -383,9 +451,7 @@ def test_review_preflight_rejects_fake_but_readable_parquet_content(tmp_path: Pa
     )
 
     assert payload["status"] == "FAIL"
-    assert payload["content_findings"] == [
-        "ARTIFACT-REALISM-001: placeholder machine artifact rejected for factor_panel.parquet"
-    ]
+    assert "ARTIFACT-REALISM-001: placeholder machine artifact rejected for factor_panel.parquet" in payload["content_findings"]
     assert payload["upstream_binding_findings"] == []
 
 
@@ -393,15 +459,18 @@ def test_review_preflight_allows_benign_machine_readable_content(tmp_path: Path)
     stage_dir = tmp_path / "outputs" / "btc_alt_k" / "03_csf_signal_ready"
     author_formal_dir = stage_dir / "author" / "formal"
     author_formal_dir.mkdir(parents=True, exist_ok=True)
+    prepare_csf_data_ready(stage_dir.parent)
     ensure_stage_program(stage_dir.parent, "csf_signal_ready")
     _write_yaml(
         stage_dir.parent / "01_mandate" / "author" / "formal" / "research_route.yaml",
         {
             "research_route": "cross_sectional_factor",
-            "factor_role": "regime_filter",
+            "factor_role": "standalone_alpha",
             "factor_structure": "single_factor",
             "portfolio_expression": "long_short_market_neutral",
             "neutralization_policy": "group_neutral",
+            "target_strategy_reference": "",
+            "group_taxonomy_reference": "sector_bucket_v1",
         },
     )
     _prepare_csf_signal_ready_outputs(stage_dir, fake_panel=False)

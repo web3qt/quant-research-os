@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,12 @@ def _read_parquet_column_values(path: Path, column: str) -> set[str]:
 
     table = pq.read_table(path, columns=[column])
     return {str(value).strip() for value in table.column(column).to_pylist() if str(value).strip()}
+
+
+def _read_parquet_rows(path: Path) -> list[dict[str, Any]]:
+    import pyarrow.parquet as pq
+
+    return pq.read_table(path).to_pylist()
 
 
 def _check_csf_data_ready_route_binding(lineage_root: Path, author_formal_dir: Path) -> list[str]:
@@ -132,14 +139,136 @@ def _check_csf_signal_ready_route_binding(lineage_root: Path, author_formal_dir:
         "target_strategy_reference",
         "group_taxonomy_reference",
     ):
-        route_value = route_payload.get(field)
-        contract_value = contract_payload.get(field)
+        route_value = _normalized_optional_value(route_payload.get(field))
+        contract_value = _normalized_optional_value(contract_payload.get(field))
         if route_value != contract_value:
             findings.append(
                 f"CSF-SIGNAL-BIND-001: route_inheritance_contract.yaml field {field} does not match mandate research_route.yaml; observed={contract_value!r} expected={route_value!r}"
             )
 
+    expected_digest = hashlib.sha256(route_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+    observed_digest = str(contract_payload.get("source_route_digest_sha256", "")).strip()
+    if observed_digest and observed_digest != expected_digest:
+        findings.append(
+            "CSF-SIGNAL-BIND-002: route_inheritance_contract.source_route_digest_sha256 must match mandate research_route.yaml"
+        )
+
+    findings.extend(_check_csf_signal_ready_run_manifest_binding(author_formal_dir))
+    findings.extend(_check_csf_signal_ready_group_context_binding(route_payload, lineage_root, author_formal_dir))
+    findings.extend(_check_csf_signal_ready_reference_requirements(route_payload, contract_payload))
+    findings.extend(_check_csf_signal_ready_factor_panel_universe_binding(lineage_root, author_formal_dir))
     return findings
+
+
+def _normalized_optional_value(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _check_csf_signal_ready_run_manifest_binding(author_formal_dir: Path) -> list[str]:
+    run_manifest_path = author_formal_dir / "run_manifest.json"
+    if not run_manifest_path.exists():
+        return []
+    try:
+        run_manifest = _load_json_mapping(run_manifest_path)
+    except Exception as exc:
+        return [f"CSF-SIGNAL-BIND-003: run_manifest.json binding evaluation failed: {exc}"]
+
+    findings: list[str] = []
+    if run_manifest.get("source_stage") != "csf_data_ready":
+        findings.append("CSF-SIGNAL-BIND-003: run_manifest.json source_stage must be csf_data_ready")
+    input_roots = run_manifest.get("input_roots", [])
+    if not isinstance(input_roots, list) or not any("02_csf_data_ready" in str(item) for item in input_roots):
+        findings.append("CSF-SIGNAL-BIND-003: run_manifest.json input_roots must bind to 02_csf_data_ready")
+    return findings
+
+
+def _check_csf_signal_ready_group_context_binding(
+    route_payload: dict[str, Any],
+    lineage_root: Path,
+    author_formal_dir: Path,
+) -> list[str]:
+    if str(route_payload.get("neutralization_policy", "")).strip() != "group_neutral":
+        return []
+    taxonomy_path = lineage_root / "02_csf_data_ready" / "author" / "formal" / "asset_taxonomy_snapshot.parquet"
+    group_context_path = author_formal_dir / "factor_group_context.parquet"
+    if not taxonomy_path.exists() or not group_context_path.exists():
+        return []
+    try:
+        taxonomy_rows = _read_parquet_rows(taxonomy_path)
+        group_rows = _read_parquet_rows(group_context_path)
+    except Exception as exc:
+        return [f"CSF-SIGNAL-BIND-004: factor group context binding evaluation failed: {exc}"]
+
+    taxonomy_by_key: dict[tuple[str, str], str] = {}
+    taxonomy_by_asset: dict[str, str] = {}
+    for row in taxonomy_rows:
+        asset = str(row.get("asset", "")).strip()
+        if not asset:
+            continue
+        bucket = str(row.get("group_bucket", "")).strip()
+        taxonomy_by_asset[asset] = bucket
+        date = str(row.get("date", "") or "").strip()
+        if date:
+            taxonomy_by_key[(date, asset)] = bucket
+
+    for row in group_rows:
+        date = str(row.get("date", "")).strip()
+        asset = str(row.get("asset", "")).strip()
+        observed = str(row.get("group_context", "")).strip()
+        expected = taxonomy_by_key.get((date, asset), taxonomy_by_asset.get(asset, ""))
+        if expected and observed != expected:
+            return [
+                "CSF-SIGNAL-BIND-004: factor_group_context.group_context must match csf_data_ready asset_taxonomy_snapshot.group_bucket"
+            ]
+    return []
+
+
+def _check_csf_signal_ready_reference_requirements(
+    route_payload: dict[str, Any],
+    contract_payload: dict[str, Any],
+) -> list[str]:
+    findings: list[str] = []
+    factor_role = str(route_payload.get("factor_role", "")).strip()
+    if factor_role in {"regime_filter", "combo_filter"}:
+        if not str(route_payload.get("target_strategy_reference", "") or "").strip():
+            findings.append("CSF-SIGNAL-BIND-005: target_strategy_reference must be non-empty for non-standalone factors")
+        if contract_payload.get("target_strategy_reference_requirement_status") != "required_satisfied":
+            findings.append("CSF-SIGNAL-BIND-005: target_strategy_reference_requirement_status must be required_satisfied")
+
+    if str(route_payload.get("neutralization_policy", "")).strip() == "group_neutral":
+        if not str(route_payload.get("group_taxonomy_reference", "") or "").strip():
+            findings.append("CSF-SIGNAL-BIND-006: group_taxonomy_reference must be non-empty for group_neutral factors")
+        if contract_payload.get("group_taxonomy_reference_requirement_status") != "required_satisfied":
+            findings.append("CSF-SIGNAL-BIND-006: group_taxonomy_reference_requirement_status must be required_satisfied")
+    return findings
+
+
+def _check_csf_signal_ready_factor_panel_universe_binding(
+    lineage_root: Path,
+    author_formal_dir: Path,
+) -> list[str]:
+    eligibility_path = lineage_root / "02_csf_data_ready" / "author" / "formal" / "eligibility_base_mask.parquet"
+    factor_panel_path = author_formal_dir / "factor_panel.parquet"
+    if not eligibility_path.exists() or not factor_panel_path.exists():
+        return []
+    try:
+        eligibility_rows = _read_parquet_rows(eligibility_path)
+        factor_rows = _read_parquet_rows(factor_panel_path)
+    except Exception as exc:
+        return [f"CSF-SIGNAL-BIND-007: factor_panel universe binding evaluation failed: {exc}"]
+
+    eligible_keys = {
+        (str(row.get("date")), str(row.get("asset")))
+        for row in eligibility_rows
+        if bool(row.get("eligible"))
+    }
+    factor_keys = {(str(row.get("date")), str(row.get("asset"))) for row in factor_rows}
+    outside = sorted(factor_keys - eligible_keys)
+    if outside:
+        return [f"CSF-SIGNAL-BIND-007: factor_panel keys must be subset of eligible csf_data_ready keys; outside={outside!r}"]
+    return []
 
 
 def _check_csf_train_freeze_signal_binding(lineage_root: Path, author_formal_dir: Path) -> list[str]:

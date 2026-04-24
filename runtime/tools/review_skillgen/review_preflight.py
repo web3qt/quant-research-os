@@ -5,6 +5,7 @@ from typing import Any
 
 from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_data_ready_contract_runtime import validate_csf_data_ready_semantics
+from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_ready_semantics
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.artifact_realism import check_machine_artifact_realism
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
@@ -71,7 +72,7 @@ def run_review_preflight(
     content_findings.extend(check_metric_gates(author_formal_dir, stage_contract.get("metric_gate_checks", [])))
     content_findings.extend(check_machine_artifact_realism(author_formal_dir, stage_contract.get("machine_artifacts", [])))
     content_findings.extend(_check_artifact_contract(stage, author_formal_dir))
-    content_findings.extend(_check_stage_semantics(stage, author_formal_dir))
+    content_findings.extend(_check_stage_semantics(stage, author_formal_dir, lineage_root))
 
     upstream_findings = validate_upstream_bindings(
         stage=stage,
@@ -104,7 +105,7 @@ def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[s
 
 
 def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
-    if stage != "csf_data_ready":
+    if stage not in {"csf_data_ready", "csf_signal_ready"}:
         return []
     try:
         result = validate_stage_artifacts(author_formal_dir, load_artifact_contract(stage))
@@ -113,8 +114,11 @@ def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
     return [f"ARTIFACT-CONTRACT-001: {error}" for error in result.errors]
 
 
-def _check_stage_semantics(stage: str, author_formal_dir: Path) -> list[str]:
-    if stage != "csf_data_ready":
-        return []
-    result = validate_csf_data_ready_semantics(author_formal_dir)
-    return [f"CSF-DATA-SEMANTIC-001: {error}" for error in result.errors]
+def _check_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Path) -> list[str]:
+    if stage == "csf_data_ready":
+        result = validate_csf_data_ready_semantics(author_formal_dir)
+        return [f"CSF-DATA-SEMANTIC-001: {error}" for error in result.errors]
+    if stage == "csf_signal_ready":
+        result = validate_csf_signal_ready_semantics(author_formal_dir, lineage_root)
+        return [f"CSF-SIGNAL-SEMANTIC-001: {error}" for error in result.errors]
+    return []

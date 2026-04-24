@@ -161,6 +161,7 @@ CSF_SIGNAL_READY_FREEZE_DRAFT = {
             "draft": {
                 "panel_primary_key": ["date", "asset"],
                 "as_of_semantics": "Factor values are frozen at the cross-section close.",
+                "coverage_min_ratio": 1.0,
                 "coverage_contract": "Require at least 95% asset coverage per cross-section.",
             },
             "missing_items": [],
@@ -168,7 +169,7 @@ CSF_SIGNAL_READY_FREEZE_DRAFT = {
         "factor_expression": {
             "confirmed": True,
             "draft": {
-                "raw_factor_fields": ["btc_move", "alt_residual"],
+                "raw_factor_fields": ["return_1d", "dollar_volume", "beta_proxy"],
                 "derived_factor_fields": ["lead_follow_score"],
                 "final_score_field": "factor_value",
                 "missing_value_policy": "Preserve nulls and report eligibility separately.",

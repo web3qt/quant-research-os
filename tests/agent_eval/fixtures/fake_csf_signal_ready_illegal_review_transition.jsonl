@@ -1,0 +1,2 @@
+{"event_type":"skill_call","name":"qros-csf-signal-ready-author","payload":{"skill":"qros-csf-signal-ready-author"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_signal_ready"}}

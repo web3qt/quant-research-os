@@ -43,3 +43,24 @@ def test_agent_behavior_eval_docs_list_csf_data_ready_cases() -> None:
     assert "expected_events" in content
     assert "qros-validate-stage --stage csf_data_ready" in content
     assert "qros-review-preflight" in content
+
+
+def test_agent_behavior_eval_docs_list_csf_signal_ready_cases() -> None:
+    content = Path("docs/guides/qros-agent-behavior-eval.md").read_text(encoding="utf-8")
+
+    for case_id in (
+        "explicit_csf_signal_ready_author_skill_first",
+        "naive_csf_signal_ready_prompt_triggers_author_skill",
+        "csf_signal_ready_rejects_missing_csf_data_ready_review_closure",
+        "csf_signal_ready_rejects_non_csf_mandate_route",
+        "csf_signal_ready_rejects_unconfirmed_freeze_groups",
+        "csf_signal_ready_rejects_placeholder_factor_panel_completion",
+        "csf_signal_ready_runs_artifact_validator_before_review",
+        "csf_signal_ready_runs_semantic_validator_before_review",
+        "csf_signal_ready_rejects_route_inheritance_drift",
+        "csf_signal_ready_rejects_raw_field_without_input_binding",
+    ):
+        assert case_id in content
+
+    assert "qros-validate-stage --stage csf_signal_ready" in content
+    assert "csf_signal_ready semantic validator" in content

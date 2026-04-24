@@ -1,0 +1,219 @@
+schema_id: csf-signal-ready-artifacts-v1
+schema_version: v1
+stage: csf_signal_ready
+stage_dir: 03_csf_signal_ready/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  factor_panel.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+    non_empty: true
+
+  factor_manifest.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_signal_ready
+      - path: lineage_id
+        type: string
+      - path: factor_id
+        type: string
+      - path: factor_version
+        type: string
+      - path: factor_direction
+        type: enum
+        values:
+          - high_better
+          - low_better
+      - path: factor_structure
+        type: enum
+        values:
+          - single_factor
+          - multi_factor_score
+      - path: panel_primary_key
+        type: list[string]
+      - path: raw_factor_fields
+        type: list[string]
+      - path: derived_factor_fields
+        type: list[string]
+      - path: final_score_field
+        type: string
+      - path: as_of_semantics
+        type: string
+      - path: coverage_min_ratio
+        type: number
+      - path: coverage_contract
+        type: string
+      - path: missing_value_policy
+        type: string
+      - path: input_field_map
+        type: list[map]
+
+  component_factor_manifest.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_signal_ready
+      - path: lineage_id
+        type: string
+      - path: factor_structure
+        type: enum
+        values:
+          - single_factor
+          - multi_factor_score
+      - path: component_factor_ids
+        type: list[string]
+      - path: score_combination_formula
+        type: string
+      - path: combination_policy
+        type: string
+
+  factor_coverage_report.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - coverage_ratio
+      - asset_count
+    non_empty: true
+
+  factor_group_context.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+      - group_context
+    non_empty: true
+
+  route_inheritance_contract.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: source_route_artifact
+        type: string
+      - path: source_route_digest_sha256
+        type: string
+      - path: research_route
+        type: enum
+        values:
+          - cross_sectional_factor
+      - path: factor_role
+        type: enum
+        values:
+          - standalone_alpha
+          - regime_filter
+          - combo_filter
+      - path: factor_structure
+        type: enum
+        values:
+          - single_factor
+          - multi_factor_score
+      - path: portfolio_expression
+        type: string
+      - path: neutralization_policy
+        type: enum
+        values:
+          - none
+          - market_beta_neutral
+          - group_neutral
+      - path: target_strategy_reference
+        type: string
+      - path: group_taxonomy_reference
+        type: string
+      - path: target_strategy_reference_requirement_status
+        type: enum
+        values:
+          - not_required
+          - required_satisfied
+      - path: group_taxonomy_reference_requirement_status
+        type: enum
+        values:
+          - not_required
+          - required_satisfied
+      - path: inheritance_mode
+        type: enum
+        values:
+          - exact_copy
+
+  factor_contract.md:
+    type: markdown
+    required_sections:
+      - 因子合同
+
+  factor_field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 因子字段字典
+
+  csf_signal_ready_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Signal Ready Gate Decision
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_signal_ready
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - csf_data_ready
+      - path: research_route
+        type: enum
+        values:
+          - cross_sectional_factor
+      - path: factor_role
+        type: enum
+        values:
+          - standalone_alpha
+          - regime_filter
+          - combo_filter
+      - path: factor_structure
+        type: enum
+        values:
+          - single_factor
+          - multi_factor_score
+      - path: portfolio_expression
+        type: string
+      - path: neutralization_policy
+        type: enum
+        values:
+          - none
+          - market_beta_neutral
+          - group_neutral
+      - path: program_dir
+        type: string
+      - path: program_entrypoint
+        type: string
+      - path: program_execution_manifest
+        type: string
+      - path: input_roots
+        type: list[string]
+      - path: stage_outputs
+        type: list[string]
+      - path: replay_command
+        type: string
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

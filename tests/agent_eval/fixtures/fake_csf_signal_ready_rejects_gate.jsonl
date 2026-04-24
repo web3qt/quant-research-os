@@ -1,0 +1,2 @@
+{"event_type":"skill_call","name":"qros-csf-signal-ready-author","payload":{"skill":"qros-csf-signal-ready-author"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"text":"Blocked: input_field_map is missing for raw_factor_fields; CSF-SIGNAL-BIND failed; do not enter review."}}

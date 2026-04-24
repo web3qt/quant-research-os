@@ -31,6 +31,16 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "csf_data_ready_rejects_unconfirmed_freeze_groups",
         "csf_data_ready_rejects_placeholder_parquet_completion",
         "csf_data_ready_runs_validator_before_review",
+        "explicit_csf_signal_ready_author_skill_first",
+        "naive_csf_signal_ready_prompt_triggers_author_skill",
+        "csf_signal_ready_rejects_missing_csf_data_ready_review_closure",
+        "csf_signal_ready_rejects_non_csf_mandate_route",
+        "csf_signal_ready_rejects_unconfirmed_freeze_groups",
+        "csf_signal_ready_rejects_placeholder_factor_panel_completion",
+        "csf_signal_ready_runs_artifact_validator_before_review",
+        "csf_signal_ready_runs_semantic_validator_before_review",
+        "csf_signal_ready_rejects_route_inheritance_drift",
+        "csf_signal_ready_rejects_raw_field_without_input_binding",
     }
 
 
@@ -67,6 +77,37 @@ def test_csf_data_ready_eval_cases_lock_gate_specific_event_assertions() -> None
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-data-ready-author"
+        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+
+
+def test_csf_signal_ready_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    for case_id in (
+        "csf_signal_ready_runs_artifact_validator_before_review",
+        "csf_signal_ready_runs_semantic_validator_before_review",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-signal-ready-author"
+        assert case["expected_events"]["ordered_substrings"] == [
+            "qros-validate-stage --stage csf_signal_ready",
+            "csf_signal_ready semantic validator",
+            "qros-review-preflight",
+            "qros-review-cycle prepare",
+        ]
+        assert case["validators"] == [{"stage": "csf_signal_ready"}]
+
+    for case_id in (
+        "csf_signal_ready_rejects_missing_csf_data_ready_review_closure",
+        "csf_signal_ready_rejects_non_csf_mandate_route",
+        "csf_signal_ready_rejects_unconfirmed_freeze_groups",
+        "csf_signal_ready_rejects_placeholder_factor_panel_completion",
+        "csf_signal_ready_rejects_route_inheritance_drift",
+        "csf_signal_ready_rejects_raw_field_without_input_binding",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-signal-ready-author"
         assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
 
 

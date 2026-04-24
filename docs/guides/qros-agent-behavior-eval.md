@@ -82,6 +82,31 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_data_ready` 或 preflight 直接进入 reviewer lane。
 
+## CSF Signal Ready Cases
+
+- `explicit_csf_signal_ready_author_skill_first`
+- `naive_csf_signal_ready_prompt_triggers_author_skill`
+- `csf_signal_ready_rejects_missing_csf_data_ready_review_closure`
+- `csf_signal_ready_rejects_non_csf_mandate_route`
+- `csf_signal_ready_rejects_unconfirmed_freeze_groups`
+- `csf_signal_ready_rejects_placeholder_factor_panel_completion`
+- `csf_signal_ready_runs_artifact_validator_before_review`
+- `csf_signal_ready_runs_semantic_validator_before_review`
+- `csf_signal_ready_rejects_route_inheritance_drift`
+- `csf_signal_ready_rejects_raw_field_without_input_binding`
+
+`csf_signal_ready_runs_artifact_validator_before_review` 与
+`csf_signal_ready_runs_semantic_validator_before_review` 使用 `expected_events.ordered_substrings` 锁定：
+
+```text
+qros-validate-stage --stage csf_signal_ready
+csf_signal_ready semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+这保证 agent 不能跳过 `qros-validate-stage --stage csf_signal_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
+
 这些 case 定义在：
 
 ```text

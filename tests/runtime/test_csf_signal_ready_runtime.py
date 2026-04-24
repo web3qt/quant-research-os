@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -12,6 +13,11 @@ from runtime.tools.csf_signal_ready_runtime import (
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def _write_parquet_rows(path: Path, rows: list[dict]) -> None:
@@ -47,7 +53,7 @@ def _csf_signal_ready_draft(*, confirmed: bool) -> dict:
             "factor_expression": {
                 "confirmed": confirmed,
                 "draft": {
-                    "raw_factor_fields": ["btc_move", "alt_residual"],
+                    "raw_factor_fields": ["return_1d", "dollar_volume", "beta_proxy"],
                     "derived_factor_fields": ["lead_follow_score"],
                     "final_score_field": "factor_value",
                     "missing_value_policy": "Preserve nulls and report eligibility separately.",
@@ -80,7 +86,7 @@ def _prepare_csf_data_ready_stage(lineage_root: Path) -> None:
     stage_dir = lineage_root / "02_csf_data_ready"
     formal_dir = stage_dir / "author" / "formal"
     formal_dir.mkdir(parents=True)
-    _write_yaml(
+    _write_json(
         formal_dir / "panel_manifest.json",
         {
             "panel_primary_key": ["date", "asset"],
@@ -217,3 +223,23 @@ def test_build_csf_signal_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert route_contract["factor_role"] == "standalone_alpha"
     assert route_contract["portfolio_expression"] == "long_only_rank"
     assert route_contract["group_taxonomy_reference_requirement_status"] == "required_satisfied"
+
+
+def test_build_csf_signal_ready_rejects_unbound_raw_factor_field(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _prepare_csf_data_ready_stage(lineage_root)
+    stage_dir = lineage_root / "03_csf_signal_ready"
+    stage_dir.mkdir(parents=True)
+    draft = _csf_signal_ready_draft(confirmed=True)
+    draft["groups"]["factor_expression"]["draft"]["raw_factor_fields"] = ["unbound_field"]
+    _write_yaml(stage_dir / "author" / "draft" / "csf_signal_ready_freeze_draft.yaml", draft)
+
+    try:
+        build_csf_signal_ready_from_data_ready(lineage_root)
+    except ValueError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("expected build to fail on invalid csf_signal_ready semantics")
+
+    assert "csf_signal_ready semantic validation failed" in message
+    assert "input_field_map source column unbound_field missing" in message

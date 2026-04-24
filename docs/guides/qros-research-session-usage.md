@@ -163,6 +163,8 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 
 `csf_data_ready` 现在采用 contract-first 口径：`contracts/artifacts/csf_data_ready_artifacts.yaml` 是 formal artifact shape 真值，skill 和文档只解释执行顺序、字段含义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_data_ready`，并在进入 review 前通过 deterministic preflight；validator/preflight 不通过，不得进入 `csf_data_ready` review。这里不改变上面的 session rollout truth：`qros-session` 自动强制 review-entry preflight 仍是 mandate-first / mandate-only，但 `qros-csf-data-ready-review` 的 reviewer lane 入口必须使用 standalone preflight。
 
+`csf_signal_ready` 也采用 contract-first 口径：`contracts/artifacts/csf_signal_ready_artifacts.yaml` 是 factor formal artifact shape 真值，skill 不再维护字段清单副本。author build 后必须运行 `qros-validate-stage --stage csf_signal_ready`，并通过 semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_signal_ready` review。该 preflight 会检查 `factor_panel.parquet`、`factor_manifest.yaml`、`component_factor_manifest.yaml`、`route_inheritance_contract.yaml`、`factor_coverage_report.parquet`、`factor_group_context.parquet` 与上游 `csf_data_ready` / mandate route 的绑定。
+
 ## Internal Runtime
 
 deterministic backend 的入口在克隆下来的仓库里：

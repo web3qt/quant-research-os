@@ -14,6 +14,7 @@ ARTIFACT_CONTRACTS = {
     "idea_intake": ROOT / "contracts" / "artifacts" / "idea_intake_artifacts.yaml",
     "mandate": ROOT / "contracts" / "artifacts" / "mandate_artifacts.yaml",
     "csf_data_ready": ROOT / "contracts" / "artifacts" / "csf_data_ready_artifacts.yaml",
+    "csf_signal_ready": ROOT / "contracts" / "artifacts" / "csf_signal_ready_artifacts.yaml",
 }
 
 

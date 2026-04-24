@@ -13,22 +13,38 @@ description: Use when reviewed csf_data_ready outputs must be frozen into formal
 
 QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `03_csf_signal_ready` 需要交付的 factor panel、factor manifest 和 coverage 证据，而不是把空目录、placeholder 文件或只有合同语义的说明文档当作 csf_signal_ready 完成。
 
+## Contract-first Truth
+
+- `contracts/artifacts/csf_signal_ready_artifacts.yaml` 是本阶段 formal artifact shape 的字段真值
+- 不得把 `SKILL.md` 当作字段真值；本文件只定义执行顺序、确认纪律和 review 边界
+- 不得手写或自行扩展 formal artifact shape
+- 必须先使用 runtime scaffold 创建 `03_csf_signal_ready` author layout
+- 必须读取 `contracts/artifacts/csf_signal_ready_artifacts.yaml`
+- build 后必须运行 `qros-validate-stage --stage csf_signal_ready`
+- build 后必须通过 `csf_signal_ready` semantic validator，确认 factor panel、final score、coverage、input field source、group context 与 route inheritance 都一致
+- validator/preflight 不通过，不得进入 `csf_signal_ready` review
+
 ## Required Inputs
 
-- `02_csf_data_ready/panel_manifest.json`
-- `02_csf_data_ready/asset_universe_membership.parquet`
-- `02_csf_data_ready/eligibility_base_mask.parquet`
-- `02_csf_data_ready/csf_data_contract.md`
-- `02_csf_data_ready/stage_completion_certificate.yaml`
+- `02_csf_data_ready/author/formal/panel_manifest.json`
+- `02_csf_data_ready/author/formal/asset_universe_membership.parquet`
+- `02_csf_data_ready/author/formal/eligibility_base_mask.parquet`
+- `02_csf_data_ready/author/formal/shared_feature_base/*`
+- `02_csf_data_ready/review/closure/stage_completion_certificate.yaml`
+- `01_mandate/author/formal/research_route.yaml`
 
 ## Required Outputs
 
 - `factor_panel.parquet`
 - `factor_manifest.yaml`
-- `factor_coverage.parquet`
+- `component_factor_manifest.yaml`
+- `factor_coverage_report.parquet`
+- `factor_group_context.parquet`
+- `route_inheritance_contract.yaml`
 - `factor_contract.md`
 - `factor_field_dictionary.md`
-- `signal_gate_decision.md`
+- `csf_signal_ready_gate_decision.md`
+- `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -37,9 +53,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 必须按 5 组推进：
 
 - `factor_identity`
-- `factor_role_contract`
-- `factor_structure_contract`
-- `neutralization_policy`
+- `panel_contract`
+- `factor_expression`
+- `context_contract`
 - `delivery_contract`
 
 ## Mandatory Discipline
@@ -47,7 +63,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 生成 `factor_panel.parquet`、`factor_coverage_report.parquet`、`factor_group_context.parquet` 等机器产物时，必须使用 Polars (`pl.DataFrame.write_parquet`)，不得使用 pyarrow 或 pandas
 - 只能消费已经通过 review closure 的 csf_data_ready 产物
 - 只能冻结 `research_route = cross_sectional_factor` 的因子定义
-- 必须显式冻结 `factor_role`、`factor_structure`、`portfolio_expression` 与 `neutralization_policy`
+- `factor_role`、`factor_structure`、`portfolio_expression` 与 neutralization route identity 必须从 mandate 的 `research_route.yaml` 继承，并写入 `route_inheritance_contract.yaml`
 - 不得产出任何时序主线措辞、预测 horizon 口径或单资产触发语义
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
@@ -93,12 +109,13 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 1. 确认 `02_csf_data_ready/stage_completion_certificate.yaml` 已存在
 2. 先收敛并确认 `factor_identity`
-3. 再收敛并确认 `factor_role_contract`；明确 `standalone_alpha | regime_filter | combo_filter`
-4. 再收敛并确认 `factor_structure_contract`；明确 `single_factor | multi_factor_score`
-5. 再收敛并确认 `neutralization_policy`；明确 `portfolio_expression`
+3. 再收敛并确认 `panel_contract`
+4. 再收敛并确认 `factor_expression`
+5. 再收敛并确认 `context_contract`
 6. 最后确认 `delivery_contract`
 7. 明确当前 research repo 中由谁负责真实生成 `factor_panel.parquet`、factor manifest 和 coverage 证据
 8. 输出一份 grouped csf_signal_ready summary
 9. 只有用户最终批准后，才生成正式 `03_csf_signal_ready` artifacts
 10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_signal_ready 完成
+11. 运行 `qros-validate-stage --stage csf_signal_ready`，并确认 semantic validator / deterministic preflight 通过
+12. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_signal_ready 完成
