@@ -1,0 +1,3 @@
+{"event_type":"skill_call","name":"qros-csf-backtest-ready-author","payload":{"skill":"qros-csf-backtest-ready-author"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"text":"portfolio_weight_panel.parquet 只是 placeholder，不能进入 csf_backtest_ready review。"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-preflight --stage csf_backtest_ready"}}

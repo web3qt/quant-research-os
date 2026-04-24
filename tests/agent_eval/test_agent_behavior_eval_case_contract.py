@@ -57,6 +57,14 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "csf_test_evidence_runs_artifact_validator_before_review",
         "csf_test_evidence_runs_semantic_validator_before_review",
         "csf_test_evidence_rejects_variant_drift",
+        "explicit_csf_backtest_ready_author_skill_first",
+        "naive_csf_backtest_ready_prompt_triggers_author_skill",
+        "csf_backtest_ready_rejects_missing_csf_test_evidence_review_closure",
+        "csf_backtest_ready_rejects_unconfirmed_freeze_groups",
+        "csf_backtest_ready_rejects_placeholder_weight_panel_completion",
+        "csf_backtest_ready_runs_artifact_validator_before_review",
+        "csf_backtest_ready_runs_semantic_validator_before_review",
+        "csf_backtest_ready_rejects_variant_drift",
     }
 
 
@@ -182,6 +190,35 @@ def test_csf_test_evidence_eval_cases_lock_gate_specific_event_assertions() -> N
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-test-evidence-author"
+        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+
+
+def test_csf_backtest_ready_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    for case_id in (
+        "csf_backtest_ready_runs_artifact_validator_before_review",
+        "csf_backtest_ready_runs_semantic_validator_before_review",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-backtest-ready-author"
+        assert case["expected_events"]["ordered_substrings"] == [
+            "qros-validate-stage --stage csf_backtest_ready",
+            "csf_backtest_ready semantic validator",
+            "qros-review-preflight",
+            "qros-review-cycle prepare",
+        ]
+        assert case["validators"] == [{"stage": "csf_backtest_ready"}]
+
+    for case_id in (
+        "csf_backtest_ready_rejects_missing_csf_test_evidence_review_closure",
+        "csf_backtest_ready_rejects_unconfirmed_freeze_groups",
+        "csf_backtest_ready_rejects_placeholder_weight_panel_completion",
+        "csf_backtest_ready_rejects_variant_drift",
+    ):
+        case = cases[case_id]
+        assert case["expected_skill"] == "qros-csf-backtest-ready-author"
         assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
 
 

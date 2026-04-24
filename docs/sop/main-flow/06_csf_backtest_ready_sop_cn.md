@@ -58,17 +58,18 @@
 - `rebalance_ledger.csv`
 - `turnover_capacity_report.parquet`
 - `cost_assumption_report.md`
-- `engine_compare.csv`
 - `portfolio_summary.parquet`
 - `name_level_metrics.parquet`
 - `drawdown_report.json`
+- `target_strategy_compare.parquet`
 - `csf_backtest_gate_table.csv`
 - `csf_backtest_contract.md`
+- `csf_backtest_gate_decision.md`
+- `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
 条件性输出：
-- `target_strategy_compare.parquet`
 - `gated_portfolio_summary.parquet`
 - `ungated_portfolio_summary.parquet`
 

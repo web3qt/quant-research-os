@@ -102,3 +102,22 @@ def test_agent_behavior_eval_docs_list_csf_test_evidence_cases() -> None:
 
     assert "qros-validate-stage --stage csf_test_evidence" in content
     assert "csf_test_evidence semantic validator" in content
+
+
+def test_agent_behavior_eval_docs_list_csf_backtest_ready_cases() -> None:
+    content = Path("docs/guides/qros-agent-behavior-eval.md").read_text(encoding="utf-8")
+
+    for case_id in (
+        "explicit_csf_backtest_ready_author_skill_first",
+        "naive_csf_backtest_ready_prompt_triggers_author_skill",
+        "csf_backtest_ready_rejects_missing_csf_test_evidence_review_closure",
+        "csf_backtest_ready_rejects_unconfirmed_freeze_groups",
+        "csf_backtest_ready_rejects_placeholder_weight_panel_completion",
+        "csf_backtest_ready_runs_artifact_validator_before_review",
+        "csf_backtest_ready_runs_semantic_validator_before_review",
+        "csf_backtest_ready_rejects_variant_drift",
+    ):
+        assert case_id in content
+
+    assert "qros-validate-stage --stage csf_backtest_ready" in content
+    assert "csf_backtest_ready semantic validator" in content

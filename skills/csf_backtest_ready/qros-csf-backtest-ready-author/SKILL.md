@@ -15,22 +15,28 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ## Required Inputs
 
-- `05_csf_test_evidence/selected_factor_spec.json`
-- `05_csf_test_evidence/factor_selection.csv`
-- `05_csf_test_evidence/test_gate_decision.md`
-- `05_csf_test_evidence/stage_completion_certificate.yaml`
+- 已通过 review closure 的 `05_csf_test_evidence/author/formal/*`
+- `05_csf_test_evidence/author/formal/csf_selected_variants_test.csv`
+- `05_csf_test_evidence/author/formal/csf_test_gate_table.csv`
+- `05_csf_test_evidence/author/formal/csf_test_contract.md`
+- `01_mandate/author/formal/research_route.yaml`
+- `contracts/artifacts/csf_backtest_ready_artifacts.yaml`
 
 ## Required Outputs
 
-- `frozen_portfolio_spec.json`
+- `portfolio_contract.yaml`
 - `portfolio_weight_panel.parquet`
-- `portfolio_curve.parquet`
-- `engine_compare.csv`
-- `vectorbt/`
-- `backtrader/`
-- `strategy_combo_ledger.csv`
-- `capacity_review.md`
-- `backtest_gate_decision.md`
+- `rebalance_ledger.csv`
+- `turnover_capacity_report.parquet`
+- `cost_assumption_report.md`
+- `portfolio_summary.parquet`
+- `name_level_metrics.parquet`
+- `drawdown_report.json`
+- `target_strategy_compare.parquet`
+- `csf_backtest_gate_table.csv`
+- `csf_backtest_contract.md`
+- `csf_backtest_gate_decision.md`
+- `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -38,11 +44,13 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 必须按 5 组推进：
 
-- `execution_policy`
-- `portfolio_policy`
-- `risk_overlay`
-- `engine_contract`
+- `portfolio_contract`
+- `execution_contract`
+- `risk_contract`
+- `diagnostic_contract`
 - `delivery_contract`
+
+这些 group 的 runtime-facing 字段以 `runtime/tools/csf_backtest_runtime.py` 的 draft skeleton 和 `docs/guides/stage-freeze-group-field-guide.md` 为准。skill 只解释确认顺序，不再维护 formal artifact 字段真值。
 
 ## Mandatory Discipline
 
@@ -50,6 +58,10 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 当前阶段只冻结组合规则与回测合同，不回写上游 factor 结论
 - 必须显式使用 `factor_role`、`factor_structure`、`portfolio_expression` 和 `neutralization_policy` 的已冻结语义
 - 必须在当前 research repo 里真实生成组合权重、引擎结果和容量证据
+- 不得手写或自行扩展 formal artifact shape；formal artifact shape 以 `contracts/artifacts/csf_backtest_ready_artifacts.yaml` 为准
+- 必须使用 runtime scaffold/build 物化 `06_csf_backtest_ready/author/formal/*`
+- build 后必须运行 `qros-validate-stage --stage csf_backtest_ready`
+- 进入 review 前必须通过 csf_backtest_ready semantic validator / deterministic preflight
 - 不得产出任何时序主线措辞、best_h、单资产命中率或 horizon 语义
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
@@ -78,22 +90,24 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
   - `target_strategy_filter`
   - `target_strategy_overlay`
 
-### 组合台账必须有理由
-`strategy_combo_ledger.csv` 中每条组合配置记录必须包含非空的 `selection_rationale` 字段。
+### Artifact shape 由 contract 决定
+`portfolio_contract.yaml`、`portfolio_weight_panel.parquet`、`csf_backtest_gate_table.csv`、`csf_backtest_gate_decision.md`、`run_manifest.json` 与所有 parquet columns 必须通过 `contracts/artifacts/csf_backtest_ready_artifacts.yaml` 校验。agent 不得因为 skill 文本、聊天上下文或 reviewer 偏好新增 formal artifact 字段。
 
 ### 容量与成本必须可追溯
-`capacity_review.md` 中的成本假设、流动性代理和参与率边界必须可追溯至上游冻结口径。
+`turnover_capacity_report.parquet` 与 `cost_assumption_report.md` 中的成本假设、流动性代理和参与率边界必须可追溯至上游冻结口径。
 
 ## Working Rules
 
-1. 确认 `05_csf_test_evidence/stage_completion_certificate.yaml` 已存在
-2. 先收敛并确认 `execution_policy`
-3. 再收敛并确认 `portfolio_policy`
-4. 再收敛并确认 `risk_overlay`
-5. 再收敛并确认 `engine_contract`
+1. 确认 `05_csf_test_evidence` 已有 review closure，且 formal artifacts 不是 placeholder
+2. 先收敛并确认 `portfolio_contract`
+3. 再收敛并确认 `execution_contract`
+4. 再收敛并确认 `risk_contract`
+5. 再收敛并确认 `diagnostic_contract`
 6. 最后确认 `delivery_contract`
-7. 明确当前 research repo 中由谁负责真实生成组合权重、引擎结果、combo ledger 和容量证据
+7. 明确当前 research repo 中由谁负责真实生成组合权重、rebalance ledger、容量证据和成本后 portfolio summary
 8. 输出一份 grouped csf_backtest_ready summary
 9. 只有用户最终批准后，才生成正式 `06_csf_backtest_ready` artifacts
-10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_backtest_ready 完成
+10. 运行 `qros-validate-stage --stage csf_backtest_ready`
+11. 运行 csf_backtest_ready semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_backtest_ready` review
+12. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+13. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_backtest_ready 完成

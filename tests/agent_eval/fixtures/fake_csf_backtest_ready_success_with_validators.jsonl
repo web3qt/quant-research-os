@@ -1,0 +1,5 @@
+{"event_type":"skill_call","name":"qros-csf-backtest-ready-author","payload":{"skill":"qros-csf-backtest-ready-author"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-validate-stage --stage csf_backtest_ready --lineage-id agent_eval_csf_backtest_ready_artifact_validator"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"python -m runtime.tools.csf_backtest_ready_contract_runtime # csf_backtest_ready semantic validator"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-preflight --stage csf_backtest_ready"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_backtest_ready"}}

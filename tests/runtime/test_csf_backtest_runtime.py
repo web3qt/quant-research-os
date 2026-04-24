@@ -1,7 +1,10 @@
+import json
 from pathlib import Path
 
+import pyarrow.parquet as pq
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_backtest_runtime import (
     build_csf_backtest_ready_from_test_evidence,
     scaffold_csf_backtest_ready,
@@ -85,12 +88,18 @@ def _prepare_csf_test_stage(lineage_root: Path) -> None:
         "csf_test_gate_table.csv",
         "csf_selected_variants_test.csv",
         "csf_test_contract.md",
+        "csf_test_gate_decision.md",
+        "run_manifest.json",
         "artifact_catalog.md",
         "field_dictionary.md",
     ]:
         (formal_dir / name).write_text("ok\n", encoding="utf-8")
     (formal_dir / "csf_selected_variants_test.csv").write_text(
         "variant_id,status\nbaseline_v1,selected\n",
+        encoding="utf-8",
+    )
+    (formal_dir / "run_manifest.json").write_text(
+        '{"stage":"csf_test_evidence","stage_outputs":["csf_selected_variants_test.csv"]}\n',
         encoding="utf-8",
     )
     mandate_dir = lineage_root / "01_mandate"
@@ -145,8 +154,23 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert (formal_dir / "target_strategy_compare.parquet").exists()
     assert (formal_dir / "csf_backtest_gate_table.csv").exists()
     assert (formal_dir / "csf_backtest_contract.md").exists()
+    assert (formal_dir / "csf_backtest_gate_decision.md").exists()
+    assert (formal_dir / "run_manifest.json").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+
+    assert pq.read_table(formal_dir / "portfolio_weight_panel.parquet").num_rows > 0
+    assert pq.read_table(formal_dir / "portfolio_summary.parquet").num_rows > 0
+
+    run_manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert run_manifest["stage"] == "csf_backtest_ready"
+    assert "portfolio_contract.yaml" in run_manifest["stage_outputs"]
+    assert "csf_backtest_gate_decision.md" in run_manifest["stage_outputs"]
+    assert "run_manifest.json" in run_manifest["stage_outputs"]
+
+    result = validate_stage_artifacts(formal_dir, load_artifact_contract("csf_backtest_ready"))
+    assert result.valid is True
+    assert result.errors == []
 
 
 def test_build_csf_backtest_ready_accepts_new_standalone_alpha_expression(tmp_path: Path) -> None:

@@ -453,10 +453,10 @@ stages:
           - "ungated_portfolio_summary.parquet"
       - id: "CSF-BACKTEST-007"
         severity: "reservation"
-        check: "name-level concentration、engine compare 和异常收益 sanity check 已保留"
+        check: "name-level concentration、target strategy compare 和异常收益 sanity check 已保留"
         evidence:
           - "name_level_metrics.parquet"
-          - "engine_compare.csv"
+          - "target_strategy_compare.parquet"
           - "csf_backtest_gate_decision.md"
       - id: "CSF-BACKTEST-008"
         severity: "blocking"

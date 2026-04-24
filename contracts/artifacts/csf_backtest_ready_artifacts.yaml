@@ -1,0 +1,192 @@
+schema_id: csf-backtest-ready-artifacts-v1
+schema_version: v1
+stage: csf_backtest_ready
+stage_dir: 06_csf_backtest_ready/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  portfolio_contract.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_backtest_ready
+      - path: lineage_id
+        type: string
+      - path: portfolio_expression
+        type: string
+      - path: selection_rule
+        type: string
+      - path: weight_mapping_rule
+        type: string
+      - path: gross_exposure_rule
+        type: string
+      - path: rebalance_execution_lag
+        type: string
+      - path: turnover_budget_rule
+        type: string
+      - path: cost_model
+        type: string
+      - path: capacity_model
+        type: string
+      - path: max_name_weight_rule
+        type: string
+      - path: net_exposure_rule
+        type: string
+      - path: group_neutral_overlay
+        type: string
+      - path: target_strategy_reference
+        type: string
+      - path: required_diagnostics
+        type: list[string]
+      - path: delivery_contract.machine_artifacts
+        type: list[string]
+      - path: delivery_contract.consumer_stage
+        type: enum
+        values:
+          - csf_holdout_validation
+      - path: delivery_contract.frozen_config_note
+        type: string
+
+  portfolio_weight_panel.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+      - variant_id
+      - weight
+      - side
+    non_empty: true
+
+  rebalance_ledger.csv:
+    type: csv
+    required_columns:
+      - date
+      - variant_id
+      - portfolio_expression
+      - selection_rule
+      - weight_mapping_rule
+    non_empty: true
+
+  turnover_capacity_report.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - turnover
+      - capacity_utilization
+    non_empty: true
+
+  cost_assumption_report.md:
+    type: markdown
+    required_sections:
+      - 成本假设报告
+
+  portfolio_summary.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - mean_gross_return
+      - mean_net_return
+      - max_drawdown
+    non_empty: true
+
+  name_level_metrics.parquet:
+    type: parquet
+    required_columns:
+      - asset
+      - variant_id
+      - contribution
+      - max_weight
+    non_empty: true
+
+  drawdown_report.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_backtest_ready
+      - path: selected_variant_ids
+        type: list[string]
+      - path: max_drawdown
+        type: number
+      - path: status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+
+  target_strategy_compare.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - target_strategy_reference
+      - portfolio_mean_net_return
+      - target_mean_net_return
+    non_empty: true
+
+  csf_backtest_gate_table.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - portfolio_expression
+      - mean_net_return
+      - after_cost_rule
+      - name_level_rule
+    non_empty: true
+
+  csf_backtest_contract.md:
+    type: markdown
+    required_sections:
+      - CSF Backtest Contract
+
+  csf_backtest_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Backtest Gate Decision
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_backtest_ready
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: input_roots
+        type: list[string]
+      - path: stage_outputs
+        type: list[string]
+      - path: program_dir
+        type: string
+      - path: program_entrypoint
+        type: string
+      - path: program_execution_manifest
+        type: string
+      - path: replay_command
+        type: string
+      - path: selected_variant_ids
+        type: list[string]
+      - path: portfolio_expression
+        type: string
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

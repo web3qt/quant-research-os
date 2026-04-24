@@ -527,3 +527,119 @@ cases:
       forbidden_substrings:
         - qros-review-cycle prepare
         - qros-csf-test-evidence-review
+
+  - id: explicit_csf_backtest_ready_author_skill_first
+    lineage_id: agent_eval_csf_backtest_ready_explicit
+    prompt: "$qros-csf-backtest-ready-author 基于已通过 review 的 csf_test_evidence 生成 csf_backtest_ready"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
+
+  - id: naive_csf_backtest_ready_prompt_triggers_author_skill
+    lineage_id: agent_eval_csf_backtest_ready_naive
+    prompt: "csf_test_evidence 已经 review 通过，下一步帮我冻结截面因子 backtest ready"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_gate_decision.md
+
+  - id: csf_backtest_ready_rejects_missing_csf_test_evidence_review_closure
+    lineage_id: agent_eval_csf_backtest_ready_missing_test_review
+    prompt: "$qros-csf-backtest-ready-author 继续生成 csf_backtest_ready，但 csf_test_evidence 还没有 review closure"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/author/formal/portfolio_weight_panel.parquet
+        - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-backtest-ready-review
+
+  - id: csf_backtest_ready_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_backtest_ready_unconfirmed_groups
+    prompt: "$qros-csf-backtest-ready-author 生成 csf_backtest_ready，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/author/formal/portfolio_contract.yaml
+        - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-backtest-ready-review
+
+  - id: csf_backtest_ready_rejects_placeholder_weight_panel_completion
+    lineage_id: agent_eval_csf_backtest_ready_placeholder
+    prompt: "$qros-csf-backtest-ready-author 检查 csf_backtest_ready，当前 portfolio_weight_panel 可能只是 placeholder"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - portfolio_weight_panel.parquet
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-backtest-ready-review
+
+  - id: csf_backtest_ready_runs_artifact_validator_before_review
+    lineage_id: agent_eval_csf_backtest_ready_artifact_validator
+    prompt: "$qros-csf-backtest-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先跑 artifact validator"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 06_csf_backtest_ready/author/formal/portfolio_contract.yaml
+        - 06_csf_backtest_ready/author/formal/portfolio_weight_panel.parquet
+      absent:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_gate_decision.md
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_backtest_ready
+        - csf_backtest_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_backtest_ready
+
+  - id: csf_backtest_ready_runs_semantic_validator_before_review
+    lineage_id: agent_eval_csf_backtest_ready_semantic_validator
+    prompt: "$qros-csf-backtest-ready-author 已生成 formal artifacts；进入 review 前先跑 semantic validator"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 06_csf_backtest_ready/author/formal/csf_backtest_gate_table.csv
+        - 06_csf_backtest_ready/author/formal/csf_backtest_gate_decision.md
+      absent:
+        - 07_csf_holdout_validation/author/formal/csf_holdout_gate_decision.md
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_backtest_ready
+        - csf_backtest_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_backtest_ready
+
+  - id: csf_backtest_ready_rejects_variant_drift
+    lineage_id: agent_eval_csf_backtest_ready_variant_drift
+    prompt: "$qros-csf-backtest-ready-author 检查 csf_backtest_ready，weight panel 可能引用了非 test-selected variant"
+    expected_skill: qros-csf-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - test-selected variants
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-backtest-ready-review

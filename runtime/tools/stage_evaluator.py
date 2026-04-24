@@ -213,6 +213,8 @@ CSF_BACKTEST_READY_REQUIRED_OUTPUTS = (
     "target_strategy_compare.parquet",
     "csf_backtest_gate_table.csv",
     "csf_backtest_contract.md",
+    "csf_backtest_gate_decision.md",
+    "run_manifest.json",
     "artifact_catalog.md",
     "field_dictionary.md",
 )

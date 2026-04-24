@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract, validate_stage_artifacts
+from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
 from runtime.tools.csf_data_ready_contract_runtime import validate_csf_data_ready_semantics
 from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_ready_semantics
 from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
@@ -107,7 +108,13 @@ def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[s
 
 
 def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
-    if stage not in {"csf_data_ready", "csf_signal_ready", "csf_train_freeze", "csf_test_evidence"}:
+    if stage not in {
+        "csf_data_ready",
+        "csf_signal_ready",
+        "csf_train_freeze",
+        "csf_test_evidence",
+        "csf_backtest_ready",
+    }:
         return []
     try:
         result = validate_stage_artifacts(author_formal_dir, load_artifact_contract(stage))
@@ -129,4 +136,7 @@ def _check_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Pa
     if stage == "csf_test_evidence":
         result = validate_csf_test_evidence_semantics(author_formal_dir, lineage_root)
         return [f"CSF-TEST-SEMANTIC-001: {error}" for error in result.errors]
+    if stage == "csf_backtest_ready":
+        result = validate_csf_backtest_ready_semantics(author_formal_dir, lineage_root)
+        return [f"CSF-BACKTEST-SEMANTIC-001: {error}" for error in result.errors]
     return []

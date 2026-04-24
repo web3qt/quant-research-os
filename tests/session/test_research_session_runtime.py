@@ -360,6 +360,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         ],
         "csf_backtest_ready": [
             "portfolio_contract.yaml",
+            "portfolio_weight_panel.parquet",
             "rebalance_ledger.csv",
             "turnover_capacity_report.parquet",
             "cost_assumption_report.md",
@@ -369,6 +370,8 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "target_strategy_compare.parquet",
             "csf_backtest_gate_table.csv",
             "csf_backtest_contract.md",
+            "csf_backtest_gate_decision.md",
+            "run_manifest.json",
             "artifact_catalog.md",
             "field_dictionary.md",
         ],
@@ -402,7 +405,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         "csf_signal_ready": [],
         "csf_train_freeze": [],
         "csf_test_evidence": [],
-        "csf_backtest_ready": ["portfolio_weight_panel.parquet"],
+        "csf_backtest_ready": [],
         "csf_holdout_validation": [],
     }
 
@@ -444,6 +447,26 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                 "neutralization_policy": "group_neutral",
                 "group_taxonomy_reference": "sector_bucket_v1",
                 "beta_estimation_window": "60d",
+            },
+        ],
+        "portfolio_weight_panel.parquet": [
+            {"date": "2024-10-01", "asset": "SOLUSDT", "variant_id": "baseline_v1", "weight": 0.5, "side": "long"},
+        ],
+        "turnover_capacity_report.parquet": [
+            {"date": "2024-10-01", "variant_id": "baseline_v1", "turnover": 0.12, "capacity_utilization": 0.25},
+        ],
+        "portfolio_summary.parquet": [
+            {"variant_id": "baseline_v1", "mean_gross_return": 0.018, "mean_net_return": 0.012, "max_drawdown": -0.08},
+        ],
+        "name_level_metrics.parquet": [
+            {"asset": "SOLUSDT", "variant_id": "baseline_v1", "contribution": 0.012, "max_weight": 0.5},
+        ],
+        "target_strategy_compare.parquet": [
+            {
+                "variant_id": "baseline_v1",
+                "target_strategy_reference": "",
+                "portfolio_mean_net_return": 0.012,
+                "target_mean_net_return": 0.006,
             },
         ],
     }

@@ -229,6 +229,8 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "target_strategy_compare.parquet",
             "csf_backtest_gate_table.csv",
             "csf_backtest_contract.md",
+            "csf_backtest_gate_decision.md",
+            "run_manifest.json",
             "artifact_catalog.md",
             "field_dictionary.md",
         ],

@@ -1,0 +1,3 @@
+{"event_type":"skill_call","name":"qros-csf-backtest-ready-author","payload":{"skill":"qros-csf-backtest-ready-author"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"text":"发现 portfolio_weight_panel.parquet 引用了非 test-selected variants，但仍准备 review。"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_backtest_ready"}}

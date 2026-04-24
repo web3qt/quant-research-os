@@ -153,6 +153,29 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_test_evidence`、semantic validator 或 preflight 直接进入 reviewer lane。
 
+## CSF Backtest Ready Cases
+
+- `explicit_csf_backtest_ready_author_skill_first`
+- `naive_csf_backtest_ready_prompt_triggers_author_skill`
+- `csf_backtest_ready_rejects_missing_csf_test_evidence_review_closure`
+- `csf_backtest_ready_rejects_unconfirmed_freeze_groups`
+- `csf_backtest_ready_rejects_placeholder_weight_panel_completion`
+- `csf_backtest_ready_runs_artifact_validator_before_review`
+- `csf_backtest_ready_runs_semantic_validator_before_review`
+- `csf_backtest_ready_rejects_variant_drift`
+
+`csf_backtest_ready_runs_artifact_validator_before_review` 与
+`csf_backtest_ready_runs_semantic_validator_before_review` 使用 `expected_events.ordered_substrings` 锁定：
+
+```text
+qros-validate-stage --stage csf_backtest_ready
+csf_backtest_ready semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+这保证 agent 不能跳过 `qros-validate-stage --stage csf_backtest_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
+
 这些 case 定义在：
 
 ```text

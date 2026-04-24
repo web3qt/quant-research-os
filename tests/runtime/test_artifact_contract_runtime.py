@@ -550,6 +550,128 @@ def _write_minimal_valid_csf_test_evidence_formal(stage_dir: Path) -> None:
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
 
+def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_yaml(
+        stage_dir / "portfolio_contract.yaml",
+        {
+            "stage": "csf_backtest_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "portfolio_expression": "long_short_market_neutral",
+            "selection_rule": "Use test-selected variants only.",
+            "weight_mapping_rule": "Equal weight long/short buckets.",
+            "gross_exposure_rule": "100/100 gross exposure.",
+            "rebalance_execution_lag": "1 bar",
+            "turnover_budget_rule": "Cap one-way turnover at 20%.",
+            "cost_model": "Frozen fee plus slippage schedule.",
+            "capacity_model": "Limit participation versus ADV.",
+            "max_name_weight_rule": "Cap each name at 10%.",
+            "net_exposure_rule": "Keep net exposure inside +/-5%.",
+            "group_neutral_overlay": "sector_bucket_v1",
+            "target_strategy_reference": "",
+            "required_diagnostics": ["turnover", "capacity", "drawdown"],
+            "delivery_contract": {
+                "machine_artifacts": [
+                    "portfolio_contract.yaml",
+                    "portfolio_weight_panel.parquet",
+                    "csf_backtest_gate_table.csv",
+                ],
+                "consumer_stage": "csf_holdout_validation",
+                "frozen_config_note": "Holdout must reuse this frozen portfolio contract.",
+            },
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "portfolio_weight_panel.parquet",
+        [{"date": "2024-10-01", "asset": "SOLUSDT", "variant_id": "baseline_v1", "weight": 0.5, "side": "long"}],
+    )
+    (stage_dir / "rebalance_ledger.csv").write_text(
+        "date,variant_id,portfolio_expression,selection_rule,weight_mapping_rule\n"
+        "2024-10-01,baseline_v1,long_short_market_neutral,test-selected,equal-weight\n",
+        encoding="utf-8",
+    )
+    _write_parquet_rows(
+        stage_dir / "turnover_capacity_report.parquet",
+        [{"date": "2024-10-01", "variant_id": "baseline_v1", "turnover": 0.12, "capacity_utilization": 0.25}],
+    )
+    (stage_dir / "cost_assumption_report.md").write_text("# 成本假设报告\n", encoding="utf-8")
+    _write_parquet_rows(
+        stage_dir / "portfolio_summary.parquet",
+        [{"variant_id": "baseline_v1", "mean_gross_return": 0.018, "mean_net_return": 0.012, "max_drawdown": -0.08}],
+    )
+    _write_parquet_rows(
+        stage_dir / "name_level_metrics.parquet",
+        [{"asset": "SOLUSDT", "variant_id": "baseline_v1", "contribution": 0.012, "max_weight": 0.5}],
+    )
+    _write_json(
+        stage_dir / "drawdown_report.json",
+        {
+            "stage": "csf_backtest_ready",
+            "selected_variant_ids": ["baseline_v1"],
+            "max_drawdown": -0.08,
+            "status": "pass",
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "target_strategy_compare.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "target_strategy_reference": "",
+                "portfolio_mean_net_return": 0.012,
+                "target_mean_net_return": 0.006,
+            }
+        ],
+    )
+    (stage_dir / "csf_backtest_gate_table.csv").write_text(
+        "variant_id,portfolio_expression,mean_net_return,after_cost_rule,name_level_rule\n"
+        "baseline_v1,long_short_market_neutral,0.012,net-of-cost,concentration-ok\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "csf_backtest_contract.md").write_text("# CSF Backtest Contract\n", encoding="utf-8")
+    (stage_dir / "csf_backtest_gate_decision.md").write_text(
+        "# CSF Backtest Gate Decision\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        stage_dir / "run_manifest.json",
+        {
+            "stage": "csf_backtest_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "csf_test_evidence",
+            "input_roots": [
+                "../05_csf_test_evidence/author/formal/csf_selected_variants_test.csv",
+                "../05_csf_test_evidence/author/formal/csf_test_gate_table.csv",
+            ],
+            "stage_outputs": [
+                "portfolio_contract.yaml",
+                "portfolio_weight_panel.parquet",
+                "rebalance_ledger.csv",
+                "turnover_capacity_report.parquet",
+                "cost_assumption_report.md",
+                "portfolio_summary.parquet",
+                "name_level_metrics.parquet",
+                "drawdown_report.json",
+                "target_strategy_compare.parquet",
+                "csf_backtest_gate_table.csv",
+                "csf_backtest_contract.md",
+                "csf_backtest_gate_decision.md",
+                "run_manifest.json",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "program_dir": "program/cross_sectional_factor/backtest_ready",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "replay_command": "python3 program/cross_sectional_factor/backtest_ready/run_stage.py",
+            "selected_variant_ids": ["baseline_v1"],
+            "portfolio_expression": "long_short_market_neutral",
+        },
+    )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -888,3 +1010,31 @@ def test_validate_stage_artifacts_reports_csf_test_evidence_missing_parquet_colu
 
     assert result.valid is False
     assert "rank_ic_timeseries.parquet: missing required parquet column rank_ic" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_backtest_ready_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_backtest_ready_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_backtest_ready"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_csf_backtest_ready_missing_parquet_column(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_backtest_ready_formal(stage_dir)
+    _write_parquet_rows(
+        stage_dir / "portfolio_weight_panel.parquet",
+        [{"date": "2024-10-01", "asset": "SOLUSDT", "variant_id": "baseline_v1", "side": "long"}],
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_backtest_ready"))
+
+    assert result.valid is False
+    assert "portfolio_weight_panel.parquet: missing required parquet column weight" in result.errors

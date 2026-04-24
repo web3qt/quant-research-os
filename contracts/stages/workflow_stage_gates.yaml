@@ -1033,12 +1033,14 @@ stages:
       - rebalance_ledger.csv
       - turnover_capacity_report.parquet
       - cost_assumption_report.md
-      - engine_compare.csv
       - portfolio_summary.parquet
       - name_level_metrics.parquet
       - drawdown_report.json
+      - target_strategy_compare.parquet
       - csf_backtest_gate_table.csv
       - csf_backtest_contract.md
+      - csf_backtest_gate_decision.md
+      - run_manifest.json
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
@@ -1046,7 +1048,8 @@ stages:
       - portfolio_weight_panel.parquet
       - rebalance_ledger.csv
       - turnover_capacity_report.parquet
-      - engine_compare.csv
+      - target_strategy_compare.parquet
+      - run_manifest.json
     human_artifacts:
       - cost_assumption_report.md
       - portfolio_summary.parquet
@@ -1054,6 +1057,7 @@ stages:
       - drawdown_report.json
       - csf_backtest_gate_table.csv
       - csf_backtest_contract.md
+      - csf_backtest_gate_decision.md
       - artifact_catalog.md
       - field_dictionary.md
     formal_gate:
