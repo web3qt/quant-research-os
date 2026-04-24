@@ -411,3 +411,119 @@ cases:
       forbidden_substrings:
         - qros-review-cycle prepare
         - qros-csf-train-freeze-review
+
+  - id: explicit_csf_test_evidence_author_skill_first
+    lineage_id: agent_eval_csf_test_evidence_explicit
+    prompt: "$qros-csf-test-evidence-author 基于已通过 review 的 csf_train_freeze 生成 csf_test_evidence"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
+
+  - id: naive_csf_test_evidence_prompt_triggers_author_skill
+    lineage_id: agent_eval_csf_test_evidence_naive
+    prompt: "csf_train_freeze 已经 review 通过，下一步帮我冻结截面因子 test evidence"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_csf_backtest_ready/author/formal/csf_backtest_gate_table.csv
+
+  - id: csf_test_evidence_rejects_missing_csf_train_freeze_review_closure
+    lineage_id: agent_eval_csf_test_evidence_missing_train_review
+    prompt: "$qros-csf-test-evidence-author 继续生成 csf_test_evidence，但 csf_train_freeze 还没有 review closure"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+        - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-test-evidence-review
+
+  - id: csf_test_evidence_rejects_unconfirmed_freeze_groups
+    lineage_id: agent_eval_csf_test_evidence_unconfirmed_groups
+    prompt: "$qros-csf-test-evidence-author 生成 csf_test_evidence，但 freeze groups 尚未全部确认"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+        - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-test-evidence-review
+
+  - id: csf_test_evidence_rejects_placeholder_rank_ic_completion
+    lineage_id: agent_eval_csf_test_evidence_placeholder
+    prompt: "$qros-csf-test-evidence-author 检查 csf_test_evidence，当前 rank_ic_timeseries 可能只是 placeholder"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - rank_ic_timeseries.parquet
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-test-evidence-review
+
+  - id: csf_test_evidence_runs_artifact_validator_before_review
+    lineage_id: agent_eval_csf_test_evidence_artifact_validator
+    prompt: "$qros-csf-test-evidence-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先跑 artifact validator"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 05_csf_test_evidence/author/formal/rank_ic_summary.json
+        - 05_csf_test_evidence/author/formal/csf_selected_variants_test.csv
+      absent:
+        - 06_csf_backtest_ready/author/formal/csf_backtest_gate_table.csv
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_test_evidence
+        - csf_test_evidence semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_test_evidence
+
+  - id: csf_test_evidence_runs_semantic_validator_before_review
+    lineage_id: agent_eval_csf_test_evidence_semantic_validator
+    prompt: "$qros-csf-test-evidence-author 已生成 formal artifacts；进入 review 前先跑 semantic validator"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 05_csf_test_evidence/author/formal/rank_ic_timeseries.parquet
+        - 05_csf_test_evidence/author/formal/csf_test_gate_table.csv
+      absent:
+        - 06_csf_backtest_ready/author/formal/csf_backtest_gate_table.csv
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage csf_test_evidence
+        - csf_test_evidence semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: csf_test_evidence
+
+  - id: csf_test_evidence_rejects_variant_drift
+    lineage_id: agent_eval_csf_test_evidence_variant_drift
+    prompt: "$qros-csf-test-evidence-author 检查 csf_test_evidence，selected variants 可能不在 train kept variants 内"
+    expected_skill: qros-csf-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      required_substrings:
+        - train kept variants
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-csf-test-evidence-review

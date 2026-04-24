@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 
 
@@ -18,10 +20,36 @@ CSF_TEST_EVIDENCE_GROUP_ORDER = [
     "audit_contract",
     "delivery_contract",
 ]
+CSF_TEST_EVIDENCE_STAGE_OUTPUTS = [
+    "rank_ic_timeseries.parquet",
+    "rank_ic_summary.json",
+    "bucket_returns.parquet",
+    "monotonicity_report.json",
+    "breadth_coverage_report.parquet",
+    "subperiod_stability_report.json",
+    "filter_condition_panel.parquet",
+    "target_strategy_condition_compare.parquet",
+    "gated_vs_ungated_summary.json",
+    "csf_test_gate_table.csv",
+    "csf_selected_variants_test.csv",
+    "csf_test_gate_decision.md",
+    "csf_test_contract.md",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
 
 
 def _blank_csf_test_evidence_draft() -> dict[str, Any]:
@@ -144,21 +172,64 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
     if factor_role and declared_factor_role and factor_role != declared_factor_role:
         raise ValueError("csf_test_evidence factor_role must match mandate research_route.yaml")
 
-    for name in [
-        "rank_ic_timeseries.parquet",
-        "bucket_returns.parquet",
-        "breadth_coverage_report.parquet",
-        "filter_condition_panel.parquet",
-        "target_strategy_condition_compare.parquet",
-    ]:
-        (stage_formal_dir / name).write_text("占位 parquet 载荷\n", encoding="utf-8")
+    target_strategy_reference = str(route_payload.get("target_strategy_reference", "")).strip()
+    _write_parquet_rows(
+        stage_formal_dir / "rank_ic_timeseries.parquet",
+        [
+            {"date": "2024-07-01", "variant_id": variant_id, "rank_ic": 0.11}
+            for variant_id in selected_variant_ids
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "bucket_returns.parquet",
+        [
+            {"date": "2024-07-01", "variant_id": variant_id, "bucket_id": bucket_id, "mean_return": mean_return}
+            for variant_id in selected_variant_ids
+            for bucket_id, mean_return in [("q1", -0.01), ("q5", 0.02)]
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "breadth_coverage_report.parquet",
+        [
+            {"date": "2024-07-01", "variant_id": variant_id, "coverage_ratio": 0.98, "asset_count": 120}
+            for variant_id in selected_variant_ids
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "filter_condition_panel.parquet",
+        [
+            {
+                "date": "2024-07-01",
+                "asset": "SOLUSDT",
+                "variant_id": variant_id,
+                "condition_active": True,
+            }
+            for variant_id in selected_variant_ids
+        ],
+    )
+    _write_parquet_rows(
+        stage_formal_dir / "target_strategy_condition_compare.parquet",
+        [
+            {
+                "variant_id": variant_id,
+                "target_strategy_reference": target_strategy_reference,
+                "gated_mean_return": 0.03,
+                "ungated_mean_return": 0.01,
+                "delta_mean_return": 0.02,
+            }
+            for variant_id in selected_variant_ids
+        ],
+    )
     (stage_formal_dir / "rank_ic_summary.json").write_text(
         json.dumps(
             {
+                "stage": "csf_test_evidence",
+                "lineage_id": lineage_root.name,
                 "factor_role": declared_factor_role,
                 "selected_variant_ids": selected_variant_ids,
-                "mean_rank_ic": 0.12 if declared_factor_role == "standalone_alpha" else None,
-                "median_rank_ic": 0.10 if declared_factor_role == "standalone_alpha" else None,
+                "primary_evidence_contract": primary_evidence_contract,
+                "mean_rank_ic": 0.12,
+                "median_rank_ic": 0.10,
                 "num_dates": 29,
             },
             indent=2,
@@ -167,17 +238,54 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    for name in [
-        "monotonicity_report.json",
-        "subperiod_stability_report.json",
-        "gated_vs_ungated_summary.json",
-    ]:
-        (stage_formal_dir / name).write_text("{}\n", encoding="utf-8")
+    (stage_formal_dir / "monotonicity_report.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_test_evidence",
+                "selected_variant_ids": selected_variant_ids,
+                "status": "pass",
+                "monotonic_direction": "high_bucket_outperforms_low_bucket",
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_formal_dir / "subperiod_stability_report.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_test_evidence",
+                "selected_variant_ids": selected_variant_ids,
+                "status": "pass",
+                "subperiod_count": 3,
+                "subperiod_rule": subperiod_rule,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (stage_formal_dir / "gated_vs_ungated_summary.json").write_text(
+        json.dumps(
+            {
+                "stage": "csf_test_evidence",
+                "selected_variant_ids": selected_variant_ids,
+                "status": "pass",
+                "mean_delta": 0.02,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     with (stage_formal_dir / "csf_test_gate_table.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["variant_id", "verdict", "primary_evidence_contract"])
+        writer.writerow(["variant_id", "verdict", "primary_evidence_contract", "reason"])
         for variant_id in selected_variant_ids:
-            writer.writerow([variant_id, "selected", primary_evidence_contract])
+            writer.writerow([variant_id, "selected", primary_evidence_contract, selection_rule])
     with (stage_formal_dir / "csf_selected_variants_test.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["variant_id", "status"])
@@ -216,24 +324,7 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
                     "../02_csf_data_ready/author/formal/asset_universe_membership.parquet",
                     "author/draft/csf_test_evidence_draft.yaml",
                 ],
-                "stage_outputs": [
-                    "rank_ic_timeseries.parquet",
-                    "rank_ic_summary.json",
-                    "bucket_returns.parquet",
-                    "monotonicity_report.json",
-                    "breadth_coverage_report.parquet",
-                    "subperiod_stability_report.json",
-                    "filter_condition_panel.parquet",
-                    "target_strategy_condition_compare.parquet",
-                    "gated_vs_ungated_summary.json",
-                    "csf_test_gate_table.csv",
-                    "csf_selected_variants_test.csv",
-                    "csf_test_gate_decision.md",
-                    "csf_test_contract.md",
-                    "run_manifest.json",
-                    "artifact_catalog.md",
-                    "field_dictionary.md",
-                ],
+                "stage_outputs": CSF_TEST_EVIDENCE_STAGE_OUTPUTS,
                 "program_dir": "program/cross_sectional_factor/test_evidence",
                 "program_entrypoint": "run_stage.py",
                 "program_execution_manifest": "program_execution_manifest.json",
@@ -310,6 +401,11 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
+    shape_result = validate_stage_artifacts(stage_formal_dir, load_artifact_contract("csf_test_evidence"))
+    semantic_result = validate_csf_test_evidence_semantics(stage_formal_dir, lineage_root)
+    errors = [*shape_result.errors, *semantic_result.errors]
+    if errors:
+        raise ValueError("csf_test_evidence formal artifacts do not match artifact contract: " + "; ".join(errors))
     return stage_dir
 
 

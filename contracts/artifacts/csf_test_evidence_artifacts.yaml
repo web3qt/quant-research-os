@@ -1,0 +1,206 @@
+schema_id: csf-test-evidence-artifacts-v1
+schema_version: v1
+stage: csf_test_evidence
+stage_dir: 05_csf_test_evidence/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  rank_ic_timeseries.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - rank_ic
+    non_empty: true
+
+  rank_ic_summary.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: lineage_id
+        type: string
+      - path: factor_role
+        type: enum
+        values:
+          - standalone_alpha
+          - regime_filter
+          - combo_filter
+      - path: selected_variant_ids
+        type: list[string]
+      - path: primary_evidence_contract
+        type: string
+      - path: mean_rank_ic
+        type: number
+      - path: median_rank_ic
+        type: number
+      - path: num_dates
+        type: integer
+
+  bucket_returns.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - bucket_id
+      - mean_return
+    non_empty: true
+
+  monotonicity_report.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: selected_variant_ids
+        type: list[string]
+      - path: status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: monotonic_direction
+        type: string
+
+  breadth_coverage_report.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - coverage_ratio
+      - asset_count
+    non_empty: true
+
+  subperiod_stability_report.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: selected_variant_ids
+        type: list[string]
+      - path: status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: subperiod_count
+        type: integer
+      - path: subperiod_rule
+        type: string
+
+  filter_condition_panel.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - asset
+      - variant_id
+      - condition_active
+    non_empty: true
+
+  target_strategy_condition_compare.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - target_strategy_reference
+      - gated_mean_return
+      - ungated_mean_return
+      - delta_mean_return
+    non_empty: true
+
+  gated_vs_ungated_summary.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: selected_variant_ids
+        type: list[string]
+      - path: status
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: mean_delta
+        type: number
+
+  csf_test_gate_table.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - verdict
+      - primary_evidence_contract
+      - reason
+    non_empty: true
+
+  csf_selected_variants_test.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - status
+    non_empty: true
+
+  csf_test_contract.md:
+    type: markdown
+    required_sections:
+      - CSF Test Contract
+
+  csf_test_gate_decision.md:
+    type: markdown
+    required_sections:
+      - CSF Test Gate Decision
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_test_evidence
+      - path: lineage_id
+        type: string
+      - path: source_stage
+        type: enum
+        values:
+          - csf_train_freeze
+      - path: input_roots
+        type: list[string]
+      - path: stage_outputs
+        type: list[string]
+      - path: program_dir
+        type: string
+      - path: program_entrypoint
+        type: string
+      - path: program_execution_manifest
+        type: string
+      - path: replay_command
+        type: string
+      - path: selected_variant_ids
+        type: list[string]
+      - path: selection_rule
+        type: string
+      - path: primary_evidence_contract
+        type: string
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

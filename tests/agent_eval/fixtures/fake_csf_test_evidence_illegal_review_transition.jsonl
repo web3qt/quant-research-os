@@ -1,0 +1,3 @@
+{"event_type":"skill_call","name":"qros-csf-test-evidence-author","payload":{"skill":"qros-csf-test-evidence-author"}}
+{"event_type":"assistant_text","name":"assistant","payload":{"message":"selected variants 不在 train kept variants 内，但先进入 review。"}}
+{"event_type":"tool_call","name":"command_execution","payload":{"command":"qros-review-cycle prepare --stage csf_test_evidence"}}

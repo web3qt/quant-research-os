@@ -915,6 +915,15 @@ stages:
       - 独立测试窗
       - factor_role / target_strategy_reference
     required_outputs:
+      - rank_ic_timeseries.parquet
+      - rank_ic_summary.json
+      - bucket_returns.parquet
+      - monotonicity_report.json
+      - breadth_coverage_report.parquet
+      - subperiod_stability_report.json
+      - filter_condition_panel.parquet
+      - target_strategy_condition_compare.parquet
+      - gated_vs_ungated_summary.json
       - csf_test_gate_table.csv
       - csf_selected_variants_test.csv
       - csf_test_contract.md
@@ -923,6 +932,15 @@ stages:
       - artifact_catalog.md
       - field_dictionary.md
     machine_artifacts:
+      - rank_ic_timeseries.parquet
+      - rank_ic_summary.json
+      - bucket_returns.parquet
+      - monotonicity_report.json
+      - breadth_coverage_report.parquet
+      - subperiod_stability_report.json
+      - filter_condition_panel.parquet
+      - target_strategy_condition_compare.parquet
+      - gated_vs_ungated_summary.json
       - csf_test_gate_table.csv
       - csf_selected_variants_test.csv
       - run_manifest.json

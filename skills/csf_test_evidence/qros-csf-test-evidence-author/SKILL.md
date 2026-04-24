@@ -15,22 +15,28 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ## Required Inputs
 
-- `04_csf_train_freeze/csf_train_freeze.yaml`
-- `04_csf_train_freeze/train_variant_ledger.csv`
-- `03_csf_signal_ready/factor_manifest.yaml`
-- `02_csf_data_ready/asset_universe_membership.parquet`
-- `04_csf_train_freeze/stage_completion_certificate.yaml`
+- 已通过 review closure 的 `04_csf_train_freeze/author/formal/*`
+- `04_csf_train_freeze/author/formal/csf_train_freeze.yaml`
+- `04_csf_train_freeze/author/formal/train_variant_ledger.csv`
+- `01_mandate/author/formal/research_route.yaml`
+- `contracts/artifacts/csf_test_evidence_artifacts.yaml`
 
 ## Required Outputs
 
 - `rank_ic_timeseries.parquet`
+- `rank_ic_summary.json`
 - `bucket_returns.parquet`
-- `admissibility_report.parquet`
-- `factor_selection.csv`
-- `factor_selection.parquet`
-- `selected_factor_spec.json`
-- `test_gate_table.csv`
-- `test_gate_decision.md`
+- `monotonicity_report.json`
+- `breadth_coverage_report.parquet`
+- `subperiod_stability_report.json`
+- `filter_condition_panel.parquet`
+- `target_strategy_condition_compare.parquet`
+- `gated_vs_ungated_summary.json`
+- `csf_test_gate_table.csv`
+- `csf_selected_variants_test.csv`
+- `csf_test_contract.md`
+- `csf_test_gate_decision.md`
+- `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
 
@@ -39,16 +45,22 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 必须按 5 组推进：
 
 - `window_contract`
-- `formal_gate_contract`
-- `admissibility_contract`
+- `variant_contract`
+- `evidence_contract`
 - `audit_contract`
 - `delivery_contract`
+
+这些 group 的 runtime-facing 字段以 `runtime/tools/csf_test_evidence_runtime.py` 的 draft skeleton 和 `docs/guides/stage-freeze-group-field-guide.md` 为准。skill 只解释确认顺序，不再维护 formal artifact 字段真值。
 
 ## Mandatory Discipline
 
 - 只能消费已经通过 review closure 的 csf_train_freeze 产物
 - `standalone_alpha` 与 `regime_filter` / `combo_filter` 的证据语义必须分开冻结
 - 必须在当前 research repo 里真实生成独立样本上的统计证据、admissibility 结果和冻结对象
+- 不得手写或自行扩展 formal artifact shape；formal artifact shape 以 `contracts/artifacts/csf_test_evidence_artifacts.yaml` 为准
+- 必须使用 runtime scaffold/build 物化 `05_csf_test_evidence/author/formal/*`
+- build 后必须运行 `qros-validate-stage --stage csf_test_evidence`
+- 进入 review 前必须通过 csf_test_evidence semantic validator / deterministic preflight
 - 不得产出任何时序主线措辞、best_h、预测 horizon 或单资产命中率语义
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
@@ -78,27 +90,24 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 尾部风险改善
 - 覆盖率是否仍可接受
 
-### selected_factor_spec 必须完整
-`selected_factor_spec.json` 必须写清：
-- `selected_factor_id`
-- `factor_role`
-- `factor_structure`
-- `portfolio_expression`
-- `neutralization_policy`
+### Artifact shape 由 contract 决定
+`rank_ic_summary.json`、`csf_test_gate_table.csv`、`csf_selected_variants_test.csv` 与所有 parquet columns 必须通过 `contracts/artifacts/csf_test_evidence_artifacts.yaml` 校验。agent 不得因为 skill 文本、聊天上下文或 reviewer 偏好新增 formal artifact 字段。
 
 ### 不得把 test 当 backtest
-`factor_selection` 只允许冻结进入 backtest 的候选，不允许在本阶段宣布交易层胜利。
+`csf_selected_variants_test.csv` 只允许冻结进入 backtest 的候选，不允许在本阶段宣布交易层胜利。
 
 ## Working Rules
 
-1. 确认 `04_csf_train_freeze/stage_completion_certificate.yaml` 已存在
+1. 确认 `04_csf_train_freeze` 已有 review closure，且 formal artifacts 不是 placeholder
 2. 先收敛并确认 `window_contract`
-3. 再收敛并确认 `formal_gate_contract`
-4. 再收敛并确认 `admissibility_contract`
+3. 再收敛并确认 `variant_contract`
+4. 再收敛并确认 `evidence_contract`
 5. 再收敛并确认 `audit_contract`
 6. 最后确认 `delivery_contract`
-7. 明确当前 research repo 中由谁负责真实生成 test 统计证据、admissibility 结果、factor selection 和 frozen spec
+7. 明确当前 research repo 中由谁负责真实生成 test 统计证据、gate table 和 selected variants
 8. 输出一份 grouped csf_test_evidence summary
 9. 只有用户最终批准后，才生成正式 `05_csf_test_evidence` artifacts
-10. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-11. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_test_evidence 完成
+10. 运行 `qros-validate-stage --stage csf_test_evidence`
+11. 运行 csf_test_evidence semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_test_evidence` review
+12. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+13. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_test_evidence 完成

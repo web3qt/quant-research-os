@@ -142,7 +142,7 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 
 所以这些 CSF stage 的通过语义是“artifact + metric gate 都通过”，而不是单纯“流程跑通”。
 
-对前半段的 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`，当前 runtime 则执行 contract / semantic gates：
+对 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`、`csf_test_evidence`，当前 runtime 则执行 contract / semantic gates：
 
 - `csf_data_ready` 会检查 panel key、time key、asset key 和 shared feature base 合同是否显式冻结
 - `csf_signal_ready` 现在要求 `author/formal/route_inheritance_contract.yaml` 作为当前阶段唯一正式 route 继承凭证；它必须把 mandate 的 `research_route.yaml` 与当前阶段绑定起来
@@ -150,8 +150,9 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 - `csf_signal_ready` 会检查 `factor_direction` 是否属于允许词表，且 panel key / final score 字段 / score formula 不得留空
 - `csf_train_freeze` 会检查 candidate variants、kept variants 和 train-governable axes 是否显式冻结
 - `csf_train_freeze` 还会检查 `train_factor_quality.parquet` 非空、`train_variant_ledger.csv` / `train_variant_rejects.csv` 是否覆盖 candidate / kept / rejected variants，以及 train-governable axes 是否与 signal-ready 后不可调轴重叠
+- `csf_test_evidence` 会检查 test-selected variants 是否来自 train kept variants、`rank_ic_summary.json` 与 `csf_selected_variants_test.csv` 是否一致、`run_manifest.json` 是否绑定上游 train freeze formal artifacts
 
-所以前半段的 `PASS` 含义是“研究对象的合同边界已经冻结并可复用”，不是“后段表现已经成立”。
+所以这些阶段的 `PASS` 含义是“研究对象的合同边界已经冻结并可复用”，不是“后段表现已经成立”。
 
 另外，`csf_data_ready` 与 `csf_signal_ready` 现在还会对部分表执行最小结构 gate：
 
@@ -166,6 +167,8 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 `csf_signal_ready` 也采用 contract-first 口径：`contracts/artifacts/csf_signal_ready_artifacts.yaml` 是 factor formal artifact shape 真值，skill 不再维护字段清单副本。author build 后必须运行 `qros-validate-stage --stage csf_signal_ready`，并通过 semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_signal_ready` review。该 preflight 会检查 `factor_panel.parquet`、`factor_manifest.yaml`、`component_factor_manifest.yaml`、`route_inheritance_contract.yaml`、`factor_coverage_report.parquet`、`factor_group_context.parquet` 与上游 `csf_data_ready` / mandate route 的绑定。
 
 `csf_train_freeze` 同样采用 contract-first 口径：`contracts/artifacts/csf_train_freeze_artifacts.yaml` 是 train formal artifact shape 真值，skill 只解释确认顺序和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_train_freeze`，并通过 csf_train_freeze semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_train_freeze` review。该 preflight 会检查 `csf_train_freeze.yaml`、`train_factor_quality.parquet`、`train_variant_ledger.csv`、`train_variant_rejects.csv`、`train_bucket_diagnostics.parquet`、`train_neutralization_diagnostics.parquet` 与上游 `csf_signal_ready` factor contract 的绑定。
+
+`csf_test_evidence` 也采用 contract-first 口径：`contracts/artifacts/csf_test_evidence_artifacts.yaml` 是 test formal artifact shape 真值，skill 只解释确认顺序、证据语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_test_evidence`，并通过 csf_test_evidence semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_test_evidence` review。该 preflight 会检查 `rank_ic_timeseries.parquet`、`rank_ic_summary.json`、`bucket_returns.parquet`、`breadth_coverage_report.parquet`、`csf_test_gate_table.csv`、`csf_selected_variants_test.csv` 与上游 `csf_train_freeze` kept variants 的绑定。
 
 ## Internal Runtime
 

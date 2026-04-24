@@ -427,6 +427,129 @@ def _write_minimal_valid_csf_train_freeze_formal(stage_dir: Path) -> None:
     (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
 
 
+def _write_minimal_valid_csf_test_evidence_formal(stage_dir: Path) -> None:
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_parquet_rows(
+        stage_dir / "rank_ic_timeseries.parquet",
+        [{"date": "2024-07-01", "variant_id": "baseline_v1", "rank_ic": 0.12}],
+    )
+    _write_json(
+        stage_dir / "rank_ic_summary.json",
+        {
+            "stage": "csf_test_evidence",
+            "lineage_id": "btc_alt_transmission_v1",
+            "factor_role": "standalone_alpha",
+            "selected_variant_ids": ["baseline_v1"],
+            "primary_evidence_contract": "rank_ic_and_bucket_spread",
+            "mean_rank_ic": 0.12,
+            "median_rank_ic": 0.10,
+            "num_dates": 29,
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "bucket_returns.parquet",
+        [{"date": "2024-07-01", "variant_id": "baseline_v1", "bucket_id": "q5", "mean_return": 0.02}],
+    )
+    _write_json(
+        stage_dir / "monotonicity_report.json",
+        {
+            "stage": "csf_test_evidence",
+            "selected_variant_ids": ["baseline_v1"],
+            "status": "pass",
+            "monotonic_direction": "high_bucket_outperforms_low_bucket",
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "breadth_coverage_report.parquet",
+        [{"date": "2024-07-01", "variant_id": "baseline_v1", "coverage_ratio": 0.98, "asset_count": 120}],
+    )
+    _write_json(
+        stage_dir / "subperiod_stability_report.json",
+        {
+            "stage": "csf_test_evidence",
+            "selected_variant_ids": ["baseline_v1"],
+            "status": "pass",
+            "subperiod_count": 3,
+            "subperiod_rule": "Report stability over equal subperiods.",
+        },
+    )
+    _write_parquet_rows(
+        stage_dir / "filter_condition_panel.parquet",
+        [{"date": "2024-07-01", "asset": "SOLUSDT", "variant_id": "baseline_v1", "condition_active": True}],
+    )
+    _write_parquet_rows(
+        stage_dir / "target_strategy_condition_compare.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "target_strategy_reference": "",
+                "gated_mean_return": 0.03,
+                "ungated_mean_return": 0.01,
+                "delta_mean_return": 0.02,
+            }
+        ],
+    )
+    _write_json(
+        stage_dir / "gated_vs_ungated_summary.json",
+        {
+            "stage": "csf_test_evidence",
+            "selected_variant_ids": ["baseline_v1"],
+            "status": "pass",
+            "mean_delta": 0.02,
+        },
+    )
+    (stage_dir / "csf_test_gate_table.csv").write_text(
+        "variant_id,verdict,primary_evidence_contract,reason\nbaseline_v1,selected,rank_ic_and_bucket_spread,baseline-only\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "csf_selected_variants_test.csv").write_text(
+        "variant_id,status\nbaseline_v1,selected\n",
+        encoding="utf-8",
+    )
+    (stage_dir / "csf_test_contract.md").write_text("# CSF Test Contract\n", encoding="utf-8")
+    (stage_dir / "csf_test_gate_decision.md").write_text("# CSF Test Gate Decision\n", encoding="utf-8")
+    _write_json(
+        stage_dir / "run_manifest.json",
+        {
+            "stage": "csf_test_evidence",
+            "lineage_id": "btc_alt_transmission_v1",
+            "source_stage": "csf_train_freeze",
+            "input_roots": [
+                "../04_csf_train_freeze/author/formal/csf_train_freeze.yaml",
+                "../04_csf_train_freeze/author/formal/train_variant_ledger.csv",
+                "author/draft/csf_test_evidence_draft.yaml",
+            ],
+            "stage_outputs": [
+                "rank_ic_timeseries.parquet",
+                "rank_ic_summary.json",
+                "bucket_returns.parquet",
+                "monotonicity_report.json",
+                "breadth_coverage_report.parquet",
+                "subperiod_stability_report.json",
+                "filter_condition_panel.parquet",
+                "target_strategy_condition_compare.parquet",
+                "gated_vs_ungated_summary.json",
+                "csf_test_gate_table.csv",
+                "csf_selected_variants_test.csv",
+                "csf_test_gate_decision.md",
+                "csf_test_contract.md",
+                "run_manifest.json",
+                "artifact_catalog.md",
+                "field_dictionary.md",
+            ],
+            "program_dir": "program/cross_sectional_factor/test_evidence",
+            "program_entrypoint": "run_stage.py",
+            "program_execution_manifest": "program_execution_manifest.json",
+            "replay_command": "python3 program/cross_sectional_factor/test_evidence/run_stage.py",
+            "selected_variant_ids": ["baseline_v1"],
+            "selection_rule": "baseline-only",
+            "primary_evidence_contract": "rank_ic_and_bucket_spread",
+        },
+    )
+    (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")
+    (stage_dir / "field_dictionary.md").write_text("# 字段字典\n", encoding="utf-8")
+
+
 def test_validate_stage_artifacts_accepts_scaffolded_idea_intake(tmp_path: Path) -> None:
     from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 
@@ -737,3 +860,31 @@ def test_validate_stage_artifacts_reports_csf_train_freeze_unknown_yaml_field(tm
 
     assert result.valid is False
     assert "csf_train_freeze.yaml: unknown top-level field test_selected_winner" in result.errors
+
+
+def test_validate_stage_artifacts_accepts_valid_csf_test_evidence_shape(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_test_evidence_formal(stage_dir)
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_test_evidence"))
+
+    assert result.valid is True
+    assert result.errors == []
+
+
+def test_validate_stage_artifacts_reports_csf_test_evidence_missing_parquet_column(tmp_path: Path) -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+
+    stage_dir = tmp_path / "formal"
+    _write_minimal_valid_csf_test_evidence_formal(stage_dir)
+    _write_parquet_rows(
+        stage_dir / "rank_ic_timeseries.parquet",
+        [{"date": "2024-07-01", "variant_id": "baseline_v1", "other_metric": 0.12}],
+    )
+
+    result = validate_stage_artifacts(stage_dir, load_artifact_contract("csf_test_evidence"))
+
+    assert result.valid is False
+    assert "rank_ic_timeseries.parquet: missing required parquet column rank_ic" in result.errors

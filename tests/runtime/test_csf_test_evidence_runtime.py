@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
 
+import pyarrow.parquet as pq
 import yaml
 
+from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_test_evidence_runtime import (
     build_csf_test_evidence_from_train_freeze,
     scaffold_csf_test_evidence,
@@ -140,8 +142,14 @@ def test_build_csf_test_evidence_writes_required_outputs(tmp_path: Path) -> None
     rank_ic_summary = json.loads((formal_dir / "rank_ic_summary.json").read_text(encoding="utf-8"))
     assert rank_ic_summary["mean_rank_ic"] == 0.12
     assert rank_ic_summary["num_dates"] == 29
+    assert pq.read_table(formal_dir / "rank_ic_timeseries.parquet").num_rows > 0
+    assert pq.read_table(formal_dir / "bucket_returns.parquet").num_rows > 0
 
     run_manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
     assert run_manifest["stage"] == "csf_test_evidence"
     assert "csf_test_gate_decision.md" in run_manifest["stage_outputs"]
     assert "run_manifest.json" in run_manifest["stage_outputs"]
+
+    result = validate_stage_artifacts(formal_dir, load_artifact_contract("csf_test_evidence"))
+    assert result.valid is True
+    assert result.errors == []

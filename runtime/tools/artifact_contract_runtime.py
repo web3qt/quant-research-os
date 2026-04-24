@@ -17,6 +17,7 @@ ARTIFACT_CONTRACTS = {
     "csf_data_ready": ROOT / "contracts" / "artifacts" / "csf_data_ready_artifacts.yaml",
     "csf_signal_ready": ROOT / "contracts" / "artifacts" / "csf_signal_ready_artifacts.yaml",
     "csf_train_freeze": ROOT / "contracts" / "artifacts" / "csf_train_freeze_artifacts.yaml",
+    "csf_test_evidence": ROOT / "contracts" / "artifacts" / "csf_test_evidence_artifacts.yaml",
 }
 
 

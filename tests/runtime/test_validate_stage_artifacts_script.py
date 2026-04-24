@@ -16,6 +16,7 @@ from tests.runtime.test_csf_data_ready_runtime import (
 from runtime.tools.csf_data_ready_runtime import build_csf_data_ready_from_mandate
 from tests.runtime.test_artifact_contract_runtime import (
     _write_minimal_valid_csf_signal_ready_formal,
+    _write_minimal_valid_csf_test_evidence_formal,
     _write_minimal_valid_csf_train_freeze_formal,
 )
 
@@ -344,3 +345,59 @@ def test_validate_stage_artifacts_script_rejects_invalid_csf_train_freeze(tmp_pa
 
     assert result.returncode == 1
     assert "train_variant_ledger.csv: missing required csv column selection_rule" in result.stderr
+
+
+def test_validate_stage_artifacts_script_accepts_valid_csf_test_evidence(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    formal_dir = outputs_root / "csf_case" / "05_csf_test_evidence" / "author" / "formal"
+    _write_minimal_valid_csf_test_evidence_formal(formal_dir)
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_test_evidence",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode == 0
+    assert "csf_test_evidence artifact shape valid" in result.stdout
+
+
+def test_validate_stage_artifacts_script_rejects_invalid_csf_test_evidence(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    formal_dir = outputs_root / "csf_case" / "05_csf_test_evidence" / "author" / "formal"
+    _write_minimal_valid_csf_test_evidence_formal(formal_dir)
+    (formal_dir / "csf_test_gate_table.csv").write_text(
+        "variant_id,verdict\nbaseline_v1,selected\n",
+        encoding="utf-8",
+    )
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_test_evidence",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode == 1
+    assert "csf_test_gate_table.csv: missing required csv column primary_evidence_contract" in result.stderr
