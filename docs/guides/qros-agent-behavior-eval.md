@@ -41,6 +41,8 @@ qros-agent-eval \
 - `transcript.jsonl`
 - `result.yaml`
 
+Codex CLI 的 `--json` transcript 里，skill 使用可能不会表现为独立 `Skill` tool event。当前 harness 也会把第一时间读取对应 `.../skills/<skill>/SKILL.md` 的 `command_execution` 归一化为 `skill_call`；其他 `command_execution` 仍按普通 tool call 处理。
+
 ## Fake Transcript
 
 开发 harness 时不要调用真实模型。使用 fake transcript：

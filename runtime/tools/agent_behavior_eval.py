@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -132,6 +133,40 @@ def _normalize_event(raw: dict[str, Any]) -> AgentEvent | None:
     if raw.get("type") == "command_output":
         return AgentEvent(event_type="command_output", name=str(raw.get("name", "command_output")), payload=raw, raw=raw)
 
+    if raw.get("type") in {"item.started", "item.completed"}:
+        return _normalize_codex_item(raw)
+
+    return None
+
+
+def _normalize_codex_item(raw: dict[str, Any]) -> AgentEvent | None:
+    item = raw.get("item")
+    if not isinstance(item, dict):
+        return None
+
+    item_type = item.get("type")
+    if item_type == "agent_message":
+        return AgentEvent(event_type="assistant_text", name="assistant", payload={"message": item}, raw=raw)
+
+    if item_type == "command_execution":
+        command = str(item.get("command", ""))
+        payload = dict(item)
+        skill_name = _skill_name_from_command(command)
+        if skill_name is not None:
+            return AgentEvent(event_type="skill_call", name=skill_name, payload=payload, raw=raw)
+        return AgentEvent(event_type="tool_call", name="command_execution", payload=payload, raw=raw)
+
+    return None
+
+
+def _skill_name_from_command(command: str) -> str | None:
+    superpowers_match = re.search(r"/superpowers/skills/([^/]+)/SKILL\.md\b", command)
+    if superpowers_match:
+        return f"superpowers:{superpowers_match.group(1)}"
+
+    match = re.search(r"/skills/([^/]+)/SKILL\.md\b", command)
+    if match:
+        return match.group(1)
     return None
 
 

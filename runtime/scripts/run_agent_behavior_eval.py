@@ -91,6 +91,8 @@ def _load_runtime_status(path: Path | None) -> dict | None:
 
 
 def _run_agent_command(command_template: str, *, prompt_path: Path, transcript_path: Path, run_dir: Path) -> None:
+    # live eval 目录会被重复使用；旧 transcript 必须先清掉，避免把上次结果当成本次结果。
+    transcript_path.unlink(missing_ok=True)
     command = command_template.format(
         prompt_path=str(prompt_path),
         transcript_path=str(transcript_path),
@@ -101,6 +103,10 @@ def _run_agent_command(command_template: str, *, prompt_path: Path, transcript_p
     if not transcript_path.exists():
         transcript_path.write_text(completed.stdout, encoding="utf-8")
     if completed.returncode != 0:
+        if completed.stdout:
+            print(completed.stdout, end="", file=sys.stdout)
+        if completed.stderr:
+            print(completed.stderr, end="", file=sys.stderr)
         raise SystemExit(completed.returncode)
 
 

@@ -97,3 +97,67 @@ def test_run_agent_behavior_eval_reports_missing_skill_from_fake_transcript(tmp_
 
     assert result.returncode == 1
     assert "expected skill was not triggered: qros-research-session" in result.stderr
+
+
+def test_live_agent_command_overwrites_stale_stdout_transcript(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "explicit_idea_intake_author_skill_first"
+    run_dir.mkdir(parents=True)
+    (run_dir / "transcript.jsonl").write_text('{"event_type":"assistant_text","name":"assistant"}\n', encoding="utf-8")
+
+    emitter = tmp_path / "emit_transcript.py"
+    emitter.write_text(
+        "print('{\"event_type\":\"skill_call\",\"name\":\"qros-idea-intake-author\"}')\n",
+        encoding="utf-8",
+    )
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/run_agent_behavior_eval.py",
+            "--cases",
+            "contracts/agent_eval/qros_agent_behavior_eval_cases.yaml",
+            "--case",
+            "explicit_idea_intake_author_skill_first",
+            "--work-root",
+            str(tmp_path / "runs"),
+            "--agent-command-template",
+            f"{sys.executable} {emitter}",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "qros-idea-intake-author" in (run_dir / "transcript.jsonl").read_text(encoding="utf-8")
+
+
+def test_live_agent_command_surfaces_child_stderr_on_failure(tmp_path: Path) -> None:
+    failing_agent = tmp_path / "failing_agent.py"
+    failing_agent.write_text(
+        "import sys\nsys.stderr.write('agent failed before transcript\\n')\nsys.exit(7)\n",
+        encoding="utf-8",
+    )
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/run_agent_behavior_eval.py",
+            "--cases",
+            "contracts/agent_eval/qros_agent_behavior_eval_cases.yaml",
+            "--case",
+            "explicit_idea_intake_author_skill_first",
+            "--work-root",
+            str(tmp_path / "runs"),
+            "--agent-command-template",
+            f"{sys.executable} {failing_agent}",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 7
+    assert "agent failed before transcript" in result.stderr
