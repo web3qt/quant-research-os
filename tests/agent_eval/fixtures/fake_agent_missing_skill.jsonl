@@ -1,0 +1,2 @@
+{"type":"assistant","message":{"content":[{"text":"I can help with that idea."}]}}
+{"type":"tool_use","name":"exec_command","input":{"cmd":"./.qros/bin/qros-session --raw-idea prompt --json"}}

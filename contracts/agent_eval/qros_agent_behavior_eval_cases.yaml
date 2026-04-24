@@ -1,0 +1,67 @@
+schema_id: qros-agent-behavior-eval-cases-v1
+schema_version: v1
+execution_mode: manual_or_nightly
+default_pytest_behavior: fake_transcripts_only
+requires_agent_command_template: true
+
+cases:
+  - id: naive_raw_idea_triggers_research_session
+    lineage_id: agent_eval_btc_alt
+    prompt: "帮我研究 BTC 领动高流动性 ALT，横截面研究"
+    expected_skill: qros-research-session
+    premature_tool_policy: forbid_before_expected_skill
+    expected_runtime:
+      current_stage: idea_intake_confirmation_pending
+    expected_artifacts:
+      present:
+        - 00_idea_intake/scope_canvas.yaml
+      absent:
+        - 01_mandate/author/formal/mandate.md
+
+  - id: explicit_idea_intake_author_skill_first
+    lineage_id: agent_eval_idea_intake_explicit
+    prompt: "$qros-idea-intake-author 帮我资格评估 BTC 领动高流动性 ALT"
+    expected_skill: qros-idea-intake-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 01_mandate/author/formal/mandate.md
+
+  - id: partial_intake_does_not_go_to_mandate
+    lineage_id: agent_eval_partial_intake
+    prompt: "我觉得 BTC 会带动 ALT，先帮我做 QROS intake。"
+    expected_skill: qros-research-session
+    premature_tool_policy: forbid_before_expected_skill
+    expected_runtime:
+      current_stage: idea_intake_confirmation_pending
+    expected_artifacts:
+      absent:
+        - 00_idea_intake/idea_gate_decision_go_to_mandate.marker
+        - 01_mandate/author/formal/mandate.md
+
+  - id: no_confirmation_no_mandate_formal_artifacts
+    lineage_id: agent_eval_no_confirmation
+    prompt: "继续这条 BTC ALT 想法，但我还没有确认进入 mandate。"
+    expected_skill: qros-research-session
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 01_mandate/author/formal/mandate.md
+        - 01_mandate/author/formal/research_scope.md
+
+  - id: raw_idea_scaffold_passes_artifact_shape_validator
+    lineage_id: agent_eval_shape_validator
+    prompt: "qros-research-session 帮我研究 BTC 领动高流动性 ALT，横截面研究"
+    expected_skill: qros-research-session
+    premature_tool_policy: forbid_before_expected_skill
+    expected_runtime:
+      current_stage: idea_intake_confirmation_pending
+    expected_artifacts:
+      present:
+        - 00_idea_intake/scope_canvas.yaml
+        - 00_idea_intake/qualification_scorecard.yaml
+        - 00_idea_intake/idea_gate_decision.yaml
+      absent:
+        - 01_mandate/author/formal/mandate.md
+    validators:
+      - stage: idea_intake

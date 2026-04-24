@@ -1,0 +1,2 @@
+{"type":"tool_use","name":"exec_command","input":{"cmd":"ls outputs"}}
+{"type":"tool_use","name":"Skill","input":{"skill":"qros-idea-intake-author"}}

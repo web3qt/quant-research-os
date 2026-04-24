@@ -56,6 +56,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert "qros-holdout-validation-author" in manifest["installed_skills"]
     assert "source_git_commit" in manifest
     assert manifest["installed_runtime_files"] == [
+        "bin/qros-agent-eval",
         "bin/qros-audit-reviewer",
         "bin/qros-progress",
         "bin/qros-review",
