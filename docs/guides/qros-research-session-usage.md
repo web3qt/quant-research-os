@@ -147,6 +147,7 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 - `csf_data_ready` 会检查 panel key、time key、asset key 和 shared feature base 合同是否显式冻结
 - `csf_signal_ready` 现在要求 `author/formal/route_inheritance_contract.yaml` 作为当前阶段唯一正式 route 继承凭证；它必须把 mandate 的 `research_route.yaml` 与当前阶段绑定起来
 - `csf_data_ready` 会检查 `cross_section_coverage.parquet` 的 `coverage_ratio` 是否达到冻结的 coverage floor
+- `csf_data_ready` 会生成并检查 `split_sample_adequacy_report.yaml`；每个 train/test/backtest/holdout split 至少要有 1 个 `cross_section_snapshot`，任一 split 不足时直接 FAIL
 - `csf_signal_ready` 会检查 `factor_direction` 是否属于允许词表，且 panel key / final score 字段 / score formula 不得留空
 - `csf_train_freeze` 会检查 candidate variants、kept variants 和 train-governable axes 是否显式冻结
 - `csf_train_freeze` 还会检查 `train_factor_quality.parquet` 非空、`train_variant_ledger.csv` / `train_variant_rejects.csv` 是否覆盖 candidate / kept / rejected variants，以及 train-governable axes 是否与 signal-ready 后不可调轴重叠
@@ -163,7 +164,7 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 所以这些阶段的 `.parquet` 产物不能只是占位文本，必须至少是可读取的最小真实 parquet。
 对于 `csf_signal_ready`，这些最小真实 parquet 还应尽量从上游 `csf_data_ready` 冻结产物派生，而不是静态硬编码资产列表。
 
-`csf_data_ready` 现在采用 contract-first 口径：`contracts/artifacts/csf_data_ready_artifacts.yaml` 是 formal artifact shape 真值，skill 和文档只解释执行顺序、字段含义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_data_ready`，并在进入 review 前通过 deterministic preflight；validator/preflight 不通过，不得进入 `csf_data_ready` review。这里不改变上面的 session rollout truth：`qros-session` 自动强制 review-entry preflight 仍是 mandate-first / mandate-only，但 `qros-csf-data-ready-review` 的 reviewer lane 入口必须使用 standalone preflight。
+`csf_data_ready` 现在采用 contract-first 口径：`contracts/artifacts/csf_data_ready_artifacts.yaml` 是 formal artifact shape 真值，skill 和文档只解释执行顺序、字段含义和 review 边界。`split_sample_adequacy_report.yaml` 属于 `csf_data_ready` formal artifact，它基于本阶段已生成的 `cross_section_coverage.parquet` 和上游 `time_split.json` 记录每个 downstream split 的 `cross_section_snapshot` 数量；这不是 mandate 字段扩展，也不是单资产事件语义。author build 后必须运行 `qros-validate-stage --stage csf_data_ready`，并在进入 review 前通过 deterministic preflight；validator/preflight 不通过，不得进入 `csf_data_ready` review。这里不改变上面的 session rollout truth：`qros-session` 自动强制 review-entry preflight 仍是 mandate-first / mandate-only，但 `qros-csf-data-ready-review` 的 reviewer lane 入口必须使用 standalone preflight。
 
 `csf_signal_ready` 也采用 contract-first 口径：`contracts/artifacts/csf_signal_ready_artifacts.yaml` 是 factor formal artifact shape 真值，skill 不再维护字段清单副本。author build 后必须运行 `qros-validate-stage --stage csf_signal_ready`，并通过 semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_signal_ready` review。该 preflight 会检查 `factor_panel.parquet`、`factor_manifest.yaml`、`component_factor_manifest.yaml`、`route_inheritance_contract.yaml`、`factor_coverage_report.parquet`、`factor_group_context.parquet` 与上游 `csf_data_ready` / mandate route 的绑定。
 
@@ -265,6 +266,14 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 ```bash
 ./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-intake
 ```
+
+当当前状态是某个 `*_confirmation_pending` freeze gate 时，文本面板会展示全部 `Freeze groups` 及其 confirmed/pending 状态。agent 可以一次回显全部 group draft；如果用户看完后回复 `确认全部`，可以用下面的命令批量标记当前 draft 的所有 groups 已确认：
+
+```bash
+./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-all-freeze-groups
+```
+
+这个命令只写当前 freeze draft 的 group confirmations，不会替代最终 stage approval。批量确认后仍然必须再得到对应的最终确认，例如 `--confirm-mandate`、`--confirm-data-ready`、`--confirm-signal-ready`。
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 mandate approval：
 
@@ -370,7 +379,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 确认 `market` / `universe` / `target_task`
 - 确认 `data_source` / `bar_size`
 - 确认 `kill criteria` 或 `reframe` 条件
-- 按 group 交互式冻结 mandate
+- 一次展示全部 group draft 或按 group 交互式冻结 mandate
 - 确认 `research_intent`
 - 确认 `scope_contract`
 - 确认 `data_contract`
@@ -439,7 +448,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 3. QROS 会先问 intake 问题，而不是静默完成 qualification
 4. 然后补齐 intake artifacts，并产出 `idea_gate_decision.yaml`
 5. 如果 verdict 是 `GO_TO_MANDATE`，QROS 会停在 `mandate_confirmation_pending`
-6. QROS 进入 grouped freeze 模式，而不是静默写出 mandate
+6. QROS 进入 grouped freeze 模式，一次展示全部 group draft 或按 group 展示，而不是静默写出 mandate
 7. QROS 确认 `research_intent`
 8. QROS 确认 `scope_contract`
 9. QROS 确认 `data_contract`

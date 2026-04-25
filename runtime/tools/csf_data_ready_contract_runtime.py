@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from runtime.tools.artifact_contract_runtime import ArtifactValidationResult
+
+
+CSF_DATA_READY_REQUIRED_SPLITS = ("train", "test", "backtest", "holdout")
 
 
 def validate_csf_data_ready_semantics(stage_formal_dir: Path) -> ArtifactValidationResult:
@@ -28,6 +33,7 @@ def validate_csf_data_ready_semantics(stage_formal_dir: Path) -> ArtifactValidat
     errors.extend(_require_unique_key("asset_universe_membership.parquet", membership_rows, ["date", "asset"]))
     errors.extend(_require_unique_key("eligibility_base_mask.parquet", eligibility_rows, ["date", "asset"]))
     errors.extend(_require_coverage_floor(coverage_rows, panel_manifest))
+    errors.extend(_validate_split_sample_adequacy_report(stage_formal_dir))
     errors.extend(_validate_shared_feature_outputs(stage_formal_dir, panel_manifest))
 
     return ArtifactValidationResult(errors=errors)
@@ -45,6 +51,18 @@ def _load_json_mapping(path: Path, errors: list[str]) -> dict[str, Any] | None:
     return payload
 
 
+def _load_yaml_mapping(path: Path, errors: list[str]) -> dict[str, Any] | None:
+    try:
+        payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"{path.name}: yaml read failed: {exc}")
+        return None
+    if not isinstance(payload, dict):
+        errors.append(f"{path.name}: expected yaml map, found {type(payload).__name__}")
+        return None
+    return payload
+
+
 def _read_parquet_rows(path: Path, errors: list[str]) -> list[dict[str, Any]]:
     try:
         import pyarrow.parquet as pq
@@ -52,7 +70,77 @@ def _read_parquet_rows(path: Path, errors: list[str]) -> list[dict[str, Any]]:
         return pq.read_table(path).to_pylist()
     except Exception as exc:
         errors.append(f"{path.name}: parquet read failed: {exc}")
-        return []
+    return []
+
+
+def _validate_split_sample_adequacy_report(stage_formal_dir: Path) -> list[str]:
+    errors: list[str] = []
+    report = _load_yaml_mapping(stage_formal_dir / "split_sample_adequacy_report.yaml", errors)
+    if report is None:
+        return errors
+
+    if report.get("sample_unit") != "cross_section_snapshot":
+        errors.append("split_sample_adequacy_report.yaml: sample_unit must equal cross_section_snapshot")
+    if report.get("source_artifact") != "cross_section_coverage.parquet":
+        errors.append("split_sample_adequacy_report.yaml: source_artifact must equal cross_section_coverage.parquet")
+
+    counts = report.get("split_sample_counts")
+    minimums = report.get("minimum_required")
+    adequacy = report.get("adequacy")
+    if not isinstance(counts, dict):
+        errors.append("split_sample_adequacy_report.yaml: split_sample_counts must be a map")
+        counts = {}
+    if not isinstance(minimums, dict):
+        errors.append("split_sample_adequacy_report.yaml: minimum_required must be a map")
+        minimums = {}
+    if not isinstance(adequacy, dict):
+        errors.append("split_sample_adequacy_report.yaml: adequacy must be a map")
+        adequacy = {}
+
+    split_statuses: list[bool] = []
+    for split in CSF_DATA_READY_REQUIRED_SPLITS:
+        count = counts.get(split)
+        minimum = minimums.get(split)
+        status = adequacy.get(split)
+
+        if isinstance(count, bool) or not isinstance(count, int):
+            errors.append(f"split_sample_adequacy_report.yaml: {split} sample_count must be an integer")
+            split_statuses.append(False)
+            continue
+        if isinstance(minimum, bool) or not isinstance(minimum, int):
+            errors.append(f"split_sample_adequacy_report.yaml: {split} minimum_required must be an integer")
+            split_statuses.append(False)
+            continue
+        if status not in {"pass", "fail"}:
+            errors.append(f"split_sample_adequacy_report.yaml: {split} adequacy must be pass or fail")
+            split_statuses.append(False)
+            continue
+
+        enough_samples = count >= minimum
+        split_statuses.append(enough_samples)
+        if not enough_samples:
+            errors.append(
+                f"split_sample_adequacy_report.yaml: {split} sample_count {count} "
+                f"below minimum_required {minimum}"
+            )
+        expected_status = "pass" if enough_samples else "fail"
+        if status != expected_status:
+            errors.append(
+                f"split_sample_adequacy_report.yaml: {split} adequacy {status!r} "
+                f"does not match sample_count {count} and minimum_required {minimum}"
+            )
+
+    final_verdict = report.get("final_verdict")
+    expected_verdict = "PASS" if all(split_statuses) and len(split_statuses) == len(CSF_DATA_READY_REQUIRED_SPLITS) else "FAIL"
+    if final_verdict != expected_verdict:
+        errors.append(
+            f"split_sample_adequacy_report.yaml: final_verdict {final_verdict!r} "
+            f"does not match split adequacy {expected_verdict}"
+        )
+    if final_verdict != "PASS":
+        errors.append("split_sample_adequacy_report.yaml: final_verdict must be PASS before csf_data_ready review")
+
+    return errors
 
 
 def _require_non_empty(artifact_name: str, rows: list[dict[str, Any]]) -> list[str]:

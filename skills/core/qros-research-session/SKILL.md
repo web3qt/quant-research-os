@@ -316,6 +316,8 @@ Ask the user only when:
 
 If runtime status reports `requires_failure_handling = true`, do not keep following the normal authoring or review path in this skill. Switch to `qros-stage-failure-handler` immediately.
 
+For any `*_confirmation_pending` freeze gate, runtime status may expose `freeze_groups` for every group in the current draft. The agent may show all groups in one response. If the user replies `确认全部`, run `./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-all-freeze-groups`; this only marks the current draft groups confirmed and never replaces the final stage approval such as `--confirm-mandate`, `--confirm-data-ready`, or `--confirm-signal-ready`. Do not bulk-confirm unless the current turn or the immediately preceding user-visible summary showed every group draft being confirmed.
+
 When the stage is `idea_intake`, the agent must ask explicitly before writing a real qualification verdict:
 
 - `observation` 到底是什么？
@@ -339,7 +341,7 @@ When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
 - `scope_contract` 这一组冻结什么？
 - `data_contract` 这一组冻结什么？这里必须明确数据来源和 `bar_size`
 - `execution_contract` 这一组冻结什么？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否确认进入 mandate？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -352,7 +354,7 @@ When the stage is `data_ready_confirmation_pending`, the agent must ask explicit
 - `shared_derived_layer` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 dense data、rolling caches、QC/coverage artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 data_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -366,7 +368,7 @@ When the stage is `signal_ready_confirmation_pending`, the agent must ask explic
 - `signal_schema` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 signal timeseries、param manifests、coverage artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 signal_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -380,7 +382,7 @@ When the stage is `train_freeze_confirmation_pending`, the agent must ask explic
 - `param_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 thresholds、quality artifacts、param ledgers？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 train_freeze？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -394,7 +396,7 @@ When the stage is `test_evidence_confirmation_pending`, the agent must ask expli
 - `audit_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 test statistics、admissibility outputs、frozen selection artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 test_evidence？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -408,7 +410,7 @@ When the stage is `backtest_ready_confirmation_pending`, the agent must ask expl
 - `engine_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 dual-engine outputs、combo ledgers、capacity artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 backtest_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -422,7 +424,7 @@ When the stage is `holdout_validation_confirmation_pending`, the agent must ask 
 - `failure_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 single-window、merged-window、comparison artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 holdout_validation？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -436,7 +438,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_data_ready_
 - `shared_derived_layer` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 panel manifests、coverage artifacts、shared feature layers？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_data_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -450,7 +452,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_signal_read
 - `neutralization_policy` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 factor panels、factor manifests、coverage artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_signal_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -465,7 +467,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_train_freez
 - `delivery_contract` 这一组冻结什么？
 - `csf_signal_ready` 冻结后，哪些轴不再允许作为 train variants 继续搜索？
 - 当前 research repo 里将真实生成哪些 train rules、quality artifacts、variant ledgers？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_train_freeze？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -479,7 +481,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_test_eviden
 - `audit_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 factor statistics、admissibility outputs、frozen selection artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_test_evidence？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -493,7 +495,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_backtest_re
 - `engine_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 portfolio outputs、combo ledgers、capacity artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_backtest_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
@@ -507,7 +509,7 @@ When `research_route = cross_sectional_factor` and the stage is `csf_holdout_val
 - `failure_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 single-window、merged-window、comparison artifacts？
-- 每组回显当前 freeze draft，并单独确认
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_holdout_validation？`
 
 Do not skip this question. Do not imply the transition already happened.

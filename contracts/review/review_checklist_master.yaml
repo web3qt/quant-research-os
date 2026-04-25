@@ -188,8 +188,14 @@ stages:
         check: "截面覆盖、缺失和共享字段语义已显式记录"
         evidence:
           - "cross_section_coverage.parquet"
+          - "split_sample_adequacy_report.yaml"
           - "shared_feature_base/"
           - "field_dictionary.md"
+      - id: "CSF-DATA-004A"
+        severity: "blocking"
+        check: "train/test/backtest/holdout 每个 split 至少有 1 个 cross_section_snapshot，且 split_sample_adequacy_report final_verdict = PASS"
+        evidence:
+          - "split_sample_adequacy_report.yaml"
       - id: "CSF-DATA-005"
         severity: "blocking"
         check: "若后续允许 group_neutral，group taxonomy 已冻结或版本化"

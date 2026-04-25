@@ -30,6 +30,7 @@
 - 冻结 universe membership
 - 冻结 eligibility base mask
 - 冻结共享字段底座
+- 在本阶段用 `cross_section_snapshot` 检查 train/test/backtest/holdout 的 split 样本充足性
 
 ---
 
@@ -39,7 +40,8 @@
 2. 显式记录每个日期的 universe membership。
 3. 显式记录 eligibility base mask，不得把可研究性逻辑藏进后续因子代码。
 4. 冻结截面覆盖率和缺失语义。
-5. 若后续允许 `group_neutral`，冻结或版本化 group taxonomy。
+5. 生成 `split_sample_adequacy_report.yaml`，确认每个 downstream split 至少有 1 个 `cross_section_snapshot`。
+6. 若后续允许 `group_neutral`，冻结或版本化 group taxonomy。
 
 ---
 
@@ -48,6 +50,7 @@
 - `panel_manifest.json`
 - `asset_universe_membership.parquet`
 - `cross_section_coverage.parquet`
+- `split_sample_adequacy_report.yaml`
 - `eligibility_base_mask.parquet`
 - `shared_feature_base/`
 - `csf_data_contract.md`
@@ -69,6 +72,7 @@
 - 截面覆盖可审计
 - universe membership 显式记录
 - eligibility mask 作为独立底座存在
+- train/test/backtest/holdout 每个 split 至少有 1 个 `cross_section_snapshot`
 - 共享字段具备时间语义和缺失语义
 - 如允许 `group_neutral`，taxonomy 已冻结或显式版本化
 - `run_manifest.json` 已记录 runtime 版本、program_artifacts 和 replay_command
@@ -78,6 +82,7 @@
 - 只有资产时序表，没有显式截面面板合同
 - universe membership 无法按日期重建
 - eligibility 规则混在下游因子代码里
+- `split_sample_adequacy_report.yaml` 中任一 split 的 `cross_section_snapshot` 数量低于 `minimum_required`
 - 覆盖率波动显著却没有报告
 - 分组中性化需要的 taxonomy 在下游临时补
 - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
@@ -90,4 +95,5 @@
 - 不得在这一层做 train 样本统计尺子
 - 不得把覆盖率差异静默吞掉
 - 不得把可研究性判断推迟到 signal_ready
+- 不得把 split 样本不足推迟到 signal_ready、train_freeze 或 backtest 阶段再解释
 - 不得只保留 parquet 结果而不保留生成这些结果的程序快照

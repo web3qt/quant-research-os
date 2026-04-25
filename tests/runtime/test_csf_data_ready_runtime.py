@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -62,6 +63,7 @@ def _csf_data_ready_draft(*, confirmed: bool) -> dict:
                         "panel_manifest.json",
                         "asset_universe_membership.parquet",
                         "cross_section_coverage.parquet",
+                        "split_sample_adequacy_report.yaml",
                         "eligibility_base_mask.parquet",
                     ],
                     "consumer_stage": "csf_signal_ready",
@@ -87,6 +89,23 @@ def _prepare_mandate_stage(lineage_root: Path) -> None:
         "field_dictionary.md",
     ]:
         (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    (formal_dir / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-01-01",
+                "test": "2024-01-02/2024-01-02",
+                "backtest": "2024-01-03/2024-01-03",
+                "holdout": "2024-01-04/2024-01-04",
+                "bar_size": "1d",
+                "holding_horizons": ["1d"],
+                "policy_note": "fixture split coverage",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     _write_yaml(
         formal_dir / "research_route.yaml",
         {
@@ -131,6 +150,7 @@ def test_build_csf_data_ready_writes_required_outputs(tmp_path: Path) -> None:
     assert (formal_dir / "panel_manifest.json").exists()
     assert (formal_dir / "asset_universe_membership.parquet").exists()
     assert (formal_dir / "cross_section_coverage.parquet").exists()
+    assert (formal_dir / "split_sample_adequacy_report.yaml").exists()
     assert (formal_dir / "eligibility_base_mask.parquet").exists()
     assert (formal_dir / "shared_feature_base").exists()
     assert (formal_dir / "asset_taxonomy_snapshot.parquet").exists()

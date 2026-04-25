@@ -112,6 +112,13 @@ def _parse_args() -> argparse.Namespace:
         help="Write an explicit approval artifact so the current completed stage may hand off to the next stage.",
     )
     parser.add_argument(
+        "--confirm-all-freeze-groups",
+        "--confirm-freeze-groups",
+        dest="confirm_all_freeze_groups",
+        action="store_true",
+        help="Mark every freeze group in the current stage draft as confirmed without writing the final stage transition approval.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print the session status as machine-readable JSON instead of the formatted text panel.",
@@ -263,13 +270,19 @@ def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
     elif args.confirm_next_stage:
         confirmation_label = "CONFIRM_NEXT_STAGE"
         confirmation_artifact = "next_stage_transition_approval.yaml"
+    elif args.confirm_all_freeze_groups:
+        confirmation_label = "CONFIRM_ALL_FREEZE_GROUPS"
+        confirmation_artifact = None
 
     if confirmation_label is None:
         return lines
 
-    recorded = confirmation_artifact is not None and any(
-        item.endswith(confirmation_artifact) for item in status.artifacts_written
-    )
+    if args.confirm_all_freeze_groups:
+        recorded = any(item.endswith("_draft.yaml") for item in status.artifacts_written)
+    else:
+        recorded = confirmation_artifact is not None and any(
+            item.endswith(confirmation_artifact) for item in status.artifacts_written
+        )
     if recorded:
         lines.append(f"✅ Confirmation recorded: {confirmation_label}")
     else:
@@ -306,6 +319,7 @@ def main() -> int:
         args.confirm_holdout_validation,
         args.confirm_review,
         args.confirm_next_stage,
+        args.confirm_all_freeze_groups,
     ]
     if sum(1 for flag in confirm_flags if flag) > 1:
         raise SystemExit("Use at most one confirmation/display flag at a time")
@@ -326,6 +340,7 @@ def main() -> int:
         ),
         review_decision="CONFIRM_REVIEW" if args.confirm_review else None,
         next_stage_decision="CONFIRM_NEXT_STAGE" if args.confirm_next_stage else None,
+        confirm_all_freeze_groups=args.confirm_all_freeze_groups,
     )
 
     if args.snapshot:
@@ -396,6 +411,14 @@ def main() -> int:
         print("⚠ Open risks:")
         for item in status.open_risks:
             print(f"- {item}")
+    if status.freeze_groups:
+        print("🧊 Freeze groups:")
+        for group in status.freeze_groups:
+            confirmed = "confirmed" if group.get("confirmed") else "pending"
+            draft = group.get("draft")
+            draft_keys = ", ".join(draft.keys()) if isinstance(draft, dict) else ""
+            suffix = f" (draft fields: {draft_keys})" if draft_keys else ""
+            print(f"- {group['name']}: {confirmed}{suffix}")
     if status.artifacts_written:
         print("📝 Artifacts written:")
         for item in status.artifacts_written:

@@ -108,6 +108,50 @@ def test_review_preflight_blocks_csf_data_ready_when_taxonomy_reference_drifts(t
     assert any("CSF-DATA-BIND-003" in item for item in payload["upstream_binding_findings"])
 
 
+def test_review_preflight_blocks_csf_data_ready_when_backtest_split_has_no_samples(
+    tmp_path: Path,
+) -> None:
+    stage_dir = _prepare_valid_csf_data_ready_stage(tmp_path)
+    report_path = stage_dir / "author" / "formal" / "split_sample_adequacy_report.yaml"
+    _write_yaml(
+        report_path,
+        {
+            "stage": "csf_data_ready",
+            "lineage_id": "csf_case",
+            "sample_unit": "cross_section_snapshot",
+            "source_artifact": "cross_section_coverage.parquet",
+            "split_source_artifact": "../../01_mandate/author/formal/time_split.json",
+            "split_sample_counts": {
+                "train": 1,
+                "test": 1,
+                "backtest": 0,
+                "holdout": 1,
+            },
+            "minimum_required": {
+                "train": 1,
+                "test": 1,
+                "backtest": 1,
+                "holdout": 1,
+            },
+            "adequacy": {
+                "train": "pass",
+                "test": "pass",
+                "backtest": "fail",
+                "holdout": "pass",
+            },
+            "final_verdict": "FAIL",
+        },
+    )
+
+    payload = _run_csf_data_ready_preflight(stage_dir)
+
+    assert payload["status"] == "FAIL"
+    assert any(
+        "split_sample_adequacy_report.yaml: backtest sample_count 0 below minimum_required 1" in item
+        for item in payload["content_findings"]
+    )
+
+
 def test_review_preflight_accepts_valid_csf_data_ready(tmp_path: Path) -> None:
     stage_dir = _prepare_valid_csf_data_ready_stage(tmp_path)
 

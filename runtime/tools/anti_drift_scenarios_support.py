@@ -162,6 +162,7 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "panel_manifest.json",
             "asset_universe_membership.parquet",
             "cross_section_coverage.parquet",
+            "split_sample_adequacy_report.yaml",
             "eligibility_base_mask.parquet",
             "shared_feature_base",
             "asset_taxonomy_snapshot.parquet",

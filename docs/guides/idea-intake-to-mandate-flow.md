@@ -125,7 +125,7 @@ qualification 至少评估以下 6 项：
 
 - `docs/guides/stage-freeze-group-field-guide.md`
 
-每一组都要先回显 freeze draft，再确认。
+必须先回显 freeze draft；可以逐组确认，也可以一次展示全部 groups 后接受 `确认全部` 批量确认 groups。批量确认只完成 group confirmations，不等于最终确认进入 mandate。
 
 四组都确认后，才允许最终冻结到 mandate 文档。
 

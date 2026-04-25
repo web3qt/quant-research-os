@@ -26,6 +26,11 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _read_yaml(path: Path) -> dict:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
+
+
 def _write_test_parquet_rows(path: Path, rows: list[dict]) -> None:
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -304,6 +309,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             "panel_manifest.json",
             "asset_universe_membership.parquet",
             "cross_section_coverage.parquet",
+            "split_sample_adequacy_report.yaml",
             "eligibility_base_mask.parquet",
             "asset_taxonomy_snapshot.parquet",
             "csf_data_contract.md",
@@ -501,6 +507,24 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                             "values": [30, 50],
                         }
                     ]
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+        }
+    if stage == "csf_data_ready":
+        text_fixtures = {
+            "split_sample_adequacy_report.yaml": yaml.safe_dump(
+                {
+                    "stage": "csf_data_ready",
+                    "lineage_id": stage_dir.parent.name,
+                    "sample_unit": "cross_section_snapshot",
+                    "source_artifact": "cross_section_coverage.parquet",
+                    "split_source_artifact": "../../01_mandate/author/formal/time_split.json",
+                    "split_sample_counts": {"train": 1, "test": 1, "backtest": 1, "holdout": 1},
+                    "minimum_required": {"train": 1, "test": 1, "backtest": 1, "holdout": 1},
+                    "adequacy": {"train": "pass", "test": "pass", "backtest": "pass", "holdout": "pass"},
+                    "final_verdict": "PASS",
                 },
                 sort_keys=False,
                 allow_unicode=True,
@@ -1117,7 +1141,65 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
 
     assert status.current_stage == "mandate_confirmation_pending"
     assert status.current_route == "time_series_signal"
-    assert status.next_action == "Complete mandate freeze group: research_intent"
+    assert status.next_action == (
+        "Review all mandate freeze groups, then run with --confirm-all-freeze-groups "
+        "or reply 确认全部 to mark them confirmed."
+    )
+    assert [group["name"] for group in status.freeze_groups or []] == [
+        "research_intent",
+        "scope_contract",
+        "data_contract",
+        "execution_contract",
+    ]
+    assert {group["confirmed"] for group in status.freeze_groups or []} == {False}
+
+
+def test_run_research_session_can_confirm_all_freeze_groups_without_stage_transition(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        confirm_all_freeze_groups=True,
+    )
+
+    assert status.current_stage == "mandate_confirmation_pending"
+    assert status.next_action == "Run with --confirm-mandate or reply CONFIRM_MANDATE <lineage_id>"
+    assert "00_idea_intake/mandate_freeze_draft.yaml" in status.artifacts_written
+    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    assert {name: group["confirmed"] for name, group in draft["groups"].items()} == {
+        "research_intent": True,
+        "scope_contract": True,
+        "data_contract": True,
+        "execution_contract": True,
+    }
 
 
 def test_run_research_session_keeps_intake_open_when_route_assessment_is_missing(tmp_path: Path) -> None:

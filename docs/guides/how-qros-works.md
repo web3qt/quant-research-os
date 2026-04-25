@@ -308,6 +308,8 @@ graph LR
     E -->|"CONFIRM_NEXT_STAGE"| A2["下一阶段入口状态"]
 ```
 
+这里的 `freeze groups complete` 可以来自逐组确认，也可以在 agent 一次展示全部 group draft 后，由用户回复 `确认全部` 并运行 `--confirm-all-freeze-groups` 批量写入。它只确认当前 freeze draft 的 groups，不等于最终的 `CONFIRM_*` stage approval。
+
 ---
 
 ## 产物目录结构

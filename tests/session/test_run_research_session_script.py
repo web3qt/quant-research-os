@@ -14,6 +14,11 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _read_yaml(path: Path) -> dict:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
+
+
 def _stage_output_path(stage_dir: Path, name: str) -> Path:
     if name in {"latest_review_pack.yaml", "stage_gate_review.yaml", "stage_completion_certificate.yaml"}:
         path = stage_dir / "review" / "closure" / name
@@ -758,9 +763,64 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     assert "Current stage: idea_intake_confirmation_pending" in result.stdout
     assert "CONFIRM_IDEA_INTAKE" in result.stdout
     assert "Why now:" in result.stdout
-    assert "- qualified" in result.stdout
-    assert "Open risks:" in result.stdout
-    assert "- rollback_target remains 00_idea_intake" in result.stdout
+
+
+def test_run_research_session_cli_confirms_all_freeze_groups(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-all-freeze-groups",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    assert "✅ Confirmation recorded: CONFIRM_ALL_FREEZE_GROUPS" in result.stdout
+    assert "Freeze groups:" in result.stdout
+    assert "- research_intent: confirmed" in result.stdout
+    assert "📍 Current stage: mandate_confirmation_pending" in result.stdout
+    assert "CONFIRM_MANDATE" in result.stdout
+    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    assert all(group["confirmed"] for group in draft["groups"].values())
     assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
 
 

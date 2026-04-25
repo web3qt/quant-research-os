@@ -39,6 +39,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - `asset_universe_membership.parquet`
 - `eligibility_base_mask.parquet`
 - `cross_section_coverage.parquet`
+- `split_sample_adequacy_report.yaml`
 - `shared_feature_base/`
 - `asset_taxonomy_snapshot.parquet`（若 mandate 允许 `group_neutral`）
 - `csf_data_contract.md`
@@ -68,8 +69,10 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 必须把本阶段真实使用的面板构建程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 不得产出任何时序主线措辞、预测 horizon 口径或单资产触发语义
+- 必须在 `csf_data_ready` 根据已生成的 `cross_section_coverage.parquet` 和 mandate 的 `time_split.json` 生成 `split_sample_adequacy_report.yaml`；这是 data-ready 阶段的样本充足性门禁，不得回写或扩展 mandate 语义
+- `split_sample_adequacy_report.yaml` 的 `sample_unit` 必须是 `cross_section_snapshot`；train/test/backtest/holdout 任一 split 低于 `minimum_required` 时，必须直接 FAIL，不得进入 review 或下游阶段
 - 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
-- 每一组都要先回显 freeze draft，再确认该组
+- 必须先回显 freeze draft；可以逐组确认，也可以一次展示全部 groups 后接受 `确认全部` 批量确认 groups
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 csf_data_ready？`
 - 不得静默修改 mandate 冻结的 universe 口径、时间边界或路由
 
@@ -83,6 +86,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ### 准入语义必须保留
 `eligibility_base_mask.parquet` 只负责记录基础可研究掩码，不得混入具体因子定义。
+
+### Split 样本充足性必须直接门禁
+`split_sample_adequacy_report.yaml` 必须逐一写出 `split_sample_counts`、`minimum_required`、`adequacy` 和 `final_verdict`。每个 downstream split 的最低要求是 1 个 `cross_section_snapshot`；任一 split 不满足时，`final_verdict` 必须为 `FAIL`，author lane 必须停在 `csf_data_ready` 修复数据覆盖，不能推进 review。
 
 ### 分组中性化底座必须版本化
 若后续允许 `neutralization_policy = group_neutral`，`asset_taxonomy_snapshot.parquet` 中的 `group_taxonomy_reference` 必须与 mandate 冻结值一致，且可追溯。
@@ -100,7 +106,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 9. 只有用户最终批准后，才生成正式 `02_csf_data_ready` artifacts
 10. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
 11. 保存 `rebuild_csf_data_ready.py` 或等价 stage-local 程序快照
-12. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-13. 运行 `qros-validate-stage --stage csf_data_ready`
-14. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过
-15. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 csf_data_ready 完成
+12. 生成 `split_sample_adequacy_report.yaml`，并确认 `final_verdict = PASS`
+13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+14. 运行 `qros-validate-stage --stage csf_data_ready`
+15. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过
+16. 若当前只能产出 skeleton、placeholder 或 split 样本不足，必须明确判定为未完成，不得冒充 csf_data_ready 完成

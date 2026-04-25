@@ -416,6 +416,7 @@ stages:
       - panel_manifest.json
       - asset_universe_membership.parquet
       - cross_section_coverage.parquet
+      - split_sample_adequacy_report.yaml
       - eligibility_base_mask.parquet
       - shared_feature_base/
       - csf_data_contract.md
@@ -427,6 +428,7 @@ stages:
       - panel_manifest.json
       - asset_universe_membership.parquet
       - cross_section_coverage.parquet
+      - split_sample_adequacy_report.yaml
       - eligibility_base_mask.parquet
       - run_manifest.json
       - rebuild_csf_data_ready.py
@@ -440,6 +442,7 @@ stages:
         - 截面覆盖可审计
         - universe membership 显式记录
         - eligibility mask 作为独立底座存在
+        - train/test/backtest/holdout 每个 split 至少有 1 个 cross_section_snapshot
         - 共享字段具备时间语义和缺失语义
         - 如允许 group_neutral，taxonomy 已冻结或显式版本化
         - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
@@ -447,6 +450,7 @@ stages:
         - 只有资产时序表，没有显式截面面板合同
         - universe membership 无法按日期重建
         - eligibility 规则混在下游因子代码里
+        - split_sample_adequacy_report.yaml 中任一 split 的 cross_section_snapshot 数量低于 minimum_required
         - 覆盖率波动显著却没有报告
         - 分组中性化需要的 taxonomy 在下游临时补
         - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
@@ -485,10 +489,12 @@ stages:
         - csf_signal_ready
       precondition_before_advance:
         - panel_manifest.json 已冻结
+        - split_sample_adequacy_report.yaml 的 final_verdict = PASS
       frozen_outputs_consumable_by_next_stage:
         - panel_manifest.json
         - asset_universe_membership.parquet
         - cross_section_coverage.parquet
+        - split_sample_adequacy_report.yaml
         - eligibility_base_mask.parquet
       next_stage_must_not_consume:
         - 未冻结的时序主线信号产物
@@ -540,6 +546,15 @@ stages:
           - date
           - asset
         message: csf_data_ready requires eligibility_base_mask to be unique on (date, asset)
+      - id: CSF-DATA-STRUCT-007
+        severity: blocking
+        artifact: split_sample_adequacy_report.yaml
+        format: yaml
+        field: final_verdict
+        check_type: enum_in
+        allowed_values:
+          - PASS
+        message: csf_data_ready split sample adequacy must pass before advancing
     metric_gate_checks:
       - id: CSF-DATA-METRIC-001
         severity: blocking

@@ -44,6 +44,38 @@ artifacts:
       - asset_count
     non_empty: true
 
+  split_sample_adequacy_report.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        type: enum
+        values:
+          - csf_data_ready
+      - path: lineage_id
+        type: string
+      - path: sample_unit
+        type: enum
+        values:
+          - cross_section_snapshot
+      - path: source_artifact
+        type: enum
+        values:
+          - cross_section_coverage.parquet
+      - path: split_source_artifact
+        type: string
+      - path: split_sample_counts
+        type: map
+      - path: minimum_required
+        type: map
+      - path: adequacy
+        type: map
+      - path: final_verdict
+        type: enum
+        values:
+          - PASS
+          - FAIL
+
   eligibility_base_mask.parquet:
     type: parquet
     required_columns:

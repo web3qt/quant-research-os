@@ -426,6 +426,8 @@
 
 author build 完成后必须运行 `qros-validate-stage --stage csf_data_ready`，再进入 deterministic preflight。contract-first 的边界是：字段、类型、必需 artifact、parquet columns 和目录 shape 由 artifact contract 与 runtime validator 负责；本字段指南只解释为什么这些 freeze group 存在。
 
+`split_sample_adequacy_report.yaml` 是 `csf_data_ready` 阶段生成的 formal artifact，不是 mandate 阶段的新输入字段。它使用 `cross_section_snapshot` 作为样本单位，逐一记录 train/test/backtest/holdout 的 `split_sample_counts`、`minimum_required`、`adequacy` 和 `final_verdict`；任一 downstream split 低于最低截面快照数量时，preflight 必须直接 FAIL。
+
 #### `panel_contract`
 
 这组冻结“面板主键和面板时间语义”。

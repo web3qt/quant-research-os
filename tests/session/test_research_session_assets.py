@@ -68,6 +68,10 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "review/result/review_findings.yaml" in content
     assert "launcher_review_ready_status" in content
     assert "./.qros/bin/qros-session" in content
+    assert "freeze_groups" in content
+    assert "--confirm-all-freeze-groups" in content
+    assert "确认全部" in content
+    assert "每组回显当前 freeze draft，并单独确认" not in content
 
 
 def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
@@ -95,6 +99,9 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "intake" in content.lower()
     assert "kill criteria" in content
     assert "--confirm-intake" in content
+    assert "--confirm-all-freeze-groups" in content
+    assert "确认全部" in content
+    assert "不会替代最终 stage approval" in content
     assert "是否确认进入 mandate" in content
     assert "数据来源" in content
     assert "1m" in content or "5m" in content or "15m" in content
@@ -118,6 +125,29 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "holdout_validation_confirmation_pending" in content
     assert "reuse_contract" in content
     assert "是否按以上内容冻结 holdout_validation" in content
+
+
+def test_author_skills_allow_bulk_freeze_group_confirmation() -> None:
+    for skill_name in [
+        "qros-mandate-author",
+        "qros-data-ready-author",
+        "qros-csf-data-ready-author",
+        "qros-signal-ready-author",
+        "qros-csf-signal-ready-author",
+        "qros-train-freeze-author",
+        "qros-csf-train-freeze-author",
+        "qros-test-evidence-author",
+        "qros-csf-test-evidence-author",
+        "qros-backtest-ready-author",
+        "qros-csf-backtest-ready-author",
+        "qros-holdout-validation-author",
+        "qros-csf-holdout-validation-author",
+    ]:
+        content = skill_path(skill_name).read_text(encoding="utf-8")
+
+        assert "一次展示全部 groups" in content
+        assert "确认全部" in content
+        assert "每一组都要先回显 freeze draft，再确认该组" not in content
 
 
 def test_data_ready_author_skill_exists() -> None:

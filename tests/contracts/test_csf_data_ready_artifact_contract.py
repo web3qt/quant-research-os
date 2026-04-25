@@ -34,6 +34,7 @@ def test_csf_data_ready_artifact_contract_exists_and_declares_stage_shape() -> N
         "panel_manifest.json",
         "asset_universe_membership.parquet",
         "cross_section_coverage.parquet",
+        "split_sample_adequacy_report.yaml",
         "eligibility_base_mask.parquet",
         "shared_feature_base",
         "asset_taxonomy_snapshot.parquet",
@@ -69,6 +70,30 @@ def test_csf_data_ready_contract_locks_panel_manifest_fields() -> None:
 
     coverage_floor = next(field for field in panel_manifest["fields"] if field["path"] == "coverage_floor_min_ratio")
     assert coverage_floor["type"] == "number"
+
+
+def test_csf_data_ready_contract_locks_split_sample_adequacy_report_fields() -> None:
+    contract = _load_contract()
+    report = _artifact(contract, "split_sample_adequacy_report.yaml")
+
+    assert report["type"] == "yaml"
+    assert report["unknown_top_level_fields"] == "forbid"
+    assert _field_paths(report) == {
+        "stage",
+        "lineage_id",
+        "sample_unit",
+        "source_artifact",
+        "split_source_artifact",
+        "split_sample_counts",
+        "minimum_required",
+        "adequacy",
+        "final_verdict",
+    }
+
+    sample_unit = next(field for field in report["fields"] if field["path"] == "sample_unit")
+    assert sample_unit["values"] == ["cross_section_snapshot"]
+    final_verdict = next(field for field in report["fields"] if field["path"] == "final_verdict")
+    assert final_verdict["values"] == ["PASS", "FAIL"]
 
 
 def test_csf_data_ready_contract_locks_run_manifest_fields() -> None:

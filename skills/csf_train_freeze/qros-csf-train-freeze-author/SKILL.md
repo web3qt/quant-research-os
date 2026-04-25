@@ -62,7 +62,7 @@ formal artifact shape 的真值层是 `contracts/artifacts/csf_train_freeze_arti
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 空目录、placeholder `parquet/csv/json/md`、只有说明文档都不能算正式完成
-- 每一组都要先回显 freeze draft，再确认该组
+- 必须先回显 freeze draft；可以逐组确认，也可以一次展示全部 groups 后接受 `确认全部` 批量确认 groups
 - 六组全部确认后，才允许最终 `是否按以上内容冻结 csf_train_freeze？`
 - 不得借用 test/backtest 结果回写 train 尺子
 - 必须先运行 `qros-validate-stage --stage csf_train_freeze --lineage-id <lineage_id>`

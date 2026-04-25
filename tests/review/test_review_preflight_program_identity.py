@@ -8,9 +8,14 @@ import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
+from runtime.tools.csf_test_evidence_runtime import build_csf_test_evidence_from_train_freeze
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 from tests.helpers.stage_fixtures import prepare_csf_data_ready
 from tests.helpers.lineage_program_support import ensure_stage_program
+from tests.runtime.test_csf_test_evidence_runtime import (
+    _csf_test_evidence_draft,
+    _prepare_csf_train_stage,
+)
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -88,78 +93,14 @@ def _write_thin_wrapper_stage_program(lineage_root: Path, stage_key: str) -> Pat
 
 
 def _prepare_csf_test_evidence_outputs(stage_dir: Path) -> None:
-    author_formal_dir = stage_dir / "author" / "formal"
-    author_formal_dir.mkdir(parents=True, exist_ok=True)
-    _write_json(author_formal_dir / "rank_ic_summary.json", {"mean_rank_ic": 0.24, "status": "ok"})
-    _write_parquet(
-        author_formal_dir / "rank_ic_timeseries.parquet",
-        [
-            {"date": "2026-04-01", "rank_ic": 0.11},
-            {"date": "2026-04-02", "rank_ic": 0.18},
-        ],
+    lineage_root = stage_dir.parent
+    _prepare_csf_train_stage(lineage_root)
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    _write_yaml(
+        stage_dir / "author" / "draft" / "csf_test_evidence_draft.yaml",
+        _csf_test_evidence_draft(confirmed=True),
     )
-    _write_parquet(
-        author_formal_dir / "bucket_returns.parquet",
-        [
-            {"bucket": 1, "mean_return": 0.01},
-            {"bucket": 2, "mean_return": 0.02},
-        ],
-    )
-    _write_parquet(
-        author_formal_dir / "breadth_coverage_report.parquet",
-        [
-            {"date": "2026-04-01", "coverage": 0.97},
-            {"date": "2026-04-02", "coverage": 0.98},
-        ],
-    )
-    _write_parquet(
-        author_formal_dir / "filter_condition_panel.parquet",
-        [
-            {"date": "2026-04-01", "asset": "BTCUSDT", "signal": 0.1},
-            {"date": "2026-04-02", "asset": "ETHUSDT", "signal": 0.2},
-        ],
-    )
-    _write_parquet(
-        author_formal_dir / "target_strategy_condition_compare.parquet",
-        [
-            {"strategy": "target", "gated_mean": 0.05, "ungated_mean": 0.03},
-            {"strategy": "reference", "gated_mean": 0.04, "ungated_mean": 0.02},
-        ],
-    )
-    _write_json(author_formal_dir / "monotonicity_report.json", {"status": "ok", "observed": [1, 2, 3]})
-    _write_json(author_formal_dir / "subperiod_stability_report.json", {"status": "ok", "windows": 4})
-    _write_json(author_formal_dir / "gated_vs_ungated_summary.json", {"status": "ok", "delta": 0.02})
-    _write_json(author_formal_dir / "program_execution_manifest.json", {"status": "success", "stage": "csf_test_evidence"})
-    _write_json(author_formal_dir / "run_manifest.json", {"command": "qros-stage-run", "status": "recorded"})
-    _write_json(author_formal_dir / "frozen_spec.json", {"source_stage": "csf_train_freeze", "status": "frozen"})
-    _write_text(
-        author_formal_dir / "csf_test_gate_table.csv",
-        "variant_id,decision,reason\nvariant_a,pass,baseline\nvariant_b,reject,reference\n",
-    )
-    _write_text(
-        author_formal_dir / "csf_selected_variants_test.csv",
-        "variant_id,selected\nvariant_a,true\n",
-    )
-    _write_text(
-        author_formal_dir / "csf_test_contract.md",
-        "# CSF Test Contract\n\nThis stage reuses frozen test evidence.\n",
-    )
-    _write_text(
-        author_formal_dir / "artifact_catalog.md",
-        "# Artifact Catalog\n\n- rank_ic_summary.json\n- rank_ic_timeseries.parquet\n",
-    )
-    _write_text(
-        author_formal_dir / "field_dictionary.md",
-        "# Field Dictionary\n\n- mean_rank_ic: average rank IC for the test window.\n",
-    )
-    _write_text(
-        author_formal_dir / "csf_test_gate_decision.md",
-        "# CSF Test Gate Decision\n\nverdict: PASS\n",
-    )
-    _write_text(
-        author_formal_dir / "review_notes.md",
-        "review notes document the machine-artifact realism boundary.\n",
-    )
+    build_csf_test_evidence_from_train_freeze(lineage_root)
 
 
 def _prepare_csf_signal_ready_outputs(stage_dir: Path, *, fake_panel: bool = False) -> None:
@@ -349,7 +290,7 @@ def test_review_preflight_fails_when_machine_artifact_is_placeholder_text(tmp_pa
     _prepare_csf_test_evidence_outputs(stage_dir)
     _write_text(
         author_formal_dir / "csf_selected_variants_test.csv",
-        "variant_id,selected\nplaceholder,true\n",
+        "variant_id,status,note\nbaseline_v1,selected,placeholder\n",
     )
     _write_yaml(
         stage_dir / "author" / "draft" / "csf_test_evidence_freeze_draft.yaml",

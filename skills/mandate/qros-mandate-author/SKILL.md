@@ -59,7 +59,7 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 - `research_route` 第一版只允许 `time_series_signal` 与 `cross_sectional_factor`
 - 必须写清 `excluded_routes` 与 `route_rationale`
 - 必须写清 success / failure / budget / excluded scope
-- 每一组都要先回显 freeze draft，再确认该组
+- 必须先回显 freeze draft；可以逐组确认，也可以一次展示全部 groups 后接受 `确认全部` 批量确认 groups
 - 四组全部确认后，才允许最终 `是否确认进入 mandate`
 - 禁止 post-hoc restatement
 - 禁止根据后验结果静默改题

@@ -120,6 +120,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
             "panel_manifest.json",
             "asset_universe_membership.parquet",
             "cross_section_coverage.parquet",
+            "split_sample_adequacy_report.yaml",
             "eligibility_base_mask.parquet",
             "csf_data_contract.md",
             "artifact_catalog.md",
@@ -352,6 +353,7 @@ def build_csf_signal_ready_from_data_ready(lineage_root: Path) -> Path:
                 "input_roots": [
                     "../02_csf_data_ready/author/formal/panel_manifest.json",
                     "../02_csf_data_ready/author/formal/asset_universe_membership.parquet",
+                    "../02_csf_data_ready/author/formal/split_sample_adequacy_report.yaml",
                     "../02_csf_data_ready/author/formal/eligibility_base_mask.parquet",
                     "../02_csf_data_ready/author/formal/csf_data_contract.md",
                     "../../01_mandate/author/formal/research_route.yaml",

@@ -11,6 +11,8 @@ def test_stage_freeze_group_field_guide_documents_csf_data_ready_contract_truth(
     assert "qros-validate-stage --stage csf_data_ready" in content
     assert "SKILL.md" in content
     assert "字段真值" in content
+    assert "split_sample_adequacy_report.yaml" in content
+    assert "cross_section_snapshot" in content
 
 
 def test_qros_research_session_usage_documents_csf_data_ready_validator_before_review() -> None:
@@ -20,6 +22,8 @@ def test_qros_research_session_usage_documents_csf_data_ready_validator_before_r
     assert "qros-validate-stage --stage csf_data_ready" in content
     assert "validator/preflight 不通过" in content
     assert "不得进入 `csf_data_ready` review" in content
+    assert "split_sample_adequacy_report.yaml" in content
+    assert "不是 mandate 字段扩展" in content
 
 
 def test_review_shared_protocol_documents_csf_data_ready_contract_and_semantic_preflight() -> None:
@@ -29,4 +33,6 @@ def test_review_shared_protocol_documents_csf_data_ready_contract_and_semantic_p
     assert "artifact contract validation" in content
     assert "semantic validation" in content
     assert "upstream binding validation" in content
+    assert "split_sample_adequacy_report.yaml" in content
+    assert "cross_section_snapshot" in content
     assert "placeholder parquet" not in content

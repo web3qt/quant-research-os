@@ -107,7 +107,11 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "function": "build_csf_data_ready_from_mandate",
         "stage_dir": Path("02_csf_data_ready"),
         "inputs": ["01_mandate/mandate.md", "02_csf_data_ready/csf_data_ready_freeze_draft.yaml"],
-        "outputs": ["02_csf_data_ready/panel_manifest.json", "02_csf_data_ready/run_manifest.json"],
+        "outputs": [
+            "02_csf_data_ready/panel_manifest.json",
+            "02_csf_data_ready/split_sample_adequacy_report.yaml",
+            "02_csf_data_ready/run_manifest.json",
+        ],
     },
     "csf_signal_ready": {
         "stage_id": "signal_ready",

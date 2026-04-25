@@ -107,6 +107,20 @@ def _prepare_csf_data_ready_stage(lineage_root: Path) -> None:
         formal_dir / "cross_section_coverage.parquet",
         [{"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2}],
     )
+    _write_yaml(
+        formal_dir / "split_sample_adequacy_report.yaml",
+        {
+            "stage": "csf_data_ready",
+            "lineage_id": lineage_root.name,
+            "sample_unit": "cross_section_snapshot",
+            "source_artifact": "cross_section_coverage.parquet",
+            "split_source_artifact": "../../01_mandate/author/formal/time_split.json",
+            "split_sample_counts": {"train": 1, "test": 1, "backtest": 1, "holdout": 1},
+            "minimum_required": {"train": 1, "test": 1, "backtest": 1, "holdout": 1},
+            "adequacy": {"train": "pass", "test": "pass", "backtest": "pass", "holdout": "pass"},
+            "final_verdict": "PASS",
+        },
+    )
     _write_parquet_rows(
         formal_dir / "eligibility_base_mask.parquet",
         [

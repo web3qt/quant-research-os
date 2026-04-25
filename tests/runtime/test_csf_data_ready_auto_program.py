@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import yaml
@@ -38,6 +39,23 @@ def _prepare_mandate_ready_for_csf(lineage_root: Path) -> None:
             "stage_completion_certificate.yaml",
         } else mandate_formal_dir
         (target_dir / name).write_text("ok\n", encoding="utf-8")
+    (mandate_formal_dir / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-01-01",
+                "test": "2024-01-02/2024-01-02",
+                "backtest": "2024-01-03/2024-01-03",
+                "holdout": "2024-01-04/2024-01-04",
+                "bar_size": "1d",
+                "holding_horizons": ["1d"],
+                "policy_note": "fixture split coverage",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     _write_yaml(
         mandate_formal_dir / "research_route.yaml",
         {
@@ -113,6 +131,7 @@ def _confirmed_csf_data_ready_draft() -> dict:
                         "panel_manifest.json",
                         "asset_universe_membership.parquet",
                         "cross_section_coverage.parquet",
+                        "split_sample_adequacy_report.yaml",
                         "eligibility_base_mask.parquet",
                     ],
                     "consumer_stage": "csf_signal_ready",

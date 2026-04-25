@@ -48,6 +48,34 @@ def test_generated_csf_data_ready_json_shapes_match_contract(tmp_path: Path) -> 
         assert set(payload) == _field_paths(contract["artifacts"][artifact_name])
 
 
+def test_generated_csf_data_ready_split_sample_report_matches_contract(tmp_path: Path) -> None:
+    formal_dir = _build_valid_csf_data_ready(tmp_path / "outputs" / "csf_case")
+    contract = load_artifact_contract("csf_data_ready")
+    payload = yaml.safe_load((formal_dir / "split_sample_adequacy_report.yaml").read_text(encoding="utf-8"))
+
+    assert set(payload) == _field_paths(contract["artifacts"]["split_sample_adequacy_report.yaml"])
+    assert payload["sample_unit"] == "cross_section_snapshot"
+    assert payload["final_verdict"] == "PASS"
+    assert payload["split_sample_counts"] == {
+        "train": 1,
+        "test": 1,
+        "backtest": 1,
+        "holdout": 1,
+    }
+    assert payload["minimum_required"] == {
+        "train": 1,
+        "test": 1,
+        "backtest": 1,
+        "holdout": 1,
+    }
+    assert payload["adequacy"] == {
+        "train": "pass",
+        "test": "pass",
+        "backtest": "pass",
+        "holdout": "pass",
+    }
+
+
 def test_generated_csf_data_ready_parquet_columns_match_contract(tmp_path: Path) -> None:
     formal_dir = _build_valid_csf_data_ready(tmp_path / "outputs" / "csf_case")
     contract = load_artifact_contract("csf_data_ready")

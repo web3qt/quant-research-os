@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import subprocess
 import textwrap
+from datetime import date
 from typing import Any
 
 import yaml
@@ -15,6 +17,9 @@ from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 CSF_DATA_READY_FREEZE_DRAFT_FILE = "csf_data_ready_freeze_draft.yaml"
 CSF_DATA_READY_REBUILD_SCRIPT = "rebuild_csf_data_ready.py"
+CSF_DATA_READY_SPLIT_SAMPLE_REPORT = "split_sample_adequacy_report.yaml"
+CSF_DATA_READY_REQUIRED_SPLITS = ("train", "test", "backtest", "holdout")
+CSF_DATA_READY_MINIMUM_SPLIT_SAMPLES = {split: 1 for split in CSF_DATA_READY_REQUIRED_SPLITS}
 CSF_DATA_READY_FREEZE_GROUP_ORDER = [
     "panel_contract",
     "taxonomy_contract",
@@ -165,6 +170,88 @@ def _parse_coverage_floor_ratio(rule: str) -> float:
     raise ValueError(f"could not parse coverage floor from rule: {rule}")
 
 
+def _parse_date(value: Any) -> date | None:
+    match = re.search(r"\d{4}-\d{2}-\d{2}", str(value))
+    if match is None:
+        return None
+    try:
+        return date.fromisoformat(match.group(0))
+    except ValueError:
+        return None
+
+
+def _split_window(raw_window: Any) -> tuple[date, date] | None:
+    if isinstance(raw_window, dict):
+        start = raw_window.get("start") or raw_window.get("from") or raw_window.get("begin")
+        end = raw_window.get("end") or raw_window.get("to") or raw_window.get("finish")
+        start_date = _parse_date(start)
+        end_date = _parse_date(end)
+    elif isinstance(raw_window, list):
+        start_date = _parse_date(raw_window[0]) if raw_window else None
+        end_date = _parse_date(raw_window[-1]) if raw_window else None
+    else:
+        dates = [parsed for item in re.findall(r"\d{4}-\d{2}-\d{2}", str(raw_window)) if (parsed := _parse_date(item)) is not None]
+        start_date = dates[0] if dates else None
+        end_date = dates[-1] if dates else None
+    if start_date is None or end_date is None:
+        return None
+    if start_date > end_date:
+        return end_date, start_date
+    return start_date, end_date
+
+
+def _load_time_split(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"time_split.json must be valid json before csf_data_ready build: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("time_split.json must be a json object before csf_data_ready build")
+    return payload
+
+
+def _count_cross_section_snapshots(coverage_rows: list[dict[str, Any]], raw_window: Any) -> int:
+    window = _split_window(raw_window)
+    if window is None:
+        return 0
+    start_date, end_date = window
+    count = 0
+    for row in coverage_rows:
+        row_date = _parse_date(row.get("date"))
+        if row_date is not None and start_date <= row_date <= end_date:
+            count += 1
+    return count
+
+
+def _build_split_sample_adequacy_report(
+    *,
+    lineage_id: str,
+    time_split_path: Path,
+    coverage_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    time_split = _load_time_split(time_split_path)
+    counts = {
+        split: _count_cross_section_snapshots(coverage_rows, time_split.get(split))
+        for split in CSF_DATA_READY_REQUIRED_SPLITS
+    }
+    minimums = dict(CSF_DATA_READY_MINIMUM_SPLIT_SAMPLES)
+    adequacy = {
+        split: "pass" if counts[split] >= minimums[split] else "fail"
+        for split in CSF_DATA_READY_REQUIRED_SPLITS
+    }
+    return {
+        "stage": "csf_data_ready",
+        "lineage_id": lineage_id,
+        "sample_unit": "cross_section_snapshot",
+        "source_artifact": "cross_section_coverage.parquet",
+        "split_source_artifact": "../../01_mandate/author/formal/time_split.json",
+        "split_sample_counts": counts,
+        "minimum_required": minimums,
+        "adequacy": adequacy,
+        "final_verdict": "PASS" if all(value == "pass" for value in adequacy.values()) else "FAIL",
+    }
+
+
 def _blank_csf_data_ready_freeze_draft() -> dict[str, Any]:
     return {
         "groups": {
@@ -284,41 +371,64 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     frozen_inputs_note = _required_draft_value(delivery_contract, "frozen_inputs_note")
     runtime_root = _runtime_root()
     runtime_git_revision = _git_revision(runtime_root)
+    for required_artifact in [
+        "panel_manifest.json",
+        "asset_universe_membership.parquet",
+        "cross_section_coverage.parquet",
+        CSF_DATA_READY_SPLIT_SAMPLE_REPORT,
+        "eligibility_base_mask.parquet",
+    ]:
+        if required_artifact not in machine_artifacts:
+            machine_artifacts.append(required_artifact)
 
+    panel_dates = ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"]
+    panel_assets = ["BTCUSDT", "ETHUSDT"]
     membership_rows = [
-        {"date": "2024-01-01", "asset": "BTCUSDT", "in_universe": True},
-        {"date": "2024-01-01", "asset": "ETHUSDT", "in_universe": True},
-        {"date": "2024-01-02", "asset": "BTCUSDT", "in_universe": True},
-        {"date": "2024-01-02", "asset": "ETHUSDT", "in_universe": True},
+        {"date": panel_date, "asset": asset, "in_universe": True}
+        for panel_date in panel_dates
+        for asset in panel_assets
     ]
     eligibility_rows = [
-        {"date": "2024-01-01", "asset": "BTCUSDT", "eligible": True},
-        {"date": "2024-01-01", "asset": "ETHUSDT", "eligible": True},
-        {"date": "2024-01-02", "asset": "BTCUSDT", "eligible": True},
-        {"date": "2024-01-02", "asset": "ETHUSDT", "eligible": True},
+        {"date": panel_date, "asset": asset, "eligible": True}
+        for panel_date in panel_dates
+        for asset in panel_assets
     ]
     coverage_rows = [
-        {"date": "2024-01-01", "coverage_ratio": 1.0, "asset_count": 2},
-        {"date": "2024-01-02", "coverage_ratio": 1.0, "asset_count": 2},
+        {"date": panel_date, "coverage_ratio": 1.0, "asset_count": len(panel_assets)}
+        for panel_date in panel_dates
     ]
     returns_rows = [
-        {"date": "2024-01-01", "asset": "BTCUSDT", "return_1d": 0.02},
-        {"date": "2024-01-01", "asset": "ETHUSDT", "return_1d": -0.01},
-        {"date": "2024-01-02", "asset": "BTCUSDT", "return_1d": 0.01},
-        {"date": "2024-01-02", "asset": "ETHUSDT", "return_1d": 0.03},
+        {
+            "date": panel_date,
+            "asset": asset,
+            "return_1d": round(0.01 * (date_index + 1) * (1 if asset == "BTCUSDT" else -1), 4),
+        }
+        for date_index, panel_date in enumerate(panel_dates)
+        for asset in panel_assets
     ]
     liquidity_rows = [
-        {"date": "2024-01-01", "asset": "BTCUSDT", "dollar_volume": 1000.0},
-        {"date": "2024-01-01", "asset": "ETHUSDT", "dollar_volume": 500.0},
-        {"date": "2024-01-02", "asset": "BTCUSDT", "dollar_volume": 900.0},
-        {"date": "2024-01-02", "asset": "ETHUSDT", "dollar_volume": 650.0},
+        {
+            "date": panel_date,
+            "asset": asset,
+            "dollar_volume": float(1000 - date_index * 25 if asset == "BTCUSDT" else 600 + date_index * 25),
+        }
+        for date_index, panel_date in enumerate(panel_dates)
+        for asset in panel_assets
     ]
     beta_rows = [
-        {"date": "2024-01-01", "asset": "BTCUSDT", "beta_proxy": 1.0},
-        {"date": "2024-01-01", "asset": "ETHUSDT", "beta_proxy": 1.2},
-        {"date": "2024-01-02", "asset": "BTCUSDT", "beta_proxy": 0.95},
-        {"date": "2024-01-02", "asset": "ETHUSDT", "beta_proxy": 1.1},
+        {
+            "date": panel_date,
+            "asset": asset,
+            "beta_proxy": round((1.0 if asset == "BTCUSDT" else 1.2) - date_index * 0.02, 4),
+        }
+        for date_index, panel_date in enumerate(panel_dates)
+        for asset in panel_assets
     ]
+    split_sample_report = _build_split_sample_adequacy_report(
+        lineage_id=lineage_root.name,
+        time_split_path=mandate_formal_dir / "time_split.json",
+        coverage_rows=coverage_rows,
+    )
 
     (stage_formal_dir / "panel_manifest.json").write_text(
         json.dumps(
@@ -340,6 +450,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
     )
     _write_parquet_rows(stage_formal_dir / "asset_universe_membership.parquet", membership_rows)
     _write_parquet_rows(stage_formal_dir / "cross_section_coverage.parquet", coverage_rows)
+    _dump_yaml(stage_formal_dir / CSF_DATA_READY_SPLIT_SAMPLE_REPORT, split_sample_report)
     _write_parquet_rows(stage_formal_dir / "eligibility_base_mask.parquet", eligibility_rows)
     shared_feature_base_dir = stage_formal_dir / "shared_feature_base"
     shared_feature_base_dir.mkdir(exist_ok=True)
@@ -351,29 +462,13 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
             stage_formal_dir / "asset_taxonomy_snapshot.parquet",
             [
                 {
-                    "asset": "BTCUSDT",
-                    "date": "2024-01-01",
+                    "asset": asset,
+                    "date": panel_date,
                     "group_taxonomy_reference": group_taxonomy_reference,
                     "group_bucket": "core",
-                },
-                {
-                    "asset": "ETHUSDT",
-                    "date": "2024-01-01",
-                    "group_taxonomy_reference": group_taxonomy_reference,
-                    "group_bucket": "core",
-                },
-                {
-                    "asset": "BTCUSDT",
-                    "date": "2024-01-02",
-                    "group_taxonomy_reference": group_taxonomy_reference,
-                    "group_bucket": "core",
-                },
-                {
-                    "asset": "ETHUSDT",
-                    "date": "2024-01-02",
-                    "group_taxonomy_reference": group_taxonomy_reference,
-                    "group_bucket": "core",
-                },
+                }
+                for panel_date in panel_dates
+                for asset in panel_assets
             ],
         )
     (stage_formal_dir / "csf_data_contract.md").write_text(
@@ -388,6 +483,8 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 f"- Eligibility base 规则: {eligibility_base_rule}",
                 f"- 覆盖率下限规则: {coverage_floor_rule}",
                 f"- 覆盖率下限数值: {coverage_floor_min_ratio}",
+                f"- Split 样本单位: {split_sample_report['sample_unit']}",
+                f"- Split 样本充足性: {split_sample_report['final_verdict']}",
                 f"- 共享特征输出: {', '.join(shared_feature_outputs)}",
                 f"- 共享特征说明: {shared_feature_note}",
                 f"- 分组体系引用: {group_taxonomy_reference}",
@@ -404,6 +501,8 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 "# CSF Data Ready Gate Decision",
                 "",
                 "- 在 review closure 写出之前，formal gate 决策仍保持 pending。",
+                f"- Split 样本充足性报告: {CSF_DATA_READY_SPLIT_SAMPLE_REPORT}",
+                f"- Split 样本充足性结论: {split_sample_report['final_verdict']}",
                 f"- 下游消费阶段: {consumer_stage}",
                 f"- 冻结输入说明: {frozen_inputs_note}",
             ]
@@ -461,6 +560,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 "- panel_manifest.json",
                 "- asset_universe_membership.parquet",
                 "- cross_section_coverage.parquet",
+                f"- {CSF_DATA_READY_SPLIT_SAMPLE_REPORT}",
                 "- eligibility_base_mask.parquet",
                 "- shared_feature_base/",
                 "- asset_taxonomy_snapshot.parquet",
@@ -485,6 +585,11 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 f"- `eligibility_base_rule`: {eligibility_base_rule}",
                 f"- `coverage_floor_rule`: {coverage_floor_rule}",
                 f"- `coverage_floor_min_ratio`: {coverage_floor_min_ratio}",
+                "- `sample_unit`: `split_sample_adequacy_report.yaml` 中的样本单位，当前为 `cross_section_snapshot`。",
+                "- `split_sample_counts`: 每个 train/test/backtest/holdout split 中可用的截面快照数量。",
+                "- `minimum_required`: 每个 downstream split 的最低截面快照数量。",
+                "- `adequacy`: 每个 split 是否满足最低截面快照数量。",
+                "- `final_verdict`: split 样本充足性总门禁，必须为 `PASS` 才能进入 review。",
                 f"- `mask_audit_note`: {mask_audit_note}",
                 f"- `shared_feature_outputs`: 共享特征输出集合，当前为 {shared_feature_outputs}。",
                 f"- `group_taxonomy_reference`: 分组体系引用，当前为 {group_taxonomy_reference}。",

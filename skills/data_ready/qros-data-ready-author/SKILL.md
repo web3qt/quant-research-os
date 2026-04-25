@@ -63,7 +63,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 必须把本阶段真实使用的数据处理程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
-- 每一组都要先回显 freeze draft，再确认该组
+- 必须先回显 freeze draft；可以逐组确认，也可以一次展示全部 groups 后接受 `确认全部` 批量确认 groups
 - 五组全部确认后，才允许最终 `是否按以上内容冻结 data_ready？`
 - 不得静默修改 mandate 冻结的时间边界和 universe 口径
 

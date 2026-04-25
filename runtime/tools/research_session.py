@@ -235,6 +235,7 @@ CSF_DATA_READY_REQUIRED_OUTPUTS = [
     "panel_manifest.json",
     "asset_universe_membership.parquet",
     "cross_section_coverage.parquet",
+    "split_sample_adequacy_report.yaml",
     "eligibility_base_mask.parquet",
     "shared_feature_base",
     "asset_taxonomy_snapshot.parquet",
@@ -465,6 +466,7 @@ class SessionContext:
     requires_failure_handling: bool = False
     failure_stage: str | None = None
     failure_reason_summary: str | None = None
+    freeze_groups: list[dict[str, object]] | None = None
 
 
 @dataclass(frozen=True)
@@ -667,6 +669,87 @@ NEXT_STAGE_BY_BASE: dict[str, str | None] = {
     "csf_test_evidence": "csf_backtest_ready",
     "csf_backtest_ready": "csf_holdout_validation",
     "csf_holdout_validation": None,
+}
+
+FREEZE_DRAFT_STAGE_SPECS: dict[SessionStage, tuple[tuple[str, ...], str, tuple[str, ...], str]] = {
+    "mandate_confirmation_pending": (
+        ("00_idea_intake",),
+        MANDATE_FREEZE_DRAFT_FILE,
+        tuple(MANDATE_FREEZE_GROUP_ORDER),
+        "mandate",
+    ),
+    "data_ready_confirmation_pending": (
+        ("02_data_ready", "author", "draft"),
+        DATA_READY_FREEZE_DRAFT_FILE,
+        tuple(DATA_READY_FREEZE_GROUP_ORDER),
+        "data_ready",
+    ),
+    "csf_data_ready_confirmation_pending": (
+        ("02_csf_data_ready", "author", "draft"),
+        CSF_DATA_READY_FREEZE_DRAFT_FILE,
+        tuple(CSF_DATA_READY_FREEZE_GROUP_ORDER),
+        "csf_data_ready",
+    ),
+    "signal_ready_confirmation_pending": (
+        ("03_signal_ready", "author", "draft"),
+        SIGNAL_READY_FREEZE_DRAFT_FILE,
+        tuple(SIGNAL_READY_FREEZE_GROUP_ORDER),
+        "signal_ready",
+    ),
+    "csf_signal_ready_confirmation_pending": (
+        ("03_csf_signal_ready", "author", "draft"),
+        CSF_SIGNAL_READY_FREEZE_DRAFT_FILE,
+        tuple(CSF_SIGNAL_READY_FREEZE_GROUP_ORDER),
+        "csf_signal_ready",
+    ),
+    "train_freeze_confirmation_pending": (
+        ("04_train_freeze", "author", "draft"),
+        TRAIN_FREEZE_DRAFT_FILE,
+        tuple(TRAIN_FREEZE_GROUP_ORDER),
+        "train_freeze",
+    ),
+    "csf_train_freeze_confirmation_pending": (
+        ("04_csf_train_freeze", "author", "draft"),
+        CSF_TRAIN_FREEZE_DRAFT_FILE,
+        tuple(CSF_TRAIN_FREEZE_GROUP_ORDER),
+        "csf_train_freeze",
+    ),
+    "test_evidence_confirmation_pending": (
+        ("05_test_evidence", "author", "draft"),
+        TEST_EVIDENCE_DRAFT_FILE,
+        tuple(TEST_EVIDENCE_GROUP_ORDER),
+        "test_evidence",
+    ),
+    "csf_test_evidence_confirmation_pending": (
+        ("05_csf_test_evidence", "author", "draft"),
+        CSF_TEST_EVIDENCE_DRAFT_FILE,
+        tuple(CSF_TEST_EVIDENCE_GROUP_ORDER),
+        "csf_test_evidence",
+    ),
+    "backtest_ready_confirmation_pending": (
+        ("06_backtest", "author", "draft"),
+        BACKTEST_READY_DRAFT_FILE,
+        tuple(BACKTEST_READY_GROUP_ORDER),
+        "backtest_ready",
+    ),
+    "csf_backtest_ready_confirmation_pending": (
+        ("06_csf_backtest_ready", "author", "draft"),
+        CSF_BACKTEST_READY_DRAFT_FILE,
+        tuple(CSF_BACKTEST_READY_GROUP_ORDER),
+        "csf_backtest_ready",
+    ),
+    "holdout_validation_confirmation_pending": (
+        ("07_holdout", "author", "draft"),
+        HOLDOUT_VALIDATION_DRAFT_FILE,
+        tuple(HOLDOUT_VALIDATION_GROUP_ORDER),
+        "holdout_validation",
+    ),
+    "csf_holdout_validation_confirmation_pending": (
+        ("07_csf_holdout_validation", "author", "draft"),
+        CSF_HOLDOUT_VALIDATION_DRAFT_FILE,
+        tuple(CSF_HOLDOUT_VALIDATION_GROUP_ORDER),
+        "csf_holdout_validation",
+    ),
 }
 
 
@@ -1717,6 +1800,126 @@ def next_csf_holdout_validation_group(lineage_root: Path) -> str | None:
     return None
 
 
+def freeze_groups_for_stage(
+    lineage_root: Path, current_stage: SessionStage
+) -> list[dict[str, object]] | None:
+    spec = FREEZE_DRAFT_STAGE_SPECS.get(current_stage)
+    if spec is None:
+        return None
+
+    _, _, group_order, _ = spec
+    draft_path = _freeze_draft_path(lineage_root, current_stage)
+    if not draft_path.exists():
+        return [
+            {
+                "name": name,
+                "confirmed": False,
+                "missing_items": ["draft_not_scaffolded"],
+                "draft": {},
+            }
+            for name in group_order
+        ]
+
+    payload = _read_yaml(draft_path)
+    groups = payload.get("groups", {})
+    if not isinstance(groups, dict):
+        groups = {}
+
+    statuses: list[dict[str, object]] = []
+    for name in group_order:
+        group_payload = groups.get(name, {})
+        if not isinstance(group_payload, dict):
+            statuses.append(
+                {
+                    "name": name,
+                    "confirmed": False,
+                    "missing_items": ["group_missing"],
+                    "draft": {},
+                }
+            )
+            continue
+
+        draft = group_payload.get("draft", {})
+        missing_items = group_payload.get("missing_items", [])
+        statuses.append(
+            {
+                "name": name,
+                "confirmed": bool(group_payload.get("confirmed")),
+                "missing_items": missing_items if isinstance(missing_items, list) else [],
+                "draft": draft if isinstance(draft, dict) else {},
+            }
+        )
+    return statuses
+
+
+def confirm_all_freeze_groups_for_current_stage(
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> str | None:
+    spec = FREEZE_DRAFT_STAGE_SPECS.get(current_stage)
+    if spec is None:
+        return None
+
+    _, _, group_order, _ = spec
+    draft_path = _freeze_draft_path(lineage_root, current_stage)
+    if not draft_path.exists():
+        return None
+
+    payload = _read_yaml(draft_path)
+    groups = payload.get("groups")
+    if not isinstance(groups, dict):
+        raise ValueError(f"{draft_path.name} must contain a groups mapping")
+
+    missing_groups = [name for name in group_order if not isinstance(groups.get(name), dict)]
+    if missing_groups:
+        raise ValueError(f"{draft_path.name} missing freeze groups: {', '.join(missing_groups)}")
+
+    for name in group_order:
+        groups[name]["confirmed"] = True
+
+    draft_path.write_text(
+        yaml.safe_dump(payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    return str(draft_path.relative_to(lineage_root))
+
+
+def _all_freeze_groups_next_action(stage_label: str) -> str:
+    return (
+        f"Review all {stage_label} freeze groups, then run with --confirm-all-freeze-groups "
+        "or reply 确认全部 to mark them confirmed."
+    )
+
+
+def ensure_freeze_draft_for_stage(lineage_root: Path, current_stage: SessionStage) -> list[str]:
+    # 批量确认前先确保当前 confirmation gate 的 draft skeleton 已落盘。
+    if current_stage == "data_ready_confirmation_pending":
+        return ensure_data_ready_scaffold(lineage_root)
+    if current_stage == "csf_data_ready_confirmation_pending":
+        return ensure_csf_data_ready_scaffold(lineage_root)
+    if current_stage == "signal_ready_confirmation_pending":
+        return ensure_signal_ready_scaffold(lineage_root)
+    if current_stage == "csf_signal_ready_confirmation_pending":
+        return ensure_csf_signal_ready_scaffold(lineage_root)
+    if current_stage == "train_freeze_confirmation_pending":
+        return ensure_train_freeze_scaffold(lineage_root)
+    if current_stage == "csf_train_freeze_confirmation_pending":
+        return ensure_csf_train_freeze_scaffold(lineage_root)
+    if current_stage == "test_evidence_confirmation_pending":
+        return ensure_test_evidence_scaffold(lineage_root)
+    if current_stage == "csf_test_evidence_confirmation_pending":
+        return ensure_csf_test_evidence_scaffold(lineage_root)
+    if current_stage == "backtest_ready_confirmation_pending":
+        return ensure_backtest_ready_scaffold(lineage_root)
+    if current_stage == "csf_backtest_ready_confirmation_pending":
+        return ensure_csf_backtest_ready_scaffold(lineage_root)
+    if current_stage == "holdout_validation_confirmation_pending":
+        return ensure_holdout_validation_scaffold(lineage_root)
+    if current_stage == "csf_holdout_validation_confirmation_pending":
+        return ensure_csf_holdout_validation_scaffold(lineage_root)
+    return []
+
+
 def summarize_session_status(
     *,
     lineage_id: str,
@@ -1839,6 +2042,7 @@ def summarize_session_status(
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
+        freeze_groups=freeze_groups_for_stage(lineage_root, current_stage),
     )
 
 
@@ -2702,6 +2906,7 @@ def run_research_session(
     holdout_validation_decision: HoldoutValidationTransitionDecision | None = None,
     review_decision: ReviewTransitionDecision | None = None,
     next_stage_decision: NextStageTransitionDecision | None = None,
+    confirm_all_freeze_groups: bool = False,
 ) -> SessionContext:
     selection = resolve_lineage_selection(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
     lineage_root = selection.lineage_root
@@ -2799,6 +3004,13 @@ def run_research_session(
             current_stage=current_stage,
             decision=next_stage_decision,
         )
+        if written is not None:
+            artifacts_written.append(written)
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and confirm_all_freeze_groups:
+        artifacts_written.extend(ensure_freeze_draft_for_stage(lineage_root, current_stage))
+        written = confirm_all_freeze_groups_for_current_stage(lineage_root, current_stage)
         if written is not None:
             artifacts_written.append(written)
         current_stage = detect_session_stage(lineage_root)
@@ -3474,7 +3686,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "mandate_confirmation_pending":
         next_group = next_mandate_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_MANDATE_PENDING_CONFIRMATION", f"Complete mandate freeze group: {next_group}"
+            return "GO_TO_MANDATE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("mandate")
         decision = read_mandate_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_MANDATE_ON_HOLD", "Wait for explicit CONFIRM_MANDATE"
@@ -3493,7 +3705,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_data_ready_confirmation_pending":
         next_group = next_csf_data_ready_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", f"Complete csf_data_ready freeze group: {next_group}"
+            return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("csf_data_ready")
         decision = read_data_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
@@ -3512,7 +3724,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "data_ready_confirmation_pending":
         next_group = next_data_ready_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_DATA_READY_PENDING_CONFIRMATION", f"Complete data_ready freeze group: {next_group}"
+            return "GO_TO_DATA_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("data_ready")
         decision = read_data_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
@@ -3531,7 +3743,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "signal_ready_confirmation_pending":
         next_group = next_signal_ready_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", f"Complete signal_ready freeze group: {next_group}"
+            return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("signal_ready")
         decision = read_signal_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
@@ -3550,7 +3762,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_signal_ready_confirmation_pending":
         next_group = next_csf_signal_ready_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", f"Complete csf_signal_ready freeze group: {next_group}"
+            return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("csf_signal_ready")
         decision = read_signal_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
@@ -3569,7 +3781,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "train_freeze_confirmation_pending":
         next_group = next_train_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", f"Complete train_freeze group: {next_group}"
+            return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("train_freeze")
         decision = read_train_freeze_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
@@ -3588,7 +3800,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_train_freeze_confirmation_pending":
         next_group = next_csf_train_freeze_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", f"Complete csf_train_freeze group: {next_group}"
+            return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("csf_train_freeze")
         decision = read_train_freeze_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
@@ -3607,7 +3819,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "test_evidence_confirmation_pending":
         next_group = next_test_evidence_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", f"Complete test_evidence group: {next_group}"
+            return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("test_evidence")
         decision = read_test_evidence_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
@@ -3626,7 +3838,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_test_evidence_confirmation_pending":
         next_group = next_csf_test_evidence_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", f"Complete csf_test_evidence group: {next_group}"
+            return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("csf_test_evidence")
         decision = read_test_evidence_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
@@ -3645,7 +3857,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "backtest_ready_confirmation_pending":
         next_group = next_backtest_ready_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", f"Complete backtest_ready group: {next_group}"
+            return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("backtest_ready")
         decision = read_backtest_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
@@ -3664,7 +3876,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
     if current_stage == "csf_backtest_ready_confirmation_pending":
         next_group = next_csf_backtest_ready_group(lineage_root)
         if next_group is not None:
-            return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", f"Complete csf_backtest_ready group: {next_group}"
+            return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", _all_freeze_groups_next_action("csf_backtest_ready")
         decision = read_backtest_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
@@ -3685,7 +3897,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         if next_group is not None:
             return (
                 "GO_TO_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
-                f"Complete holdout_validation group: {next_group}",
+                _all_freeze_groups_next_action("holdout_validation"),
             )
         decision = read_holdout_validation_transition_decision(lineage_root)
         if decision == "HOLD":
@@ -3707,7 +3919,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         if next_group is not None:
             return (
                 "GO_TO_CSF_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
-                f"Complete csf_holdout_validation group: {next_group}",
+                _all_freeze_groups_next_action("csf_holdout_validation"),
             )
         decision = read_holdout_validation_transition_decision(lineage_root)
         if decision == "HOLD":
@@ -3740,6 +3952,13 @@ def _read_yaml(path: Path) -> dict:
     if isinstance(payload, dict):
         return payload
     return {}
+
+
+def _freeze_draft_path(lineage_root: Path, current_stage: SessionStage) -> Path:
+    spec = FREEZE_DRAFT_STAGE_SPECS[current_stage]
+    path_parts, filename, _, _ = spec
+    draft_dir = lineage_root.joinpath(*path_parts)
+    return draft_dir / filename
 
 
 def _optional_payload_value(value: object) -> str | None:

@@ -67,6 +67,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - panel_manifest.json
 - asset_universe_membership.parquet
 - cross_section_coverage.parquet
+- split_sample_adequacy_report.yaml
 - eligibility_base_mask.parquet
 - shared_feature_base/
 - csf_data_contract.md
@@ -85,6 +86,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 截面覆盖可审计
 - universe membership 显式记录
 - eligibility mask 作为独立底座存在
+- train/test/backtest/holdout 每个 split 至少有 1 个 cross_section_snapshot
 - 共享字段具备时间语义和缺失语义
 - 如允许 group_neutral，taxonomy 已冻结或显式版本化
 - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
@@ -92,6 +94,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 只有资产时序表，没有显式截面面板合同
 - universe membership 无法按日期重建
 - eligibility 规则混在下游因子代码里
+- split_sample_adequacy_report.yaml 中任一 split 的 cross_section_snapshot 数量低于 minimum_required
 - 覆盖率波动显著却没有报告
 - 分组中性化需要的 taxonomy 在下游临时补
 - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
@@ -103,6 +106,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - [blocking] universe membership 按日期显式记录且可重建
 - [blocking] eligibility_base_mask 作为独立底座冻结，未混入后续因子逻辑
 - [blocking] 截面覆盖、缺失和共享字段语义已显式记录
+- [blocking] train/test/backtest/holdout 每个 split 至少有 1 个 cross_section_snapshot，且 split_sample_adequacy_report final_verdict = PASS
 - [blocking] 若后续允许 group_neutral，group taxonomy 已冻结或版本化
 - [blocking] artifact catalog 与 field dictionary 已同步登记 CSF 数据底座
 - [blocking] run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结
@@ -132,6 +136,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 下游可直接消费的冻结产物：panel_manifest.json
 - 下游可直接消费的冻结产物：asset_universe_membership.parquet
 - 下游可直接消费的冻结产物：cross_section_coverage.parquet
+- 下游可直接消费的冻结产物：split_sample_adequacy_report.yaml
 - 下游可直接消费的冻结产物：eligibility_base_mask.parquet
 - 下游不得消费 / 重估：未冻结的时序主线信号产物
 
