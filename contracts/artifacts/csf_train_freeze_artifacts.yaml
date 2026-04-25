@@ -10,70 +10,99 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_train_freeze
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: preprocess_contract.winsorize_policy
+        description: 声明极值缩尾策略，用于固定训练前预处理口径。
         type: string
       - path: preprocess_contract.standardize_policy
+        description: 声明标准化策略，用于固定横截面或时间序列尺度处理。
         type: string
       - path: preprocess_contract.missing_fill_policy
+        description: 声明缺失值填充策略，用于固定训练样本处理。
         type: string
       - path: preprocess_contract.coverage_floor_rule
+        description: 声明预处理覆盖率底线，用于限制低覆盖样本进入训练。
         type: string
       - path: neutralization_contract.neutralization_policy
+        description: 声明训练阶段中性化策略，用于固定残差化或风险剥离口径。
         type: enum
         values:
           - none
           - market_beta_neutral
           - group_neutral
       - path: neutralization_contract.beta_estimation_window
+        description: 声明 beta 估计窗口，用于固定市场风险估计样本。
         type: string
       - path: neutralization_contract.group_taxonomy_reference
+        description: 记录中性化使用的分组分类引用。
         type: string
       - path: neutralization_contract.residualization_formula
+        description: 声明残差化公式，用于复现中性化因子。
         type: string
       - path: ranking_bucket_contract.ranking_scope
+        description: 声明排序范围，用于固定全市场或组内排序口径。
         type: string
       - path: ranking_bucket_contract.bucket_schema
+        description: 声明分桶方案，用于固定多空或分位数组合构造。
         type: string
       - path: ranking_bucket_contract.quantile_count
+        description: 声明分位桶数量，用于固定排序分组粒度。
         type: integer
       - path: ranking_bucket_contract.min_names_per_bucket
+        description: 声明每桶最少资产数，用于防止分桶样本过薄。
         type: integer
       - path: rebalance_contract.rebalance_frequency
+        description: 声明再平衡频率，用于固定交易和持有节奏。
         type: string
       - path: rebalance_contract.signal_lag_rule
+        description: 声明信号滞后规则，用于防止交易时点使用未来信息。
         type: string
       - path: rebalance_contract.holding_period_rule
+        description: 声明持有期规则，用于固定收益归因窗口。
         type: string
       - path: rebalance_contract.overlap_policy
+        description: 声明重叠持仓处理方式，用于固定组合叠加口径。
         type: string
       - path: search_governance_contract.candidate_variant_ids
+        description: 列出训练候选变体，用于审计搜索空间。
         type: list[string]
       - path: search_governance_contract.kept_variant_ids
+        description: 列出训练后保留变体，用于绑定后续测试范围。
         type: list[string]
       - path: search_governance_contract.rejected_variant_ids
+        description: 列出训练后拒绝变体，用于审计筛选过程。
         type: list[string]
       - path: search_governance_contract.selection_rule
+        description: 声明训练选择规则，用于解释为何保留特定变体。
         type: string
       - path: search_governance_contract.frozen_signal_contract_reference
+        description: 记录冻结 signal contract 引用，用于绑定训练输入。
         type: string
       - path: search_governance_contract.train_governable_axes
+        description: 声明训练阶段允许调整的轴，用于限制合法搜索。
         type: list[string]
       - path: search_governance_contract.non_governable_axes_after_signal
+        description: 声明 signal 冻结后不可调整的轴，用于防止调参漂移。
         type: list[string]
       - path: search_governance_contract.non_governable_axis_reject_rule
+        description: 声明触碰不可调整轴时的拒绝规则。
         type: string
       - path: delivery_contract.machine_artifacts
+        description: 声明交付给下游的机器产物，用于下游读取和 review。
         type: list[string]
       - path: delivery_contract.consumer_stage
+        description: 声明交付产物的消费阶段。
         type: enum
         values:
           - csf_test_evidence
       - path: delivery_contract.reuse_constraints
+        description: 声明下游复用约束，用于防止越界复用训练产物。
         type: string
 
   train_factor_quality.parquet:
@@ -129,36 +158,50 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_train_freeze
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: source_stage
+        description: 记录该产物承接的上游阶段，用于审计阶段输入来源。
         type: enum
         values:
           - csf_signal_ready
       - path: program_dir
+        description: 记录阶段程序目录，用于定位真实执行代码。
         type: string
       - path: program_entrypoint
+        description: 记录阶段程序入口，用于定位可执行主程序。
         type: string
       - path: program_execution_manifest
+        description: 记录程序执行清单路径，用于审计输入、输出和环境。
         type: string
       - path: input_roots
+        description: 列出阶段程序输入根目录，用于复现数据读取范围。
         type: list[string]
       - path: stage_outputs
+        description: 列出阶段程序输出路径，用于确认正式产物来自该次执行。
         type: list[string]
       - path: replay_command
+        description: 记录复现命令，用于审计和重放阶段执行。
         type: string
       - path: candidate_variant_ids
+        description: 列出候选变体 ID，用于追踪训练或测试评估范围。
         type: list[string]
       - path: kept_variant_ids
+        description: 列出保留变体 ID，用于限定后续阶段可继续评估的对象。
         type: list[string]
       - path: rejected_variant_ids
+        description: 列出拒绝变体 ID，用于审计筛选和淘汰依据。
         type: list[string]
       - path: selection_rule
+        description: 声明变体选择规则，用于复现保留和拒绝决策。
         type: string
       - path: frozen_signal_contract_reference
+        description: 记录冻结信号合同引用，用于绑定训练输入不再漂移。
         type: string
 
   artifact_catalog.md:

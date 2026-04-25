@@ -156,18 +156,21 @@ def test_csf_data_ready_contract_locks_parquet_columns() -> None:
     assert _artifact(contract, "shared_feature_base")["required_files"] == [
         {
             "path": "returns_panel.parquet",
+            "description": "声明收益面板文件要求，用于后续因子标签、回测和诊断。",
             "type": "parquet",
             "required_columns": ["date", "asset", "return_1d"],
             "non_empty": True,
         },
         {
             "path": "liquidity_panel.parquet",
+            "description": "声明流动性面板文件要求，用于可交易性和容量约束。",
             "type": "parquet",
             "required_columns": ["date", "asset", "dollar_volume"],
             "non_empty": True,
         },
         {
             "path": "beta_inputs.parquet",
+            "description": "声明 beta 输入面板文件要求，用于市场中性或 beta 残差化。",
             "type": "parquet",
             "required_columns": ["date", "asset", "beta_proxy"],
             "non_empty": True,

@@ -40,33 +40,43 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: market
+        description: 声明研究市场，用于限定数据、交易规则和可交易对象范围。
         type: string
         default: ""
       - path: data_source
+        description: 声明数据来源，用于审计数据 provenance 和复现实验。
         type: string
         default: ""
       - path: instrument_type
+        description: 声明交易品种类型，用于约束数据字段、费用和交易规则。
         type: string
         default: ""
       - path: universe
+        description: 声明研究标的池，用于限定样本和后续产物覆盖范围。
         type: string
         default: ""
       - path: bar_size
+        description: 声明基础 K 线或采样粒度，用于对齐数据、信号和持有周期。
         type: string
         default: ""
       - path: holding_horizons
+        description: 列出研究持有周期，用于约束标签、收益计算和评估窗口。
         type: list[string]
         default: []
       - path: target_task
+        description: 声明目标研究任务，用于约束信号、证据和回测解释。
         type: string
         default: ""
       - path: excluded_scope
+        description: 列出明确排除的研究范围，用于防止后续阶段范围漂移。
         type: list[string]
         default: []
       - path: budget_days
+        description: 声明研究预算天数，用于约束迭代规模和停止条件。
         type: integer
         default: 0
       - path: max_iterations
+        description: 声明最大迭代次数，用于限制研究搜索和返工次数。
         type: integer
         default: 0
 
@@ -75,85 +85,113 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: idea_id
+        description: 标识原始研究想法，用于把 intake 判断绑定到具体候选 idea。
         type: string
       - path: reviewer_identity
+        description: 记录评分人身份，用于审计资格评分来源。
         type: string
         default: codex
       - path: summary
+        description: 记录资格评分摘要，用于快速理解 intake 结论。
         type: string
         default: ""
       - path: dimensions
+        description: 承载各评分维度，用于结构化评估想法是否值得进入 mandate。
         type: map
       - path: dimensions.observability.score
+        description: 记录可观测性维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.observability.evidence
+        description: 记录支撑可观测性评分的证据。
         type: list[string]
         default: []
       - path: dimensions.observability.uncertainty
+        description: 记录可观测性维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.observability.kill_reason
+        description: 记录可观测性维度可能终止研究的原因。
         type: list[string]
         default: []
       - path: dimensions.mechanism_plausibility.score
+        description: 记录机制可信度维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.mechanism_plausibility.evidence
+        description: 记录支撑机制可信度评分的证据。
         type: list[string]
         default: []
       - path: dimensions.mechanism_plausibility.uncertainty
+        description: 记录机制可信度维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.mechanism_plausibility.kill_reason
+        description: 记录机制可信度维度可能终止研究的原因。
         type: list[string]
         default: []
       - path: dimensions.tradeability.score
+        description: 记录可交易性维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.tradeability.evidence
+        description: 记录支撑可交易性评分的证据。
         type: list[string]
         default: []
       - path: dimensions.tradeability.uncertainty
+        description: 记录可交易性维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.tradeability.kill_reason
+        description: 记录可交易性维度可能终止研究的原因。
         type: list[string]
         default: []
       - path: dimensions.data_feasibility.score
+        description: 记录数据可行性维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.data_feasibility.evidence
+        description: 记录支撑数据可行性评分的证据。
         type: list[string]
         default: []
       - path: dimensions.data_feasibility.uncertainty
+        description: 记录数据可行性维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.data_feasibility.kill_reason
+        description: 记录数据可行性维度可能终止研究的原因。
         type: list[string]
         default: []
       - path: dimensions.scoping_clarity.score
+        description: 记录范围清晰度维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.scoping_clarity.evidence
+        description: 记录支撑范围清晰度评分的证据。
         type: list[string]
         default: []
       - path: dimensions.scoping_clarity.uncertainty
+        description: 记录范围清晰度维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.scoping_clarity.kill_reason
+        description: 记录范围清晰度维度可能终止研究的原因。
         type: list[string]
         default: []
       - path: dimensions.distinctiveness.score
+        description: 记录差异化程度维度评分，用于 intake 综合判断。
         type: integer
         default: 0
       - path: dimensions.distinctiveness.evidence
+        description: 记录支撑差异化程度评分的证据。
         type: list[string]
         default: []
       - path: dimensions.distinctiveness.uncertainty
+        description: 记录差异化程度维度的不确定性。
         type: list[string]
         default: []
       - path: dimensions.distinctiveness.kill_reason
+        description: 记录差异化程度维度可能终止研究的原因。
         type: list[string]
         default: []
 
@@ -162,8 +200,10 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: idea_id
+        description: 标识原始研究想法，用于把 intake 判断绑定到具体候选 idea。
         type: string
       - path: verdict
+        description: 声明 gate 结论，用于决定是否进入下一阶段或要求重构。
         type: enum
         values:
           - GO_TO_MANDATE
@@ -171,41 +211,52 @@ artifacts:
           - DROP
         default: NEEDS_REFRAME
       - path: why
+        description: 记录 gate 结论理由，用于支撑放行、重构或终止判断。
         type: list[string]
         default: []
       - path: route_assessment
+        description: 声明 route assessment 的正式取值，用于阶段产物校验、review 和下游复用。
         type: map
       - path: route_assessment.candidate_routes
+        description: 列出可选研究路线，用于 intake 阶段路线评估。
         type: list[string]
         allowed_values_if_nonempty:
           - time_series_signal
           - cross_sectional_factor
         default: []
       - path: route_assessment.recommended_route
+        description: 声明推荐研究路线，用于 mandate 起草。
         type: string
         allowed_values_if_nonempty:
           - time_series_signal
           - cross_sectional_factor
         default: ""
       - path: route_assessment.why_recommended
+        description: 记录推荐该路线的理由。
         type: list[string]
         default: []
       - path: route_assessment.why_not_other_routes
+        description: 记录未选择其他路线的理由。
         type: map
         default: {}
       - path: route_assessment.route_risks
+        description: 记录路线选择带来的主要风险。
         type: list[string]
         default: []
       - path: route_assessment.route_decision_pending
+        description: 记录路线决策是否仍待确认。
         type: boolean
         default: true
       - path: approved_scope
+        description: 记录批准后的研究范围，用于生成 mandate 的冻结输入。
         type: map
         default: {}
       - path: required_reframe_actions
+        description: 列出必须完成的重构动作，用于 NEEDS_REFRAME 后继续推进。
         type: list[string]
         default: []
       - path: rollback_target
+        description: 声明回滚目标阶段，用于失败处理时定位返回边界。
         type: string
         default: 00_idea_intake
 
@@ -219,109 +270,144 @@ artifacts:
       - execution_contract
     fields:
       - path: groups
+        description: 承载 grouped freeze 合同，用于逐组确认 mandate 输入是否冻结。
         type: map
       - path: groups.research_intent.confirmed
+        description: 记录该 freeze group 是否已由用户确认冻结。
         type: boolean
         default: false
       - path: groups.research_intent.draft.research_question
+        description: 记录冻结后的研究问题。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.primary_hypothesis
+        description: 记录冻结后的主假设。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.counter_hypothesis
+        description: 记录冻结后的对立假设。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.research_route
+        description: 声明研究路线，用于决定后续采用时序信号或横截面因子流程。该字段属于研究意图 freeze group。
         type: string
         allowed_values_if_nonempty:
           - time_series_signal
           - cross_sectional_factor
         default: ""
       - path: groups.research_intent.draft.factor_role
+        description: 声明因子在组合或策略中的角色，用于约束后续评估和组合表达。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.neutralization_policy
+        description: 声明中性化策略，用于约束 beta 或分组残差化处理。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.target_strategy_reference
+        description: 记录目标策略引用，用于在过滤器或叠加路线中绑定被服务的策略。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.group_taxonomy_reference
+        description: 记录分组分类体系引用，用于分组中性、组内排序或分组诊断。该字段属于研究意图 freeze group。
         type: string
         default: ""
       - path: groups.research_intent.draft.excluded_routes
+        description: 列出明确排除的研究路线，用于防止后续阶段漂移到非批准方向。该字段属于研究意图 freeze group。
         type: list[string]
         default: []
       - path: groups.research_intent.draft.route_rationale
+        description: 记录选择当前路线的理由，用于 review 判断路线是否有证据支撑。该字段属于研究意图 freeze group。
         type: list[string]
         default: []
       - path: groups.research_intent.draft.success_criteria
+        description: 记录成功标准，用于后续 gate 判断。该字段属于研究意图 freeze group。
         type: list[string]
         default: []
       - path: groups.research_intent.draft.failure_criteria
+        description: 记录失败标准，用于后续 gate 判断。该字段属于研究意图 freeze group。
         type: list[string]
         default: []
       - path: groups.research_intent.draft.excluded_topics
+        description: 记录明确排除的研究主题。该字段属于研究意图 freeze group。
         type: list[string]
         default: []
       - path: groups.scope_contract.confirmed
+        description: 记录该 freeze group 是否已由用户确认冻结。
         type: boolean
         default: false
       - path: groups.scope_contract.draft.market
+        description: 声明研究市场，用于限定数据、交易规则和可交易对象范围。该字段属于范围合同 freeze group。
         type: string
         default: ""
       - path: groups.scope_contract.draft.universe
+        description: 声明研究标的池，用于限定样本和后续产物覆盖范围。该字段属于范围合同 freeze group。
         type: string
         default: ""
       - path: groups.scope_contract.draft.target_task
+        description: 声明目标研究任务，用于约束信号、证据和回测解释。该字段属于范围合同 freeze group。
         type: string
         default: ""
       - path: groups.scope_contract.draft.excluded_scope
+        description: 列出明确排除的研究范围，用于防止后续阶段范围漂移。该字段属于范围合同 freeze group。
         type: list[string]
         default: []
       - path: groups.scope_contract.draft.budget_days
+        description: 声明研究预算天数，用于约束迭代规模和停止条件。该字段属于范围合同 freeze group。
         type: integer
         default: 0
       - path: groups.scope_contract.draft.max_iterations
+        description: 声明最大迭代次数，用于限制研究搜索和返工次数。该字段属于范围合同 freeze group。
         type: integer
         default: 0
       - path: groups.data_contract.confirmed
+        description: 记录该 freeze group 是否已由用户确认冻结。
         type: boolean
         default: false
       - path: groups.data_contract.draft.data_source
+        description: 声明数据来源，用于审计数据 provenance 和复现实验。该字段属于数据合同 freeze group。
         type: string
         default: ""
       - path: groups.data_contract.draft.bar_size
+        description: 声明基础 K 线或采样粒度，用于对齐数据、信号和持有周期。该字段属于数据合同 freeze group。
         type: string
         default: ""
       - path: groups.data_contract.draft.holding_horizons
+        description: 列出研究持有周期，用于约束标签、收益计算和评估窗口。该字段属于数据合同 freeze group。
         type: list[string]
         default: []
       - path: groups.data_contract.draft.timestamp_semantics
+        description: 记录时间戳语义，用于防止采样和交易时点误用。该字段属于数据合同 freeze group。
         type: string
         default: ""
       - path: groups.data_contract.draft.no_lookahead_guardrail
+        description: 记录防未来函数护栏，用于约束数据和信号生成。该字段属于数据合同 freeze group。
         type: string
         default: ""
       - path: groups.execution_contract.confirmed
+        description: 记录该 freeze group 是否已由用户确认冻结。
         type: boolean
         default: false
       - path: groups.execution_contract.draft.time_split_note
+        description: 记录时间切分补充说明。该字段属于执行合同 freeze group。
         type: string
         default: ""
       - path: groups.execution_contract.draft.parameter_boundary_note
+        description: 记录参数边界补充说明。该字段属于执行合同 freeze group。
         type: string
         default: ""
       - path: groups.execution_contract.draft.artifact_contract_note
+        description: 记录正式产物合同补充说明。该字段属于执行合同 freeze group。
         type: string
         default: ""
       - path: groups.execution_contract.draft.crowding_capacity_note
+        description: 记录拥挤度和容量约束补充说明。该字段属于执行合同 freeze group。
         type: string
         default: ""

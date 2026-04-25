@@ -17,42 +17,57 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_signal_ready
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: factor_id
+        description: 标识当前因子，用于连接 manifest、panel 和后续评估。
         type: string
       - path: factor_version
+        description: 记录因子版本，用于区分同一因子的冻结变体。
         type: string
       - path: factor_direction
+        description: 声明因子方向，用于解释高值或低值是否代表更强信号。
         type: enum
         values:
           - high_better
           - low_better
       - path: factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。
         type: enum
         values:
           - single_factor
           - multi_factor_score
       - path: panel_primary_key
+        description: 声明面板主键字段组合，用于唯一定位横截面样本。
         type: list[string]
       - path: raw_factor_fields
+        description: 列出原始因子字段，用于审计输入字段来源。
         type: list[string]
       - path: derived_factor_fields
+        description: 列出派生因子字段，用于审计变换后可用字段。
         type: list[string]
       - path: final_score_field
+        description: 声明最终评分字段，用于下游排序、分桶和评估。
         type: string
       - path: as_of_semantics
+        description: 声明 as of 时间语义，用于防止未来信息泄漏。
         type: string
       - path: coverage_min_ratio
+        description: 声明因子覆盖率最低阈值，用于判定 signal_ready 是否可用。
         type: number
       - path: coverage_contract
+        description: 记录覆盖率合同，用于约束缺失样本处理和 review 判断。
         type: string
       - path: missing_value_policy
+        description: 声明缺失值处理策略，用于保证因子面板可复现。
         type: string
       - path: input_field_map
+        description: 记录输入字段映射，用于追踪因子字段从上游数据到输出的来源。
         type: list[map]
 
   component_factor_manifest.yaml:
@@ -60,21 +75,27 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_signal_ready
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。
         type: enum
         values:
           - single_factor
           - multi_factor_score
       - path: component_factor_ids
+        description: 列出组成多因子评分的组件因子。
         type: list[string]
       - path: score_combination_formula
+        description: 声明组件因子的评分组合公式，用于复现最终分数。
         type: string
       - path: combination_policy
+        description: 声明多因子组合政策，用于限制权重、标准化和缺失处理。
         type: string
 
   factor_coverage_report.parquet:
@@ -98,47 +119,59 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: source_route_artifact
+        description: 记录继承的路线 artifact 路径，用于绑定 mandate 路线来源。
         type: string
       - path: source_route_digest_sha256
+        description: 记录路线 artifact 摘要，用于检测上游路线合同是否漂移。
         type: string
       - path: research_route
+        description: 声明研究路线，用于决定后续采用时序信号或横截面因子流程。
         type: enum
         values:
           - cross_sectional_factor
       - path: factor_role
+        description: 声明因子在组合或策略中的角色，用于约束后续评估和组合表达。
         type: enum
         values:
           - standalone_alpha
           - regime_filter
           - combo_filter
       - path: factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。
         type: enum
         values:
           - single_factor
           - multi_factor_score
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
       - path: neutralization_policy
+        description: 声明中性化策略，用于约束 beta 或分组残差化处理。
         type: enum
         values:
           - none
           - market_beta_neutral
           - group_neutral
       - path: target_strategy_reference
+        description: 记录目标策略引用，用于在过滤器或叠加路线中绑定被服务的策略。
         type: string
       - path: group_taxonomy_reference
+        description: 记录分组分类体系引用，用于分组中性、组内排序或分组诊断。
         type: string
       - path: target_strategy_reference_requirement_status
+        description: 记录目标策略引用要求是否满足，用于校验过滤器或叠加路线。
         type: enum
         values:
           - not_required
           - required_satisfied
       - path: group_taxonomy_reference_requirement_status
+        description: 记录分组分类引用要求是否满足，用于校验分组相关组合表达。
         type: enum
         values:
           - not_required
           - required_satisfied
       - path: inheritance_mode
+        description: 声明路线继承方式，用于确认本阶段没有改写 mandate 路线。
         type: enum
         values:
           - exact_copy
@@ -163,49 +196,63 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_signal_ready
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: source_stage
+        description: 记录该产物承接的上游阶段，用于审计阶段输入来源。
         type: enum
         values:
           - csf_data_ready
       - path: research_route
+        description: 声明研究路线，用于决定后续采用时序信号或横截面因子流程。
         type: enum
         values:
           - cross_sectional_factor
       - path: factor_role
+        description: 声明因子在组合或策略中的角色，用于约束后续评估和组合表达。
         type: enum
         values:
           - standalone_alpha
           - regime_filter
           - combo_filter
       - path: factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。
         type: enum
         values:
           - single_factor
           - multi_factor_score
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
       - path: neutralization_policy
+        description: 声明中性化策略，用于约束 beta 或分组残差化处理。
         type: enum
         values:
           - none
           - market_beta_neutral
           - group_neutral
       - path: program_dir
+        description: 记录阶段程序目录，用于定位真实执行代码。
         type: string
       - path: program_entrypoint
+        description: 记录阶段程序入口，用于定位可执行主程序。
         type: string
       - path: program_execution_manifest
+        description: 记录程序执行清单路径，用于审计输入、输出和环境。
         type: string
       - path: input_roots
+        description: 列出阶段程序输入根目录，用于复现数据读取范围。
         type: list[string]
       - path: stage_outputs
+        description: 列出阶段程序输出路径，用于确认正式产物来自该次执行。
         type: list[string]
       - path: replay_command
+        description: 记录复现命令，用于审计和重放阶段执行。
         type: string
 
   artifact_catalog.md:

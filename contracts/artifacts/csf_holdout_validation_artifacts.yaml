@@ -10,66 +10,94 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_holdout_validation
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: source_stage
+        description: 记录该产物承接的上游阶段，用于审计阶段输入来源。
         type: enum
         values:
           - csf_backtest_ready
       - path: holdout_window_source
+        description: 记录 holdout 窗口来源，用于确认最终验证窗口来自冻结切分。
         type: string
       - path: time_split
+        description: 记录时间切分引用，用于绑定 holdout 与 mandate 时间合同。
         type: map
       - path: reuse_rule
+        description: 声明复用规则，用于限制 holdout 阶段不得重新选择或调参。
         type: string
       - path: drift_scope
+        description: 声明漂移检查范围，用于限定 holdout 稳定性审计。
         type: string
       - path: backtest_contract_source
+        description: 记录回测合同来源，用于绑定 holdout 使用的配置。
         type: string
       - path: test_contract_source
+        description: 记录测试证据合同来源，用于绑定 holdout 使用的变体。
         type: string
       - path: variant_reuse_rule
+        description: 声明变体复用规则，用于禁止 holdout 重新筛选变体。
         type: string
       - path: no_reestimate_rule
+        description: 声明不得重新估计规则，用于保持 holdout 的最终验证属性。
         type: string
       - path: direction_flip_rule
+        description: 声明方向翻转处理规则，用于识别信号方向失效。
         type: string
       - path: coverage_rule
+        description: 声明 holdout 覆盖率规则，用于判定最终验证样本是否充分。
         type: string
       - path: regime_shift_rule
+        description: 声明 regime shift 判定规则，用于评估市场状态变化影响。
         type: string
       - path: retryable_conditions
+        description: 列出可重试条件，用于区分可修复问题和终止条件。
         type: list[string]
       - path: child_lineage_trigger
+        description: 声明子 lineage 触发条件，用于处理超出原合同的变化。
         type: string
       - path: rollback_boundary
+        description: 声明失败回滚边界，用于限制 failure handling 返回位置。
         type: string
       - path: input_roots
+        description: 列出阶段程序输入根目录，用于复现数据读取范围。
         type: list[string]
       - path: stage_outputs
+        description: 列出阶段程序输出路径，用于确认正式产物来自该次执行。
         type: list[string]
       - path: program_dir
+        description: 记录阶段程序目录，用于定位真实执行代码。
         type: string
       - path: program_entrypoint
+        description: 记录阶段程序入口，用于定位可执行主程序。
         type: string
       - path: program_execution_manifest
+        description: 记录程序执行清单路径，用于审计输入、输出和环境。
         type: string
       - path: replay_command
+        description: 记录复现命令，用于审计和重放阶段执行。
         type: string
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
       - path: delivery_contract.machine_artifacts
+        description: 声明交付给下游的机器产物，用于下游读取和 review。
         type: list[string]
       - path: delivery_contract.consumer_stage
+        description: 声明交付产物的消费阶段。
         type: enum
         values:
           - terminal
       - path: delivery_contract.field_doc_rule
+        description: 声明字段文档规则，用于要求下游可解释字段含义。
         type: string
 
   holdout_factor_diagnostics.parquet:
@@ -107,20 +135,25 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_holdout_validation
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: direction_match
+        description: 记录 holdout 方向是否与冻结预期一致。
         type: boolean
       - path: stability_status
+        description: 记录稳定性检查状态，用于判断最终验证是否稳定。
         type: enum
         values:
           - pass
           - review
           - fail
       - path: rolling_window_count
+        description: 记录滚动窗口数量，用于说明稳定性检查样本规模。
         type: integer
 
   regime_shift_audit.json:
@@ -128,20 +161,25 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_holdout_validation
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: regime_shift_detected
+        description: 记录是否检测到 regime shift，用于解释 holdout 结果。
         type: boolean
       - path: audit_status
+        description: 记录审计状态，用于决定 holdout review 是否可放行。
         type: enum
         values:
           - pass
           - review
           - fail
       - path: explanation
+        description: 记录解释文本，用于说明审计结论和异常原因。
         type: string
 
   csf_holdout_gate_decision.md:

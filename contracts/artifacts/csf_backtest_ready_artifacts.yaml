@@ -10,44 +10,62 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_backtest_ready
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
       - path: selection_rule
+        description: 声明变体选择规则，用于复现保留和拒绝决策。
         type: string
       - path: weight_mapping_rule
+        description: 声明因子到权重的映射规则，用于固定组合构造。
         type: string
       - path: gross_exposure_rule
+        description: 声明总敞口规则，用于限制组合杠杆。
         type: string
       - path: rebalance_execution_lag
+        description: 声明再平衡执行滞后，用于防止信号和交易时间错配。
         type: string
       - path: turnover_budget_rule
+        description: 声明换手预算规则，用于限制交易频率和成本暴露。
         type: string
       - path: cost_model
+        description: 声明交易成本模型，用于回测净值和容量评估。
         type: string
       - path: capacity_model
+        description: 声明容量模型，用于评估策略可部署规模。
         type: string
       - path: max_name_weight_rule
+        description: 声明单一资产最大权重规则，用于控制集中度。
         type: string
       - path: net_exposure_rule
+        description: 声明净敞口规则，用于控制方向性市场暴露。
         type: string
       - path: group_neutral_overlay
+        description: 声明分组中性叠加规则，用于控制组别风险暴露。
         type: string
       - path: target_strategy_reference
+        description: 记录目标策略引用，用于在过滤器或叠加路线中绑定被服务的策略。
         type: string
       - path: required_diagnostics
+        description: 列出必需诊断项，用于约束 backtest_ready review 覆盖。
         type: list[string]
       - path: delivery_contract.machine_artifacts
+        description: 声明交付给下游的机器产物，用于下游读取和 review。
         type: list[string]
       - path: delivery_contract.consumer_stage
+        description: 声明交付产物的消费阶段。
         type: enum
         values:
           - csf_holdout_validation
       - path: delivery_contract.frozen_config_note
+        description: 记录冻结配置说明，用于确认回测配置不可再调。
         type: string
 
   portfolio_weight_panel.parquet:
@@ -107,14 +125,18 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_backtest_ready
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: max_drawdown
+        description: 记录最大回撤，用于评估策略风险约束。
         type: number
       - path: status
+        description: 记录检查状态，用于判定对应诊断是否通过。
         type: enum
         values:
           - pass
@@ -155,30 +177,41 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_backtest_ready
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: source_stage
+        description: 记录该产物承接的上游阶段，用于审计阶段输入来源。
         type: enum
         values:
           - csf_test_evidence
       - path: input_roots
+        description: 列出阶段程序输入根目录，用于复现数据读取范围。
         type: list[string]
       - path: stage_outputs
+        description: 列出阶段程序输出路径，用于确认正式产物来自该次执行。
         type: list[string]
       - path: program_dir
+        description: 记录阶段程序目录，用于定位真实执行代码。
         type: string
       - path: program_entrypoint
+        description: 记录阶段程序入口，用于定位可执行主程序。
         type: string
       - path: program_execution_manifest
+        description: 记录程序执行清单路径，用于审计输入、输出和环境。
         type: string
       - path: replay_command
+        description: 记录复现命令，用于审计和重放阶段执行。
         type: string
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
 
   artifact_catalog.md:

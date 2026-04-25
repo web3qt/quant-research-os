@@ -18,26 +18,34 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_test_evidence
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: factor_role
+        description: 声明因子在组合或策略中的角色，用于约束后续评估和组合表达。
         type: enum
         values:
           - standalone_alpha
           - regime_filter
           - combo_filter
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: primary_evidence_contract
+        description: 声明主证据合同，用于固定本阶段核心评估口径。
         type: string
       - path: mean_rank_ic
+        description: 记录平均 Rank IC，用于评估横截面排序信号强度。
         type: number
       - path: median_rank_ic
+        description: 记录中位 Rank IC，用于评估信号强度的稳健性。
         type: number
       - path: num_dates
+        description: 记录参与评估的日期数量，用于判断证据样本规模。
         type: integer
 
   bucket_returns.parquet:
@@ -54,18 +62,22 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_test_evidence
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: status
+        description: 记录检查状态，用于判定对应诊断是否通过。
         type: enum
         values:
           - pass
           - review
           - fail
       - path: monotonic_direction
+        description: 记录分桶单调方向，用于判断因子排序是否符合预期。
         type: string
 
   breadth_coverage_report.parquet:
@@ -82,20 +94,25 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_test_evidence
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: status
+        description: 记录检查状态，用于判定对应诊断是否通过。
         type: enum
         values:
           - pass
           - review
           - fail
       - path: subperiod_count
+        description: 记录子期间数量，用于评估证据在时间上的稳定性。
         type: integer
       - path: subperiod_rule
+        description: 声明子期间划分规则，用于复现稳定性检查。
         type: string
 
   filter_condition_panel.parquet:
@@ -122,18 +139,22 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_test_evidence
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: status
+        description: 记录检查状态，用于判定对应诊断是否通过。
         type: enum
         values:
           - pass
           - review
           - fail
       - path: mean_delta
+        description: 记录扰动前后平均差异，用于评估鲁棒性。
         type: number
 
   csf_test_gate_table.csv:
@@ -167,32 +188,44 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - csf_test_evidence
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: source_stage
+        description: 记录该产物承接的上游阶段，用于审计阶段输入来源。
         type: enum
         values:
           - csf_train_freeze
       - path: input_roots
+        description: 列出阶段程序输入根目录，用于复现数据读取范围。
         type: list[string]
       - path: stage_outputs
+        description: 列出阶段程序输出路径，用于确认正式产物来自该次执行。
         type: list[string]
       - path: program_dir
+        description: 记录阶段程序目录，用于定位真实执行代码。
         type: string
       - path: program_entrypoint
+        description: 记录阶段程序入口，用于定位可执行主程序。
         type: string
       - path: program_execution_manifest
+        description: 记录程序执行清单路径，用于审计输入、输出和环境。
         type: string
       - path: replay_command
+        description: 记录复现命令，用于审计和重放阶段执行。
         type: string
       - path: selected_variant_ids
+        description: 列出已选择变体 ID，用于限定测试、回测或 holdout 对象。
         type: list[string]
       - path: selection_rule
+        description: 声明变体选择规则，用于复现保留和拒绝决策。
         type: string
       - path: primary_evidence_contract
+        description: 声明主证据合同，用于固定本阶段核心评估口径。
         type: string
 
   artifact_catalog.md:

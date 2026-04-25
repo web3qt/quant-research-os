@@ -28,22 +28,26 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: research_route
+        description: 声明研究路线，用于决定后续采用时序信号或横截面因子流程。
         type: enum
         values:
           - time_series_signal
           - cross_sectional_factor
       - path: factor_role
+        description: 声明因子在组合或策略中的角色，用于约束后续评估和组合表达。
         type: string
         allowed_values_if_nonempty:
           - standalone_alpha
           - regime_filter
           - combo_filter
       - path: factor_structure
+        description: 声明因子结构是单因子还是多因子评分，用于约束组件清单和训练逻辑。
         type: string
         allowed_values_if_nonempty:
           - single_factor
           - multi_factor_score
       - path: portfolio_expression
+        description: 声明组合表达方式，用于约束权重构造、敞口和回测解释。
         type: string
         allowed_values_if_nonempty:
           - long_short_market_neutral
@@ -54,29 +58,38 @@ artifacts:
           - target_strategy_filter
           - target_strategy_overlay
       - path: neutralization_policy
+        description: 声明中性化策略，用于约束 beta 或分组残差化处理。
         type: string
         allowed_values_if_nonempty:
           - none
           - market_beta_neutral
           - group_neutral
       - path: target_strategy_reference
+        description: 记录目标策略引用，用于在过滤器或叠加路线中绑定被服务的策略。
         type: string
       - path: group_taxonomy_reference
+        description: 记录分组分类体系引用，用于分组中性、组内排序或分组诊断。
         type: string
       - path: excluded_routes
+        description: 列出明确排除的研究路线，用于防止后续阶段漂移到非批准方向。
         type: list[string]
         allowed_values_if_nonempty:
           - time_series_signal
           - cross_sectional_factor
       - path: route_rationale
+        description: 记录选择当前路线的理由，用于 review 判断路线是否有证据支撑。
         type: list[string]
       - path: route_change_policy
+        description: 声明路线变更规则，用于限制下游冻结前后的改线行为。
         type: map
       - path: route_change_policy.before_downstream_freeze
+        description: 声明下游冻结前允许的路线变更处理方式。
         type: string
       - path: route_change_policy.after_downstream_freeze
+        description: 声明下游冻结后路线变更必须采用的处理方式。
         type: string
       - path: route_contract_version
+        description: 记录路线合同版本，用于后续继承和兼容性审计。
         type: string
 
   time_split.json:
@@ -84,18 +97,25 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: train
+        description: 声明训练窗口，用于参数选择和校准阶段取样。
         type: string
       - path: test
+        description: 声明测试窗口，用于冻结后样本外证据评估。
         type: string
       - path: backtest
+        description: 声明回测窗口，用于策略级表现和交易成本评估。
         type: string
       - path: holdout
+        description: 声明最终留出窗口，用于上线前不可调参验证。
         type: string
       - path: bar_size
+        description: 声明基础 K 线或采样粒度，用于对齐数据、信号和持有周期。
         type: string
       - path: holding_horizons
+        description: 列出研究持有周期，用于约束标签、收益计算和评估窗口。
         type: list[string]
       - path: policy_note
+        description: 记录时间切分政策说明，用于解释窗口选择和不可回看约束。
         type: string
 
   parameter_grid.yaml:
@@ -103,8 +123,10 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: parameters
+        description: 列出允许探索的参数网格，用于限定研究搜索空间。
         type: list[map]
       - path: note
+        description: 记录补充说明，用于解释该配置中不能结构化表达的约束。
         type: string
 
   run_config.toml:
@@ -112,22 +134,30 @@ artifacts:
     unknown_top_level_fields: forbid
     fields:
       - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
         type: enum
         values:
           - mandate
       - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
         type: string
       - path: market
+        description: 声明研究市场，用于限定数据、交易规则和可交易对象范围。
         type: string
       - path: universe
+        description: 声明研究标的池，用于限定样本和后续产物覆盖范围。
         type: string
       - path: target_task
+        description: 声明目标研究任务，用于约束信号、证据和回测解释。
         type: string
       - path: data_source
+        description: 声明数据来源，用于审计数据 provenance 和复现实验。
         type: string
       - path: bar_size
+        description: 声明基础 K 线或采样粒度，用于对齐数据、信号和持有周期。
         type: string
       - path: non_rust_exceptions
+        description: 列出允许非 Rust 实现的例外项，用于约束执行程序边界。
         type: list[string]
 
   artifact_catalog.md:
