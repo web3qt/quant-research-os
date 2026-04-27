@@ -61,6 +61,24 @@ def test_factor_diagnostics_docs_show_codex_prompt_examples_before_shell_debuggi
     assert guide.index("在 Codex 里直接问") < guide.index("维护者 / 调试入口")
 
 
+def test_factor_diagnostics_docs_require_chinese_interpretation_not_metric_dump() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    codex = Path("docs/README.codex.md").read_text(encoding="utf-8")
+    guide = Path("docs/guides/qros-factor-diagnostics.md").read_text(encoding="utf-8")
+    usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    skill = skill_text("qros-factor-diagnostics")
+    combined_docs = "\n".join([readme, codex, guide, usage])
+
+    assert "$qros-factor-diagnostics mean IC 为负说明什么，跟当前策略方向有没有冲突" in combined_docs
+    assert "$qros-factor-diagnostics 不要只给数字，用中文解释这些指标说明什么" in combined_docs
+    assert "不要只输出指标数字" in skill
+    assert "必须用中文解释核心指标含义" in skill
+    assert "跟当前策略的关系" in skill
+    assert "mean IC / Rank IC 为负" in skill
+    assert "成本后收益" in skill
+    assert "holdout 退化" in skill
+
+
 def test_factor_diagnostics_guide_lists_supported_csf_stages() -> None:
     guide = Path("docs/guides/qros-factor-diagnostics.md").read_text(encoding="utf-8")
 

@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 from runtime.tools.factor_diagnostics import FactorDiagnosticsError, diagnostics_payload, latest_lineage_id
+from runtime.scripts.run_factor_diagnostics import _render_text
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -156,6 +157,40 @@ def test_csf_test_evidence_reads_rank_ic_and_reports_missing_spread(tmp_path: Pa
     assert "top_bottom_spread" in _missing_metric_ids(payload)
 
 
+def test_csf_test_evidence_interprets_negative_rank_ic_in_chinese(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    formal_dir = _formal_dir(outputs_root, "lineage", "05_csf_test_evidence")
+    _write_json(
+        formal_dir / "rank_ic_summary.json",
+        {
+            "stage": "csf_test_evidence",
+            "factor_role": "standalone_alpha",
+            "selected_variant_ids": ["baseline_v1"],
+            "primary_evidence_contract": "rank_ic_and_bucket_spread",
+            "mean_rank_ic": -0.031,
+            "median_rank_ic": -0.02,
+            "num_dates": 3,
+        },
+    )
+    _write_parquet(
+        formal_dir / "rank_ic_timeseries.parquet",
+        [
+            {"date": "2024-01-01", "variant_id": "baseline_v1", "rank_ic": -0.03},
+            {"date": "2024-01-02", "variant_id": "baseline_v1", "rank_ic": -0.01},
+            {"date": "2024-01-03", "variant_id": "baseline_v1", "rank_ic": 0.01},
+        ],
+    )
+
+    payload = diagnostics_payload(outputs_root=outputs_root, lineage_id="lineage", stage="csf_test_evidence")
+    rank_ic = _observed_metric(payload, "rank_ic")
+
+    assert rank_ic["severity"] == "watch"
+    assert "Rank IC 为负" in rank_ic["interpretation"]
+    assert "因子排序与未来收益排序反向" in rank_ic["interpretation"]
+    assert "factor_direction" in rank_ic["strategy_link"]
+    assert "做多高因子组" in rank_ic["strategy_link"]
+
+
 def test_csf_backtest_ready_reads_existing_portfolio_metrics(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     formal_dir = _formal_dir(outputs_root, "lineage", "06_csf_backtest_ready")
@@ -176,6 +211,10 @@ def test_csf_backtest_ready_reads_existing_portfolio_metrics(tmp_path: Path) -> 
     assert _observed_metric(payload, "max_drawdown")["value"] == pytest.approx(-0.08)
     assert _observed_metric(payload, "turnover")["value"] == pytest.approx(0.14)
     assert _observed_metric(payload, "capacity_utilization")["value"] == pytest.approx(0.25)
+    assert "扣成本后" in _observed_metric(payload, "mean_net_return")["interpretation"]
+    assert "成本侵蚀" in _observed_metric(payload, "gross_net_erosion")["interpretation"]
+    assert "最大回撤" in _observed_metric(payload, "max_drawdown")["interpretation"]
+    assert "容量" in _observed_metric(payload, "capacity_utilization")["interpretation"]
     assert {"sharpe", "profit_factor"} <= _missing_metric_ids(payload)
 
 
@@ -212,3 +251,36 @@ def test_csf_holdout_validation_reads_compare_metrics(tmp_path: Path) -> None:
     assert _observed_metric(payload, "bucket_stability_score")["value"] == pytest.approx(0.7)
     assert _observed_metric(payload, "rolling_stability")["value"] == "pass"
     assert _observed_metric(payload, "regime_shift_audit")["value"] == "pass"
+
+
+def test_text_renderer_explains_metrics_in_chinese(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    formal_dir = _formal_dir(outputs_root, "lineage", "05_csf_test_evidence")
+    _write_json(
+        formal_dir / "rank_ic_summary.json",
+        {
+            "stage": "csf_test_evidence",
+            "factor_role": "standalone_alpha",
+            "selected_variant_ids": ["baseline_v1"],
+            "primary_evidence_contract": "rank_ic_and_bucket_spread",
+            "mean_rank_ic": -0.031,
+            "median_rank_ic": -0.02,
+            "num_dates": 3,
+        },
+    )
+    _write_parquet(
+        formal_dir / "rank_ic_timeseries.parquet",
+        [
+            {"date": "2024-01-01", "variant_id": "baseline_v1", "rank_ic": -0.03},
+            {"date": "2024-01-02", "variant_id": "baseline_v1", "rank_ic": -0.01},
+            {"date": "2024-01-03", "variant_id": "baseline_v1", "rank_ic": 0.01},
+        ],
+    )
+
+    text = _render_text(diagnostics_payload(outputs_root=outputs_root, lineage_id="lineage", stage="csf_test_evidence"))
+
+    assert "先说结论" in text
+    assert "怎么理解这些数" in text
+    assert "跟当前策略的关系" in text
+    assert "Rank IC 为负" in text
+    assert "这不是 review verdict，也不是 gate verdict" in text

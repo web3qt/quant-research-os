@@ -13,6 +13,8 @@ $qros-factor-diagnostics 看下当前 lineage 的因子诊断
 $qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
 $qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
 $qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+$qros-factor-diagnostics mean IC 为负说明什么，跟当前策略方向有没有冲突
+$qros-factor-diagnostics 不要只给数字，用中文解释这些指标说明什么
 ```
 
 Codex 会读取当前 active research repo 的 `outputs/`，默认选择最近修改的 lineage。你也可以在问题里自然说明目标，例如：
@@ -42,12 +44,20 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 
 - `Health`：`GOOD`、`WATCH`、`WEAK`、`INSUFFICIENT_DATA` 或 `NOT_APPLICABLE`
 - `Confidence`：`HIGH`、`MEDIUM` 或 `LOW`
+- `interpretation`：用中文解释指标含义，例如 mean Rank IC 为负代表因子排序与未来收益排序反向
+- `strategy_link`：说明该指标和当前策略假设的关系，例如是否可能和做多高因子组方向冲突
 - observed diagnostics：已经从 formal artifacts 读到的指标
 - missing diagnostics：当前缺少或 V1 尚未计算的指标
 - evidence gaps：证据缺口
 - next diagnostics：建议补充的诊断项
 
 `Health` 只是研究质量诊断，不是正式 `PASS / FAIL`。
+
+默认报告不应该只是指标数字。它应该先用中文说明这些数代表什么，再说明和当前策略假设的关系，例如：
+
+- mean IC / Rank IC 为负：可能表示因子方向与未来收益反向，需要检查 `factor_direction` 是否写反。
+- 成本后收益弱于成本前收益：可能表示信号有原始收益，但被换手、手续费、滑点或容量约束吃掉。
+- holdout 退化：可能表示样本外市场状态不同、训练期过拟合，或成本/风险暴露没有延续。
 
 ## 支持阶段
 

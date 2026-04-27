@@ -34,6 +34,9 @@ class ObservedMetric:
     value: object
     status: str
     source: str
+    severity: str
+    interpretation: str
+    strategy_link: str
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -41,6 +44,9 @@ class ObservedMetric:
             "value": self.value,
             "status": self.status,
             "source": self.source,
+            "severity": self.severity,
+            "interpretation": self.interpretation,
+            "strategy_link": self.strategy_link,
         }
 
 
@@ -217,7 +223,176 @@ def _missing(metric_id: str, reason: str) -> MissingMetric:
 
 
 def _observed(metric_id: str, value: object, source: str) -> ObservedMetric:
-    return ObservedMetric(metric_id=metric_id, value=value, status="observed", source=source)
+    interpretation = _interpret_metric(metric_id, value)
+    return ObservedMetric(
+        metric_id=metric_id,
+        value=value,
+        status="observed",
+        source=source,
+        severity=interpretation["severity"],
+        interpretation=interpretation["interpretation"],
+        strategy_link=interpretation["strategy_link"],
+    )
+
+
+def _as_float(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _pct(value: float) -> str:
+    return f"{value:.2%}"
+
+
+def _interpret_metric(metric_id: str, value: object) -> dict[str, str]:
+    numeric = _as_float(value)
+
+    if metric_id == "rank_ic":
+        if numeric is None:
+            return _plain_interpretation(metric_id)
+        if numeric < 0:
+            return {
+                "severity": "watch",
+                "interpretation": (
+                    f"mean Rank IC 为负（{numeric:.4f}），表示当前样本中因子排序与未来收益排序反向；"
+                    "通俗讲，高分标的后面反而更容易排在收益靠后的一侧。"
+                ),
+                "strategy_link": (
+                    "如果当前策略是做多高因子组，这个结果和策略方向存在冲突；"
+                    "需要优先检查 factor_direction 是否写反，再结合 Top-Bottom Spread、净收益和 holdout 方向确认。"
+                ),
+            }
+        if numeric > 0:
+            return {
+                "severity": "info",
+                "interpretation": (
+                    f"mean Rank IC 为正（{numeric:.4f}），表示因子排序与未来收益排序大体同向；"
+                    "高分标的后续收益排名更靠前的概率更高。"
+                ),
+                "strategy_link": "如果策略做多高因子组，这个信号方向与策略假设基本一致，但仍要看分层、成本后收益和 holdout 是否延续。",
+            }
+        return {
+            "severity": "watch",
+            "interpretation": "mean Rank IC 接近 0，表示当前窗口里排序预测关系很弱，因子可能接近噪声。",
+            "strategy_link": "不要只凭这个因子做方向判断，应检查分层收益、样本 breadth 和是否只在少数日期有效。",
+        }
+
+    if metric_id == "rank_ic_win_rate" and numeric is not None:
+        severity = "watch" if numeric < 0.5 else "info"
+        return {
+            "severity": severity,
+            "interpretation": f"Rank IC 胜率为 {_pct(numeric)}，表示有多少日期因子排序方向是对的。",
+            "strategy_link": "如果胜率低于 50%，说明方向正确的日期偏少，需要确认收益是否只来自少数极端日期。",
+        }
+
+    if metric_id == "icir" and numeric is not None:
+        severity = "watch" if numeric <= 0 else "info"
+        return {
+            "severity": severity,
+            "interpretation": f"ICIR 为 {numeric:.4f}，衡量 Rank IC 均值相对波动的稳定性；越高说明预测力越稳定。",
+            "strategy_link": "ICIR 偏低或为负时，即使某些日期 IC 好看，也可能难以稳定转化为可交易收益。",
+        }
+
+    if metric_id == "mean_gross_return" and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0 else "info",
+            "interpretation": f"组合扣成本前平均收益为 {_pct(numeric)}，反映信号在不考虑交易摩擦时的原始收益能力。",
+            "strategy_link": "如果 gross 为正但 net 明显变弱，问题通常不在信号方向本身，而在换手、滑点或容量约束。",
+        }
+
+    if metric_id == "mean_net_return" and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0 else "info",
+            "interpretation": f"组合扣成本后平均收益为 {_pct(numeric)}，这是更接近真实可交易表现的收益口径。",
+            "strategy_link": "如果扣成本后收益转负，说明当前策略即使有预测信号，也可能被手续费、滑点或调仓频率吃掉。",
+        }
+
+    if metric_id == "gross_net_erosion" and numeric is not None:
+        return {
+            "severity": "watch" if numeric > 0 else "info",
+            "interpretation": f"gross 到 net 的成本侵蚀约为 {_pct(numeric)}，表示交易成本吃掉了多少平均收益。",
+            "strategy_link": "成本侵蚀越大，越需要降低换手、延长持有期、收紧交易过滤，或重新评估该因子的可交易性。",
+        }
+
+    if metric_id == "max_drawdown" and numeric is not None:
+        return {
+            "severity": "watch" if abs(numeric) > 0.1 else "info",
+            "interpretation": f"最大回撤约为 {_pct(abs(numeric))}，表示这条组合曲线历史上最深的账面回撤幅度。",
+            "strategy_link": "回撤越深，对仓位、止损、风险预算和是否需要组合层风控的要求越高。",
+        }
+
+    if metric_id == "turnover" and numeric is not None:
+        return {
+            "severity": "watch" if numeric > 0.5 else "info",
+            "interpretation": f"平均换手率约为 {_pct(numeric)}，表示策略调仓和交易强度。",
+            "strategy_link": "高换手会放大手续费、滑点和冲击成本；需要和 net return、gross/net erosion 一起看。",
+        }
+
+    if metric_id == "capacity_utilization" and numeric is not None:
+        return {
+            "severity": "watch" if numeric > 0.8 else "info",
+            "interpretation": f"容量使用率约为 {_pct(numeric)}，表示当前交易规模相对可承载容量的压力。",
+            "strategy_link": "容量使用率越高，越容易出现成交冲击；如果同时 net return 较弱，策略规模可能需要下调。",
+        }
+
+    if metric_id == "direction_match":
+        if value is False:
+            return {
+                "severity": "watch",
+                "interpretation": "holdout 方向不匹配，表示样本外方向与训练/测试阶段的冻结预期相反。",
+                "strategy_link": "这通常是高优先级风险信号，需要检查因子方向、市场状态变化和是否存在过拟合。",
+            }
+        return {
+            "severity": "info",
+            "interpretation": "holdout 方向匹配，表示样本外方向与冻结预期一致。",
+            "strategy_link": "方向一致只是必要条件，还要继续看收益退化、回撤变化和 rolling stability。",
+        }
+
+    if metric_id == "holdout_mean_net_return" and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0 else "info",
+            "interpretation": f"holdout 扣成本后平均收益为 {_pct(numeric)}，表示样本外更接近真实交易的收益表现。",
+            "strategy_link": "如果 holdout net return 明显低于 backtest，需要警惕样本内过拟合或市场状态变化。",
+        }
+
+    if metric_id == "net_return_delta" and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0 else "info",
+            "interpretation": f"holdout 相对 backtest 的净收益变化为 {_pct(numeric)}。",
+            "strategy_link": "负数表示样本外收益退化；需要结合 Rank IC、成本侵蚀和 regime shift 判断退化来源。",
+        }
+
+    if metric_id == "drawdown_delta" and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0 else "info",
+            "interpretation": f"holdout 相对 backtest 的回撤变化为 {_pct(numeric)}。",
+            "strategy_link": "负数通常表示样本外回撤加深，需要检查是否有市场状态切换或组合风险暴露扩大。",
+        }
+
+    if metric_id in {"coverage_ratio", "factor_score_non_null_ratio"} and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 0.8 else "info",
+            "interpretation": f"{metric_id} 为 {_pct(numeric)}，反映样本或因子值的有效覆盖程度。",
+            "strategy_link": "覆盖不足会让 IC、分层和回测结果更容易被少数标的或少数日期主导。",
+        }
+
+    if metric_id in {"asset_count", "breadth", "bucket_min_names"} and numeric is not None:
+        return {
+            "severity": "watch" if numeric < 30 else "info",
+            "interpretation": f"{metric_id} 为 {numeric:.0f}，反映横截面样本厚度或分层样本数量。",
+            "strategy_link": "横截面太薄时，分组收益和 Rank IC 的稳定性会下降，容易出现偶然有效。",
+        }
+
+    return _plain_interpretation(metric_id)
+
+
+def _plain_interpretation(metric_id: str) -> dict[str, str]:
+    return {
+        "severity": "info",
+        "interpretation": f"{metric_id} 已观测到，可作为当前阶段质量诊断证据之一。",
+        "strategy_link": "需要和同阶段其他 diagnostics 一起看；单个指标不构成 review verdict 或 gate verdict。",
+    }
 
 
 def _numeric_values(rows: list[dict[str, Any]], column: str) -> list[float]:

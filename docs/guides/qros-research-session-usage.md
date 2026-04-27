@@ -57,6 +57,8 @@ $qros-factor-diagnostics 看下当前 lineage 的因子诊断
 $qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
 $qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
 $qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+$qros-factor-diagnostics mean IC 为负说明什么，跟当前策略方向有没有冲突
+$qros-factor-diagnostics 不要只给数字，用中文解释这些指标说明什么
 ```
 
 Codex 会通过 `~/.codex/skills/qros-*` 找到这个 skill。安装和更新都应优先走 `Fetch and follow instructions .../.codex/INSTALL.md` 或 `qros-update`；当前 research repo 的本地 runtime 位于 `./.qros/`。
@@ -252,6 +254,8 @@ $qros-factor-diagnostics 看下当前 lineage 的因子诊断
 $qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
 $qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
 $qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+$qros-factor-diagnostics mean IC 为负说明什么，跟当前策略方向有没有冲突
+$qros-factor-diagnostics 不要只给数字，用中文解释这些指标说明什么
 ```
 
 只有做 deterministic runtime debugging 时，才需要手动调用 wrapper：
