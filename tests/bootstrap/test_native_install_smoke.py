@@ -109,6 +109,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
+    (stage_dir / "program_execution_manifest.json").write_text("ok\n", encoding="utf-8")
     write_reviewer_write_scope_baseline(
         stage_dir,
         review_cycle_id="cycle-1",
@@ -142,7 +143,6 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         },
     )
     run_reviewer_write_scope_audit(stage_dir)
-    (stage_dir / "program_execution_manifest.json").write_text("ok\n", encoding="utf-8")
     return stage_dir
 
 

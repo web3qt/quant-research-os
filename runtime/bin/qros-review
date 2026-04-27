@@ -19,11 +19,34 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="python3"
-else
-  PYTHON_BIN="python"
-fi
+select_python_bin() {
+  local candidates=()
+  if [ -n "${QROS_PYTHON:-}" ]; then
+    candidates+=("$QROS_PYTHON")
+  fi
+  candidates+=("python" "python3")
+
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if ! command -v "$candidate" >/dev/null 2>&1; then
+      continue
+    fi
+    if "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+    then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  echo "QROS requires Python >=3.11; set QROS_PYTHON or put a compatible python/python3 on PATH" >&2
+  return 1
+}
+
+PYTHON_BIN="$(select_python_bin)"
 
 RUNTIME_ROOT=""
 MANIFEST_PATH="$SCRIPT_DIR/../install-manifest.json"
