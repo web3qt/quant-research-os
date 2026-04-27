@@ -131,5 +131,6 @@ idea_intake
 | Codex 快速开始 | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
 | 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
 | 因子阶段 diagnostics | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
+| Release notes | [RELEASE_NOTES.md](RELEASE_NOTES.md) |
 | 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
 | 验证分层 | [docs/guides/qros-verification-tiers.md](docs/guides/qros-verification-tiers.md) |
