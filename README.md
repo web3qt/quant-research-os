@@ -25,12 +25,15 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 | 开始或继续一条研究线 | `$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT，横截面研究` |
 | 查看 QROS 使用帮助 | `$qros-research-session help` |
 | 查看当前研究进度 | `$qros-progress` |
+| 查看横截面因子阶段质量诊断 | `$qros-factor-diagnostics` |
 | 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
 
 > [!TIP]
 > 普通使用者默认只需要记住一条主路径：安装好以后，先从 `$qros-research-session` 开始。
 
 `$qros-progress` 是只读进度查询入口。它默认读取当前 repo 的 `outputs/`，选择最近修改的 lineage，返回当前 stage、active skill、gate 状态、blocking reason 和 next action；它不写 artifact，也不推进 stage。
+
+`$qros-factor-diagnostics` 是可选 diagnostics 入口。它查看 CSF 阶段的数据质量、因子质量、回测结果和 holdout 稳定性；它不是 review，不是 gate，不写 review closure，也不替代 `$qros-review`。
 
 ## QROS 负责什么
 
@@ -116,5 +119,6 @@ idea_intake
 | QROS for Codex | [docs/README.codex.md](docs/README.codex.md) |
 | Codex 快速开始 | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
 | 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
+| 因子阶段 diagnostics | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
 | 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
 | 验证分层 | [docs/guides/qros-verification-tiers.md](docs/guides/qros-verification-tiers.md) |

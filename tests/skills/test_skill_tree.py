@@ -6,6 +6,7 @@ from tests.helpers.skill_test_utils import skill_bundle_dir, skill_path
 def test_public_skill_tree_exists() -> None:
     assert Path("skills").exists()
     assert skill_path("qros-progress").exists()
+    assert skill_path("qros-factor-diagnostics").exists()
     assert skill_path("qros-stage-display").exists()
     assert skill_path("qros-research-session").exists()
     assert skill_path("qros-update").exists()
@@ -20,6 +21,7 @@ def test_public_skill_tree_exists() -> None:
 
 def test_public_skill_tree_is_grouped_by_stage_family() -> None:
     assert skill_bundle_dir("qros-progress").parent == Path("skills/core")
+    assert skill_bundle_dir("qros-factor-diagnostics").parent == Path("skills/core")
     assert skill_bundle_dir("qros-stage-display").parent == Path("skills/core")
     assert skill_bundle_dir("qros-research-session").parent == Path("skills/core")
     assert skill_bundle_dir("qros-update").parent == Path("skills/core")

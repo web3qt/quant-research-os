@@ -1,0 +1,116 @@
+schema_id: csf-stage-diagnostic-profiles-v1
+schema_version: v1
+
+profiles:
+  csf_data_ready:
+    health_dimensions:
+      data_coverage:
+        required_metrics:
+          - coverage_ratio
+          - asset_count
+          - split_sample_adequacy
+        recommended_metrics: []
+      universe_integrity:
+        required_metrics:
+          - universe_membership
+          - eligibility_mask
+        recommended_metrics:
+          - liquidity_panel
+          - beta_inputs
+
+  csf_signal_ready:
+    health_dimensions:
+      factor_materialization:
+        required_metrics:
+          - coverage_ratio
+          - factor_score_non_null_ratio
+          - factor_direction
+        recommended_metrics: []
+      upstream_binding:
+        required_metrics:
+          - input_field_binding
+          - route_inheritance
+        recommended_metrics: []
+
+  csf_train_freeze:
+    health_dimensions:
+      train_governance:
+        required_metrics:
+          - variant_ledger_coverage
+          - reject_reason_completeness
+          - train_quality_score
+        recommended_metrics: []
+      bucket_and_neutralization:
+        required_metrics:
+          - bucket_min_names
+          - neutralization_diagnostics
+        recommended_metrics: []
+
+  csf_test_evidence:
+    health_dimensions:
+      predictive_power:
+        required_metrics:
+          - rank_ic
+          - rank_ic_win_rate
+          - icir
+        recommended_metrics:
+          - ic
+          - ic_skew
+          - ic_autocorrelation
+      bucket_sorting:
+        required_metrics:
+          - top_bottom_spread
+          - monotonicity
+          - bucket_win_rate
+        recommended_metrics: []
+      evidence_stability:
+        required_metrics:
+          - breadth
+          - subperiod_stability
+        recommended_metrics: []
+
+  csf_backtest_ready:
+    health_dimensions:
+      portfolio_quality:
+        required_metrics:
+          - mean_gross_return
+          - mean_net_return
+          - gross_net_erosion
+          - name_level_concentration
+        recommended_metrics:
+          - alpha
+          - beta
+      risk_adjusted_quality:
+        required_metrics:
+          - max_drawdown
+        recommended_metrics:
+          - sharpe
+          - sortino
+          - calmar
+      trading_cost_and_capacity:
+        required_metrics:
+          - turnover
+          - capacity_utilization
+        recommended_metrics:
+          - profit_factor
+
+  csf_holdout_validation:
+    health_dimensions:
+      holdout_direction:
+        required_metrics:
+          - direction_match
+          - holdout_mean_net_return
+        recommended_metrics: []
+      holdout_degradation:
+        required_metrics:
+          - net_return_delta
+          - drawdown_delta
+        recommended_metrics: []
+      holdout_stability:
+        required_metrics:
+          - coverage_ratio
+          - breadth
+          - bucket_stability_score
+          - rolling_stability
+          - regime_shift_audit
+        recommended_metrics: []

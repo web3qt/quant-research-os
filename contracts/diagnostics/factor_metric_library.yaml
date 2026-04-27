@@ -1,0 +1,444 @@
+schema_id: factor-metric-library-v1
+schema_version: v1
+
+metrics:
+  coverage_ratio:
+    display_name: Coverage Ratio
+    category: data_quality
+    meaning: 衡量横截面或因子面板在各日期的有效样本覆盖比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - cross_section_coverage.parquet.coverage_ratio
+      - factor_coverage_report.parquet.coverage_ratio
+      - holdout_factor_diagnostics.parquet.coverage_ratio
+    v1_observation_mode: read_existing
+
+  asset_count:
+    display_name: Asset Count
+    category: data_quality
+    meaning: 衡量每个横截面日期参与研究或诊断的资产数量。
+    expected_direction: higher_is_better
+    required_inputs:
+      - cross_section_coverage.parquet.asset_count
+      - factor_coverage_report.parquet.asset_count
+      - breadth_coverage_report.parquet.asset_count
+    v1_observation_mode: read_existing
+
+  split_sample_adequacy:
+    display_name: Split Sample Adequacy
+    category: data_quality
+    meaning: 衡量 train、test、backtest 和 holdout 切分是否都有足够横截面快照。
+    expected_direction: pass_is_better
+    required_inputs:
+      - split_sample_adequacy_report.yaml.final_verdict
+    v1_observation_mode: read_existing
+
+  universe_membership:
+    display_name: Universe Membership
+    category: data_quality
+    meaning: 检查横截面 universe membership 是否真实落盘并具备可重建样本池。
+    expected_direction: present_is_better
+    required_inputs:
+      - asset_universe_membership.parquet
+    v1_observation_mode: gap_detect_only
+
+  eligibility_mask:
+    display_name: Eligibility Mask
+    category: data_quality
+    meaning: 检查基础可交易 eligibility mask 是否落盘并可用于下游过滤。
+    expected_direction: present_is_better
+    required_inputs:
+      - eligibility_base_mask.parquet
+    v1_observation_mode: gap_detect_only
+
+  liquidity_panel:
+    display_name: Liquidity Panel
+    category: data_quality
+    meaning: 检查流动性面板是否存在，用于后续容量与成交约束诊断。
+    expected_direction: present_is_better
+    required_inputs:
+      - shared_feature_base/liquidity_panel.parquet
+    v1_observation_mode: gap_detect_only
+
+  beta_inputs:
+    display_name: Beta Inputs
+    category: data_quality
+    meaning: 检查 beta 输入面板是否存在，用于市场中性或残差化诊断。
+    expected_direction: present_is_better
+    required_inputs:
+      - shared_feature_base/beta_inputs.parquet
+    v1_observation_mode: gap_detect_only
+
+  factor_score_non_null_ratio:
+    display_name: Factor Score Non-null Ratio
+    category: factor_quality
+    meaning: 衡量 final score 字段在 factor panel 中的非空比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - factor_panel.parquet
+      - factor_manifest.yaml.final_score_field
+    v1_observation_mode: derive_from_existing
+
+  factor_direction:
+    display_name: Factor Direction
+    category: factor_quality
+    meaning: 检查因子方向是否冻结为 high_better 或 low_better。
+    expected_direction: present_is_better
+    required_inputs:
+      - factor_manifest.yaml.factor_direction
+    v1_observation_mode: read_existing
+
+  input_field_binding:
+    display_name: Input Field Binding
+    category: factor_quality
+    meaning: 检查 raw factor fields 是否绑定到上游 csf_data_ready formal artifacts。
+    expected_direction: complete_is_better
+    required_inputs:
+      - factor_manifest.yaml.input_field_map
+    v1_observation_mode: gap_detect_only
+
+  route_inheritance:
+    display_name: Route Inheritance
+    category: factor_quality
+    meaning: 检查 CSF route 身份字段是否从 mandate 精确继承。
+    expected_direction: exact_match_is_better
+    required_inputs:
+      - route_inheritance_contract.yaml
+    v1_observation_mode: gap_detect_only
+
+  variant_ledger_coverage:
+    display_name: Variant Ledger Coverage
+    category: train_governance
+    meaning: 检查 candidate、kept 和 rejected variants 是否都有可审计记录。
+    expected_direction: complete_is_better
+    required_inputs:
+      - csf_train_freeze.yaml
+      - train_variant_ledger.csv
+    v1_observation_mode: gap_detect_only
+
+  reject_reason_completeness:
+    display_name: Reject Reason Completeness
+    category: train_governance
+    meaning: 检查被拒绝 variants 是否都有明确 reject reason。
+    expected_direction: complete_is_better
+    required_inputs:
+      - train_variant_rejects.csv.reject_reason
+    v1_observation_mode: gap_detect_only
+
+  train_quality_score:
+    display_name: Train Quality Score
+    category: train_governance
+    meaning: 记录 train_factor_quality 中的质量分数，用于观察训练阶段保留对象的基本质量。
+    expected_direction: higher_is_better
+    required_inputs:
+      - train_factor_quality.parquet.quality_score
+    v1_observation_mode: read_existing
+
+  bucket_min_names:
+    display_name: Bucket Minimum Names
+    category: train_governance
+    meaning: 检查分桶诊断中的每桶最小资产数，防止横截面分层样本过薄。
+    expected_direction: higher_is_better
+    required_inputs:
+      - train_bucket_diagnostics.parquet.min_names
+    v1_observation_mode: read_existing
+
+  neutralization_diagnostics:
+    display_name: Neutralization Diagnostics
+    category: train_governance
+    meaning: 检查中性化政策、group taxonomy 和 beta window 是否有诊断记录。
+    expected_direction: present_is_better
+    required_inputs:
+      - train_neutralization_diagnostics.parquet
+    v1_observation_mode: gap_detect_only
+
+  rank_ic:
+    display_name: Rank IC
+    category: predictive_power
+    meaning: 衡量因子排序与未来收益排序的一致性。
+    expected_direction: higher_is_better
+    required_inputs:
+      - rank_ic_summary.json.mean_rank_ic
+      - rank_ic_timeseries.parquet.rank_ic
+    v1_observation_mode: read_existing
+
+  rank_ic_win_rate:
+    display_name: Rank IC Win Rate
+    category: predictive_power
+    meaning: 衡量 Rank IC 为正的日期比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - rank_ic_timeseries.parquet.rank_ic
+    v1_observation_mode: derive_from_existing
+
+  icir:
+    display_name: ICIR
+    category: predictive_power
+    meaning: 衡量 Rank IC 或 IC 均值相对波动的稳定性。
+    expected_direction: higher_is_better
+    required_inputs:
+      - rank_ic_timeseries.parquet.rank_ic
+    v1_observation_mode: derive_from_existing
+
+  ic:
+    display_name: IC
+    category: predictive_power
+    meaning: 衡量因子值与未来收益的线性相关性。
+    expected_direction: higher_is_better
+    required_inputs:
+      - ic_timeseries.parquet.ic
+    v1_observation_mode: gap_detect_only
+
+  ic_skew:
+    display_name: IC Skew
+    category: predictive_power
+    meaning: 衡量因子有效性是否集中在少数极端日期。
+    expected_direction: context_dependent
+    required_inputs:
+      - rank_ic_timeseries.parquet.rank_ic
+    v1_observation_mode: gap_detect_only
+
+  ic_autocorrelation:
+    display_name: IC Autocorrelation
+    category: predictive_power
+    meaning: 衡量因子预测能力是否具有连续性。
+    expected_direction: context_dependent
+    required_inputs:
+      - rank_ic_timeseries.parquet.rank_ic
+    v1_observation_mode: gap_detect_only
+
+  top_bottom_spread:
+    display_name: Top-Bottom Spread
+    category: bucket_sorting
+    meaning: 衡量最高分组与最低分组未来收益差。
+    expected_direction: higher_is_better
+    required_inputs:
+      - bucket_returns.parquet
+    v1_observation_mode: gap_detect_only
+
+  monotonicity:
+    display_name: Monotonicity
+    category: bucket_sorting
+    meaning: 衡量分组收益是否随因子分组按预期方向排序。
+    expected_direction: pass_is_better
+    required_inputs:
+      - monotonicity_report.json.status
+    v1_observation_mode: read_existing
+
+  bucket_win_rate:
+    display_name: Bucket Win Rate
+    category: bucket_sorting
+    meaning: 衡量 Top 组跑赢 Bottom 组的日期比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - bucket_returns.parquet
+    v1_observation_mode: gap_detect_only
+
+  breadth:
+    display_name: Breadth
+    category: evidence_stability
+    meaning: 衡量横截面证据覆盖的资产数量或有效 breadth。
+    expected_direction: higher_is_better
+    required_inputs:
+      - breadth_coverage_report.parquet.asset_count
+      - holdout_factor_diagnostics.parquet.breadth
+    v1_observation_mode: read_existing
+
+  subperiod_stability:
+    display_name: Subperiod Stability
+    category: evidence_stability
+    meaning: 衡量证据在不同子窗口是否稳定。
+    expected_direction: pass_is_better
+    required_inputs:
+      - subperiod_stability_report.json.status
+    v1_observation_mode: read_existing
+
+  mean_gross_return:
+    display_name: Mean Gross Return
+    category: portfolio_quality
+    meaning: 衡量组合扣成本前平均收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_gross_return
+    v1_observation_mode: read_existing
+
+  mean_net_return:
+    display_name: Mean Net Return
+    category: portfolio_quality
+    meaning: 衡量组合扣成本后平均收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_net_return
+      - csf_backtest_gate_table.csv.mean_net_return
+    v1_observation_mode: read_existing
+
+  gross_net_erosion:
+    display_name: Gross / Net Erosion
+    category: portfolio_quality
+    meaning: 衡量交易成本对 gross return 的侵蚀程度。
+    expected_direction: lower_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_gross_return
+      - portfolio_summary.parquet.mean_net_return
+    v1_observation_mode: derive_from_existing
+
+  max_drawdown:
+    display_name: Max Drawdown
+    category: risk_adjusted
+    meaning: 衡量组合历史最大回撤。
+    expected_direction: lower_magnitude_is_better
+    required_inputs:
+      - portfolio_summary.parquet.max_drawdown
+      - drawdown_report.json.max_drawdown
+    v1_observation_mode: read_existing
+
+  turnover:
+    display_name: Turnover
+    category: trading_cost
+    meaning: 衡量组合调仓频率和交易强度。
+    expected_direction: lower_is_better
+    required_inputs:
+      - turnover_capacity_report.parquet.turnover
+    v1_observation_mode: read_existing
+
+  capacity_utilization:
+    display_name: Capacity Utilization
+    category: trading_cost
+    meaning: 衡量组合交易量相对容量或流动性约束的使用程度。
+    expected_direction: lower_is_better
+    required_inputs:
+      - turnover_capacity_report.parquet.capacity_utilization
+    v1_observation_mode: read_existing
+
+  name_level_concentration:
+    display_name: Name-level Concentration
+    category: portfolio_quality
+    meaning: 衡量组合收益或权重是否集中在少数资产。
+    expected_direction: lower_is_better
+    required_inputs:
+      - name_level_metrics.parquet.max_weight
+      - name_level_metrics.parquet.contribution
+    v1_observation_mode: gap_detect_only
+
+  alpha:
+    display_name: Alpha
+    category: portfolio_quality
+    meaning: 衡量组合相对基准或风险模型后的超额收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_return_series.parquet
+      - benchmark_return_series.parquet
+    v1_observation_mode: gap_detect_only
+
+  beta:
+    display_name: Beta
+    category: portfolio_quality
+    meaning: 衡量组合对基准市场波动的敏感度。
+    expected_direction: context_dependent
+    required_inputs:
+      - portfolio_return_series.parquet
+      - benchmark_return_series.parquet
+    v1_observation_mode: gap_detect_only
+
+  sharpe:
+    display_name: Sharpe Ratio
+    category: risk_adjusted
+    meaning: 衡量单位总波动风险带来的超额收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_return_series.parquet
+    v1_observation_mode: gap_detect_only
+
+  sortino:
+    display_name: Sortino Ratio
+    category: risk_adjusted
+    meaning: 衡量单位下行风险带来的超额收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_return_series.parquet
+    v1_observation_mode: gap_detect_only
+
+  calmar:
+    display_name: Calmar Ratio
+    category: risk_adjusted
+    meaning: 衡量单位最大回撤对应的年化收益效率。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_return_series.parquet
+      - drawdown_report.json.max_drawdown
+    v1_observation_mode: gap_detect_only
+
+  profit_factor:
+    display_name: Profit Factor
+    category: trading_cost
+    meaning: 衡量总盈利对总亏损的覆盖程度。
+    expected_direction: higher_is_better
+    required_inputs:
+      - trade_pnl_ledger.parquet
+    v1_observation_mode: gap_detect_only
+
+  direction_match:
+    display_name: Direction Match
+    category: holdout_stability
+    meaning: 衡量 holdout 方向是否与冻结预期一致。
+    expected_direction: true_is_better
+    required_inputs:
+      - holdout_test_compare.parquet.direction_match
+      - holdout_factor_diagnostics.parquet.direction_match
+    v1_observation_mode: read_existing
+
+  holdout_mean_net_return:
+    display_name: Holdout Mean Net Return
+    category: holdout_stability
+    meaning: 衡量 holdout 中组合扣成本后的平均收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_test_compare.parquet.holdout_mean_net_return
+      - holdout_portfolio_compare.parquet.holdout_mean_net_return
+    v1_observation_mode: read_existing
+
+  net_return_delta:
+    display_name: Net Return Delta
+    category: holdout_stability
+    meaning: 衡量 holdout 与 backtest 净收益差异。
+    expected_direction: lower_magnitude_is_better
+    required_inputs:
+      - holdout_portfolio_compare.parquet.net_return_delta
+    v1_observation_mode: read_existing
+
+  drawdown_delta:
+    display_name: Drawdown Delta
+    category: holdout_stability
+    meaning: 衡量 holdout 与 backtest 最大回撤差异。
+    expected_direction: lower_magnitude_is_better
+    required_inputs:
+      - holdout_portfolio_compare.parquet.backtest_max_drawdown
+      - holdout_portfolio_compare.parquet.holdout_max_drawdown
+    v1_observation_mode: derive_from_existing
+
+  bucket_stability_score:
+    display_name: Bucket Stability Score
+    category: holdout_stability
+    meaning: 衡量 holdout 分桶稳定性。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_factor_diagnostics.parquet.bucket_stability_score
+    v1_observation_mode: read_existing
+
+  rolling_stability:
+    display_name: Rolling Stability
+    category: holdout_stability
+    meaning: 衡量 holdout 滚动窗口稳定性状态。
+    expected_direction: pass_is_better
+    required_inputs:
+      - rolling_holdout_stability.json.stability_status
+    v1_observation_mode: read_existing
+
+  regime_shift_audit:
+    display_name: Regime Shift Audit
+    category: holdout_stability
+    meaning: 检查 holdout 中是否已解释市场状态迁移。
+    expected_direction: pass_is_better
+    required_inputs:
+      - regime_shift_audit.json.audit_status
+    v1_observation_mode: read_existing

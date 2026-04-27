@@ -37,6 +37,7 @@ Skills are the normal entrypoint:
 | 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `qros-research-session help` |
 | 查看当前研究进度 | `qros-progress` |
+| 查看横截面因子阶段质量诊断 | `qros-factor-diagnostics` |
 | 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
 | 手动进入某阶段 review | `qros-mandate-review` |
 
@@ -44,6 +45,7 @@ If you need deterministic runtime debugging or manual recovery, use the project-
 
 ```bash
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
+./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-review-cycle prepare --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --spawned-agent-id reviewer-child-agent
 ./.qros/bin/qros-review
 ```

@@ -42,10 +42,13 @@
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 - `qros-progress`
+- `qros-factor-diagnostics`
 
 之后 agent 会接管并推进整个 session。
 
 `qros-progress` 是只读进度查询入口，不是推进入口。它默认读取当前 repo 的 `outputs/` 并选择最近修改的 lineage，返回 `current_stage`、`current_skill`、`gate_status`、`blocking_reason`、`next_action` 和 `open_risks`。它不写 artifact、不 scaffold、不确认 transition，也不会替代 `qros-research-session`、stage author skill、review skill 或 failure handling skill。
+
+`qros-factor-diagnostics` 是可选 diagnostics 入口，不是 review，不是 gate。它读取 CSF formal artifacts，汇总数据质量、因子质量、回测结果和 holdout 稳定性；它不写 review closure、不修改 gate decision，也不替代 `qros-review`。
 
 Codex 会通过 `~/.codex/skills/qros-*` 找到这个 skill。安装和更新都应优先走 `Fetch and follow instructions .../.codex/INSTALL.md` 或 `qros-update`；当前 research repo 的本地 runtime 位于 `./.qros/`。
 
@@ -232,6 +235,17 @@ Lineage: btc_leads_alts
 ```
 
 无 `--lineage-id` 时，`qros-progress` 展示最近修改 lineage 的状态；输出中的 `Lineage` 会明确标出实际选择的是哪条线。
+
+如果想在正式 review 前看一眼横截面因子阶段质量，可以使用只读 diagnostics：
+
+```bash
+./.qros/bin/qros-factor-diagnostics
+./.qros/bin/qros-factor-diagnostics --lineage-id <lineage_id>
+./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
+./.qros/bin/qros-factor-diagnostics --json
+```
+
+`qros-factor-diagnostics` 只输出 health、confidence、observed diagnostics、missing diagnostics 和 next diagnostics。它不是 review verdict，也不是 gate verdict。
 
 如果你需要把流程级验证也跑成固定命令，而不是每次临时拼 pytest 文件列表，可以直接用：
 

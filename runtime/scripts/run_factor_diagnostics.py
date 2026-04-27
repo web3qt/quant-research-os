@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runtime.tools.factor_diagnostics import FactorDiagnosticsError, diagnostics_payload  # noqa: E402
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Show read-only QROS factor diagnostics.")
+    parser.add_argument("--outputs-root", type=Path, required=True)
+    parser.add_argument("--lineage-id", default=None)
+    parser.add_argument("--stage", default=None)
+    parser.add_argument("--json", action="store_true")
+    return parser.parse_args()
+
+
+def _render_text(payload: dict[str, object]) -> str:
+    lines = [
+        "QROS Factor Diagnostics",
+        f"Lineage: {payload['lineage_id']} ({payload['selection_mode']})",
+        f"Stage: {payload['stage']}",
+        f"Route: {payload['route']}",
+        f"Health: {payload['health']}",
+        f"Confidence: {payload['confidence']}",
+        "Boundary: diagnostics only, not review verdict",
+    ]
+
+    dimensions = payload.get("dimensions")
+    if isinstance(dimensions, list):
+        for dimension in dimensions:
+            if not isinstance(dimension, dict):
+                continue
+            lines.extend(["", f"{dimension['name']} [{dimension['health']}]"])
+            observed = dimension.get("observed_metrics")
+            if isinstance(observed, list) and observed:
+                lines.append("Observed:")
+                for metric in observed:
+                    if isinstance(metric, dict):
+                        lines.append(
+                            f"- {metric.get('metric_id')}: {metric.get('value')} "
+                            f"({metric.get('source')})"
+                        )
+            missing = dimension.get("missing_metrics")
+            if isinstance(missing, list) and missing:
+                lines.append("Missing / Not Computed:")
+                for metric in missing:
+                    if isinstance(metric, dict):
+                        lines.append(f"- {metric.get('metric_id')}: {metric.get('reason')}")
+
+    next_diagnostics = payload.get("next_diagnostics")
+    if isinstance(next_diagnostics, list) and next_diagnostics:
+        lines.extend(["", "Next Diagnostics:"])
+        lines.extend(f"- {item}" for item in next_diagnostics)
+    return "\n".join(lines)
+
+
+def main() -> int:
+    args = _parse_args()
+    try:
+        payload = diagnostics_payload(
+            outputs_root=args.outputs_root.resolve(),
+            lineage_id=args.lineage_id,
+            stage=args.stage,
+        )
+    except FactorDiagnosticsError as exc:
+        print(f"qros-factor-diagnostics: {exc}", file=sys.stderr)
+        return 2
+
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(_render_text(payload))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
