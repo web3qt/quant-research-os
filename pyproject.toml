@@ -5,6 +5,7 @@ description = "Agentic stage-gated governance framework for quantitative researc
 requires-python = ">=3.11"
 dependencies = [
   "PyYAML>=6.0",
+  "pyarrow>=20.0",
 ]
 
 [project.optional-dependencies]
