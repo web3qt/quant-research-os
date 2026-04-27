@@ -42,13 +42,22 @@
 - `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT`
 - `qros-research-session help`
 - `qros-progress`
-- `qros-factor-diagnostics`
+- `$qros-factor-diagnostics 看下当前 lineage 的因子诊断`
 
 之后 agent 会接管并推进整个 session。
 
 `qros-progress` 是只读进度查询入口，不是推进入口。它默认读取当前 repo 的 `outputs/` 并选择最近修改的 lineage，返回 `current_stage`、`current_skill`、`gate_status`、`blocking_reason`、`next_action` 和 `open_risks`。它不写 artifact、不 scaffold、不确认 transition，也不会替代 `qros-research-session`、stage author skill、review skill 或 failure handling skill。
 
 `qros-factor-diagnostics` 是可选 diagnostics 入口，不是 review，不是 gate。它读取 CSF formal artifacts，汇总数据质量、因子质量、回测结果和 holdout 稳定性；它不写 review closure、不修改 gate decision，也不替代 `qros-review`。
+
+常见问法：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
 
 Codex 会通过 `~/.codex/skills/qros-*` 找到这个 skill。安装和更新都应优先走 `Fetch and follow instructions .../.codex/INSTALL.md` 或 `qros-update`；当前 research repo 的本地 runtime 位于 `./.qros/`。
 
@@ -236,7 +245,16 @@ Lineage: btc_leads_alts
 
 无 `--lineage-id` 时，`qros-progress` 展示最近修改 lineage 的状态；输出中的 `Lineage` 会明确标出实际选择的是哪条线。
 
-如果想在正式 review 前看一眼横截面因子阶段质量，可以使用只读 diagnostics：
+如果想在正式 review 前看一眼横截面因子阶段质量，在 Codex 里直接问：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
+
+只有做 deterministic runtime debugging 时，才需要手动调用 wrapper：
 
 ```bash
 ./.qros/bin/qros-factor-diagnostics

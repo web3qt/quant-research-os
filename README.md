@@ -35,6 +35,15 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 
 `$qros-factor-diagnostics` 是可选 diagnostics 入口。它查看 CSF 阶段的数据质量、因子质量、回测结果和 holdout 稳定性；它不是 review，不是 gate，不写 review closure，也不替代 `$qros-review`。
 
+在 Codex 里可以这样问：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
+
 ## QROS 负责什么
 
 | 领域 | QROS 做什么 | QROS 不做什么 |

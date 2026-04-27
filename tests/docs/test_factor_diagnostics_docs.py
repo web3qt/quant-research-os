@@ -43,6 +43,24 @@ def test_factor_diagnostics_docs_position_command_as_optional_diagnostics() -> N
     assert "不写 review closure" in combined
 
 
+def test_factor_diagnostics_docs_show_codex_prompt_examples_before_shell_debugging() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    codex = Path("docs/README.codex.md").read_text(encoding="utf-8")
+    guide = Path("docs/guides/qros-factor-diagnostics.md").read_text(encoding="utf-8")
+    usage = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    skill = skill_text("qros-factor-diagnostics")
+
+    for content in (readme, codex, guide, usage, skill):
+        assert "$qros-factor-diagnostics 看下当前 lineage 的因子诊断" in content
+        assert "$qros-factor-diagnostics 看下 csf_test_evidence 阶段" in content
+        assert "$qros-factor-diagnostics 看下 csf_backtest_ready 阶段" in content
+        assert "$qros-factor-diagnostics 看下 csf_holdout_validation 阶段" in content
+
+    assert "普通用户不需要手动执行 `./.qros/bin/qros-factor-diagnostics`" in guide
+    assert "不要要求用户手动执行 shell wrapper" in skill
+    assert guide.index("在 Codex 里直接问") < guide.index("维护者 / 调试入口")
+
+
 def test_factor_diagnostics_guide_lists_supported_csf_stages() -> None:
     guide = Path("docs/guides/qros-factor-diagnostics.md").read_text(encoding="utf-8")
 

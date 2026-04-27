@@ -6,19 +6,34 @@
 
 ## 怎么用
 
-在 active research repo 根目录运行：
+普通用户在 Codex 里直接问：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
+
+Codex 会读取当前 active research repo 的 `outputs/`，默认选择最近修改的 lineage。你也可以在问题里自然说明目标，例如：
+
+```text
+$qros-factor-diagnostics 看下 lineage btc_alt_k 的 csf_test_evidence 阶段
+$qros-factor-diagnostics 只看当前 lineage 的 backtest 质量和成本侵蚀
+$qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
+```
+
+普通用户不需要手动执行 `./.qros/bin/qros-factor-diagnostics`。
+
+## 维护者 / 调试入口
+
+如果需要 deterministic runtime debugging，才在 active research repo 根目录运行：
 
 ```bash
 ./.qros/bin/qros-factor-diagnostics
 ./.qros/bin/qros-factor-diagnostics --lineage-id <lineage_id>
 ./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-factor-diagnostics --lineage-id <lineage_id> --stage csf_backtest_ready --json
-```
-
-在 Codex 里可以使用：
-
-```text
-$qros-factor-diagnostics
 ```
 
 ## 输出说明

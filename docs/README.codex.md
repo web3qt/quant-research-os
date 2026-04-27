@@ -41,6 +41,15 @@ Skills are the normal entrypoint:
 | 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
 | 手动进入某阶段 review | `qros-mandate-review` |
 
+因子 diagnostics 通常在 Codex 里直接问，例如：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
+
 If you need deterministic runtime debugging or manual recovery, use the project-local wrappers:
 
 ```bash

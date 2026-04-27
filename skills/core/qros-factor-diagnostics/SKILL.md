@@ -18,9 +18,30 @@ description: Use when the user asks to inspect CSF factor diagnostics, stage hea
 - backtest 阶段成本后收益、回撤、换手、容量诊断
 - holdout 阶段方向一致性、退化幅度和 regime shift 诊断
 
-## Required Runtime
+## User Invocation
 
-优先使用 repo-local wrapper：
+用户通常只会在 Codex 里直接问，不会手动执行 shell command。优先识别这些问法：
+
+```text
+$qros-factor-diagnostics 看下当前 lineage 的因子诊断
+$qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
+```
+
+也要支持自然语言限定：
+
+```text
+$qros-factor-diagnostics 看下 lineage btc_alt_k 的 csf_test_evidence 阶段
+$qros-factor-diagnostics 只看当前 lineage 的 backtest 质量和成本侵蚀
+$qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
+```
+
+不要要求用户手动执行 shell wrapper。
+
+## Runtime Execution
+
+当 skill 触发后，由 agent 在 active research repo 内部优先使用 repo-local wrapper：
 
 ```bash
 ./.qros/bin/qros-factor-diagnostics
@@ -28,6 +49,8 @@ description: Use when the user asks to inspect CSF factor diagnostics, stage hea
 ./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-factor-diagnostics --lineage-id "<lineage_id>" --stage csf_backtest_ready --json
 ```
+
+把用户自然语言里的 lineage 或 stage 约束映射到 wrapper 参数；如果用户没有指定，使用默认“最近修改 lineage + 自动推断 stage”。
 
 ## Supported Stages
 
