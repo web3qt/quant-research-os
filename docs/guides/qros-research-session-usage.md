@@ -455,6 +455,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 遇到缺失的研究判断或显式治理批准时停下来提问
 - 对于一个全新的想法，先问 intake 问题，而不是静默完成 qualification
 - 在把 intake interview 变成正式 qualification verdict 之前，先问一个显式确认问题
+- 明确确认数据来源和 `bar_size`，例如 `1m`、`5m`、`15m`
 - 一次展示全部 group draft 或按 group 交互式冻结 mandate：`research_intent`、`scope_contract`、`data_contract`、`execution_contract`
 - 在生成 mandate 前先问 `是否确认进入 mandate？`
 - mandate review closure 完成后，先进入 `mandate_next_stage_confirmation_pending`

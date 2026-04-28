@@ -107,24 +107,24 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "1m" in content or "5m" in content or "15m" in content
     assert "research_intent" in content
     assert "scope_contract" in content
-    assert "data_ready_confirmation_pending" in content
+    assert "tss_data_ready_confirmation_pending" in content
     assert "shared_derived_layer" in content
-    assert "是否按以上内容冻结 data_ready" in content
-    assert "signal_ready_confirmation_pending" in content
+    assert "是否按以上内容冻结 tss_data_ready" in content
+    assert "tss_signal_ready_confirmation_pending" in content
     assert "signal_expression" in content
-    assert "是否按以上内容冻结 signal_ready" in content
-    assert "train_freeze_confirmation_pending" in content
+    assert "是否按以上内容冻结 tss_signal_ready" in content
+    assert "tss_train_freeze_confirmation_pending" in content
     assert "window_contract" in content
-    assert "是否按以上内容冻结 train_freeze" in content
-    assert "test_evidence_confirmation_pending" in content
+    assert "是否按以上内容冻结 tss_train_freeze" in content
+    assert "tss_test_evidence_confirmation_pending" in content
     assert "formal_gate_contract" in content
-    assert "是否按以上内容冻结 test_evidence" in content
-    assert "backtest_ready_confirmation_pending" in content
+    assert "是否按以上内容冻结 tss_test_evidence" in content
+    assert "tss_backtest_ready_confirmation_pending" in content
     assert "execution_policy" in content
-    assert "是否按以上内容冻结 backtest_ready" in content
-    assert "holdout_validation_confirmation_pending" in content
+    assert "是否按以上内容冻结 tss_backtest_ready" in content
+    assert "tss_holdout_validation_confirmation_pending" in content
     assert "reuse_contract" in content
-    assert "是否按以上内容冻结 holdout_validation" in content
+    assert "是否按以上内容冻结 tss_holdout_validation" in content
 
 
 def test_author_skills_allow_bulk_freeze_group_confirmation() -> None:

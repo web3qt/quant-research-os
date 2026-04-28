@@ -83,7 +83,7 @@ Agent 应该报告：
 
 对 route-specific `tss_*` / `csf_*` 阶段，这些 artifacts 必须是真实阶段交付。目录骨架、placeholder 文件和只有文档解释的替代物，不足以声称阶段完成。
 
-Review failure 不是普通调试。如果某个 stage review 以 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 结束，session 应停止普通阶段推进，暴露 `requires_failure_handling`，并切换到 `qros-stage-failure-handler`。
+Review failure 不是普通 debug，也不是普通调试。如果某个 stage review 以 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 结束，session 应停止普通阶段推进，暴露 `requires_failure_handling`，并切换到 `qros-stage-failure-handler`。
 
 如果 controlled retry 写出的 `failure_packages/*/post_retry_decision.yaml` 中 `normal_progression_allowed: false`，runtime 应暴露 `FAILURE_DISPOSITION_REQUIRED`。在 failure package 写出带 `NO_GO` 或 `CHILD_LINEAGE` 的 `failure_disposition.yaml` 之前，原 lineage 不得重新进入 review 或 next-stage progression；即使 disposition 已写出，原 lineage 的普通推进仍保持阻塞。
 

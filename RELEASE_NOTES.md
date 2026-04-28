@@ -2,6 +2,35 @@
 
 本文件记录 QROS 从第一个可用版本到当前版本的用户可见变化。QROS 是流程与治理仓；release notes 重点记录 workflow、runtime、skill、contract、文档和验证能力的变化。
 
+## 0.4.3 - 2026-04-28
+
+### 新增
+
+- 新增 `time_series_signal` 路线的 TSS 全阶段主线，与 CSF 横截面因子路线并行：
+  - `tss_data_ready`
+  - `tss_signal_ready`
+  - `tss_train_freeze`
+  - `tss_test_evidence`
+  - `tss_backtest_ready`
+  - `tss_holdout_validation`
+- 新增 TSS stage artifact contracts、semantic validators、runtime builders、author/review skills 和 route-specific tests。
+- 新增 `$qros-signal-diagnostics`：只读 TSS 信号 diagnostics skill，用于查看时间序列信号质量、事件证据、回测结果和 holdout 稳定性。
+- 新增 `./.qros/bin/qros-signal-diagnostics` runtime wrapper，支持从 active research repo 读取当前 lineage 并输出 TSS diagnostics。
+
+### 改进
+
+- 将 QROS 当前主流程明确拆成 `time_series_signal` 与 `cross_sectional_factor` 两条 route，避免继续把无前缀 `data_ready / signal_ready / ...` 当作新 TSS lineage 的 canonical 口径。
+- 更新 `qros-research-session`、`using-qros`、README、Codex guide、quickstart、SOP 和可视化文档，使用户入口和 runtime 实现一致。
+- 将 `docs/` 下的主要用户 / 维护者文档改成中文优先展示，同时保留命令、字段名、stage id、schema id 和 artifact 名。
+- README 起步说明改为“新建研究文件夹并在其中打开 Codex”，强调研究产物会写入该研究文件夹。
+
+### 验证
+
+- 为 TSS route 增加 contract、runtime、session routing、review preflight、agent behavior、docs、skill tree 和 pipeline 测试。
+- 为中文优先文档新增 `tests/docs/test_docs_chinese_first.py`，防止主要入口文档回退成英文主标题。
+- 本版本发布前已运行 focused docs tests、完整 `tests/docs`、docs/bootstrap minimum、smoke 和 full-smoke。
+- `pyproject.toml` 与 `uv.lock` 同步到 `0.4.3`。
+
 ## 0.4.2 - 2026-04-27
 
 ### 新增
