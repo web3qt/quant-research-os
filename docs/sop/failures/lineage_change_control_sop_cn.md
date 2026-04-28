@@ -1,8 +1,8 @@
 
-# Lineage Change Control SOP（机构级中文版）
+# 谱系变更控制 SOP（机构级中文版）
 
 - doc_id: SOP-LINEAGE-CHANGE-CONTROL-v1.0
-- title: Lineage Change Control SOP — 谱系变更治理与分流控制规范
+- title: 谱系变更治理与分流控制规范 — Lineage Change Control SOP
 - date: 2026-03-23
 - timezone: Asia/Tokyo
 - status: Active

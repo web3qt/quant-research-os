@@ -1,45 +1,45 @@
-# QROS Anti-Drift Baseline Promotion Protocol
+# QROS Anti-Drift 基线提升协议
 
-This protocol defines how semantic-golden and structured regression baselines are promoted without weakening the hard-fail posture.
+这份协议定义 semantic-golden 与结构化回归基线如何被提升，同时不削弱 hard-fail 姿态。
 
-## Scope
+## 作用域
 
-Applies to:
+适用于：
 
 - canonical decision snapshot goldens under `tests/fixtures/anti_drift/`
 - structured JSON regression payloads produced by anti-drift tools
 
-## Core rule
+## 核心规则
 
-No baseline may be overwritten silently.
+任何 baseline 都不得被静默覆盖。
 
-Any changed baseline must go through:
+任何变更后的 baseline 都必须经过：
 
-1. explicit diff generation
-2. human review of the semantic delta
-3. explicit promotion with a label and source note
+1. 显式生成 diff
+2. 人工 review semantic delta
+3. 带 label 与 source note 的显式 promotion
 
-## Deterministic workflow
+## Deterministic 工作流
 
-### 1. Generate current payloads
+### 1. 生成当前 payloads
 
-Examples:
+示例：
 
 ```bash
 python runtime/scripts/run_research_session.py --outputs-root /tmp/qros_snapshot_verify --raw-idea "BTC leads high-liquidity alts after shock events" --snapshot > /tmp/current_snapshot.json
 ```
 
-### 2. Compare against blessed baseline
+### 2. 对比 blessed baseline
 
-Use the baseline management tool:
+使用 baseline 管理工具：
 
 ```bash
 python runtime/scripts/anti_drift_baseline.py compare --baseline tests/fixtures/anti_drift --current /tmp/current_snapshots
 ```
 
-If `matches=false`, the current branch is blocked until the delta is either fixed or explicitly promoted.
+如果 `matches=false`，当前分支会被阻塞，直到 delta 被修复或被显式 promotion。
 
-For nightly human-readable summaries, render a markdown report:
+如果要生成 nightly 的人类可读摘要，渲染 markdown report：
 
 ```bash
 python runtime/scripts/render_anti_drift_nightly_report.py \
@@ -48,9 +48,9 @@ python runtime/scripts/render_anti_drift_nightly_report.py \
   --output /tmp/anti_drift_nightly_report.md
 ```
 
-### 3. Review the semantic delta
+### 3. Review semantic delta
 
-Required review questions:
+必答 review 问题：
 
 - Did `route_skill` change?
 - Did `stage_id` change?
@@ -59,9 +59,9 @@ Required review questions:
 - Did `blocking_reasons` change?
 - Did the delta reflect an intentional contract change, not accidental drift?
 
-### 4. Promote only intentional deltas
+### 4. 只提升有意图的 deltas
 
-Promotion command:
+Promotion 命令：
 
 ```bash
 python runtime/scripts/anti_drift_baseline.py promote \
@@ -71,29 +71,29 @@ python runtime/scripts/anti_drift_baseline.py promote \
   --source-note "why this promotion is intentional"
 ```
 
-This writes a `baseline_manifest.json` alongside the promoted payloads.
+该命令会在 promoted payloads 旁边写出 `baseline_manifest.json`。
 
-## Release posture
+## Release 姿态
 
-- PRs may introduce new goldens or changed baselines only with explicit review.
-- Nightly regression compares current payloads against blessed baselines.
-- Nightly regression should also emit a machine-readable gate artifact via `runtime/scripts/build_anti_drift_gate_summary.py`.
-- Release assembly should consume the nightly gate artifact via `runtime/scripts/build_anti_drift_release_artifact.py`.
-- The repository CI entrypoint for this flow is `.github/workflows/anti-drift.yml`.
-- Release is blocked if:
-  - current payloads differ from blessed baselines without explicit promotion
-  - promotion manifest is missing for newly blessed payloads
+- PR 只有在经过显式 review 后，才可以引入新的 goldens 或变更 baselines。
+- Nightly regression 会把当前 payloads 与 blessed baselines 对比。
+- Nightly regression 还应通过 `runtime/scripts/build_anti_drift_gate_summary.py` 输出 machine-readable gate artifact。
+- Release assembly 应通过 `runtime/scripts/build_anti_drift_release_artifact.py` 消费 nightly gate artifact。
+- 该流程的仓库 CI 入口是 `.github/workflows/anti-drift.yml`。
+- 以下情况会阻塞 release：
+  - 当前 payloads 与 blessed baselines 不同，但没有显式 promotion
+  - newly blessed payloads 缺少 promotion manifest
 
-## Required evidence for a valid promotion
+## 有效 Promotion 的必要证据
 
-- the diff output
-- the reason for the semantic change
-- the promotion label
-- the promotion manifest
-- updated tests still passing
+- diff output
+- semantic change 的原因
+- promotion label
+- promotion manifest
+- 更新后的测试仍然通过
 
-## Current limitations
+## 当前限制
 
-- This protocol currently governs JSON-based anti-drift payloads only.
-- It does not yet automate approval routing or PR annotations.
-- Wider replay coverage still needs to be expanded beyond the first semantic golden set.
+- 这份协议当前只治理 JSON-based anti-drift payloads。
+- 它还没有自动化 approval routing 或 PR annotations。
+- 更广的 replay coverage 仍需扩展到第一批 semantic golden set 之外。

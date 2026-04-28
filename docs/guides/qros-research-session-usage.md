@@ -1,6 +1,6 @@
-# QROS Research Session Usage
+# QROS 统一研究会话使用说明
 
-## What It Is
+## 它是什么
 
 `qros-research-session` 是当前这段 QROS 工作流的统一单入口 orchestrator。
 
@@ -10,7 +10,7 @@
 `docs/guides/stage-freeze-group-field-guide.md`
 当作 companion 说明文档一起看。它专门解释 `research_intent`、`scope_contract`、`window_contract`、`delivery_contract` 这类通用字段在回答什么问题。
 
-## First-Wave Boundary
+## 当前覆盖边界
 
 当前版本覆盖：
 
@@ -49,7 +49,7 @@
 
 - 更后面的研究阶段
 
-## User Entry
+## 用户入口
 
 在 Codex 里，可以这样开始：
 
@@ -98,7 +98,7 @@ QROS 仓库是工作流框架，不是研究产物仓。安装后，agent 应该
 - 如果 `raw_idea` 解析出的 slug 已经存在，runtime 会阻止隐式 resume，并要求你显式给出 `lineage_id` 才继续那条线
 
 
-## Hard Gate: Lineage-local Stage Programs
+## 硬门禁：Lineage-local Stage Programs
 
 从 `mandate` 开始，session runtime 只做治理，不再把 framework-side shared build helper 当作阶段完成来源。每个可执行阶段都要满足：
 
@@ -214,7 +214,7 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 
 `csf_holdout_validation` 也采用 contract-first 口径：`contracts/artifacts/csf_holdout_validation_artifacts.yaml` 是 holdout formal artifact shape 真值，skill 只解释确认顺序、最终验证语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_holdout_validation`，并通过 csf_holdout_validation semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_holdout_validation` review。该 preflight 会检查 `csf_holdout_run_manifest.json`、`holdout_factor_diagnostics.parquet`、`holdout_test_compare.parquet`、`holdout_portfolio_compare.parquet`、`rolling_holdout_stability.json`、`regime_shift_audit.json` 与上游 `csf_backtest_ready` frozen portfolio / selected variants 的绑定。
 
-## Internal Runtime
+## 内部 Runtime
 
 deterministic backend 的入口在克隆下来的仓库里：
 
@@ -418,7 +418,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 - reviewer child 只写 `review/result/*`
 - 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
-## How Stage Detection Works
+## 阶段识别方式
 
 session runtime 会按下面这个顺序检查磁盘状态：
 
@@ -440,7 +440,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 
 如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
 
-## Expected User Experience
+## 预期用户体验
 
 用户从一个 skill 开始：
 
@@ -455,75 +455,16 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 遇到缺失的研究判断或显式治理批准时停下来提问
 - 对于一个全新的想法，先问 intake 问题，而不是静默完成 qualification
 - 在把 intake interview 变成正式 qualification verdict 之前，先问一个显式确认问题
-- 确认 `observation`
-- 确认 `primary hypothesis`
-- 确认 `counter-hypothesis`
-- 确认 `market` / `universe` / `target_task`
-- 确认 `data_source` / `bar_size`
-- 确认 `kill criteria` 或 `reframe` 条件
-- 一次展示全部 group draft 或按 group 交互式冻结 mandate
-- 确认 `research_intent`
-- 确认 `scope_contract`
-- 确认 `data_contract`
-  这里会明确问数据来源哪里来，以及后续研究周期基于什么 `bar_size`，例如 `1m`、`5m`、`15m`
-- 确认 `execution_contract`
+- 一次展示全部 group draft 或按 group 交互式冻结 mandate：`research_intent`、`scope_contract`、`data_contract`、`execution_contract`
 - 在生成 mandate 前先问 `是否确认进入 mandate？`
-- mandate review closure 完成后，先进入 `mandate_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 data_ready
-- 确认 `extraction_contract`
-- 确认 `quality_semantics`
-- 确认 `universe_admission`
-- 确认 `shared_derived_layer`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的共享输出，以及 QC 或 coverage 证据
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `data_ready`
-- 在生成 data_ready 前先问 `是否按以上内容冻结 data_ready？`
-- data_ready review closure 完成后，先进入 `data_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 signal_ready
-- 确认 `signal_expression`
-- 确认 `param_identity`
-- 确认 `time_semantics`
-- 确认 `signal_schema`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的 baseline signal timeseries、param manifests 和 coverage 证据
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `signal_ready`
-- 在生成 signal_ready 前先问 `是否按以上内容冻结 signal_ready？`
-- signal_ready review closure 完成后，先进入 `signal_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 train_freeze
-- 确认 `window_contract`
-- 确认 `threshold_contract`
-- 确认 `quality_filters`
-- 确认 `param_governance`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的 train thresholds、质量输出和 ledgers
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `train_freeze`
-- 在生成 train_freeze 前先问 `是否按以上内容冻结 train_freeze？`
-- train_freeze review closure 完成后，先进入 `train_freeze_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 test_evidence
-- 确认 `window_contract`
-- 确认 `formal_gate_contract`
-- 确认 `admissibility_contract`
-- 确认 `audit_contract`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的 independent-sample statistics、admissibility outputs 和 frozen selections
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `test_evidence`
-- 在生成 test_evidence 前先问 `是否按以上内容冻结 test_evidence？`
-- test_evidence review closure 完成后，先进入 `test_evidence_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 backtest_ready
-- 确认 `execution_policy`
-- 确认 `portfolio_policy`
-- 确认 `risk_overlay`
-- 确认 `engine_contract`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的 dual-engine backtest outputs、combo ledgers 和 capacity evidence
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `backtest_ready`
-- 在生成 backtest_ready 前先问 `是否按以上内容冻结 backtest_ready？`
-- backtest_ready review closure 完成后，先进入 `backtest_ready_next_stage_confirmation_pending`；确认 handoff 后，再按 group 交互式冻结 holdout_validation
-- 确认 `window_contract`
-- 确认 `reuse_contract`
-- 确认 `drift_audit`
-- 确认 `failure_governance`
-- 确认 `delivery_contract`
-- 让当前 research repo 真实物化这些 group 承诺的 single-window、merged-window 和 comparison outputs
-- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为已完成的 `holdout_validation`
-- 在生成 holdout_validation 前先问 `是否按以上内容冻结 holdout_validation？`
+- mandate review closure 完成后，先进入 `mandate_next_stage_confirmation_pending`
+- 用户显式确认 handoff 后，按 `research_route` 进入 `tss_*` 或 `csf_*` route-specific 阶段
+- 每个 route-specific 阶段都按“确认 grouped freeze -> 真实物化 formal artifacts -> 进入对应 review -> closure 后等待下一阶段确认”的循环推进
+- 对 TSS，用户会看到 `tss_data_ready`、`tss_signal_ready`、`tss_train_freeze`、`tss_test_evidence`、`tss_backtest_ready`、`tss_holdout_validation`
+- 对 CSF，用户会看到 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`、`csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation`
+- 不把空目录、placeholder 文件或只有合同语义的 markdown 视为任何 route-specific stage 已完成
 
-## Example Path
+## 示例路径
 
 1. 从一个关于 BTC 带动 alt 反应的 raw idea 开始
 2. QROS 创建 lineage，并 scaffold `00_idea_intake/`
@@ -595,7 +536,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 67. 这个 build 应该真实物化 single-window、merged-window 和 comparison outputs，而不是只 scaffold 目录或写 placeholder 文件
 68. tss_holdout_validation review closure 完成后，QROS 先进入 `tss_holdout_validation_next_stage_confirmation_pending`；收到最终 `CONFIRM_NEXT_STAGE` 后进入 `tss_holdout_validation_review_complete`，而不是继续进入更后面的治理阶段
 
-## Why This Exists
+## 为什么需要它
 
 这个设计的目标，是把内部脚本隐藏在一个一致的 skill 流程后面。
 

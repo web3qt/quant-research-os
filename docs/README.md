@@ -20,7 +20,7 @@
 需要理解仓库结构时再看：
 
 - [根 README](../README.md)
-- [QROS for Codex](README.codex.md)
+- [QROS Codex 使用指南](README.codex.md)
 - [根 AGENTS](../AGENTS.md)
 
 ## 真值与解释层

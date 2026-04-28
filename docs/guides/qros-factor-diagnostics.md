@@ -1,4 +1,4 @@
-# QROS Factor Diagnostics
+# QROS 因子诊断
 
 `qros-factor-diagnostics` 是可选 diagnostics 入口，用来查看横截面因子研究阶段的数据质量、因子质量、回测结果和 holdout 稳定性。
 
@@ -63,7 +63,7 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 
 当前覆盖 `cross_sectional_factor` 路线：
 
-| Stage | 主要 diagnostics |
+| 阶段 | 主要 diagnostics |
 | --- | --- |
 | `csf_data_ready` | coverage、asset_count、split sample adequacy、membership、eligibility、liquidity、beta inputs |
 | `csf_signal_ready` | factor coverage、score 非空率、factor_direction、input field binding、route inheritance |

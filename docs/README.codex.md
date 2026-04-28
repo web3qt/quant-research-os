@@ -1,26 +1,26 @@
-# QROS for Codex
+# QROS Codex 使用指南
 
-Guide for using QROS with OpenAI Codex via native skill discovery.
+这份文档说明如何在 OpenAI Codex 中通过原生 skill discovery 使用 QROS。
 
-## Quick Install
+## 快速安装
 
-Open Codex from the active research repo root first. Then tell Codex:
+先在 active research repo 根目录打开 Codex，然后告诉 Codex：
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
 ```
 
-## Install Result
+## 安装结果
 
-The fetched installer asks Codex to clone or refresh the QROS source repo, install the flat `qros-*` skills under `~/.codex/skills/`, and bootstrap the active research repo's `./.qros/` runtime. Restart Codex after that, then start with `qros-research-session` from the same active research repo.
+安装说明会让 Codex 克隆或刷新 QROS 源码仓，把扁平化的 `qros-*` skills 安装到 `~/.codex/skills/`，并初始化当前 active research repo 的 `./.qros/` runtime。完成后重启 Codex，再在同一个 active research repo 中从 `qros-research-session` 开始。
 
-## How It Works
+## 工作方式
 
-Codex has native skill discovery. It scans `~/.codex/skills/` at startup, parses `SKILL.md` frontmatter, and loads matching skills on demand.
+Codex 有原生 skill discovery。启动时它会扫描 `~/.codex/skills/`，解析 `SKILL.md` frontmatter，并按需加载匹配的 skill。
 
-QROS keeps its authored source bundles in the cloned repo under `skills/`, then `./setup` flattens them into the installed Codex tree under `~/.codex/skills/`.
+QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 会把它们扁平化安装到 Codex 的 `~/.codex/skills/` 目录。
 
-QROS skills become visible as flat installed directories:
+安装后，QROS skills 会以扁平目录形式出现：
 
 ```text
 ~/.codex/skills/qros-research-session/
@@ -28,11 +28,11 @@ QROS skills become visible as flat installed directories:
 ...
 ```
 
-## Usage
+## 使用方式
 
-Skills are the normal entrypoint:
+正常入口是 skill，而不是手动执行 runtime wrapper：
 
-| Intent | Command |
+| 目的 | 在 Codex 里输入 |
 | --- | --- |
 | 开始或继续一条研究线 | `$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `$qros-research-session help` |
@@ -64,7 +64,7 @@ $qros-signal-diagnostics mean_rank_ic 小于 0 说明什么，按高信号做多
 $qros-signal-diagnostics 不要只给数字，用中文解释这些指标说明什么
 ```
 
-If you need deterministic runtime debugging or manual recovery, use the project-local wrappers:
+只有在需要 deterministic runtime 调试或手工恢复时，才使用项目本地 wrapper：
 
 ```bash
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
@@ -74,27 +74,27 @@ If you need deterministic runtime debugging or manual recovery, use the project-
 ./.qros/bin/qros-review
 ```
 
-## Updating
+## 更新
 
-In Codex, the preferred path is:
+在 Codex 里，推荐直接输入：
 
 ```text
 qros-update
 ```
 
-It refreshes the published `main` install and the current repo's `./.qros/`.
+它会刷新已发布的 `main` 安装副本，以及当前 repo 的 `./.qros/`。
 
-Run it from the active research repo root.
+请从 active research repo 根目录运行。
 
-If you installed an older QROS contract before the move to direct `~/.codex/skills` installs, run `qros-update` from the active research repo root and Restart Codex so stale local skill directories are replaced.
+如果你安装过旧版 QROS（例如还没有切到直接安装进 `~/.codex/skills` 的版本），请从 active research repo 根目录运行 `qros-update`，然后重启 Codex，确保旧的本地 skill 目录被替换。
 
-## Uninstalling
+## 卸载
 
 ```bash
 rm -rf ~/.codex/skills/qros-*
 ```
 
-Optionally remove the install metadata, project-local runtime, and clone:
+如需彻底清理，也可以删除安装元数据、项目本地 runtime 和源码克隆：
 
 ```bash
 rm -rf ~/.codex/qros
@@ -102,23 +102,23 @@ rm -rf ./.qros
 rm -rf ~/workspace/quant-research-os
 ```
 
-## Troubleshooting
+## 排查问题
 
-### Skills not showing up
+### Skills 没有显示
 
-1. Verify the installed Codex skills:
+1. 检查 Codex skills 是否已经安装：
 
 ```bash
 ls ~/.codex/skills | grep qros-
 ```
 
-2. Check the install metadata and runtime tree exist:
+2. 检查安装元数据和 runtime 目录是否存在：
 
 ```bash
 test -f ~/.codex/qros/install-manifest.json
 ls ./.qros/bin
 ```
 
-3. If skill content looks stale, run `qros-update` from the active research repo root.
+3. 如果 skill 内容看起来过旧，从 active research repo 根目录运行 `qros-update`。
 
-4. Restart Codex. Skills are discovered at startup.
+4. 重启 Codex。Skills 会在 Codex 启动时发现。

@@ -1,8 +1,8 @@
 
-# Stage Completion Standard（机构级中文版）
+# 阶段完成标准（机构级中文版）
 
 - doc_id: SOP-STAGE-COMPLETION-STANDARD-v1.0
-- title: Stage Completion Standard — 阶段可信完成标准规范
+- title: 阶段完成标准 — Stage Completion Standard
 - date: 2026-03-23
 - timezone: Asia/Tokyo
 - status: Active
@@ -102,22 +102,22 @@
 
 ## 3. 核心原则
 
-### 3.1 Contract first
+### 3.1 合同优先（Contract first）
 先检查该阶段按 contract 应交什么，再讨论结果是否好看。
 
-### 3.2 Reproducibility before persuasion
+### 3.2 复现先于说服（Reproducibility before persuasion）
 先证明别人可以复跑，再允许研究员说服别人。
 
-### 3.3 Traceable evidence over verbal explanation
+### 3.3 可追溯证据优先于口头解释（Traceable evidence over verbal explanation）
 正式结论必须依赖 artifact 与字段证据链，而不是依赖口头解释。
 
-### 3.4 Effective challenge is mandatory
+### 3.4 有效质疑是必选项（Effective challenge is mandatory）
 没有经过有效质疑的阶段结论，不算可信完成。
 
-### 3.5 Sanity before promotion
+### 3.5 晋级前先做 sanity check
 结果异常地好或异常地差，都必须经过合理性检查。
 
-### 3.6 Governance closes the stage
+### 3.6 用治理动作关闭阶段（Governance closes the stage）
 阶段只有在 gate verdict、回退范围、允许修改范围与下游权限都被正式记录后，才算真正关闭。
 
 ---

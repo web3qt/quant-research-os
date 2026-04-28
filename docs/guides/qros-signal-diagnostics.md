@@ -1,4 +1,4 @@
-# QROS Signal Diagnostics
+# QROS 信号诊断
 
 `qros-signal-diagnostics` 是可选 diagnostics 入口，用来查看 TSS (`time_series_signal`) 研究阶段的时间序列信号质量、事件证据、回测结果和 holdout 稳定性。
 
@@ -66,7 +66,7 @@ $qros-signal-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 
 当前覆盖 `time_series_signal` 路线：
 
-| Stage | 主要 diagnostics |
+| 阶段 | 主要 diagnostics |
 | --- | --- |
 | `tss_data_ready` | time index coverage、asset_count、split sample adequacy、quality flag rate |
 | `tss_signal_ready` | signal 非空率、signal event count、parameter count、route inheritance |

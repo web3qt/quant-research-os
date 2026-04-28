@@ -32,7 +32,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-verify" in combined
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
     assert "Restart Codex" in combined
-    assert "Uninstalling" in combined
+    assert "卸载" in combined
 
 
 def test_install_docs_describe_research_repo_first_fetch_flow() -> None:

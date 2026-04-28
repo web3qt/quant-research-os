@@ -1,6 +1,6 @@
-# Closure Artifact Writer Usage
+# Closure Artifact Writer 使用说明
 
-## Scope
+## 作用域
 
 第一版 closure writer 服务于首批 3 个 Codex stage review skills：
 
@@ -10,7 +10,7 @@
 
 writer 的职责不是替 review skill 生成 verdict，而是在 review 结束后把标准化 payload 写成正式 closure artifacts。
 
-## Files Written
+## 写入文件
 
 writer 会写 4 份文件。
 
@@ -26,7 +26,7 @@ writer 会写 4 份文件。
 
 其中 lineage 根文件是最近一次 review 的镜像，不是第二份独立事实来源。
 
-## Context Resolution
+## 上下文解析
 
 writer 支持两种上下文模式：
 
@@ -39,7 +39,7 @@ writer 支持两种上下文模式：
 - `stage_dir`
 - `lineage_root`
 
-## Shared Payload
+## 共享 Payload
 
 第一版 payload 至少应包含：
 
@@ -59,7 +59,7 @@ writer 支持两种上下文模式：
 - `allowed_modifications`
 - `downstream_permissions`
 
-## Example
+## 示例
 
 ```python
 from pathlib import Path
@@ -87,7 +87,7 @@ write_closure_artifacts(
 )
 ```
 
-## Verification
+## 验证
 
 最直接的验证命令：
 

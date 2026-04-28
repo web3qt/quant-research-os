@@ -1,7 +1,7 @@
-# Strict Backtest Review Checklist（机构级中文版）
+# 严格回测 Review 检查清单（机构级中文版）
 
 - doc_id: SOP-STRICT-BACKTEST-REVIEW-CHECK-v1.0
-- title: Strict Backtest Review Checklist — 严格回测可信性复核清单
+- title: 严格回测可信性复核清单 — Strict Backtest Review Checklist
 - date: 2026-03-24
 - timezone: Asia/Shanghai
 - status: Active
@@ -88,7 +88,7 @@
 
 ---
 
-## 5. Blocking Checks
+## 5. Blocking Checks / 阻塞检查
 
 以下项目全部是 blocking。
 
@@ -239,7 +239,7 @@
 
 ---
 
-## 6. Reservation Checks
+## 6. Reservation Checks / 保留意见检查
 
 以下项目通常不是单独 blocking，但必须明确记录：
 

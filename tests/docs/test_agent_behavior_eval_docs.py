@@ -158,7 +158,7 @@ def test_agent_behavior_eval_docs_list_tss_stage_cases() -> None:
         assert f"qros-validate-stage --stage {stage}" in content
         assert f"{stage} semantic validator" in content
 
-    assert "TSS Cases" in content
+    assert "TSS 用例" in content
     assert "qros-review-cycle prepare" in content
     assert "rejects_gate" in content
     assert "不得出现 `qros-review-cycle prepare`" in content

@@ -1,4 +1,4 @@
-# TSS Data Ready SOP
+# TSS Data Ready SOP（时序信号数据就绪阶段）
 
 | 字段 | 值 |
 |------|-----|

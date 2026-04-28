@@ -1,4 +1,4 @@
-# CSF Train Freeze SOP
+# CSF Train Freeze SOP（横截面因子训练冻结阶段）
 
 | 字段 | 值 |
 |------|-----|

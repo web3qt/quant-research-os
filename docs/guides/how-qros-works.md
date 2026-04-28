@@ -109,6 +109,7 @@ graph TB
         Test["test_evidence_runtime.py"]
         BT["backtest_runtime.py"]
         Holdout["holdout_runtime.py"]
+        TSS["tss_*_runtime.py ×6"]
         CSF["csf_*_runtime.py ×6"]
     end
 
@@ -232,7 +233,13 @@ graph LR
 
 ---
 
-## 状态生命周期：从 idea_intake 到 holdout_validation
+## 状态生命周期：从 idea_intake 到 route-specific holdout_validation
+
+当前 canonical 主流程不是无前缀的 `data_ready -> signal_ready -> ...`。
+`mandate` review 关闭后，QROS 会按 `research_route` 进入 route-specific 主线：
+
+- `time_series_signal`：`tss_data_ready -> tss_signal_ready -> tss_train_freeze -> tss_test_evidence -> tss_backtest_ready -> tss_holdout_validation`
+- `cross_sectional_factor`：`csf_data_ready -> csf_signal_ready -> csf_train_freeze -> csf_test_evidence -> csf_backtest_ready -> csf_holdout_validation`
 
 ```mermaid
 stateDiagram-v2
@@ -247,44 +254,17 @@ stateDiagram-v2
     mandate_review --> mandate_next_stage_confirmation_pending: closure PASS
     mandate_review --> fail: PASS FOR RETRY / RETRY / NO-GO / CHILD LINEAGE
 
-    mandate_next_stage_confirmation_pending --> data_ready_confirmation_pending: CONFIRM_NEXT_STAGE
-    data_ready_confirmation_pending --> data_ready_author: CONFIRM_DATA_READY + freeze groups complete
-    data_ready_author --> data_ready_review_confirmation_pending: required outputs + provenance ready
-    data_ready_review_confirmation_pending --> data_ready_review: CONFIRM_REVIEW / review started
-    data_ready_review --> data_ready_next_stage_confirmation_pending: closure PASS
-    data_ready_review --> fail
+    mandate_next_stage_confirmation_pending --> tss_data_ready_confirmation_pending: CONFIRM_NEXT_STAGE + route=time_series_signal
+    mandate_next_stage_confirmation_pending --> csf_data_ready_confirmation_pending: CONFIRM_NEXT_STAGE + route=cross_sectional_factor
 
-    data_ready_next_stage_confirmation_pending --> signal_ready_confirmation_pending: CONFIRM_NEXT_STAGE
-    signal_ready_confirmation_pending --> signal_ready_author: CONFIRM_SIGNAL_READY + freeze groups complete
-    signal_ready_author --> signal_ready_review_confirmation_pending: required outputs + provenance ready
-    signal_ready_review_confirmation_pending --> signal_ready_review: CONFIRM_REVIEW / review started
-    signal_ready_review --> signal_ready_next_stage_confirmation_pending: closure PASS
+    tss_data_ready_confirmation_pending --> tss_route_loop: TSS grouped freeze + build + review
+    tss_route_loop --> tss_holdout_validation_review_complete: final CONFIRM_NEXT_STAGE
 
-    signal_ready_next_stage_confirmation_pending --> train_freeze_confirmation_pending: CONFIRM_NEXT_STAGE
-    train_freeze_confirmation_pending --> train_freeze_author: CONFIRM_TRAIN_FREEZE + freeze groups complete
-    train_freeze_author --> train_freeze_review_confirmation_pending: required outputs + provenance ready
-    train_freeze_review_confirmation_pending --> train_freeze_review: CONFIRM_REVIEW / review started
-    train_freeze_review --> train_freeze_next_stage_confirmation_pending: closure PASS
+    csf_data_ready_confirmation_pending --> csf_route_loop: CSF grouped freeze + build + review
+    csf_route_loop --> csf_holdout_validation_review_complete: final CONFIRM_NEXT_STAGE
 
-    train_freeze_next_stage_confirmation_pending --> test_evidence_confirmation_pending: CONFIRM_NEXT_STAGE
-    test_evidence_confirmation_pending --> test_evidence_author: CONFIRM_TEST_EVIDENCE + freeze groups complete
-    test_evidence_author --> test_evidence_review_confirmation_pending: required outputs + provenance ready
-    test_evidence_review_confirmation_pending --> test_evidence_review: CONFIRM_REVIEW / review started
-    test_evidence_review --> test_evidence_next_stage_confirmation_pending: closure PASS
-
-    test_evidence_next_stage_confirmation_pending --> backtest_ready_confirmation_pending: CONFIRM_NEXT_STAGE
-    backtest_ready_confirmation_pending --> backtest_ready_author: CONFIRM_BACKTEST_READY + freeze groups complete
-    backtest_ready_author --> backtest_ready_review_confirmation_pending: required outputs + provenance ready
-    backtest_ready_review_confirmation_pending --> backtest_ready_review: CONFIRM_REVIEW / review started
-    backtest_ready_review --> backtest_ready_next_stage_confirmation_pending: closure PASS
-
-    backtest_ready_next_stage_confirmation_pending --> holdout_validation_confirmation_pending: CONFIRM_NEXT_STAGE
-    holdout_validation_confirmation_pending --> holdout_validation_author: CONFIRM_HOLDOUT_VALIDATION + freeze groups complete
-    holdout_validation_author --> holdout_validation_review_confirmation_pending: required outputs + provenance ready
-    holdout_validation_review_confirmation_pending --> holdout_validation_review: CONFIRM_REVIEW / review started
-    holdout_validation_review --> holdout_validation_next_stage_confirmation_pending: closure PASS
-    holdout_validation_next_stage_confirmation_pending --> holdout_validation_review_complete: CONFIRM_NEXT_STAGE
-    holdout_validation_review_complete --> [*]: 终态
+    tss_holdout_validation_review_complete --> [*]: TSS 终态
+    csf_holdout_validation_review_complete --> [*]: CSF 终态
 
     fail --> [*]: 失败处理
 
@@ -296,7 +276,7 @@ stateDiagram-v2
     end note
 ```
 
-每个阶段都经过相同的子循环：
+每个 route-specific 阶段都经过相同的子循环：
 
 ```mermaid
 graph LR
@@ -328,8 +308,8 @@ graph TB
         end
         subgraph "program/"
             P1["mandate/"]
-            P2["time_series/<br/>data_ready / signal_ready / ..."]
-            P3["cross_sectional_factor/<br/>data_ready / signal_ready / ..."]
+            P2["time_series_signal/<br/>tss_data_ready / tss_signal_ready / ..."]
+            P3["cross_sectional_factor/<br/>csf_data_ready / csf_signal_ready / ..."]
             P4["common/<br/>共享库"]
         end
     end

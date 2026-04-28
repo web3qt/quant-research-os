@@ -1,4 +1,4 @@
-# QROS Review Constraint Map
+# QROS Review 约束地图
 
 ## 目的
 
@@ -11,11 +11,11 @@
 这不是 review 操作手册。  
 如果你要看 reviewer / launcher / raw findings / closure 的执行协议，优先看：
 
-- [QROS Review Shared Protocol](qros-review-shared-protocol.md)
+- [QROS 共享 Review 协议](qros-review-shared-protocol.md)
 
 如果你要看 review skill 的调用方式，再看：
 
-- [Codex Stage Review Skill Usage](codex-stage-review-skill-usage.md)
+- [Codex 阶段 Review Skill 使用说明](codex-stage-review-skill-usage.md)
 
 ## 一句话结论
 
@@ -99,7 +99,7 @@ Codex 安装副本在本机：
 
 当前第一波固定映射如下：
 
-| Session Stage | Fixed Review Skill | Source Bundle |
+| Session Stage | 固定 Review Skill | Source Bundle |
 | --- | --- | --- |
 | `mandate_review_confirmation_pending` / `mandate_review` | `qros-mandate-review` | `skills/mandate/qros-mandate-review/` |
 | `data_ready_review_confirmation_pending` / `data_ready_review` | `qros-data-ready-review` | `skills/data_ready/qros-data-ready-review/` |
@@ -272,6 +272,6 @@ Codex 安装副本在本机：
 
 ## 相关文档
 
-- [QROS Review Shared Protocol](qros-review-shared-protocol.md)
-- [Codex Stage Review Skill Usage](codex-stage-review-skill-usage.md)
-- [QROS Research Session Usage](qros-research-session-usage.md)
+- [QROS 共享 Review 协议](qros-review-shared-protocol.md)
+- [Codex 阶段 Review Skill 使用说明](codex-stage-review-skill-usage.md)
+- [QROS 统一研究会话使用说明](qros-research-session-usage.md)

@@ -1,6 +1,6 @@
-# Idea Intake To Mandate Flow
+# 从 Idea Intake 到 Mandate 的流程
 
-## Goal
+## 目标
 
 这条前置流程负责回答一个问题：
 
@@ -15,7 +15,7 @@
 - `docs/guides/quickstart-codex.md`
 - `docs/guides/stage-freeze-group-field-guide.md`
 
-## Flow
+## 流程
 
 第一版流程固定为：
 
@@ -26,7 +26,7 @@
 - `00_idea_intake`
 - `01_mandate`
 
-## `00_idea_intake` Required Artifacts
+## `00_idea_intake` 必备产物
 
 - `idea_brief.md`
 - `intake_interview.md`
@@ -68,7 +68,7 @@ qros-validate-stage --stage idea_intake --lineage-id <lineage_id>
 
 只有这些信息收齐后，才应该正式填写 `qualification_scorecard.yaml` 和 `idea_gate_decision.yaml`。
 
-## Qualification Rules
+## Qualification 规则
 
 qualification 至少评估以下 6 项：
 
@@ -85,7 +85,7 @@ qualification 至少评估以下 6 项：
 - 必须写 kill criteria
 - 必须写 machine-readable gate decision
 
-## Gate Verdicts
+## Gate Verdicts / 门禁结论
 
 - `GO_TO_MANDATE`
 - `NEEDS_REFRAME`
@@ -97,7 +97,7 @@ qualification 至少评估以下 6 项：
 
 系统会先停在 `mandate_confirmation_pending`，等待显式确认。
 
-## `01_mandate` Handoff
+## `01_mandate` Handoff / 交接
 
 `mandate-author` 只消费这些 intake outputs：
 
@@ -157,7 +157,7 @@ qros-validate-stage --stage mandate --lineage-id <lineage_id>
 python runtime/scripts/run_stage_review.py
 ```
 
-## Example
+## 示例
 
 以 BTC 领动 ALT 为例：
 

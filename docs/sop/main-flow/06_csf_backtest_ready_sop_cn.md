@@ -1,4 +1,4 @@
-# CSF Backtest Ready SOP
+# CSF Backtest Ready SOP（横截面因子回测就绪阶段）
 
 | 字段 | 值 |
 |------|-----|

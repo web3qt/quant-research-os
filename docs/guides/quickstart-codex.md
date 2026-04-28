@@ -1,22 +1,22 @@
-# QROS Quickstart For Codex
+# QROS Codex 快速开始
 
-## 1. Install
+## 1. 安装
 
-Open Codex from the active research repo root first.
+先在 active research repo 根目录打开 Codex。
 
-If you want the shortest Codex-native path, tell Codex:
+如果你想走最短的 Codex-native 路径，告诉 Codex：
 
 ```text
 Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
 ```
 
-Codex will install the global QROS skills, bootstrap the current research repo's `./.qros/`, and then ask you to Restart Codex. After restart, run `qros-research-session` from the same active research repo.
+Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`，然后要求你重启 Codex。重启后，在同一个 active research repo 中运行 `qros-research-session`。
 
-## 2. Start From The Unified Skill
+## 2. 从统一 Skill 开始
 
-In Codex, choose the command by intent:
+在 Codex 里按目的选择命令：
 
-| Intent | Command |
+| 目的 | 在 Codex 里输入 |
 | --- | --- |
 | 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `qros-research-session help` |
@@ -29,71 +29,47 @@ In Codex, choose the command by intent:
 
 - `docs/guides/stage-freeze-group-field-guide.md`
 
-## 3. Let The Agent Drive The Current Flow
+## 3. 让 Agent 推进当前流程
 
-This version of QROS will drive:
+当前 QROS 的第一阶段主流程是：
 
 - `idea_intake`
 - `mandate`
 - `mandate review`
-- `data_ready`
-- `data_ready review`
-- `signal_ready`
-- `signal_ready review`
-- `train_freeze`
-- `train_freeze review`
-- `test_evidence`
-- `test_evidence review`
-- `backtest_ready`
-- `backtest_ready review`
-- `holdout_validation`
-- `holdout_validation review`
+- `time_series_signal` route：
+  - `tss_data_ready`
+  - `tss_signal_ready`
+  - `tss_train_freeze`
+  - `tss_test_evidence`
+  - `tss_backtest_ready`
+  - `tss_holdout_validation`
+- `cross_sectional_factor` route：
+  - `csf_data_ready`
+  - `csf_signal_ready`
+  - `csf_train_freeze`
+  - `csf_test_evidence`
+  - `csf_backtest_ready`
+  - `csf_holdout_validation`
 
-The agent should:
+Agent 应该做这些事：
 
-- create or resume the lineage
-- scaffold intake artifacts when needed
-- ask only for missing research judgments
-- stop at `idea_intake_confirmation_pending` for a brand-new raw idea
-- explicitly confirm the intake interview before treating qualification as final
-- stop at `mandate_confirmation_pending` when intake is admitted
-- confirm grouped freeze content during the conversation: `research_intent`, `scope_contract`, `data_contract`, `execution_contract`
-- explicitly ask `是否确认进入 mandate？` before writing `01_mandate/`
-- after mandate review closure, first enter `mandate_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `data_ready_confirmation_pending`
-- confirm grouped data_ready content during the conversation: `extraction_contract`, `quality_semantics`, `universe_admission`, `shared_derived_layer`, `delivery_contract`
-- make the active research repo materially generate the shared data outputs and QC or coverage evidence promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `data_ready`
-- explicitly ask `是否按以上内容冻结 data_ready？` before writing `02_data_ready/`
-- after data_ready review closure, first enter `data_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `signal_ready_confirmation_pending`
-- confirm grouped signal_ready content during the conversation: `signal_expression`, `param_identity`, `time_semantics`, `signal_schema`, `delivery_contract`
-- make the active research repo materially generate baseline signal timeseries, param manifests and coverage evidence promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `signal_ready`
-- explicitly ask `是否按以上内容冻结 signal_ready？` before writing `03_signal_ready/`
-- after signal_ready review closure, first enter `signal_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `train_freeze_confirmation_pending`
-- confirm grouped train_freeze content during the conversation: `window_contract`, `threshold_contract`, `quality_filters`, `param_governance`, `delivery_contract`
-- make the active research repo materially generate train thresholds, quality outputs and ledgers promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `train_freeze`
-- explicitly ask `是否按以上内容冻结 train_freeze？` before writing `04_train_freeze/`
-- after train_freeze review closure, first enter `train_freeze_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `test_evidence_confirmation_pending`
-- confirm grouped test_evidence content during the conversation: `window_contract`, `formal_gate_contract`, `admissibility_contract`, `audit_contract`, `delivery_contract`
-- make the active research repo materially generate test statistics, admissibility outputs and frozen selections promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `test_evidence`
-- explicitly ask `是否按以上内容冻结 test_evidence？` before writing `05_test_evidence/`
-- after test_evidence review closure, first enter `test_evidence_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `backtest_ready_confirmation_pending`
-- confirm grouped backtest_ready content during the conversation: `execution_policy`, `portfolio_policy`, `risk_overlay`, `engine_contract`, `delivery_contract`
-- make the active research repo materially generate dual-engine backtest outputs, combo ledgers and capacity evidence promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `backtest_ready`
-- explicitly ask `是否按以上内容冻结 backtest_ready？` before writing `06_backtest/`
-- after backtest_ready review closure, first enter `backtest_ready_next_stage_confirmation_pending`; after explicit `CONFIRM_NEXT_STAGE`, continue into `holdout_validation_confirmation_pending`
-- confirm grouped holdout_validation content during the conversation: `window_contract`, `reuse_contract`, `drift_audit`, `failure_governance`, `delivery_contract`
-- make the active research repo materially generate single-window, merged-window and comparison outputs promised by that freeze
-- never treat empty directories, placeholder files, or contract-only markdown as completed `holdout_validation`
-- explicitly ask `是否按以上内容冻结 holdout_validation？` before writing `07_holdout/`
-- after holdout_validation review closure, first enter `holdout_validation_next_stage_confirmation_pending`; explicit `CONFIRM_NEXT_STAGE` marks the session complete
+- 创建或恢复当前 lineage
+- 缺少 intake artifacts 时进行 scaffold
+- 对全新的 raw idea 先停在 `idea_intake_confirmation_pending`，补齐 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria
+- intake 通过后进入 `mandate_confirmation_pending`，逐组确认 `research_intent`、`scope_contract`、`data_contract`、`execution_contract`
+- `mandate` review closure 后先进入 `mandate_next_stage_confirmation_pending`，等显式 `CONFIRM_NEXT_STAGE` 后按 `research_route` 进入 `tss_*` 或 `csf_*` 阶段
+- 每个 route-specific stage 都要先冻结 grouped contracts，再由当前 active research repo 真实生成 formal artifacts，然后进入对应 `qros-*-review`
+- 不得把空目录、placeholder 文件、contract-only markdown 或本仓库里的说明文档当成阶段完成
+- review verdict 不是正常放行时，停止普通阶段推进，转入 `qros-stage-failure-handler`
 
-## 4. What You Should See
+如果要看每个阶段具体冻结哪些 group，看：
 
-You should see the agent report:
+- `docs/guides/stage-freeze-group-field-guide.md`
+- `docs/guides/qros-research-session-usage.md`
+
+## 4. 你应该看到什么
+
+Agent 应该报告：
 
 - `lineage`
 - `current_stage`
@@ -103,20 +79,20 @@ You should see the agent report:
 - `why_now`
 - `open_risks`
 
-The underlying runtime will write artifacts under `outputs/<lineage_id>/` in the active research repo.
+底层 runtime 会把 artifacts 写到 active research repo 的 `outputs/<lineage_id>/` 下。
 
-For `data_ready` and later stages, those artifacts are expected to be real stage deliverables. Directory skeletons, placeholder files, and doc-only stand-ins are not enough to claim the stage is complete.
+对 route-specific `tss_*` / `csf_*` 阶段，这些 artifacts 必须是真实阶段交付。目录骨架、placeholder 文件和只有文档解释的替代物，不足以声称阶段完成。
 
-Review failure is not ordinary debugging. If a stage review ends with `PASS FOR RETRY`, `RETRY`, `NO-GO`, or `CHILD LINEAGE`, the session should stop normal stage progression, surface `requires_failure_handling`, and switch into `qros-stage-failure-handler`.
+Review failure 不是普通调试。如果某个 stage review 以 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 结束，session 应停止普通阶段推进，暴露 `requires_failure_handling`，并切换到 `qros-stage-failure-handler`。
 
-If a controlled retry writes `failure_packages/*/post_retry_decision.yaml` with `normal_progression_allowed: false`, runtime should surface `FAILURE_DISPOSITION_REQUIRED`. The original lineage must not re-enter review or next-stage progression until the failure package records `failure_disposition.yaml` with `NO_GO` or `CHILD_LINEAGE`; after that disposition, ordinary progression on the original lineage remains blocked.
+如果 controlled retry 写出的 `failure_packages/*/post_retry_decision.yaml` 中 `normal_progression_allowed: false`，runtime 应暴露 `FAILURE_DISPOSITION_REQUIRED`。在 failure package 写出带 `NO_GO` 或 `CHILD_LINEAGE` 的 `failure_disposition.yaml` 之前，原 lineage 不得重新进入 review 或 next-stage progression；即使 disposition 已写出，原 lineage 的普通推进仍保持阻塞。
 
-## 5. Internal Runtime Note
+## 5. 内部 Runtime 说明
 
-QROS still uses scripts internally for deterministic state transitions, but those are runtime internals, not the primary user workflow.
+QROS 内部仍使用脚本做 deterministic state transitions，但这些是 runtime 内部机制，不是普通用户的主入口。
 
-## 6. Next
+## 6. 结束状态
 
-After `holdout_validation review` closure, the runtime enters `holdout_validation_next_stage_confirmation_pending`. After explicit `CONFIRM_NEXT_STAGE`, it moves to `holdout_validation_review_complete`. It does not continue into later governance stages.
+route-specific holdout review closure 后，runtime 会进入对应的 `<route>_holdout_validation_next_stage_confirmation_pending`。显式 `CONFIRM_NEXT_STAGE` 后，它会进入 `<route>_holdout_validation_review_complete`，不会继续进入更后面的治理阶段。
 
-Codex discovers QROS directly through `~/.codex/skills/`; `./setup` writes the flat installed `qros-*` skills there.
+Codex 直接通过 `~/.codex/skills/` 发现 QROS；`./setup` 会把扁平化的 `qros-*` skills 写到那里。

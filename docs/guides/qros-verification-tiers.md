@@ -1,12 +1,12 @@
-# QROS Verification Tiers
+# QROS 验证分层
 
-## Purpose
+## 目的
 
 QROS 现在把流程级验证显式分成 `smoke` 和 `full-smoke` 两层，避免每次都只说“跑测试”但不知道到底验证了多深。
 
 这两个 tier 都不是单元测试的替代品。它们是**需求完成前的流程级回归门**。
 
-## Tiers
+## 验证层级
 
 ### `smoke`
 
@@ -65,7 +65,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
   - lineage-local stage-program authoring contract 或 whole-`program_dir` `program_hash` 语义
   - preflight mandatory / thin-wrapper rejection / fake-artifact rejection
 
-## Dry Run / Listing
+## 试运行 / 列表输出
 
 列出 tier：
 
@@ -79,7 +79,7 @@ python runtime/scripts/run_verification_tier.py --tier smoke --list
 python runtime/scripts/run_verification_tier.py --tier full-smoke --dry-run
 ```
 
-## Current Boundary
+## 当前边界
 
 这里的 `full-smoke` 仍然是**repo 内自动化 full smoke**，不是“真人在真实操作员会话里把每个支持 stage 全部 live 跑一遍”。
 

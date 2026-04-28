@@ -1,4 +1,4 @@
-# TSS Train Freeze SOP
+# TSS Train Freeze SOP（时序信号训练冻结阶段）
 
 | 字段 | 值 |
 |------|-----|

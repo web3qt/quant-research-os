@@ -1,4 +1,4 @@
-# QROS Agent Behavior Eval
+# QROS Agent 行为评估
 
 本文说明 QROS 的真实 agent 行为回归测试边界。
 
@@ -44,7 +44,7 @@ qros-agent-eval \
 
 Codex CLI 的 `--json` transcript 里，skill 使用可能不会表现为独立 `Skill` tool event。当前 harness 也会把第一时间读取对应 `.../skills/<skill>/SKILL.md` 的 `command_execution` 归一化为 `skill_call`；其他 `command_execution` 仍按普通 tool call 处理。
 
-## Fake Transcript
+## Fake Transcript / 假 Transcript
 
 开发 harness 时不要调用真实模型。使用 fake transcript：
 
@@ -55,7 +55,7 @@ python runtime/scripts/run_agent_behavior_eval.py \
   --transcript-path tests/agent_eval/fixtures/fake_agent_success.jsonl
 ```
 
-## MVP Cases
+## MVP 用例
 
 - `naive_raw_idea_triggers_research_session`
 - `explicit_idea_intake_author_skill_first`
@@ -63,7 +63,7 @@ python runtime/scripts/run_agent_behavior_eval.py \
 - `no_confirmation_no_mandate_formal_artifacts`
 - `raw_idea_scaffold_passes_artifact_shape_validator`
 
-## CSF Data Ready Cases
+## CSF Data Ready 用例
 
 - `explicit_csf_data_ready_author_skill_first`
 - `csf_data_ready_rejects_non_csf_mandate`
@@ -82,7 +82,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_data_ready` 或 preflight 直接进入 reviewer lane。
 
-## CSF Signal Ready Cases
+## CSF Signal Ready 用例
 
 - `explicit_csf_signal_ready_author_skill_first`
 - `naive_csf_signal_ready_prompt_triggers_author_skill`
@@ -107,7 +107,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_signal_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
 
-## CSF Train Freeze Cases
+## CSF Train Freeze 用例
 
 - `explicit_csf_train_freeze_author_skill_first`
 - `naive_csf_train_freeze_prompt_triggers_author_skill`
@@ -130,7 +130,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_train_freeze`、semantic validator 或 preflight 直接进入 reviewer lane。
 
-## CSF Test Evidence Cases
+## CSF Test Evidence 用例
 
 - `explicit_csf_test_evidence_author_skill_first`
 - `naive_csf_test_evidence_prompt_triggers_author_skill`
@@ -153,7 +153,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_test_evidence`、semantic validator 或 preflight 直接进入 reviewer lane。
 
-## CSF Backtest Ready Cases
+## CSF Backtest Ready 用例
 
 - `explicit_csf_backtest_ready_author_skill_first`
 - `naive_csf_backtest_ready_prompt_triggers_author_skill`
@@ -176,7 +176,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_backtest_ready`、semantic validator 或 preflight 直接进入 reviewer lane。
 
-## CSF Holdout Validation Cases
+## CSF Holdout Validation 用例
 
 - `explicit_csf_holdout_validation_author_skill_first`
 - `naive_csf_holdout_validation_prompt_triggers_author_skill`
@@ -199,7 +199,7 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_holdout_validation`、semantic validator 或 preflight 直接进入 reviewer lane。
 
-## TSS Cases
+## TSS 用例
 
 TSS (`time_series_signal`) 的行为 case 对齐 CSF 的 validator-before-review 纪律，但 stage 名和语义使用 `tss_*` 主线：
 
