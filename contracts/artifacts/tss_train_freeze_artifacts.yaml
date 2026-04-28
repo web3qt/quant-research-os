@@ -1,0 +1,126 @@
+schema_id: tss-train-freeze-artifacts-v1
+schema_version: v1
+stage: tss_train_freeze
+stage_dir: 04_tss_train_freeze/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  tss_train_freeze.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_train_freeze
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: primary_key
+        description: 声明训练变体主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - variant_id
+      - path: train_window
+        description: 记录训练窗口定义。
+        type: map
+      - path: threshold_policy
+        description: 声明训练阈值冻结规则。
+        type: string
+      - path: candidate_variant_ids
+        description: 列出训练候选变体。
+        type: list[string]
+      - path: kept_variant_ids
+        description: 列出训练保留变体。
+        type: list[string]
+      - path: rejected_variant_ids
+        description: 列出训练拒绝变体。
+        type: list[string]
+      - path: calibration_contract
+        description: 保留用户冻结的训练窗口和校准语义。
+        type: map
+      - path: threshold_contract
+        description: 保留用户冻结的阈值字段、候选阈值和选择规则。
+        type: map
+      - path: search_governance_contract
+        description: 保留候选、保留、拒绝 variant 以及不可治理轴约束。
+        type: map
+      - path: reuse_contract
+        description: 保留对上游 signal_ready 冻结合同的复用约束。
+        type: map
+      - path: delivery_contract.machine_artifacts
+        description: 声明交付给下游的机器产物。
+        type: list[string]
+      - path: delivery_contract.consumer_stage
+        description: 声明交付产物的消费阶段。
+        type: enum
+        values:
+          - tss_test_evidence
+
+  train_threshold_ledger.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - threshold_name
+      - threshold_value
+      - selection_rule
+    non_empty: true
+
+  train_variant_ledger.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - status
+      - selection_rule
+    non_empty: true
+
+  train_variant_rejects.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - reject_reason
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_train_freeze
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: source_stage
+        description: 记录该产物承接的上游阶段。
+        type: enum
+        values:
+          - tss_signal_ready
+      - path: primary_key
+        description: 声明训练变体主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - variant_id
+      - path: machine_artifacts
+        description: 列出机器可读产物路径。
+        type: list[string]
+      - path: consumer_stage
+        description: 声明该产物交付给哪个下游阶段使用。
+        type: enum
+        values:
+          - tss_test_evidence
+      - path: replay_command
+        description: 记录复现命令。
+        type: string

@@ -1,5 +1,8 @@
 # 06_backtest_failure_sop
 
+> [!WARNING]
+> Legacy compatibility doc. For new `time_series_signal` lineages, use the canonical TSS route `02_tss_data_ready -> 03_tss_signal_ready -> 04_tss_train_freeze -> 05_tss_test_evidence -> 06_tss_backtest_ready -> 07_tss_holdout_validation`. Do not cite this unprefixed failure SOP as the normal path for new TSS work.
+
 Doc ID: SOP-BACKTEST-FAILURE-v1.0
 Title: `06_backtest_failure_sop` — Backtest 阶段失败处置标准操作流程（机构级）
 Date: 2026-03-23

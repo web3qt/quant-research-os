@@ -1,0 +1,79 @@
+schema_id: tss-stage-diagnostic-profiles-v1
+schema_version: v1
+
+profiles:
+  tss_data_ready:
+    health_dimensions:
+      time_index_quality:
+        required_metrics:
+          - time_index_coverage
+          - asset_count
+          - split_sample_adequacy
+        recommended_metrics:
+          - quality_flag_rate
+
+  tss_signal_ready:
+    health_dimensions:
+      signal_materialization:
+        required_metrics:
+          - signal_non_null_ratio
+          - signal_event_count
+          - parameter_count
+        recommended_metrics: []
+      upstream_binding:
+        required_metrics:
+          - route_inheritance
+        recommended_metrics: []
+
+  tss_train_freeze:
+    health_dimensions:
+      train_governance:
+        required_metrics:
+          - threshold_ledger_coverage
+          - variant_ledger_coverage
+          - reject_reason_completeness
+          - train_quality_score
+        recommended_metrics: []
+
+  tss_test_evidence:
+    health_dimensions:
+      event_direction:
+        required_metrics:
+          - mean_forward_return
+          - hit_rate
+          - base_rate_uplift
+          - event_count
+          - signal_frequency
+        recommended_metrics:
+          - mean_rank_ic
+          - mfe_mae
+
+  tss_backtest_ready:
+    health_dimensions:
+      portfolio_quality:
+        required_metrics:
+          - mean_gross_return
+          - mean_net_return
+          - gross_net_erosion
+          - max_drawdown
+        recommended_metrics: []
+      trading_cost_and_capacity:
+        required_metrics:
+          - turnover
+          - capacity_utilization
+        recommended_metrics: []
+
+  tss_holdout_validation:
+    health_dimensions:
+      holdout_direction:
+        required_metrics:
+          - direction_match
+          - holdout_mean_forward_return
+          - holdout_hit_rate
+        recommended_metrics: []
+      holdout_degradation:
+        required_metrics:
+          - holdout_mean_net_return
+          - net_return_delta
+          - drawdown_delta
+        recommended_metrics: []

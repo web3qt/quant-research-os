@@ -2586,7 +2586,7 @@ def test_run_research_session_ignores_removed_review_governance_lane(tmp_path: P
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
 
-    assert status.current_stage == "data_ready_confirmation_pending"
+    assert status.current_stage == "tss_data_ready_confirmation_pending"
     assert status.stage_status == "awaiting_freeze_approval"
     assert status.blocking_reason_code == "FREEZE_APPROVAL_MISSING"
     assert "governance" not in (status.blocking_reason or "").lower()

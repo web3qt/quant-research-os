@@ -1,6 +1,6 @@
 ---
 name: qros-research-session
-description: Use when the user wants to start one orchestrated QROS conversation that drives idea_intake, mandate authoring, mandate review, data_ready authoring, data_ready review, signal_ready authoring, signal_ready review, train_freeze authoring/review, test_evidence authoring/review, backtest_ready authoring/review, holdout_validation authoring/review, and the cross_sectional_factor branch from a single entry point.
+description: Use when the user wants one orchestrated QROS conversation from idea_intake through mandate, time_series_signal TSS stages, or cross_sectional_factor CSF stages.
 ---
 
 # QROS Research Session
@@ -26,18 +26,18 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `idea_intake_confirmation_pending`
 - `mandate`
 - `mandate review`
-- `data_ready`
-- `data_ready review`
-- `signal_ready`
-- `signal_ready review`
-- `train_freeze`
-- `train_freeze review`
-- `test_evidence`
-- `test_evidence review`
-- `backtest_ready`
-- `backtest_ready review`
-- `holdout_validation`
-- `holdout_validation review`
+- `tss_data_ready`
+- `tss_data_ready review`
+- `tss_signal_ready`
+- `tss_signal_ready review`
+- `tss_train_freeze`
+- `tss_train_freeze review`
+- `tss_test_evidence`
+- `tss_test_evidence review`
+- `tss_backtest_ready`
+- `tss_backtest_ready review`
+- `tss_holdout_validation`
+- `tss_holdout_validation review`
 
 在 `research_route = cross_sectional_factor` 时，第一版还覆盖：
 
@@ -54,9 +54,11 @@ description: Use when the user wants to start one orchestrated QROS conversation
 - `csf_holdout_validation`
 - `csf_holdout_validation review`
 
-`holdout_validation review` 是当前单入口编排的终点。
+`tss_holdout_validation review` 或 `csf_holdout_validation review` 是当前单入口编排的终点。
 
 ## Required Runtime
+
+用户在 Codex 里应该使用 `$qros-research-session`、`$qros-progress`、`$qros-stage-display` 或对应 `$qros-*-review` 入口，不要让用户直接执行底层脚本。
 
 Use the orchestrator runtime:
 
@@ -68,6 +70,57 @@ Reuse the deterministic runtime rather than improvising directory state in chat.
 The user should not need to remember internal commands. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
 
 QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
+
+## TSS Route Branch
+
+When `research_route = time_series_signal`, use the TSS branch. TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，不是横截面排序；不得把 Rank IC / Top-Bottom / bucket monotonicity 当作 TSS 主证据。
+
+After mandate review closure, do **not** continue into the legacy unprefixed post-mandate mainline as the canonical route. Next-stage confirmation must happen first, and only after that should the session switch to the independent TSS chain:
+
+- `tss_data_ready_confirmation_pending`
+- `tss_data_ready`
+- `tss_data_ready review`
+- `tss_signal_ready_confirmation_pending`
+- `tss_signal_ready`
+- `tss_signal_ready review`
+- `tss_train_freeze_confirmation_pending`
+- `tss_train_freeze`
+- `tss_train_freeze review`
+- `tss_test_evidence_confirmation_pending`
+- `tss_test_evidence`
+- `tss_test_evidence review`
+- `tss_backtest_ready_confirmation_pending`
+- `tss_backtest_ready`
+- `tss_backtest_ready review`
+- `tss_holdout_validation_confirmation_pending`
+- `tss_holdout_validation`
+- `tss_holdout_validation review`
+
+Use the TSS-specific grouped confirmations and ask for these frozen contract groups in order:
+
+- `extraction_contract`
+- `quality_semantics`
+- `universe_admission`
+- `shared_derived_layer`
+- `delivery_contract`
+- `signal_expression`
+- `param_identity`
+- `time_semantics`
+- `signal_schema`
+- `window_contract`
+- `threshold_contract`
+- `quality_filters`
+- `param_governance`
+- `formal_gate_contract`
+- `admissibility_contract`
+- `audit_contract`
+- `execution_policy`
+- `portfolio_policy`
+- `risk_overlay`
+- `engine_contract`
+- `reuse_contract`
+- `drift_audit`
+- `failure_governance`
 
 ## CSF Route Branch
 
@@ -318,6 +371,90 @@ If runtime status reports `requires_failure_handling = true`, do not keep follow
 
 For any `*_confirmation_pending` freeze gate, runtime status may expose `freeze_groups` for every group in the current draft. The agent may show all groups in one response. If the user replies `确认全部`, run `./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-all-freeze-groups`; this only marks the current draft groups confirmed and never replaces the final stage approval such as `--confirm-mandate`, `--confirm-data-ready`, or `--confirm-signal-ready`. Do not bulk-confirm unless the current turn or the immediately preceding user-visible summary showed every group draft being confirmed.
 
+When `research_route = time_series_signal` and the stage is `tss_data_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `extraction_contract` 这一组冻结什么？
+- `quality_semantics` 这一组冻结什么？
+- `universe_admission` 这一组冻结什么？
+- `shared_derived_layer` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 time index、quality flags、split adequacy 和 TSS data artifacts？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_data_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_data_ready`.
+
+When `research_route = time_series_signal` and the stage is `tss_signal_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `signal_expression` 这一组冻结什么？
+- `param_identity` 这一组冻结什么？
+- `time_semantics` 这一组冻结什么？
+- `signal_schema` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 signal panels、event panels、param manifests、route inheritance artifacts？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_signal_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_signal_ready`.
+
+When `research_route = time_series_signal` and the stage is `tss_train_freeze_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `threshold_contract` 这一组冻结什么？
+- `quality_filters` 这一组冻结什么？
+- `param_governance` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 thresholds、variant ledgers、reject ledgers、quality artifacts？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_train_freeze？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_train_freeze`.
+
+When `research_route = time_series_signal` and the stage is `tss_test_evidence_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `formal_gate_contract` 这一组冻结什么？
+- `admissibility_contract` 这一组冻结什么？
+- `audit_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 event forward return、performance summary、test gate table、selected variants？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_test_evidence？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_test_evidence`.
+
+When `research_route = time_series_signal` and the stage is `tss_backtest_ready_confirmation_pending`, the agent must ask explicitly:
+
+- `execution_policy` 这一组冻结什么？
+- `portfolio_policy` 这一组冻结什么？
+- `risk_overlay` 这一组冻结什么？
+- `engine_contract` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 strategy contract、engine compare、position timeseries、trade ledger、backtest gate table？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_backtest_ready？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_backtest_ready`.
+
+When `research_route = time_series_signal` and the stage is `tss_holdout_validation_confirmation_pending`, the agent must ask explicitly:
+
+- `window_contract` 这一组冻结什么？
+- `reuse_contract` 这一组冻结什么？
+- `drift_audit` 这一组冻结什么？
+- `failure_governance` 这一组冻结什么？
+- `delivery_contract` 这一组冻结什么？
+- 当前 research repo 里将真实生成哪些 holdout signal diagnostics、event comparison、backtest comparison artifacts？
+- 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
+- `是否按以上内容冻结 tss_holdout_validation？`
+
+Do not skip this question. Do not imply the transition already happened.
+Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_holdout_validation`.
+
 When the stage is `idea_intake`, the agent must ask explicitly before writing a real qualification verdict:
 
 - `observation` 到底是什么？
@@ -521,6 +658,15 @@ Use disk artifacts as the primary state:
 
 - `outputs/<lineage>/00_idea_intake/`
 - `outputs/<lineage>/01_mandate/`
+- `outputs/<lineage>/02_tss_data_ready/`
+- `outputs/<lineage>/03_tss_signal_ready/`
+- `outputs/<lineage>/04_tss_train_freeze/`
+- `outputs/<lineage>/05_tss_test_evidence/`
+- `outputs/<lineage>/06_tss_backtest_ready/`
+- `outputs/<lineage>/07_tss_holdout_validation/`
+
+Legacy unprefixed time_series_signal directories may exist in older fixtures or archived lineages, but they are not canonical for new `time_series_signal` lineages:
+
 - `outputs/<lineage>/02_data_ready/`
 - `outputs/<lineage>/03_signal_ready/`
 - `outputs/<lineage>/04_train_freeze/`
@@ -534,6 +680,12 @@ Use disk artifacts as the primary state:
 - `outputs/<lineage>/06_csf_backtest_ready/`
 - `outputs/<lineage>/07_csf_holdout_validation/`
 - mandate review closure artifacts
+- tss_data_ready review closure artifacts
+- tss_signal_ready review closure artifacts
+- tss_train_freeze review closure artifacts
+- tss_test_evidence review closure artifacts
+- tss_backtest_ready review closure artifacts
+- tss_holdout_validation review closure artifacts
 - data_ready review closure artifacts
 - signal_ready review closure artifacts
 - train_freeze review closure artifacts
@@ -566,6 +718,16 @@ After each meaningful step, report:
 - Do not fabricate `review_findings.yaml`
 - Do not bypass `idea_gate_decision.yaml`
 - Do not bypass `mandate_transition_approval.yaml`
+- Do not bypass tss_data_ready review closure
+- Do not bypass tss_signal_ready review closure
+- Do not bypass tss_train_freeze transition approval
+- Do not bypass tss_train_freeze review closure
+- Do not bypass tss_test_evidence transition approval
+- Do not bypass tss_test_evidence review closure
+- Do not bypass tss_backtest_ready transition approval
+- Do not bypass tss_backtest_ready review closure
+- Do not bypass tss_holdout_validation transition approval
+- Do not bypass tss_holdout_validation review closure
 - Do not bypass `data_ready_transition_approval.yaml`
 - Do not bypass `signal_ready_transition_approval.yaml`
 - Do not bypass mandate review closure
@@ -594,6 +756,18 @@ When writing or reviewing content, follow the same contracts as:
 - `qros-idea-intake-author`
 - `qros-mandate-author`
 - `qros-mandate-review`
+- `qros-tss-data-ready-author`
+- `qros-tss-data-ready-review`
+- `qros-tss-signal-ready-author`
+- `qros-tss-signal-ready-review`
+- `qros-tss-train-freeze-author`
+- `qros-tss-train-freeze-review`
+- `qros-tss-test-evidence-author`
+- `qros-tss-test-evidence-review`
+- `qros-tss-backtest-ready-author`
+- `qros-tss-backtest-ready-review`
+- `qros-tss-holdout-validation-author`
+- `qros-tss-holdout-validation-review`
 - `qros-data-ready-author`
 - `qros-data-ready-review`
 - `qros-signal-ready-author`

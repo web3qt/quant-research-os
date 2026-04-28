@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from typing import Any
 
@@ -57,7 +58,7 @@ def run_review_preflight(
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)
     stage_contract = gates["stages"][stage]
-    stage_checks = checklist["stages"][stage]
+    stage_checks = checklist.get("stages", {}).get(stage, {"checks": []})
     stage_content_checks, upstream_binding_checks = _split_structural_checks(
         stage_contract.get("structural_gate_checks", [])
     )
@@ -116,6 +117,12 @@ def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
         "csf_test_evidence",
         "csf_backtest_ready",
         "csf_holdout_validation",
+        "tss_data_ready",
+        "tss_signal_ready",
+        "tss_train_freeze",
+        "tss_test_evidence",
+        "tss_backtest_ready",
+        "tss_holdout_validation",
     }:
         return []
     try:
@@ -144,4 +151,29 @@ def _check_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Pa
     if stage == "csf_holdout_validation":
         result = validate_csf_holdout_validation_semantics(author_formal_dir, lineage_root)
         return [f"CSF-HOLDOUT-SEMANTIC-001: {error}" for error in result.errors]
+    if stage.startswith("tss_"):
+        return _check_tss_stage_semantics(stage, author_formal_dir, lineage_root)
     return []
+
+
+def _check_tss_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Path) -> list[str]:
+    module_name = f"runtime.tools.{stage}_contract_runtime"
+    function_name = f"validate_{stage}_semantics"
+    semantic_prefixes = {
+        "tss_data_ready": "TSS-DATA-SEMANTIC-001",
+        "tss_signal_ready": "TSS-SIGNAL-SEMANTIC-001",
+        "tss_train_freeze": "TSS-TRAIN-SEMANTIC-001",
+        "tss_test_evidence": "TSS-TEST-SEMANTIC-001",
+        "tss_backtest_ready": "TSS-BACKTEST-SEMANTIC-001",
+        "tss_holdout_validation": "TSS-HOLDOUT-SEMANTIC-001",
+    }
+    try:
+        module = importlib.import_module(module_name)
+        validator = getattr(module, function_name)
+    except (ModuleNotFoundError, AttributeError):
+        # TSS stage-local runtime 模块由独立批次接入；这里先保持 route-aware，
+        # 等 validator 模块存在后自动启用语义检查。
+        return []
+    result = validator(author_formal_dir, lineage_root)
+    prefix = semantic_prefixes.get(stage, "TSS-SEMANTIC-001")
+    return [f"{prefix}: {error}" for error in result.errors]

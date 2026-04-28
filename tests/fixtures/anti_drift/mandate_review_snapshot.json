@@ -19,7 +19,7 @@
     "field_dictionary.md"
   ],
   "downstream_permissions": [
-    "data_ready",
+    "tss_data_ready",
     "csf_data_ready"
   ],
   "blocking_reasons": [

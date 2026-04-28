@@ -24,6 +24,12 @@ StageId = Literal[
     "test_evidence",
     "backtest_ready",
     "holdout_validation",
+    "tss_data_ready",
+    "tss_signal_ready",
+    "tss_train_freeze",
+    "tss_test_evidence",
+    "tss_backtest_ready",
+    "tss_holdout_validation",
 ]
 RouteId = Literal["route_neutral", "time_series_signal", "cross_sectional_factor"]
 EntryType = Literal["python", "rust", "bash"]
@@ -38,6 +44,12 @@ ALLOWED_DEPENDS_ON_PROGRAMS = {
     "time_series/test_evidence",
     "time_series/backtest_ready",
     "time_series/holdout_validation",
+    "time_series_signal/tss_data_ready",
+    "time_series_signal/tss_signal_ready",
+    "time_series_signal/tss_train_freeze",
+    "time_series_signal/tss_test_evidence",
+    "time_series_signal/tss_backtest_ready",
+    "time_series_signal/tss_holdout_validation",
     "cross_sectional_factor/data_ready",
     "cross_sectional_factor/signal_ready",
     "cross_sectional_factor/train_freeze",
@@ -125,6 +137,8 @@ def stage_program_relative_dir(stage_id: StageId, route: RouteId) -> Path:
             )
         return Path("program") / "mandate"
     if route == "time_series_signal":
+        if stage_id.startswith("tss_"):
+            return Path("program") / "time_series_signal" / stage_id
         return Path("program") / "time_series" / stage_id
     if route == "cross_sectional_factor":
         return Path("program") / "cross_sectional_factor" / stage_id

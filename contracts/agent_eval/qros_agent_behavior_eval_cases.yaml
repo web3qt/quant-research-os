@@ -759,3 +759,201 @@ cases:
       forbidden_substrings:
         - qros-review-cycle prepare
         - qros-csf-holdout-validation-review
+
+  - id: tss_data_ready_runs_validators_before_review
+    lineage_id: agent_eval_tss_data_ready_validators
+    prompt: "$qros-tss-data-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 02_tss_data_ready/author/formal/time_index_manifest.json
+      absent:
+        - 02_tss_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_data_ready
+        - tss_data_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_data_ready
+
+  - id: tss_data_ready_rejects_gate
+    lineage_id: agent_eval_tss_data_ready_rejects_gate
+    prompt: "$qros-tss-data-ready-author 检查 tss_data_ready，但 freeze groups 或 artifact gate 尚未通过"
+    expected_skill: qros-tss-data-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 02_tss_data_ready/author/formal/time_index_manifest.json
+        - 02_tss_data_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-data-ready-review
+
+  - id: tss_signal_ready_runs_validators_before_review
+    lineage_id: agent_eval_tss_signal_ready_validators
+    prompt: "$qros-tss-signal-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 03_tss_signal_ready/author/formal/signal_manifest.yaml
+      absent:
+        - 03_tss_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_signal_ready
+        - tss_signal_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_signal_ready
+
+  - id: tss_signal_ready_rejects_gate
+    lineage_id: agent_eval_tss_signal_ready_rejects_gate
+    prompt: "$qros-tss-signal-ready-author 检查 tss_signal_ready，但输入绑定或 artifact gate 尚未通过"
+    expected_skill: qros-tss-signal-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 03_tss_signal_ready/author/formal/signal_manifest.yaml
+        - 03_tss_signal_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-signal-ready-review
+
+  - id: tss_train_freeze_runs_validators_before_review
+    lineage_id: agent_eval_tss_train_freeze_validators
+    prompt: "$qros-tss-train-freeze-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 04_tss_train_freeze/author/formal/tss_train_freeze.yaml
+      absent:
+        - 04_tss_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_train_freeze
+        - tss_train_freeze semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_train_freeze
+
+  - id: tss_train_freeze_rejects_gate
+    lineage_id: agent_eval_tss_train_freeze_rejects_gate
+    prompt: "$qros-tss-train-freeze-author 检查 tss_train_freeze，但 kept variants 或 artifact gate 尚未通过"
+    expected_skill: qros-tss-train-freeze-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 04_tss_train_freeze/author/formal/tss_train_freeze.yaml
+        - 04_tss_train_freeze/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-train-freeze-review
+
+  - id: tss_test_evidence_runs_validators_before_review
+    lineage_id: agent_eval_tss_test_evidence_validators
+    prompt: "$qros-tss-test-evidence-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 05_tss_test_evidence/author/formal/signal_performance_summary.json
+      absent:
+        - 05_tss_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_test_evidence
+        - tss_test_evidence semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_test_evidence
+
+  - id: tss_test_evidence_rejects_gate
+    lineage_id: agent_eval_tss_test_evidence_rejects_gate
+    prompt: "$qros-tss-test-evidence-author 检查 tss_test_evidence，但 selected variants 或 artifact gate 尚未通过"
+    expected_skill: qros-tss-test-evidence-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 05_tss_test_evidence/author/formal/signal_performance_summary.json
+        - 05_tss_test_evidence/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-test-evidence-review
+
+  - id: tss_backtest_ready_runs_validators_before_review
+    lineage_id: agent_eval_tss_backtest_ready_validators
+    prompt: "$qros-tss-backtest-ready-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 06_tss_backtest_ready/author/formal/strategy_contract.yaml
+      absent:
+        - 06_tss_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_backtest_ready
+        - tss_backtest_ready semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_backtest_ready
+
+  - id: tss_backtest_ready_rejects_gate
+    lineage_id: agent_eval_tss_backtest_ready_rejects_gate
+    prompt: "$qros-tss-backtest-ready-author 检查 tss_backtest_ready，但成本后规则或 artifact gate 尚未通过"
+    expected_skill: qros-tss-backtest-ready-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 06_tss_backtest_ready/author/formal/strategy_contract.yaml
+        - 06_tss_backtest_ready/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-backtest-ready-review
+
+  - id: tss_holdout_validation_runs_validators_before_review
+    lineage_id: agent_eval_tss_holdout_validation_validators
+    prompt: "$qros-tss-holdout-validation-author 已确认 freeze groups；生成 formal artifacts 后进入 review 前先校验"
+    expected_skill: qros-tss-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      present:
+        - 07_tss_holdout_validation/author/formal/tss_holdout_run_manifest.json
+      absent:
+        - 07_tss_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      ordered_substrings:
+        - qros-validate-stage --stage tss_holdout_validation
+        - tss_holdout_validation semantic validator
+        - qros-review-preflight
+        - qros-review-cycle prepare
+    validators:
+      - stage: tss_holdout_validation
+
+  - id: tss_holdout_validation_rejects_gate
+    lineage_id: agent_eval_tss_holdout_validation_rejects_gate
+    prompt: "$qros-tss-holdout-validation-author 检查 tss_holdout_validation，但 holdout 调参或 artifact gate 尚未通过"
+    expected_skill: qros-tss-holdout-validation-author
+    premature_tool_policy: forbid_before_expected_skill
+    expected_artifacts:
+      absent:
+        - 07_tss_holdout_validation/author/formal/tss_holdout_run_manifest.json
+        - 07_tss_holdout_validation/review/request/adversarial_review_request.yaml
+    expected_events:
+      forbidden_substrings:
+        - qros-review-cycle prepare
+        - qros-tss-holdout-validation-review

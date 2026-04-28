@@ -12,6 +12,8 @@
 - [安装说明](guides/installation.md)
 - [Codex 快速开始](guides/quickstart-codex.md)
 - [QROS 统一研究会话说明](guides/qros-research-session-usage.md)
+- [CSF 因子 diagnostics](guides/qros-factor-diagnostics.md)
+- [TSS 信号 diagnostics](guides/qros-signal-diagnostics.md)
 - [Review 约束地图](guides/qros-review-constraint-map.md)
 - [阶段冻结字段说明](guides/stage-freeze-group-field-guide.md)
 
@@ -76,6 +78,8 @@
 2. 如果是“这个阶段该怎么做”，优先看 `docs/sop/main-flow/`。
 3. 如果是“失败后怎么办”，优先看 `docs/sop/failures/` 和对应 failure skill。
 4. 如果是“这个文档为什么这样设计”，再看 `docs/archive/plans/`。
+
+`time_series_signal` 的当前 canonical 主线是 `02_tss_data_ready -> 03_tss_signal_ready -> 04_tss_train_freeze -> 05_tss_test_evidence -> 06_tss_backtest_ready -> 07_tss_holdout_validation`。无前缀的 `02_data_ready`、`03_signal_ready`、`04_train_freeze`、`05_test_evidence`、`06_backtest_ready`、`07_holdout_validation` 文档只保留为 legacy compatibility doc，不能作为新 TSS lineage 的当前口径。
 
 ## 关于 `docs/archive/plans/`
 

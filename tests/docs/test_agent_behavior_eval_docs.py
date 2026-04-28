@@ -140,3 +140,25 @@ def test_agent_behavior_eval_docs_list_csf_holdout_validation_cases() -> None:
 
     assert "qros-validate-stage --stage csf_holdout_validation" in content
     assert "csf_holdout_validation semantic validator" in content
+
+
+def test_agent_behavior_eval_docs_list_tss_stage_cases() -> None:
+    content = Path("docs/guides/qros-agent-behavior-eval.md").read_text(encoding="utf-8")
+
+    for stage in (
+        "tss_data_ready",
+        "tss_signal_ready",
+        "tss_train_freeze",
+        "tss_test_evidence",
+        "tss_backtest_ready",
+        "tss_holdout_validation",
+    ):
+        assert f"{stage}_runs_validators_before_review" in content
+        assert f"{stage}_rejects_gate" in content
+        assert f"qros-validate-stage --stage {stage}" in content
+        assert f"{stage} semantic validator" in content
+
+    assert "TSS Cases" in content
+    assert "qros-review-cycle prepare" in content
+    assert "rejects_gate" in content
+    assert "不得出现 `qros-review-cycle prepare`" in content

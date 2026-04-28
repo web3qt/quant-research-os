@@ -1,0 +1,120 @@
+schema_id: tss-holdout-validation-artifacts-v1
+schema_version: v1
+stage: tss_holdout_validation
+stage_dir: 07_tss_holdout_validation/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  tss_holdout_run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_holdout_validation
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: source_stage
+        description: 记录该产物承接的上游阶段。
+        type: enum
+        values:
+          - tss_backtest_ready
+      - path: primary_key
+        description: 声明 holdout 策略主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - strategy_id
+      - path: strategy_id
+        description: 标识当前 holdout 策略。
+        type: string
+      - path: holdout_window_source
+        description: 记录 holdout 窗口来源。
+        type: string
+      - path: reuse_rule
+        description: 声明复用规则。
+        type: string
+      - path: no_reestimate_rule
+        description: 声明不得重新估计规则。
+        type: string
+      - path: tuning_performed
+        description: 声明 holdout 是否发生调参；正式 holdout 必须为 false。
+        type: boolean
+      - path: machine_artifacts
+        description: 列出机器可读产物路径。
+        type: list[string]
+      - path: consumer_stage
+        description: 声明该产物交付给哪个下游阶段使用。
+        type: enum
+        values:
+          - terminal
+      - path: replay_command
+        description: 记录复现命令。
+        type: string
+
+  holdout_signal_diagnostics.parquet:
+    type: parquet
+    required_columns:
+      - strategy_id
+      - timestamp
+      - signal_coverage
+      - direction_match
+    non_empty: true
+
+  holdout_event_compare.parquet:
+    type: parquet
+    required_columns:
+      - strategy_id
+      - horizon
+      - test_event_count
+      - holdout_event_count
+      - direction_match
+    non_empty: true
+
+  holdout_backtest_compare.parquet:
+    type: parquet
+    required_columns:
+      - strategy_id
+      - backtest_metric
+      - backtest_value
+      - holdout_value
+      - delta
+    non_empty: true
+
+  rolling_holdout_stability.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_holdout_validation
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: strategy_id
+        description: 标识当前 holdout 策略。
+        type: string
+      - path: stability_status
+        description: 记录稳定性检查状态。
+        type: enum
+        values:
+          - pass
+          - review
+          - fail
+      - path: rolling_window_count
+        description: 记录滚动窗口数量。
+        type: integer

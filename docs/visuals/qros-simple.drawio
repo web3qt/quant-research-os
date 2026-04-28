@@ -141,40 +141,40 @@
                 <mxCell id="5" value="research_route" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1020" y="248" width="180" height="126" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" value="01 data_ready&#xa;把原始数据整理成可研究底座" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="6" value="02_tss_data_ready&#xa;把单资产时序数据整理成可研究底座" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1300" y="130" width="230" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="7" value="02 signal_ready&#xa;把信号定义成正式合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="7" value="03_tss_signal_ready&#xa;把时序信号定义成正式合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1570" y="130" width="230" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="03 train_freeze&#xa;在训练窗内冻结规则和尺子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="8" value="04_tss_train_freeze&#xa;在训练窗内冻结规则和尺子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1840" y="130" width="230" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="9" value="04 test_evidence&#xa;验证独立样本里的统计证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="9" value="05_tss_test_evidence&#xa;验证独立样本里的时序证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2110" y="130" width="230" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="10" value="05 backtest_ready&#xa;验证组合和净成本后的可交易性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="10" value="06_tss_backtest_ready&#xa;验证执行和净成本后的可交易性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2380" y="130" width="240" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="06 holdout_validation&#xa;验证最终方案在保留窗里是否稳定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="11" value="07_tss_holdout_validation&#xa;验证最终方案在保留窗里是否稳定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2660" y="130" width="250" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="01 csf_data_ready&#xa;搭建横截面研究底座" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="12" value="02_csf_data_ready&#xa;搭建横截面研究底座" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1300" y="410" width="240" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="13" value="02 csf_signal_ready&#xa;冻结因子定义和打分合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="13" value="03_csf_signal_ready&#xa;冻结因子定义和打分合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1580" y="410" width="240" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="03 csf_train_freeze&#xa;冻结预处理和分层规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="14" value="04_csf_train_freeze&#xa;冻结预处理和分层规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="1860" y="410" width="240" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="15" value="04 csf_test_evidence&#xa;验证截面排序或过滤证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="15" value="05_csf_test_evidence&#xa;验证截面排序或过滤证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2140" y="410" width="250" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="05 csf_backtest_ready&#xa;把因子映射成组合并看净成本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="16" value="06_csf_backtest_ready&#xa;把因子映射成组合并看净成本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2430" y="410" width="250" height="96" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" value="06 csf_holdout_validation&#xa;验证最终方案在保留窗里是否仍成立" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="17" value="07_csf_holdout_validation&#xa;验证最终方案在保留窗里是否仍成立" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="2720" y="410" width="260" height="96" as="geometry"/>
                 </mxCell>
                 <mxCell id="18" value="当前单入口编排&#xa;到 holdout_validation review closure + 最终 handoff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECC8;strokeColor=#D97706;fontSize=15;fontStyle=1;" parent="1" vertex="1">

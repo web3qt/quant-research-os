@@ -13,6 +13,7 @@ from runtime.tools.lineage_program_runtime import (
     stage_program_dir,
     stage_program_relative_dir,
 )
+from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -185,10 +186,32 @@ def test_stage_program_resolution_uses_route_aware_paths(tmp_path: Path) -> None
 
     assert stage_program_relative_dir("mandate", "route_neutral") == Path("program/mandate")
     assert stage_program_relative_dir("data_ready", "time_series_signal") == Path("program/time_series/data_ready")
+    assert stage_program_relative_dir("tss_data_ready", "time_series_signal") == Path(
+        "program/time_series_signal/tss_data_ready"
+    )
+    assert stage_program_relative_dir("tss_signal_ready", "time_series_signal") == Path(
+        "program/time_series_signal/tss_signal_ready"
+    )
     assert stage_program_relative_dir("signal_ready", "cross_sectional_factor") == Path(
         "program/cross_sectional_factor/signal_ready"
     )
     assert stage_program_dir(lineage_root, "data_ready", "time_series_signal") == lineage_root / "program/time_series/data_ready"
+    assert stage_program_dir(lineage_root, "tss_data_ready", "time_series_signal") == (
+        lineage_root / "program/time_series_signal/tss_data_ready"
+    )
+
+
+def test_tss_stage_program_scaffold_specs_use_tss_stage_keys() -> None:
+    assert STAGE_PROGRAM_SPECS["tss_data_ready"]["stage_id"] == "tss_data_ready"
+    assert STAGE_PROGRAM_SPECS["tss_data_ready"]["program_dir"] == Path(
+        "program/time_series_signal/tss_data_ready"
+    )
+    assert STAGE_PROGRAM_SPECS["tss_data_ready"]["module"] == "runtime.tools.tss_data_ready_runtime"
+    assert STAGE_PROGRAM_SPECS["tss_data_ready"]["stage_dir"] == Path("02_tss_data_ready")
+    assert STAGE_PROGRAM_SPECS["tss_signal_ready"]["stage_id"] == "tss_signal_ready"
+    assert STAGE_PROGRAM_SPECS["tss_signal_ready"]["program_dir"] == Path(
+        "program/time_series_signal/tss_signal_ready"
+    )
 
 
 def test_invoke_stage_if_admitted_records_provenance_for_time_series_stage(tmp_path: Path) -> None:

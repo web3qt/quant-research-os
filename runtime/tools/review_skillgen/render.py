@@ -86,6 +86,12 @@ def _render_deterministic_preflight(stage_key: str) -> str:
         "csf_test_evidence": "CSF-TEST-SEMANTIC-001",
         "csf_backtest_ready": "CSF-BACKTEST-SEMANTIC-001",
         "csf_holdout_validation": "CSF-HOLDOUT-SEMANTIC-001",
+        "tss_data_ready": "TSS-DATA-SEMANTIC-001",
+        "tss_signal_ready": "TSS-SIGNAL-SEMANTIC-001",
+        "tss_train_freeze": "TSS-TRAIN-SEMANTIC-001",
+        "tss_test_evidence": "TSS-TEST-SEMANTIC-001",
+        "tss_backtest_ready": "TSS-BACKTEST-SEMANTIC-001",
+        "tss_holdout_validation": "TSS-HOLDOUT-SEMANTIC-001",
     }
     artifact_contracts = {
         "csf_data_ready": "contracts/artifacts/csf_data_ready_artifacts.yaml",
@@ -94,6 +100,12 @@ def _render_deterministic_preflight(stage_key: str) -> str:
         "csf_test_evidence": "contracts/artifacts/csf_test_evidence_artifacts.yaml",
         "csf_backtest_ready": "contracts/artifacts/csf_backtest_ready_artifacts.yaml",
         "csf_holdout_validation": "contracts/artifacts/csf_holdout_validation_artifacts.yaml",
+        "tss_data_ready": "contracts/artifacts/tss_data_ready_artifacts.yaml",
+        "tss_signal_ready": "contracts/artifacts/tss_signal_ready_artifacts.yaml",
+        "tss_train_freeze": "contracts/artifacts/tss_train_freeze_artifacts.yaml",
+        "tss_test_evidence": "contracts/artifacts/tss_test_evidence_artifacts.yaml",
+        "tss_backtest_ready": "contracts/artifacts/tss_backtest_ready_artifacts.yaml",
+        "tss_holdout_validation": "contracts/artifacts/tss_holdout_validation_artifacts.yaml",
     }
     semantic_code = semantic_codes.get(stage_key)
     if semantic_code is None:

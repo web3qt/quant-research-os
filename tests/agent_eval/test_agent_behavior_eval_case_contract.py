@@ -73,6 +73,18 @@ def test_agent_behavior_eval_case_contract_exists_and_declares_mvp_cases() -> No
         "csf_holdout_validation_runs_artifact_validator_before_review",
         "csf_holdout_validation_runs_semantic_validator_before_review",
         "csf_holdout_validation_rejects_direction_flip",
+        "tss_data_ready_runs_validators_before_review",
+        "tss_data_ready_rejects_gate",
+        "tss_signal_ready_runs_validators_before_review",
+        "tss_signal_ready_rejects_gate",
+        "tss_train_freeze_runs_validators_before_review",
+        "tss_train_freeze_rejects_gate",
+        "tss_test_evidence_runs_validators_before_review",
+        "tss_test_evidence_rejects_gate",
+        "tss_backtest_ready_runs_validators_before_review",
+        "tss_backtest_ready_rejects_gate",
+        "tss_holdout_validation_runs_validators_before_review",
+        "tss_holdout_validation_rejects_gate",
     }
 
 
@@ -257,6 +269,37 @@ def test_csf_holdout_validation_eval_cases_lock_gate_specific_event_assertions()
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-holdout-validation-author"
         assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+
+
+def test_tss_eval_cases_lock_gate_specific_event_assertions() -> None:
+    contract = _load_contract()
+    cases = {case["id"]: case for case in contract["cases"]}
+
+    for stage in (
+        "tss_data_ready",
+        "tss_signal_ready",
+        "tss_train_freeze",
+        "tss_test_evidence",
+        "tss_backtest_ready",
+        "tss_holdout_validation",
+    ):
+        skill = f"qros-{stage.replace('_', '-')}-author"
+        review_skill = f"qros-{stage.replace('_', '-')}-review"
+
+        success_case = cases[f"{stage}_runs_validators_before_review"]
+        assert success_case["expected_skill"] == skill
+        assert success_case["expected_events"]["ordered_substrings"] == [
+            f"qros-validate-stage --stage {stage}",
+            f"{stage} semantic validator",
+            "qros-review-preflight",
+            "qros-review-cycle prepare",
+        ]
+        assert success_case["validators"] == [{"stage": stage}]
+
+        reject_case = cases[f"{stage}_rejects_gate"]
+        assert reject_case["expected_skill"] == skill
+        assert "qros-review-cycle prepare" in reject_case["expected_events"]["forbidden_substrings"]
+        assert review_skill in reject_case["expected_events"]["forbidden_substrings"]
 
 
 def test_agent_behavior_eval_contract_keeps_live_agent_eval_out_of_default_ci() -> None:

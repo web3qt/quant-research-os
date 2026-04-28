@@ -95,6 +95,30 @@ lineage_program_contract:
       route: time_series_signal
       program_dir: outputs/<lineage_id>/program/time_series/holdout_validation/
       provenance_target: outputs/<lineage_id>/07_holdout/program_execution_manifest.json
+    tss_data_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_data_ready/
+      provenance_target: outputs/<lineage_id>/02_tss_data_ready/program_execution_manifest.json
+    tss_signal_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_signal_ready/
+      provenance_target: outputs/<lineage_id>/03_tss_signal_ready/program_execution_manifest.json
+    tss_train_freeze:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_train_freeze/
+      provenance_target: outputs/<lineage_id>/04_tss_train_freeze/program_execution_manifest.json
+    tss_test_evidence:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_test_evidence/
+      provenance_target: outputs/<lineage_id>/05_tss_test_evidence/program_execution_manifest.json
+    tss_backtest_ready:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_backtest_ready/
+      provenance_target: outputs/<lineage_id>/06_tss_backtest_ready/program_execution_manifest.json
+    tss_holdout_validation:
+      route: time_series_signal
+      program_dir: outputs/<lineage_id>/program/time_series_signal/tss_holdout_validation/
+      provenance_target: outputs/<lineage_id>/07_tss_holdout_validation/program_execution_manifest.json
     csf_data_ready:
       route: cross_sectional_factor
       program_dir: outputs/<lineage_id>/program/cross_sectional_factor/data_ready/
@@ -346,12 +370,12 @@ stages:
         - 机制模板改变
     downstream_permissions:
       may_advance_to:
-        - data_ready
+        - tss_data_ready
         - csf_data_ready
       precondition_before_advance:
         - 研究路线已冻结
         - 若 research_route = cross_sectional_factor，则进入 csf_data_ready
-        - 若 research_route = time_series_signal，则继续进入 data_ready
+        - 若 research_route = time_series_signal，则继续进入 tss_data_ready
       frozen_outputs_consumable_by_next_stage:
         - time_split.json
         - parameter_grid.yaml
@@ -364,6 +388,7 @@ stages:
       - mandate 负责冻结问题，不负责宣布收益结论或交易规则
       - mandate 只冻结 crowding 和 capacity 的审计口径，不提前宣布容量结论
       - cross_sectional_factor 进入独立 csf_* 流程，不再复用旧的时序 stage 语义
+      - time_series_signal 进入带 tss_* 前缀的 canonical 主线
     structural_gate_checks:
       - id: MANDATE-STRUCT-001
         severity: blocking
@@ -1247,6 +1272,465 @@ stages:
         - 未冻结的 holdout 调参结果
     notes:
       - stage_dir = 07_csf_holdout_validation
+
+  tss_data_ready:
+    stage_id: tss_data_ready
+    stage_name: TSS Data Ready
+    purpose: 产出 time_series_signal 路线的 asset x timestamp 数据底座和质量语义
+    core_question: 是否已经形成可复现、无前视、可供信号层消费的 asset x timestamp 数据底座。
+    allowed_previous_stages:
+      - mandate
+    required_inputs:
+      - mandate frozen outputs
+      - 正式 universe 与时间边界
+      - 原始市场数据或共享上游数据源
+    required_outputs:
+      - time_index_manifest.json
+      - asset_time_index.parquet
+      - quality_flags.parquet
+      - split_sample_adequacy_report.yaml
+      - run_manifest.json
+      - rebuild_tss_data_ready.py
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - time_index_manifest.json
+      - asset_time_index.parquet
+      - quality_flags.parquet
+      - split_sample_adequacy_report.yaml
+      - run_manifest.json
+      - rebuild_tss_data_ready.py
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 时间索引主键、bar size 与 timestamp semantics 已冻结
+        - 缺失、stale、坏价和异常值语义已显式记录
+        - train/test/backtest/holdout split 样本充足性已审计
+      fail_any_of:
+        - 时间轴无法复现
+        - forward label 信息混入特征底座
+        - 只有目录占位，没有正式 machine artifact
+    audit_only:
+      - 数据质量说明是否便于 reviewer 追踪
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的数据或说明缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 正式 universe 或时间语义需要重定义
+    rollback_rules:
+      default_rollback_stage: tss_data_ready
+      allowed_modifications:
+        - 修正时间索引物化
+        - 修正质量语义说明
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - universe 改变
+        - timestamp semantics 改变
+    downstream_permissions:
+      may_advance_to:
+        - tss_signal_ready
+      precondition_before_advance:
+        - time_index_manifest.json 已冻结
+        - split_sample_adequacy_report.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - time_index_manifest.json
+        - asset_time_index.parquet
+        - quality_flags.parquet
+      next_stage_must_not_consume:
+        - 未冻结的 label 或 future return
+    notes:
+      - stage_dir = 02_tss_data_ready
+      - 该阶段只为 time_series_signal 主线服务
+
+  tss_signal_ready:
+    stage_id: tss_signal_ready
+    stage_name: TSS Signal Ready
+    purpose: 把时序信号表达式物化成带 param_id、field、horizon 与触发语义的正式信号层
+    core_question: 下游 train/test 到底消费哪个 param_id、signal field、horizon 和触发语义。
+    allowed_previous_stages:
+      - tss_data_ready
+    required_inputs:
+      - tss_data_ready frozen outputs
+      - 已冻结的 signal expression template
+    required_outputs:
+      - signal_manifest.yaml
+      - param_manifest.csv
+      - signal_panel.parquet
+      - signal_event_panel.parquet
+      - route_inheritance_contract.yaml
+      - run_manifest.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - signal_manifest.yaml
+      - param_manifest.csv
+      - signal_panel.parquet
+      - signal_event_panel.parquet
+      - route_inheritance_contract.yaml
+      - run_manifest.json
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - param_id、signal field、horizon 与触发语义已冻结
+        - 输入字段只来自 tss_data_ready 的冻结输出
+        - route inheritance contract 绑定 mandate 的 time_series_signal 路线
+      fail_any_of:
+        - signal 输入直接绑定 forward_label_base
+        - route_inheritance_contract 漂移到其他 route
+        - 下游首次发现 signal contract 缺失
+    audit_only:
+      - 稀疏触发事件是否已解释
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的信号物化缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 信号机制族发生实质变化
+    rollback_rules:
+      default_rollback_stage: tss_signal_ready
+      allowed_modifications:
+        - 修正信号物化
+        - 修正 route inheritance contract
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - signal family 改变
+        - horizon 语义改变
+    downstream_permissions:
+      may_advance_to:
+        - tss_train_freeze
+      precondition_before_advance:
+        - signal_manifest.yaml 已冻结
+        - route_inheritance_contract.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - signal_manifest.yaml
+        - param_manifest.csv
+        - signal_panel.parquet
+        - signal_event_panel.parquet
+      next_stage_must_not_consume:
+        - 未冻结的新 param_id
+    notes:
+      - stage_dir = 03_tss_signal_ready
+
+  tss_train_freeze:
+    stage_id: tss_train_freeze
+    stage_name: TSS Train Freeze
+    purpose: 冻结时序信号训练窗口、阈值、variant 选择规则和可治理参数
+    core_question: 后续 test 应复用哪把冻结尺子，而不是边验证边调 threshold。
+    allowed_previous_stages:
+      - tss_signal_ready
+    required_inputs:
+      - tss_signal_ready frozen outputs
+    required_outputs:
+      - tss_train_freeze.yaml
+      - train_threshold_ledger.csv
+      - train_variant_ledger.csv
+      - train_variant_rejects.csv
+      - run_manifest.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - tss_train_freeze.yaml
+      - train_threshold_ledger.csv
+      - train_variant_ledger.csv
+      - train_variant_rejects.csv
+      - run_manifest.json
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - candidate_variant_ids 和 kept_variant_ids 已冻结
+        - kept_variant_ids 是 candidate_variant_ids 的子集
+        - test 阶段不得重估 threshold 的规则已写明
+      fail_any_of:
+        - test 前仍允许调 threshold
+        - kept variants 无法追溯到候选集合
+    audit_only:
+      - rejected variants 解释是否充分
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 train ledger 缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 训练目标或搜索空间发生实质变化
+    rollback_rules:
+      default_rollback_stage: tss_train_freeze
+      allowed_modifications:
+        - 修正 train ledger
+        - 修正阈值说明
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - 搜索空间改变
+        - train/test split 改变
+    downstream_permissions:
+      may_advance_to:
+        - tss_test_evidence
+      precondition_before_advance:
+        - tss_train_freeze.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - tss_train_freeze.yaml
+        - train_variant_ledger.csv
+      next_stage_must_not_consume:
+        - 未冻结的 threshold 调参结果
+    notes:
+      - stage_dir = 04_tss_train_freeze
+
+  tss_test_evidence:
+    stage_id: tss_test_evidence
+    stage_name: TSS Test Evidence
+    purpose: 在独立 test 窗口验证冻结时序信号触发后的未来路径与 base rate 差异
+    core_question: 信号触发后未来路径是否比 base rate 更好，且证据不是少数事件支撑。
+    allowed_previous_stages:
+      - tss_train_freeze
+    required_inputs:
+      - tss_train_freeze frozen outputs
+    required_outputs:
+      - event_forward_return.parquet
+      - signal_performance_summary.json
+      - tss_test_gate_table.csv
+      - tss_selected_variants_test.csv
+      - run_manifest.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - event_forward_return.parquet
+      - signal_performance_summary.json
+      - tss_test_gate_table.csv
+      - tss_selected_variants_test.csv
+      - run_manifest.json
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - 只复用 tss_train_freeze 的冻结 variants
+        - selected variants 是 train kept variants 的子集
+        - 事件样本数量和 base rate 对照已审计
+      fail_any_of:
+        - test 中新增未冻结 variant
+        - 证据只由极少数事件支撑
+    audit_only:
+      - 事件分布是否集中在少数 regime
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 test evidence 缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 证据要求重定义信号机制
+    rollback_rules:
+      default_rollback_stage: tss_test_evidence
+      allowed_modifications:
+        - 修正 test evidence 物化
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - test split 改变
+        - signal family 改变
+    downstream_permissions:
+      may_advance_to:
+        - tss_backtest_ready
+      precondition_before_advance:
+        - tss_selected_variants_test.csv 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - tss_selected_variants_test.csv
+        - tss_test_gate_table.csv
+      next_stage_must_not_consume:
+        - 未冻结的 test rerun 调参结果
+    notes:
+      - stage_dir = 05_tss_test_evidence
+
+  tss_backtest_ready:
+    stage_id: tss_backtest_ready
+    stage_name: TSS Backtest Ready
+    purpose: 冻结时序信号进入交易规则后的组合执行合同、成本规则和风险输出
+    core_question: 冻结信号进入交易规则后是否仍具备成本后收益和可控风险。
+    allowed_previous_stages:
+      - tss_test_evidence
+    required_inputs:
+      - tss_test_evidence frozen outputs
+    required_outputs:
+      - strategy_contract.yaml
+      - engine_compare.csv
+      - position_timeseries.parquet
+      - trade_ledger.csv
+      - tss_backtest_gate_table.csv
+      - run_manifest.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - strategy_contract.yaml
+      - engine_compare.csv
+      - position_timeseries.parquet
+      - trade_ledger.csv
+      - tss_backtest_gate_table.csv
+      - run_manifest.json
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - strategy_contract.yaml 包含 net_after_cost_rule
+        - 双引擎或执行一致性差异已解释
+        - 成本后收益和风险约束已审计
+      fail_any_of:
+        - 交易规则未冻结
+        - 成本后收益规则缺失
+        - position 或 trade ledger 无法复现
+    audit_only:
+      - capacity 和 turnover 说明是否充分
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 backtest 缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - 交易规则需要实质改写
+    rollback_rules:
+      default_rollback_stage: tss_backtest_ready
+      allowed_modifications:
+        - 修正 backtest 物化
+        - 修正成本规则说明
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - strategy contract 改变
+        - risk overlay 改变
+    downstream_permissions:
+      may_advance_to:
+        - tss_holdout_validation
+      precondition_before_advance:
+        - strategy_contract.yaml 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - strategy_contract.yaml
+        - tss_backtest_gate_table.csv
+      next_stage_must_not_consume:
+        - 未冻结的 backtest rerun 调参结果
+    notes:
+      - stage_dir = 06_tss_backtest_ready
+
+  tss_holdout_validation:
+    stage_id: tss_holdout_validation
+    stage_name: TSS Holdout Validation
+    purpose: 在 holdout 中复用冻结时序信号、交易规则和风险约束，审计最终退化和漂移
+    core_question: 最终冻结方案在 holdout 中是否出现方向翻转、频率塌陷或成本后失效。
+    allowed_previous_stages:
+      - tss_backtest_ready
+    required_inputs:
+      - tss_backtest_ready frozen outputs
+    required_outputs:
+      - tss_holdout_run_manifest.json
+      - holdout_signal_diagnostics.parquet
+      - holdout_event_compare.parquet
+      - holdout_backtest_compare.parquet
+      - rolling_holdout_stability.json
+      - artifact_catalog.md
+      - field_dictionary.md
+    machine_artifacts:
+      - tss_holdout_run_manifest.json
+      - holdout_signal_diagnostics.parquet
+      - holdout_event_compare.parquet
+      - holdout_backtest_compare.parquet
+      - rolling_holdout_stability.json
+    human_artifacts:
+      - artifact_catalog.md
+      - field_dictionary.md
+    formal_gate:
+      pass_all_of:
+        - holdout 未执行调参
+        - 方向、频率和成本后表现未出现不可解释塌陷
+        - drift audit 已记录
+      fail_any_of:
+        - holdout_run_manifest 声明 tuning_performed: true
+        - 方向翻转或成本后失效没有治理结论
+    audit_only:
+      - holdout 漂移解释是否足够清楚
+    verdict_rules:
+      PASS:
+        when_all_of:
+          - formal_gate.pass_all_of 全部满足
+      "CONDITIONAL PASS":
+        when_all_of:
+          - 仅存在非阻断性文档补充需求
+      "PASS FOR RETRY":
+        when_any_of:
+          - 有可修复的 holdout 说明缺口
+      RETRY:
+        when_any_of:
+          - formal_gate.fail_any_of 被触发，且可在当前 route 下修复
+      "CHILD LINEAGE":
+        when_any_of:
+          - holdout 表明研究问题本身需要重做
+    rollback_rules:
+      default_rollback_stage: tss_holdout_validation
+      allowed_modifications:
+        - 修正 holdout 审计说明
+        - 补全缺失 artifact
+      must_open_child_lineage_when:
+        - holdout 表明研究语义已改变
+        - strategy contract 需要重写
+    downstream_permissions:
+      may_advance_to: []
+      precondition_before_advance:
+        - holdout audit 已冻结
+      frozen_outputs_consumable_by_next_stage:
+        - tss_holdout_run_manifest.json
+        - holdout_backtest_compare.parquet
+      next_stage_must_not_consume:
+        - 未冻结的 holdout 调参结果
+    notes:
+      - stage_dir = 07_tss_holdout_validation
 
   data_ready:
     stage_id: data_ready

@@ -409,6 +409,120 @@ def prepare_csf_holdout_validation(lineage_root: Path) -> Path:
     return stage_dir
 
 
+def _add_stage_human_artifacts(stage_dir: Path) -> None:
+    formal_dir = stage_dir / "author" / "formal"
+    _write_text(formal_dir / "artifact_catalog.md")
+    _write_text(formal_dir / "field_dictionary.md")
+
+
+def prepare_tss_mandate(lineage_root: Path) -> Path:
+    """Create mandate stage with route = time_series_signal."""
+    from tests.runtime.test_tss_data_ready_runtime import _prepare_tss_mandate_stage
+
+    formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    if not formal_dir.exists():
+        _prepare_tss_mandate_stage(lineage_root)
+    _write_yaml(
+        formal_dir / "parameter_grid.yaml",
+        {"parameters": [{"name": "lookback", "values": [20]}]},
+    )
+    _write_json(
+        formal_dir / "run_manifest.json",
+        {"stage": "mandate", "lineage_id": lineage_root.name, "stage_outputs": []},
+    )
+    return lineage_root / "01_mandate"
+
+
+def prepare_tss_data_ready(lineage_root: Path) -> Path:
+    """Create tss_data_ready stage by building from a TSS mandate."""
+    from runtime.tools.tss_data_ready_runtime import build_tss_data_ready_from_mandate
+    from tests.runtime.test_tss_data_ready_runtime import _tss_data_ready_draft
+
+    prepare_tss_mandate(lineage_root)
+    stage_dir = lineage_root / "02_tss_data_ready"
+    _write_yaml(stage_dir / "author" / "draft" / "tss_data_ready_freeze_draft.yaml", _tss_data_ready_draft(confirmed=True))
+    build_tss_data_ready_from_mandate(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
+def prepare_tss_signal_ready(lineage_root: Path) -> Path:
+    """Create tss_signal_ready stage by building from tss_data_ready."""
+    from runtime.tools.tss_signal_ready_runtime import build_tss_signal_ready_from_data_ready
+    from tests.runtime.test_tss_signal_ready_runtime import _tss_signal_ready_draft
+
+    prepare_tss_data_ready(lineage_root)
+    stage_dir = lineage_root / "03_tss_signal_ready"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_signal_ready_freeze_draft.yaml",
+        _tss_signal_ready_draft(confirmed=True),
+    )
+    build_tss_signal_ready_from_data_ready(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
+def prepare_tss_train_freeze(lineage_root: Path) -> Path:
+    """Create tss_train_freeze stage by building from tss_signal_ready."""
+    from runtime.tools.tss_train_runtime import build_tss_train_freeze_from_signal_ready
+    from tests.runtime.test_tss_train_runtime import _tss_train_freeze_draft
+
+    prepare_tss_signal_ready(lineage_root)
+    stage_dir = lineage_root / "04_tss_train_freeze"
+    _write_yaml(stage_dir / "author" / "draft" / "tss_train_freeze_draft.yaml", _tss_train_freeze_draft(confirmed=True))
+    build_tss_train_freeze_from_signal_ready(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
+def prepare_tss_test_evidence(lineage_root: Path) -> Path:
+    """Create tss_test_evidence stage by building from tss_train_freeze."""
+    from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
+    from tests.runtime.test_tss_test_evidence_runtime import _tss_test_evidence_draft
+
+    prepare_tss_train_freeze(lineage_root)
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_test_evidence_freeze_draft.yaml",
+        _tss_test_evidence_draft(confirmed=True),
+    )
+    build_tss_test_evidence_from_train_freeze(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
+def prepare_tss_backtest_ready(lineage_root: Path) -> Path:
+    """Create tss_backtest_ready stage by building from tss_test_evidence."""
+    from runtime.tools.tss_backtest_runtime import build_tss_backtest_ready_from_test_evidence
+    from tests.runtime.test_tss_backtest_runtime import _tss_backtest_ready_draft
+
+    prepare_tss_test_evidence(lineage_root)
+    stage_dir = lineage_root / "06_tss_backtest_ready"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_backtest_ready_freeze_draft.yaml",
+        _tss_backtest_ready_draft(confirmed=True),
+    )
+    build_tss_backtest_ready_from_test_evidence(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
+def prepare_tss_holdout_validation(lineage_root: Path) -> Path:
+    """Create tss_holdout_validation stage by building from tss_backtest_ready."""
+    from runtime.tools.tss_holdout_runtime import build_tss_holdout_validation_from_backtest_ready
+    from tests.runtime.test_tss_holdout_runtime import _tss_holdout_validation_draft
+
+    prepare_tss_backtest_ready(lineage_root)
+    stage_dir = lineage_root / "07_tss_holdout_validation"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_holdout_validation_freeze_draft.yaml",
+        _tss_holdout_validation_draft(confirmed=True),
+    )
+    build_tss_holdout_validation_from_backtest_ready(lineage_root)
+    _add_stage_human_artifacts(stage_dir)
+    return stage_dir
+
+
 # ---------------------------------------------------------------------------
 # Draft fixtures for stages that need confirmed freeze drafts
 # ---------------------------------------------------------------------------

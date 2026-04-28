@@ -27,9 +27,11 @@ Before responding to any request, check if it matches QROS triggers:
 
 ## Activation Flow
 
+在 Codex 中，用户入口应写成 `$qros-research-session`、`$qros-progress`、`$qros-stage-display` 或对应 `$qros-*-review`。不要让用户直接执行底层脚本；底层 runtime 命令只作为 agent 的 backend mechanics、debugging 和 manual recovery。
+
 ```
 User message → QROS trigger detected?
-├─ Yes → Invoke qros-research-session skill via Skill tool
+├─ Yes → Invoke $qros-research-session skill via Skill tool
 │        → Follow qros-research-session working rules
 │        → Do NOT improvise outside the workflow
 └─ No  → Respond normally without QROS
@@ -38,11 +40,18 @@ User message → QROS trigger detected?
 ## Available Skills
 
 ### Entry Point
-- **qros-research-session** — Unified research session covering all stages from idea intake to holdout validation
+- **$qros-research-session** — Unified research session covering all stages from idea intake to TSS/CSF holdout validation
+- **$qros-progress** — Read-only lineage progress lookup for current stage, blocking gate, and next action
 
 ### Author Skills (stage artifact creation)
 - **qros-idea-intake-author** — Structured idea qualification with hypothesis, counter-hypothesis, kill criteria
 - **qros-mandate-author** — Freeze research contract: scope, time split, parameter grid, execution stack
+- **qros-tss-data-ready-author** — TSS data foundation for `research_route = time_series_signal`
+- **qros-tss-signal-ready-author** — TSS signal/event schema and param identity
+- **qros-tss-train-freeze-author** — TSS train-only thresholds and variant governance
+- **qros-tss-test-evidence-author** — TSS independent test evidence
+- **qros-tss-backtest-ready-author** — TSS strategy/backtest execution evidence
+- **qros-tss-holdout-validation-author** — TSS final holdout validation
 - **qros-data-ready-author** — Freeze data extraction contract, quality semantics, universe admission
 - **qros-signal-ready-author** — Freeze signal expression, param identity, time semantics
 - **qros-train-freeze-author** — Freeze window contract, threshold contract, quality filters
@@ -52,6 +61,12 @@ User message → QROS trigger detected?
 
 ### Review Skills (stage gate verification)
 - **qros-mandate-review** — Verify mandate freeze completeness and downstream permissions
+- **qros-tss-data-ready-review** — Verify TSS data foundation and time-index artifacts
+- **qros-tss-signal-ready-review** — Verify TSS signal/event schema and route inheritance
+- **qros-tss-train-freeze-review** — Verify TSS train threshold discipline
+- **qros-tss-test-evidence-review** — Verify TSS independent-sample direction/path evidence
+- **qros-tss-backtest-ready-review** — Verify TSS backtest execution and ledger evidence
+- **qros-tss-holdout-validation-review** — Verify TSS holdout integrity
 - **qros-data-ready-review** — Verify data contract materialization and coverage
 - **qros-signal-ready-review** — Verify signal schema, param governance
 - **qros-train-freeze-review** — Verify threshold discipline and param isolation
@@ -76,6 +91,7 @@ User message → QROS trigger detected?
 3. **No silent modifications** — Post-hoc changes require explicit change control or child lineage
 4. **Evidence over claims** — Never accept empty directories, placeholder files, or contract-only markdown as completed work
 5. **Disk is truth** — Always check disk artifacts for current state, never rely on chat history alone
+6. **Route-specific names matter** — New `time_series_signal` lineages use `tss_*` stages; TSS is single-asset history predicting that asset's future path/direction, not cross-sectional ranking
 
 ## Red Flags
 

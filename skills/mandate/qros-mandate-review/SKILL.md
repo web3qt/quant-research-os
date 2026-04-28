@@ -119,7 +119,7 @@ description: Codex review skill for Mandate stage verification.
 
 ## 本阶段下游权限
 
-- 可进入下游阶段：data_ready
+- 可进入下游阶段：tss_data_ready
 - 可进入下游阶段：csf_data_ready
 - 下游可直接消费的冻结产物：time_split.json
 - 下游可直接消费的冻结产物：parameter_grid.yaml

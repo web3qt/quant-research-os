@@ -1,0 +1,168 @@
+schema_id: tss-signal-ready-artifacts-v1
+schema_version: v1
+stage: tss_signal_ready
+stage_dir: 03_tss_signal_ready/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  signal_manifest.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_signal_ready
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: signal_id
+        description: 标识当前时序信号。
+        type: string
+      - path: signal_version
+        description: 记录信号版本。
+        type: string
+      - path: signal_direction
+        description: 声明信号方向解释，例如 high_better。
+        type: string
+      - path: target_asset
+        description: 声明该时序信号绑定的目标资产。
+        type: string
+      - path: primary_key
+        description: 声明信号面板主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - asset
+          - timestamp
+          - param_id
+          - horizon
+      - path: timestamp_semantics
+        description: 声明信号 as-of 时间语义。
+        type: string
+      - path: input_field_map
+        description: 记录输入字段映射。
+        type: list[map]
+      - path: input_roots
+        description: 记录信号构造允许消费的上游输入根。
+        type: list[string]
+      - path: output_signal_fields
+        description: 列出输出信号字段。
+        type: list[string]
+      - path: signal_field
+        description: 标识主信号值字段。
+        type: string
+      - path: expression
+        description: 记录信号表达式。
+        type: string
+      - path: asof_rule
+        description: 记录信号计算的 as-of 规则。
+        type: string
+      - path: horizons
+        description: 记录信号覆盖的前瞻观察周期。
+        type: list[string]
+
+  param_manifest.csv:
+    type: csv
+    required_columns:
+      - param_id
+      - horizon
+      - parameter_name
+      - parameter_value
+    non_empty: true
+
+  signal_panel.parquet:
+    type: parquet
+    required_columns:
+      - asset
+      - timestamp
+      - param_id
+      - horizon
+      - signal_value
+    non_empty: true
+
+  signal_event_panel.parquet:
+    type: parquet
+    required_columns:
+      - asset
+      - timestamp
+      - param_id
+      - horizon
+      - event_name
+    non_empty: true
+
+  route_inheritance_contract.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_signal_ready
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: source_route_artifact
+        description: 记录继承的路线 artifact 路径。
+        type: string
+      - path: source_route_digest_sha256
+        description: 记录路线 artifact 摘要。
+        type: string
+      - path: inheritance_mode
+        description: 声明路线继承方式。
+        type: enum
+        values:
+          - exact_copy
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_signal_ready
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: source_stage
+        description: 记录该产物承接的上游阶段。
+        type: enum
+        values:
+          - tss_data_ready
+      - path: primary_key
+        description: 声明信号面板主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - asset
+          - timestamp
+          - param_id
+          - horizon
+      - path: machine_artifacts
+        description: 列出机器可读产物路径。
+        type: list[string]
+      - path: consumer_stage
+        description: 声明该产物交付给哪个下游阶段使用。
+        type: enum
+        values:
+          - tss_train_freeze
+      - path: replay_command
+        description: 记录复现命令。
+        type: string

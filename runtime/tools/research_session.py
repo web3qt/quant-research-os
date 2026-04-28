@@ -44,6 +44,120 @@ from runtime.tools.csf_train_runtime import (
     CSF_TRAIN_FREEZE_GROUP_ORDER,
     scaffold_csf_train_freeze,
 )
+
+try:
+    from runtime.tools.tss_data_ready_runtime import (
+        TSS_DATA_READY_FREEZE_DRAFT_FILE,
+        TSS_DATA_READY_FREEZE_GROUP_ORDER,
+        scaffold_tss_data_ready,
+    )
+except ModuleNotFoundError:
+    TSS_DATA_READY_FREEZE_DRAFT_FILE = "tss_data_ready_freeze_draft.yaml"
+    TSS_DATA_READY_FREEZE_GROUP_ORDER = ("time_index_contract",)
+
+    def scaffold_tss_data_ready(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="02_tss_data_ready",
+            draft_file=TSS_DATA_READY_FREEZE_DRAFT_FILE,
+            group_order=TSS_DATA_READY_FREEZE_GROUP_ORDER,
+        )
+
+
+try:
+    from runtime.tools.tss_signal_ready_runtime import (
+        TSS_SIGNAL_READY_FREEZE_DRAFT_FILE,
+        TSS_SIGNAL_READY_FREEZE_GROUP_ORDER,
+        scaffold_tss_signal_ready,
+    )
+except ModuleNotFoundError:
+    TSS_SIGNAL_READY_FREEZE_DRAFT_FILE = "tss_signal_ready_freeze_draft.yaml"
+    TSS_SIGNAL_READY_FREEZE_GROUP_ORDER = ("signal_contract",)
+
+    def scaffold_tss_signal_ready(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="03_tss_signal_ready",
+            draft_file=TSS_SIGNAL_READY_FREEZE_DRAFT_FILE,
+            group_order=TSS_SIGNAL_READY_FREEZE_GROUP_ORDER,
+        )
+
+
+try:
+    from runtime.tools.tss_train_runtime import (
+        TSS_TRAIN_FREEZE_DRAFT_FILE,
+        TSS_TRAIN_FREEZE_GROUP_ORDER,
+        scaffold_tss_train_freeze,
+    )
+except ModuleNotFoundError:
+    TSS_TRAIN_FREEZE_DRAFT_FILE = "tss_train_freeze_draft.yaml"
+    TSS_TRAIN_FREEZE_GROUP_ORDER = ("train_freeze_contract",)
+
+    def scaffold_tss_train_freeze(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="04_tss_train_freeze",
+            draft_file=TSS_TRAIN_FREEZE_DRAFT_FILE,
+            group_order=TSS_TRAIN_FREEZE_GROUP_ORDER,
+        )
+
+
+try:
+    from runtime.tools.tss_test_evidence_runtime import (
+        TSS_TEST_EVIDENCE_DRAFT_FILE,
+        TSS_TEST_EVIDENCE_GROUP_ORDER,
+        scaffold_tss_test_evidence,
+    )
+except ModuleNotFoundError:
+    TSS_TEST_EVIDENCE_DRAFT_FILE = "tss_test_evidence_freeze_draft.yaml"
+    TSS_TEST_EVIDENCE_GROUP_ORDER = ("test_evidence_contract",)
+
+    def scaffold_tss_test_evidence(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="05_tss_test_evidence",
+            draft_file=TSS_TEST_EVIDENCE_DRAFT_FILE,
+            group_order=TSS_TEST_EVIDENCE_GROUP_ORDER,
+        )
+
+
+try:
+    from runtime.tools.tss_backtest_runtime import (
+        TSS_BACKTEST_READY_DRAFT_FILE,
+        TSS_BACKTEST_READY_GROUP_ORDER,
+        scaffold_tss_backtest_ready,
+    )
+except ModuleNotFoundError:
+    TSS_BACKTEST_READY_DRAFT_FILE = "tss_backtest_ready_freeze_draft.yaml"
+    TSS_BACKTEST_READY_GROUP_ORDER = ("backtest_contract",)
+
+    def scaffold_tss_backtest_ready(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="06_tss_backtest_ready",
+            draft_file=TSS_BACKTEST_READY_DRAFT_FILE,
+            group_order=TSS_BACKTEST_READY_GROUP_ORDER,
+        )
+
+
+try:
+    from runtime.tools.tss_holdout_runtime import (
+        TSS_HOLDOUT_VALIDATION_DRAFT_FILE,
+        TSS_HOLDOUT_VALIDATION_GROUP_ORDER,
+        scaffold_tss_holdout_validation,
+    )
+except ModuleNotFoundError:
+    TSS_HOLDOUT_VALIDATION_DRAFT_FILE = "tss_holdout_validation_freeze_draft.yaml"
+    TSS_HOLDOUT_VALIDATION_GROUP_ORDER = ("holdout_contract",)
+
+    def scaffold_tss_holdout_validation(lineage_root: Path) -> Path:
+        return _scaffold_tss_stage(
+            lineage_root,
+            stage_dir_name="07_tss_holdout_validation",
+            draft_file=TSS_HOLDOUT_VALIDATION_DRAFT_FILE,
+            group_order=TSS_HOLDOUT_VALIDATION_GROUP_ORDER,
+        )
+
 from runtime.tools.idea_runtime import (
     MANDATE_FREEZE_DRAFT_FILE,
     MANDATE_FREEZE_GROUP_ORDER,
@@ -153,6 +267,37 @@ SessionStage = Literal[
     "csf_holdout_validation_review",
     "csf_holdout_validation_next_stage_confirmation_pending",
     "csf_holdout_validation_review_complete",
+    "tss_data_ready_confirmation_pending",
+    "tss_data_ready_author",
+    "tss_data_ready_review_confirmation_pending",
+    "tss_data_ready_review",
+    "tss_data_ready_next_stage_confirmation_pending",
+    "tss_signal_ready_confirmation_pending",
+    "tss_signal_ready_author",
+    "tss_signal_ready_review_confirmation_pending",
+    "tss_signal_ready_review",
+    "tss_signal_ready_next_stage_confirmation_pending",
+    "tss_train_freeze_confirmation_pending",
+    "tss_train_freeze_author",
+    "tss_train_freeze_review_confirmation_pending",
+    "tss_train_freeze_review",
+    "tss_train_freeze_next_stage_confirmation_pending",
+    "tss_test_evidence_confirmation_pending",
+    "tss_test_evidence_author",
+    "tss_test_evidence_review_confirmation_pending",
+    "tss_test_evidence_review",
+    "tss_test_evidence_next_stage_confirmation_pending",
+    "tss_backtest_ready_confirmation_pending",
+    "tss_backtest_ready_author",
+    "tss_backtest_ready_review_confirmation_pending",
+    "tss_backtest_ready_review",
+    "tss_backtest_ready_next_stage_confirmation_pending",
+    "tss_holdout_validation_confirmation_pending",
+    "tss_holdout_validation_author",
+    "tss_holdout_validation_review_confirmation_pending",
+    "tss_holdout_validation_review",
+    "tss_holdout_validation_next_stage_confirmation_pending",
+    "tss_holdout_validation_review_complete",
     "data_ready_next_stage_confirmation_pending",
     "data_ready_confirmation_pending",
     "data_ready_author",
@@ -407,6 +552,62 @@ CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
     "artifact_catalog.md",
     "field_dictionary.md",
 ]
+TSS_DATA_READY_REQUIRED_OUTPUTS = [
+    "time_index_manifest.json",
+    "asset_time_index.parquet",
+    "quality_flags.parquet",
+    "split_sample_adequacy_report.yaml",
+    "run_manifest.json",
+    "rebuild_tss_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TSS_SIGNAL_READY_REQUIRED_OUTPUTS = [
+    "signal_manifest.yaml",
+    "param_manifest.csv",
+    "signal_panel.parquet",
+    "signal_event_panel.parquet",
+    "route_inheritance_contract.yaml",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TSS_TRAIN_FREEZE_REQUIRED_OUTPUTS = [
+    "tss_train_freeze.yaml",
+    "train_threshold_ledger.csv",
+    "train_variant_ledger.csv",
+    "train_variant_rejects.csv",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TSS_TEST_EVIDENCE_REQUIRED_OUTPUTS = [
+    "event_forward_return.parquet",
+    "signal_performance_summary.json",
+    "tss_test_gate_table.csv",
+    "tss_selected_variants_test.csv",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TSS_BACKTEST_READY_REQUIRED_OUTPUTS = [
+    "strategy_contract.yaml",
+    "engine_compare.csv",
+    "position_timeseries.parquet",
+    "trade_ledger.csv",
+    "tss_backtest_gate_table.csv",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
+TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
+    "tss_holdout_run_manifest.json",
+    "holdout_signal_diagnostics.parquet",
+    "holdout_event_compare.parquet",
+    "holdout_backtest_compare.parquet",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+]
 ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
 SESSION_STAGE_RUNTIME_SUFFIXES = (
@@ -427,6 +628,40 @@ BACKTEST_READY_TRANSITION_APPROVAL_FILE = "backtest_ready_transition_approval.ya
 HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_approval.yaml"
 REVIEW_TRANSITION_APPROVAL_FILE = "review_transition_approval.yaml"
 NEXT_STAGE_TRANSITION_APPROVAL_FILE = "next_stage_transition_approval.yaml"
+
+
+def _scaffold_tss_stage(
+    lineage_root: Path,
+    *,
+    stage_dir_name: str,
+    draft_file: str,
+    group_order: tuple[str, ...],
+) -> Path:
+    stage_dir = lineage_root / stage_dir_name
+    draft_dir = stage_dir / "author" / "draft"
+    (stage_dir / "author" / "formal").mkdir(parents=True, exist_ok=True)
+    (stage_dir / "review" / "request").mkdir(parents=True, exist_ok=True)
+    (stage_dir / "review" / "result").mkdir(parents=True, exist_ok=True)
+    (stage_dir / "review" / "closure").mkdir(parents=True, exist_ok=True)
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    draft_path = draft_dir / draft_file
+    if not draft_path.exists():
+        # TSS runtime 模块未接入前，只落盘最小 freeze draft 骨架，不伪造正式产物。
+        draft_path.write_text(
+            yaml.safe_dump(
+                {
+                    "stage": stage_dir_name[3:],
+                    "groups": {
+                        name: {"confirmed": False, "draft": {}, "missing_items": []}
+                        for name in group_order
+                    },
+                },
+                sort_keys=False,
+                allow_unicode=True,
+            ),
+            encoding="utf-8",
+        )
+    return stage_dir
 
 
 @dataclass(frozen=True)
@@ -524,6 +759,37 @@ STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "csf_holdout_validation_review": "qros-csf-holdout-validation-review",
     "csf_holdout_validation_next_stage_confirmation_pending": "qros-research-session",
     "csf_holdout_validation_review_complete": "qros-research-session",
+    "tss_data_ready_confirmation_pending": "qros-tss-data-ready-author",
+    "tss_data_ready_author": "qros-tss-data-ready-author",
+    "tss_data_ready_review_confirmation_pending": "qros-tss-data-ready-review",
+    "tss_data_ready_review": "qros-tss-data-ready-review",
+    "tss_data_ready_next_stage_confirmation_pending": "qros-research-session",
+    "tss_signal_ready_confirmation_pending": "qros-tss-signal-ready-author",
+    "tss_signal_ready_author": "qros-tss-signal-ready-author",
+    "tss_signal_ready_review_confirmation_pending": "qros-tss-signal-ready-review",
+    "tss_signal_ready_review": "qros-tss-signal-ready-review",
+    "tss_signal_ready_next_stage_confirmation_pending": "qros-research-session",
+    "tss_train_freeze_confirmation_pending": "qros-tss-train-freeze-author",
+    "tss_train_freeze_author": "qros-tss-train-freeze-author",
+    "tss_train_freeze_review_confirmation_pending": "qros-tss-train-freeze-review",
+    "tss_train_freeze_review": "qros-tss-train-freeze-review",
+    "tss_train_freeze_next_stage_confirmation_pending": "qros-research-session",
+    "tss_test_evidence_confirmation_pending": "qros-tss-test-evidence-author",
+    "tss_test_evidence_author": "qros-tss-test-evidence-author",
+    "tss_test_evidence_review_confirmation_pending": "qros-tss-test-evidence-review",
+    "tss_test_evidence_review": "qros-tss-test-evidence-review",
+    "tss_test_evidence_next_stage_confirmation_pending": "qros-research-session",
+    "tss_backtest_ready_confirmation_pending": "qros-tss-backtest-ready-author",
+    "tss_backtest_ready_author": "qros-tss-backtest-ready-author",
+    "tss_backtest_ready_review_confirmation_pending": "qros-tss-backtest-ready-review",
+    "tss_backtest_ready_review": "qros-tss-backtest-ready-review",
+    "tss_backtest_ready_next_stage_confirmation_pending": "qros-research-session",
+    "tss_holdout_validation_confirmation_pending": "qros-tss-holdout-validation-author",
+    "tss_holdout_validation_author": "qros-tss-holdout-validation-author",
+    "tss_holdout_validation_review_confirmation_pending": "qros-tss-holdout-validation-review",
+    "tss_holdout_validation_review": "qros-tss-holdout-validation-review",
+    "tss_holdout_validation_next_stage_confirmation_pending": "qros-research-session",
+    "tss_holdout_validation_review_complete": "qros-research-session",
     "data_ready_next_stage_confirmation_pending": "qros-research-session",
     "data_ready_confirmation_pending": "qros-data-ready-author",
     "data_ready_author": "qros-data-ready-author",
@@ -637,6 +903,42 @@ SESSION_STAGE_PROGRAM_SPECS: dict[str, StageProgramSpec] = {
         stage_dir_name="07_csf_holdout_validation",
         required_outputs=tuple(CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS),
     ),
+    "tss_data_ready": StageProgramSpec(
+        stage_id="tss_data_ready",
+        route="time_series_signal",
+        stage_dir_name="02_tss_data_ready",
+        required_outputs=tuple(TSS_DATA_READY_REQUIRED_OUTPUTS),
+    ),
+    "tss_signal_ready": StageProgramSpec(
+        stage_id="tss_signal_ready",
+        route="time_series_signal",
+        stage_dir_name="03_tss_signal_ready",
+        required_outputs=tuple(TSS_SIGNAL_READY_REQUIRED_OUTPUTS),
+    ),
+    "tss_train_freeze": StageProgramSpec(
+        stage_id="tss_train_freeze",
+        route="time_series_signal",
+        stage_dir_name="04_tss_train_freeze",
+        required_outputs=tuple(TSS_TRAIN_FREEZE_REQUIRED_OUTPUTS),
+    ),
+    "tss_test_evidence": StageProgramSpec(
+        stage_id="tss_test_evidence",
+        route="time_series_signal",
+        stage_dir_name="05_tss_test_evidence",
+        required_outputs=tuple(TSS_TEST_EVIDENCE_REQUIRED_OUTPUTS),
+    ),
+    "tss_backtest_ready": StageProgramSpec(
+        stage_id="tss_backtest_ready",
+        route="time_series_signal",
+        stage_dir_name="06_tss_backtest_ready",
+        required_outputs=tuple(TSS_BACKTEST_READY_REQUIRED_OUTPUTS),
+    ),
+    "tss_holdout_validation": StageProgramSpec(
+        stage_id="tss_holdout_validation",
+        route="time_series_signal",
+        stage_dir_name="07_tss_holdout_validation",
+        required_outputs=tuple(TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS),
+    ),
 }
 
 REVIEWABLE_STAGE_BASES = (
@@ -653,6 +955,12 @@ REVIEWABLE_STAGE_BASES = (
     "csf_test_evidence",
     "csf_backtest_ready",
     "csf_holdout_validation",
+    "tss_data_ready",
+    "tss_signal_ready",
+    "tss_train_freeze",
+    "tss_test_evidence",
+    "tss_backtest_ready",
+    "tss_holdout_validation",
 )
 
 NEXT_STAGE_BY_BASE: dict[str, str | None] = {
@@ -669,6 +977,12 @@ NEXT_STAGE_BY_BASE: dict[str, str | None] = {
     "csf_test_evidence": "csf_backtest_ready",
     "csf_backtest_ready": "csf_holdout_validation",
     "csf_holdout_validation": None,
+    "tss_data_ready": "tss_signal_ready",
+    "tss_signal_ready": "tss_train_freeze",
+    "tss_train_freeze": "tss_test_evidence",
+    "tss_test_evidence": "tss_backtest_ready",
+    "tss_backtest_ready": "tss_holdout_validation",
+    "tss_holdout_validation": None,
 }
 
 FREEZE_DRAFT_STAGE_SPECS: dict[SessionStage, tuple[tuple[str, ...], str, tuple[str, ...], str]] = {
@@ -750,6 +1064,42 @@ FREEZE_DRAFT_STAGE_SPECS: dict[SessionStage, tuple[tuple[str, ...], str, tuple[s
         tuple(CSF_HOLDOUT_VALIDATION_GROUP_ORDER),
         "csf_holdout_validation",
     ),
+    "tss_data_ready_confirmation_pending": (
+        ("02_tss_data_ready", "author", "draft"),
+        TSS_DATA_READY_FREEZE_DRAFT_FILE,
+        tuple(TSS_DATA_READY_FREEZE_GROUP_ORDER),
+        "tss_data_ready",
+    ),
+    "tss_signal_ready_confirmation_pending": (
+        ("03_tss_signal_ready", "author", "draft"),
+        TSS_SIGNAL_READY_FREEZE_DRAFT_FILE,
+        tuple(TSS_SIGNAL_READY_FREEZE_GROUP_ORDER),
+        "tss_signal_ready",
+    ),
+    "tss_train_freeze_confirmation_pending": (
+        ("04_tss_train_freeze", "author", "draft"),
+        TSS_TRAIN_FREEZE_DRAFT_FILE,
+        tuple(TSS_TRAIN_FREEZE_GROUP_ORDER),
+        "tss_train_freeze",
+    ),
+    "tss_test_evidence_confirmation_pending": (
+        ("05_tss_test_evidence", "author", "draft"),
+        TSS_TEST_EVIDENCE_DRAFT_FILE,
+        tuple(TSS_TEST_EVIDENCE_GROUP_ORDER),
+        "tss_test_evidence",
+    ),
+    "tss_backtest_ready_confirmation_pending": (
+        ("06_tss_backtest_ready", "author", "draft"),
+        TSS_BACKTEST_READY_DRAFT_FILE,
+        tuple(TSS_BACKTEST_READY_GROUP_ORDER),
+        "tss_backtest_ready",
+    ),
+    "tss_holdout_validation_confirmation_pending": (
+        ("07_tss_holdout_validation", "author", "draft"),
+        TSS_HOLDOUT_VALIDATION_DRAFT_FILE,
+        tuple(TSS_HOLDOUT_VALIDATION_GROUP_ORDER),
+        "tss_holdout_validation",
+    ),
 }
 
 
@@ -824,6 +1174,12 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     test_evidence_dir = lineage_root / "05_test_evidence"
     backtest_dir = lineage_root / "06_backtest"
     holdout_dir = lineage_root / "07_holdout"
+    tss_data_ready_dir = lineage_root / "02_tss_data_ready"
+    tss_signal_ready_dir = lineage_root / "03_tss_signal_ready"
+    tss_train_dir = lineage_root / "04_tss_train_freeze"
+    tss_test_evidence_dir = lineage_root / "05_tss_test_evidence"
+    tss_backtest_dir = lineage_root / "06_tss_backtest_ready"
+    tss_holdout_dir = lineage_root / "07_tss_holdout_validation"
     csf_data_ready_dir = lineage_root / "02_csf_data_ready"
     csf_signal_ready_dir = lineage_root / "03_csf_signal_ready"
     csf_train_dir = lineage_root / "04_csf_train_freeze"
@@ -831,6 +1187,7 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     csf_backtest_dir = lineage_root / "06_csf_backtest_ready"
     csf_holdout_dir = lineage_root / "07_csf_holdout_validation"
     is_csf_route = _is_csf_route(lineage_root)
+    is_tss_route = _is_tss_route(lineage_root)
 
     if is_csf_route:
         if _csf_holdout_validation_outputs_complete(csf_holdout_dir):
@@ -887,6 +1244,55 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
                 stage_base="mandate",
                 stage_dir=mandate_dir,
                 closure_complete=_mandate_closure_complete(mandate_dir),
+            )
+
+    if is_tss_route:
+        if _tss_holdout_validation_outputs_complete(tss_holdout_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_holdout_validation",
+                stage_dir=tss_holdout_dir,
+                closure_complete=_tss_holdout_validation_closure_complete(tss_holdout_dir),
+            )
+
+        if _tss_backtest_ready_outputs_complete(tss_backtest_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_backtest_ready",
+                stage_dir=tss_backtest_dir,
+                closure_complete=_tss_backtest_ready_closure_complete(tss_backtest_dir),
+            )
+
+        if _tss_test_evidence_outputs_complete(tss_test_evidence_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_test_evidence",
+                stage_dir=tss_test_evidence_dir,
+                closure_complete=_tss_test_evidence_closure_complete(tss_test_evidence_dir),
+            )
+
+        if _tss_train_freeze_outputs_complete(tss_train_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_train_freeze",
+                stage_dir=tss_train_dir,
+                closure_complete=_tss_train_freeze_closure_complete(tss_train_dir),
+            )
+
+        if _tss_signal_ready_outputs_complete(tss_signal_ready_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_signal_ready",
+                stage_dir=tss_signal_ready_dir,
+                closure_complete=_tss_signal_ready_closure_complete(tss_signal_ready_dir),
+            )
+
+        if _tss_data_ready_outputs_complete(tss_data_ready_dir):
+            return _review_or_post_review_stage(
+                lineage_root,
+                stage_base="tss_data_ready",
+                stage_dir=tss_data_ready_dir,
+                closure_complete=_tss_data_ready_closure_complete(tss_data_ready_dir),
             )
 
     if _holdout_validation_outputs_complete(holdout_dir):
@@ -1023,6 +1429,25 @@ def build_csf_data_ready_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_data_ready_author")
 
 
+def ensure_tss_data_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "02_tss_data_ready"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_DATA_READY_FREEZE_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_data_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_data_ready_if_admitted(lineage_root: Path) -> list[str]:
+    if detect_session_stage(lineage_root) != "tss_data_ready_author":
+        return []
+    if next_tss_data_ready_freeze_group(lineage_root) is not None:
+        return []
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_data_ready_author")
+
+
 def ensure_signal_ready_scaffold(lineage_root: Path) -> list[str]:
     signal_ready_dir = lineage_root / "03_signal_ready"
     if signal_ready_dir.exists() and (
@@ -1051,6 +1476,21 @@ def ensure_csf_signal_ready_scaffold(lineage_root: Path) -> list[str]:
 
 def build_csf_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_signal_ready_author")
+
+
+def ensure_tss_signal_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "03_tss_signal_ready"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_SIGNAL_READY_FREEZE_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_signal_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_signal_ready_if_admitted(lineage_root: Path) -> list[str]:
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_signal_ready_author")
 
 
 def ensure_train_freeze_scaffold(lineage_root: Path) -> list[str]:
@@ -1083,6 +1523,21 @@ def build_csf_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_train_freeze_author")
 
 
+def ensure_tss_train_freeze_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "04_tss_train_freeze"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_TRAIN_FREEZE_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_train_freeze(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_train_freeze_if_admitted(lineage_root: Path) -> list[str]:
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_train_freeze_author")
+
+
 def ensure_test_evidence_scaffold(lineage_root: Path) -> list[str]:
     test_dir = lineage_root / "05_test_evidence"
     if test_dir.exists() and (
@@ -1111,6 +1566,21 @@ def ensure_csf_test_evidence_scaffold(lineage_root: Path) -> list[str]:
 
 def build_csf_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_test_evidence_author")
+
+
+def ensure_tss_test_evidence_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_TEST_EVIDENCE_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_test_evidence(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_test_evidence_if_admitted(lineage_root: Path) -> list[str]:
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_test_evidence_author")
 
 
 def ensure_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
@@ -1143,6 +1613,21 @@ def build_csf_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_backtest_ready_author")
 
 
+def ensure_tss_backtest_ready_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "06_tss_backtest_ready"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_BACKTEST_READY_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_backtest_ready(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_backtest_ready_if_admitted(lineage_root: Path) -> list[str]:
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_backtest_ready_author")
+
+
 def ensure_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
     holdout_dir = lineage_root / "07_holdout"
     if holdout_dir.exists() and (
@@ -1171,6 +1656,21 @@ def ensure_csf_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
 
 def build_csf_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
     return _invoke_author_stage_without_autogen(lineage_root, "csf_holdout_validation_author")
+
+
+def ensure_tss_holdout_validation_scaffold(lineage_root: Path) -> list[str]:
+    stage_dir = lineage_root / "07_tss_holdout_validation"
+    if stage_dir.exists() and (
+        stage_dir / "author" / "draft" / TSS_HOLDOUT_VALIDATION_DRAFT_FILE
+    ).exists():
+        return []
+
+    scaffold_tss_holdout_validation(lineage_root)
+    return sorted(str(path.relative_to(lineage_root)) for path in stage_dir.iterdir())
+
+
+def build_tss_holdout_validation_if_admitted(lineage_root: Path) -> list[str]:
+    return _invoke_author_stage_without_autogen(lineage_root, "tss_holdout_validation_author")
 
 
 def run_mandate_review_if_ready(lineage_root: Path) -> dict[str, object] | None:
@@ -1670,6 +2170,21 @@ def next_csf_data_ready_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_tss_data_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = (
+        lineage_root / "02_tss_data_ready" / "author" / "draft" / TSS_DATA_READY_FREEZE_DRAFT_FILE
+    )
+    if not draft_path.exists():
+        return TSS_DATA_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_DATA_READY_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "03_signal_ready" / "author" / "draft" / SIGNAL_READY_FREEZE_DRAFT_FILE
     if not draft_path.exists():
@@ -1691,6 +2206,19 @@ def next_csf_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in CSF_SIGNAL_READY_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_tss_signal_ready_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "03_tss_signal_ready" / "author" / "draft" / TSS_SIGNAL_READY_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return TSS_SIGNAL_READY_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_SIGNAL_READY_FREEZE_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -1722,6 +2250,19 @@ def next_csf_train_freeze_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_tss_train_freeze_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "04_tss_train_freeze" / "author" / "draft" / TSS_TRAIN_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return TSS_TRAIN_FREEZE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_TRAIN_FREEZE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_test_evidence_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "05_test_evidence" / "author" / "draft" / TEST_EVIDENCE_DRAFT_FILE
     if not draft_path.exists():
@@ -1743,6 +2284,19 @@ def next_csf_test_evidence_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in CSF_TEST_EVIDENCE_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_tss_test_evidence_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "05_tss_test_evidence" / "author" / "draft" / TSS_TEST_EVIDENCE_DRAFT_FILE
+    if not draft_path.exists():
+        return TSS_TEST_EVIDENCE_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_TEST_EVIDENCE_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -1774,6 +2328,19 @@ def next_csf_backtest_ready_group(lineage_root: Path) -> str | None:
     return None
 
 
+def next_tss_backtest_ready_group(lineage_root: Path) -> str | None:
+    draft_path = lineage_root / "06_tss_backtest_ready" / "author" / "draft" / TSS_BACKTEST_READY_DRAFT_FILE
+    if not draft_path.exists():
+        return TSS_BACKTEST_READY_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_BACKTEST_READY_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
 def next_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "07_holdout" / "author" / "draft" / HOLDOUT_VALIDATION_DRAFT_FILE
     if not draft_path.exists():
@@ -1795,6 +2362,21 @@ def next_csf_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_payload = _read_yaml(draft_path)
     groups = draft_payload.get("groups", {})
     for name in CSF_HOLDOUT_VALIDATION_GROUP_ORDER:
+        if not bool(groups.get(name, {}).get("confirmed")):
+            return name
+    return None
+
+
+def next_tss_holdout_validation_group(lineage_root: Path) -> str | None:
+    draft_path = (
+        lineage_root / "07_tss_holdout_validation" / "author" / "draft" / TSS_HOLDOUT_VALIDATION_DRAFT_FILE
+    )
+    if not draft_path.exists():
+        return TSS_HOLDOUT_VALIDATION_GROUP_ORDER[0]
+
+    draft_payload = _read_yaml(draft_path)
+    groups = draft_payload.get("groups", {})
+    for name in TSS_HOLDOUT_VALIDATION_GROUP_ORDER:
         if not bool(groups.get(name, {}).get("confirmed")):
             return name
     return None
@@ -1897,26 +2479,38 @@ def ensure_freeze_draft_for_stage(lineage_root: Path, current_stage: SessionStag
         return ensure_data_ready_scaffold(lineage_root)
     if current_stage == "csf_data_ready_confirmation_pending":
         return ensure_csf_data_ready_scaffold(lineage_root)
+    if current_stage == "tss_data_ready_confirmation_pending":
+        return ensure_tss_data_ready_scaffold(lineage_root)
     if current_stage == "signal_ready_confirmation_pending":
         return ensure_signal_ready_scaffold(lineage_root)
     if current_stage == "csf_signal_ready_confirmation_pending":
         return ensure_csf_signal_ready_scaffold(lineage_root)
+    if current_stage == "tss_signal_ready_confirmation_pending":
+        return ensure_tss_signal_ready_scaffold(lineage_root)
     if current_stage == "train_freeze_confirmation_pending":
         return ensure_train_freeze_scaffold(lineage_root)
     if current_stage == "csf_train_freeze_confirmation_pending":
         return ensure_csf_train_freeze_scaffold(lineage_root)
+    if current_stage == "tss_train_freeze_confirmation_pending":
+        return ensure_tss_train_freeze_scaffold(lineage_root)
     if current_stage == "test_evidence_confirmation_pending":
         return ensure_test_evidence_scaffold(lineage_root)
     if current_stage == "csf_test_evidence_confirmation_pending":
         return ensure_csf_test_evidence_scaffold(lineage_root)
+    if current_stage == "tss_test_evidence_confirmation_pending":
+        return ensure_tss_test_evidence_scaffold(lineage_root)
     if current_stage == "backtest_ready_confirmation_pending":
         return ensure_backtest_ready_scaffold(lineage_root)
     if current_stage == "csf_backtest_ready_confirmation_pending":
         return ensure_csf_backtest_ready_scaffold(lineage_root)
+    if current_stage == "tss_backtest_ready_confirmation_pending":
+        return ensure_tss_backtest_ready_scaffold(lineage_root)
     if current_stage == "holdout_validation_confirmation_pending":
         return ensure_holdout_validation_scaffold(lineage_root)
     if current_stage == "csf_holdout_validation_confirmation_pending":
         return ensure_csf_holdout_validation_scaffold(lineage_root)
+    if current_stage == "tss_holdout_validation_confirmation_pending":
+        return ensure_tss_holdout_validation_scaffold(lineage_root)
     return []
 
 
@@ -2935,6 +3529,7 @@ def run_research_session(
     if failure_package_status is None and data_ready_decision is not None and current_stage in {
         "data_ready_confirmation_pending",
         "csf_data_ready_confirmation_pending",
+        "tss_data_ready_confirmation_pending",
     }:
         artifacts_written.append(
             write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
@@ -2943,6 +3538,7 @@ def run_research_session(
     if failure_package_status is None and signal_ready_decision is not None and current_stage in {
         "signal_ready_confirmation_pending",
         "csf_signal_ready_confirmation_pending",
+        "tss_signal_ready_confirmation_pending",
     }:
         artifacts_written.append(
             write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
@@ -2951,6 +3547,7 @@ def run_research_session(
     if failure_package_status is None and train_freeze_decision is not None and current_stage in {
         "train_freeze_confirmation_pending",
         "csf_train_freeze_confirmation_pending",
+        "tss_train_freeze_confirmation_pending",
     }:
         artifacts_written.append(
             write_train_freeze_transition_decision(lineage_root, decision=train_freeze_decision)
@@ -2959,6 +3556,7 @@ def run_research_session(
     if failure_package_status is None and test_evidence_decision is not None and current_stage in {
         "test_evidence_confirmation_pending",
         "csf_test_evidence_confirmation_pending",
+        "tss_test_evidence_confirmation_pending",
     }:
         artifacts_written.append(
             write_test_evidence_transition_decision(lineage_root, decision=test_evidence_decision)
@@ -2967,6 +3565,7 @@ def run_research_session(
     if failure_package_status is None and backtest_ready_decision is not None and current_stage in {
         "backtest_ready_confirmation_pending",
         "csf_backtest_ready_confirmation_pending",
+        "tss_backtest_ready_confirmation_pending",
     }:
         artifacts_written.append(
             write_backtest_ready_transition_decision(lineage_root, decision=backtest_ready_decision)
@@ -2975,6 +3574,7 @@ def run_research_session(
     if failure_package_status is None and holdout_validation_decision is not None and current_stage in {
         "holdout_validation_confirmation_pending",
         "csf_holdout_validation_confirmation_pending",
+        "tss_holdout_validation_confirmation_pending",
     }:
         artifacts_written.append(
             write_holdout_validation_transition_decision(
@@ -3119,6 +3719,54 @@ def run_research_session(
         artifacts_written.extend(build_csf_holdout_validation_if_admitted(lineage_root))
         current_stage = detect_session_stage(lineage_root)
 
+    if failure_package_status is None and current_stage == "tss_data_ready_confirmation_pending":
+        artifacts_written.extend(ensure_tss_data_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_data_ready_author":
+        artifacts_written.extend(build_tss_data_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_signal_ready_confirmation_pending":
+        artifacts_written.extend(ensure_tss_signal_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_signal_ready_author":
+        artifacts_written.extend(build_tss_signal_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_train_freeze_confirmation_pending":
+        artifacts_written.extend(ensure_tss_train_freeze_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_train_freeze_author":
+        artifacts_written.extend(build_tss_train_freeze_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_test_evidence_confirmation_pending":
+        artifacts_written.extend(ensure_tss_test_evidence_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_test_evidence_author":
+        artifacts_written.extend(build_tss_test_evidence_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_backtest_ready_confirmation_pending":
+        artifacts_written.extend(ensure_tss_backtest_ready_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_backtest_ready_author":
+        artifacts_written.extend(build_tss_backtest_ready_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_holdout_validation_confirmation_pending":
+        artifacts_written.extend(ensure_tss_holdout_validation_scaffold(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
+    if failure_package_status is None and current_stage == "tss_holdout_validation_author":
+        artifacts_written.extend(build_tss_holdout_validation_if_admitted(lineage_root))
+        current_stage = detect_session_stage(lineage_root)
+
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)
@@ -3220,6 +3868,30 @@ def _holdout_validation_outputs_complete(holdout_dir: Path) -> bool:
 
 def _csf_holdout_validation_outputs_complete(stage_dir: Path) -> bool:
     return stage_outputs_complete(stage_dir, CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
+
+
+def _tss_data_ready_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_DATA_READY_REQUIRED_OUTPUTS)
+
+
+def _tss_signal_ready_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_SIGNAL_READY_REQUIRED_OUTPUTS)
+
+
+def _tss_train_freeze_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_TRAIN_FREEZE_REQUIRED_OUTPUTS)
+
+
+def _tss_test_evidence_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_TEST_EVIDENCE_REQUIRED_OUTPUTS)
+
+
+def _tss_backtest_ready_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_BACKTEST_READY_REQUIRED_OUTPUTS)
+
+
+def _tss_holdout_validation_outputs_complete(stage_dir: Path) -> bool:
+    return stage_outputs_complete(stage_dir, TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS)
 
 
 def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
@@ -3368,6 +4040,22 @@ def _latest_review_failure_status(
             ("csf_data_ready_review", lineage_root / "02_csf_data_ready", True),
             ("mandate_review", lineage_root / "01_mandate", False),
         ]
+    elif _is_tss_route(lineage_root):
+        review_stage_dirs = [
+            ("tss_holdout_validation_review", lineage_root / "07_tss_holdout_validation", True),
+            ("tss_backtest_ready_review", lineage_root / "06_tss_backtest_ready", True),
+            ("tss_test_evidence_review", lineage_root / "05_tss_test_evidence", True),
+            ("tss_train_freeze_review", lineage_root / "04_tss_train_freeze", True),
+            ("tss_signal_ready_review", lineage_root / "03_tss_signal_ready", True),
+            ("tss_data_ready_review", lineage_root / "02_tss_data_ready", True),
+            ("holdout_validation_review", lineage_root / "07_holdout", True),
+            ("backtest_ready_review", lineage_root / "06_backtest", True),
+            ("test_evidence_review", lineage_root / "05_test_evidence", True),
+            ("train_freeze_review", lineage_root / "04_train_freeze", True),
+            ("signal_ready_review", lineage_root / "03_signal_ready", True),
+            ("data_ready_review", lineage_root / "02_data_ready", True),
+            ("mandate_review", lineage_root / "01_mandate", False),
+        ]
     else:
         review_stage_dirs = [
             ("holdout_validation_review", lineage_root / "07_holdout", True),
@@ -3425,11 +4113,20 @@ def _post_review_completion_stage(lineage_root: Path, *, stage_base: str) -> Ses
     if next_stage_decision is None:
         return f"{stage_base}_next_stage_confirmation_pending"  # type: ignore[return-value]
 
-    next_stage_base = NEXT_STAGE_BY_BASE[stage_base]
+    next_stage_base = _resolved_next_stage_base(lineage_root, stage_base)
     if next_stage_base is None:
         return f"{stage_base}_review_complete"  # type: ignore[return-value]
 
     return _next_stage_entry_state(lineage_root, next_stage_base=next_stage_base)
+
+
+def _resolved_next_stage_base(lineage_root: Path, stage_base: str) -> str | None:
+    if stage_base == "mandate":
+        if _is_csf_route(lineage_root):
+            return "csf_data_ready"
+        if _is_tss_route(lineage_root):
+            return "tss_data_ready"
+    return NEXT_STAGE_BY_BASE[stage_base]
 
 
 def _next_stage_entry_state(lineage_root: Path, *, next_stage_base: str) -> SessionStage:
@@ -3500,6 +4197,39 @@ def _next_stage_entry_state(lineage_root: Path, *, next_stage_base: str) -> Sess
         ):
             return "csf_holdout_validation_author"
         return "csf_holdout_validation_confirmation_pending"
+    if next_stage_base == "tss_data_ready":
+        approval_decision = read_data_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_DATA_READY" and next_tss_data_ready_freeze_group(lineage_root) is None:
+            return "tss_data_ready_author"
+        return "tss_data_ready_confirmation_pending"
+    if next_stage_base == "tss_signal_ready":
+        approval_decision = read_signal_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_SIGNAL_READY" and next_tss_signal_ready_freeze_group(lineage_root) is None:
+            return "tss_signal_ready_author"
+        return "tss_signal_ready_confirmation_pending"
+    if next_stage_base == "tss_train_freeze":
+        approval_decision = read_train_freeze_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_TRAIN_FREEZE" and next_tss_train_freeze_group(lineage_root) is None:
+            return "tss_train_freeze_author"
+        return "tss_train_freeze_confirmation_pending"
+    if next_stage_base == "tss_test_evidence":
+        approval_decision = read_test_evidence_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_TEST_EVIDENCE" and next_tss_test_evidence_group(lineage_root) is None:
+            return "tss_test_evidence_author"
+        return "tss_test_evidence_confirmation_pending"
+    if next_stage_base == "tss_backtest_ready":
+        approval_decision = read_backtest_ready_transition_decision(lineage_root)
+        if approval_decision == "CONFIRM_BACKTEST_READY" and next_tss_backtest_ready_group(lineage_root) is None:
+            return "tss_backtest_ready_author"
+        return "tss_backtest_ready_confirmation_pending"
+    if next_stage_base == "tss_holdout_validation":
+        approval_decision = read_holdout_validation_transition_decision(lineage_root)
+        if (
+            approval_decision == "CONFIRM_HOLDOUT_VALIDATION"
+            and next_tss_holdout_validation_group(lineage_root) is None
+        ):
+            return "tss_holdout_validation_author"
+        return "tss_holdout_validation_confirmation_pending"
     raise ValueError(f"Unsupported next stage base: {next_stage_base}")
 
 
@@ -3552,6 +4282,30 @@ def _holdout_validation_closure_complete(holdout_dir: Path) -> bool:
 
 
 def _csf_holdout_validation_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_data_ready_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_signal_ready_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_train_freeze_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_test_evidence_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_backtest_ready_closure_complete(stage_dir: Path) -> bool:
+    return _review_closure_complete(stage_dir)
+
+
+def _tss_holdout_validation_closure_complete(stage_dir: Path) -> bool:
     return _review_closure_complete(stage_dir)
 
 
@@ -3633,7 +4387,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
 
 def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
-    next_stage_base = NEXT_STAGE_BY_BASE[stage_base]
+    next_stage_base = _display_next_stage_base(lineage_root, stage_base)
     if next_stage_base is None:
         return (
             "NEXT_STAGE_CONFIRMATION_PENDING",
@@ -3643,6 +4397,81 @@ def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: S
         "NEXT_STAGE_CONFIRMATION_PENDING",
         f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
     )
+
+
+def _display_next_stage_base(lineage_root: Path, stage_base: str) -> str | None:
+    if stage_base == "mandate" and _is_tss_route(lineage_root):
+        return "tss_data_ready"
+    return NEXT_STAGE_BY_BASE[stage_base]
+
+
+def _tss_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str] | None:
+    specs = {
+        "tss_data_ready": (
+            next_tss_data_ready_freeze_group,
+            read_data_ready_transition_decision,
+            "CONFIRM_DATA_READY",
+            "GO_TO_TSS_DATA_READY",
+            "data-ready",
+        ),
+        "tss_signal_ready": (
+            next_tss_signal_ready_freeze_group,
+            read_signal_ready_transition_decision,
+            "CONFIRM_SIGNAL_READY",
+            "GO_TO_TSS_SIGNAL_READY",
+            "signal-ready",
+        ),
+        "tss_train_freeze": (
+            next_tss_train_freeze_group,
+            read_train_freeze_transition_decision,
+            "CONFIRM_TRAIN_FREEZE",
+            "GO_TO_TSS_TRAIN_FREEZE",
+            "train-freeze",
+        ),
+        "tss_test_evidence": (
+            next_tss_test_evidence_group,
+            read_test_evidence_transition_decision,
+            "CONFIRM_TEST_EVIDENCE",
+            "GO_TO_TSS_TEST_EVIDENCE",
+            "test-evidence",
+        ),
+        "tss_backtest_ready": (
+            next_tss_backtest_ready_group,
+            read_backtest_ready_transition_decision,
+            "CONFIRM_BACKTEST_READY",
+            "GO_TO_TSS_BACKTEST_READY",
+            "backtest-ready",
+        ),
+        "tss_holdout_validation": (
+            next_tss_holdout_validation_group,
+            read_holdout_validation_transition_decision,
+            "CONFIRM_HOLDOUT_VALIDATION",
+            "GO_TO_TSS_HOLDOUT_VALIDATION",
+            "holdout-validation",
+        ),
+    }
+    stage_base = _stage_base_name(current_stage)
+    spec = specs.get(stage_base)
+    if spec is None:
+        return None
+    next_group_fn, decision_fn, confirm_value, code_prefix, cli_suffix = spec
+
+    if current_stage == f"{stage_base}_confirmation_pending":
+        next_group = next_group_fn(lineage_root)
+        if next_group is not None:
+            return f"{code_prefix}_PENDING_CONFIRMATION", _all_freeze_groups_next_action(stage_base)
+        decision = decision_fn(lineage_root)
+        if decision == "HOLD":
+            return f"{code_prefix}_ON_HOLD", f"Wait for explicit {confirm_value}"
+        return (
+            f"{code_prefix}_PENDING_CONFIRMATION",
+            f"Run with --confirm-{cli_suffix} or reply {confirm_value} <lineage_id>",
+        )
+    if current_stage == f"{stage_base}_author":
+        return f"{code_prefix}_CONFIRMED", f"Freeze {stage_base} artifacts"
+    if current_stage == f"{stage_base}_review":
+        return _review_gate_status_and_next_action(lineage_root, current_stage)
+    return None
 
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
@@ -3701,6 +4530,10 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
     if current_stage == "mandate_next_stage_confirmation_pending":
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
+
+    tss_gate_status = _tss_gate_status_and_next_action(lineage_root, current_stage)
+    if tss_gate_status is not None:
+        return tss_gate_status
 
     if current_stage == "csf_data_ready_confirmation_pending":
         next_group = next_csf_data_ready_freeze_group(lineage_root)
@@ -3970,6 +4803,10 @@ def _is_csf_route(lineage_root: Path) -> bool:
     return current_research_route(lineage_root) == "cross_sectional_factor"
 
 
+def _is_tss_route(lineage_root: Path) -> bool:
+    return current_research_route(lineage_root) == "time_series_signal"
+
+
 def _idea_intake_approval_path(lineage_root: Path) -> Path:
     return lineage_root / "00_idea_intake" / IDEA_INTAKE_TRANSITION_APPROVAL_FILE
 
@@ -3981,36 +4818,48 @@ def _approval_path(lineage_root: Path) -> Path:
 def _data_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "02_csf_data_ready" / "author" / "draft" / DATA_READY_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "02_tss_data_ready" / "author" / "draft" / DATA_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "02_data_ready" / "author" / "draft" / DATA_READY_TRANSITION_APPROVAL_FILE
 
 
 def _signal_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "03_csf_signal_ready" / "author" / "draft" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "03_tss_signal_ready" / "author" / "draft" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "03_signal_ready" / "author" / "draft" / SIGNAL_READY_TRANSITION_APPROVAL_FILE
 
 
 def _train_freeze_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "04_csf_train_freeze" / "author" / "draft" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "04_tss_train_freeze" / "author" / "draft" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
     return lineage_root / "04_train_freeze" / "author" / "draft" / TRAIN_FREEZE_TRANSITION_APPROVAL_FILE
 
 
 def _test_evidence_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "05_csf_test_evidence" / "author" / "draft" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "05_tss_test_evidence" / "author" / "draft" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
     return lineage_root / "05_test_evidence" / "author" / "draft" / TEST_EVIDENCE_TRANSITION_APPROVAL_FILE
 
 
 def _backtest_ready_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "06_csf_backtest_ready" / "author" / "draft" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "06_tss_backtest_ready" / "author" / "draft" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
     return lineage_root / "06_backtest" / "author" / "draft" / BACKTEST_READY_TRANSITION_APPROVAL_FILE
 
 
 def _holdout_validation_approval_path(lineage_root: Path) -> Path:
     if _is_csf_route(lineage_root):
         return lineage_root / "07_csf_holdout_validation" / "author" / "draft" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
+    if _is_tss_route(lineage_root):
+        return lineage_root / "07_tss_holdout_validation" / "author" / "draft" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
     return lineage_root / "07_holdout" / "author" / "draft" / HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE
 
 

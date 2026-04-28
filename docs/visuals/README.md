@@ -80,19 +80,19 @@ flowchart TB
     A["00 idea_intake<br/>判断这个想法值不值得正式研究"] --> B["00 mandate<br/>冻结研究问题和边界"]
     B --> C{"冻结 research_route"}
 
-    C -->|time_series_signal| D["01 data_ready"]
-    D --> E["02 signal_ready"]
-    E --> F["03 train_freeze"]
-    F --> G["04 test_evidence"]
-    G --> H["05 backtest_ready"]
-    H --> I["06 holdout_validation"]
+    C -->|time_series_signal| D["02_tss_data_ready"]
+    D --> E["03_tss_signal_ready"]
+    E --> F["04_tss_train_freeze"]
+    F --> G["05_tss_test_evidence"]
+    G --> H["06_tss_backtest_ready"]
+    H --> I["07_tss_holdout_validation"]
 
-    C -->|cross_sectional_factor| J["01 csf_data_ready"]
-    J --> K["02 csf_signal_ready"]
-    K --> L["03 csf_train_freeze"]
-    L --> M["04 csf_test_evidence"]
-    M --> N["05 csf_backtest_ready"]
-    N --> O["06 csf_holdout_validation"]
+    C -->|cross_sectional_factor| J["02_csf_data_ready"]
+    J --> K["03_csf_signal_ready"]
+    K --> L["04_csf_train_freeze"]
+    L --> M["05_csf_test_evidence"]
+    M --> N["06_csf_backtest_ready"]
+    N --> O["07_csf_holdout_validation"]
 
     I --> P["当前单入口编排<br/>到 holdout_validation review closure + 最终 next-stage confirm"]
     O --> P
@@ -150,7 +150,7 @@ flowchart TB
 
 研究从 `idea_intake` 开始。这个阶段先确认 observation、hypothesis、scope、data source、route assessment 和 kill criteria，目标不是立刻给出结果，而是判断这个想法是否具备正式研究资格。
 
-只有通过 intake gate，研究才会进入 `mandate`。在这里，研究问题、时间边界、Universe、数据合同、参数边界和执行合同会被正式冻结。`mandate` 之后，流程按 `research_route` 分流：`time_series_signal` 进入 `data_ready -> signal_ready -> train_freeze -> test_evidence -> backtest_ready -> holdout_validation`，`cross_sectional_factor` 进入对应的 `csf_*` 独立主线。
+只有通过 intake gate，研究才会进入 `mandate`。在这里，研究问题、时间边界、Universe、数据合同、参数边界和执行合同会被正式冻结。`mandate` 之后，流程按 `research_route` 分流：`time_series_signal` 进入 `02_tss_data_ready -> 03_tss_signal_ready -> 04_tss_train_freeze -> 05_tss_test_evidence -> 06_tss_backtest_ready -> 07_tss_holdout_validation`，`cross_sectional_factor` 进入 `02_csf_data_ready -> 03_csf_signal_ready -> 04_csf_train_freeze -> 05_csf_test_evidence -> 06_csf_backtest_ready -> 07_csf_holdout_validation` 独立主线。
 
 当前仓库里，`qros-research-session` 这条 single-entry 编排会一路推进到 `holdout_validation review` closure，随后进入 `holdout_validation_next_stage_confirmation_pending`，在最终 `CONFIRM_NEXT_STAGE` 后进入 `holdout_validation_review_complete` 终态。它不会继续接入更后面的治理阶段。
 

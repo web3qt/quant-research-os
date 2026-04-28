@@ -310,6 +310,40 @@ def _check_csf_train_freeze_signal_binding(lineage_root: Path, author_formal_dir
     return findings
 
 
+def _check_tss_signal_ready_route_binding(lineage_root: Path, author_formal_dir: Path) -> list[str]:
+    route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    contract_path = author_formal_dir / "route_inheritance_contract.yaml"
+    if not route_path.exists():
+        return ["TSS-SIGNAL-BIND-001: mandate research_route.yaml is missing for route inheritance validation"]
+    if not contract_path.exists():
+        return ["TSS-SIGNAL-BIND-001: route_inheritance_contract.yaml is missing"]
+
+    try:
+        route_payload = _load_yaml_mapping(route_path)
+        contract_payload = _load_yaml_mapping(contract_path)
+    except Exception as exc:
+        return [f"TSS-SIGNAL-BIND-001: route inheritance contract evaluation failed: {exc}"]
+
+    findings: list[str] = []
+    if route_payload.get("research_route") != "time_series_signal":
+        findings.append("TSS-SIGNAL-BIND-001: mandate research_route.yaml must stay on time_series_signal")
+    for field in ("research_route", "signal_family", "target_asset_universe", "timestamp_semantics"):
+        route_value = _normalized_optional_value(route_payload.get(field))
+        contract_value = _normalized_optional_value(contract_payload.get(field))
+        if route_value != contract_value:
+            findings.append(
+                f"TSS-SIGNAL-BIND-001: route_inheritance_contract.yaml field {field} does not match mandate research_route.yaml; observed={contract_value!r} expected={route_value!r}"
+            )
+
+    expected_digest = hashlib.sha256(route_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+    observed_digest = str(contract_payload.get("source_route_digest_sha256", "")).strip()
+    if observed_digest and observed_digest != expected_digest:
+        findings.append(
+            "TSS-SIGNAL-BIND-002: route_inheritance_contract.source_route_digest_sha256 must match mandate research_route.yaml"
+        )
+    return findings
+
+
 def validate_upstream_bindings(
     *,
     stage: str,
@@ -321,9 +355,15 @@ def validate_upstream_bindings(
 
     if stage == "csf_data_ready":
         findings.extend(_check_csf_data_ready_route_binding(lineage_root, author_formal_dir))
-    if (author_formal_dir / "route_inheritance_contract.yaml").exists() or structural_binding_checks:
+    if stage == "csf_signal_ready" and (
+        (author_formal_dir / "route_inheritance_contract.yaml").exists() or structural_binding_checks
+    ):
         findings.extend(_check_csf_signal_ready_route_binding(lineage_root, author_formal_dir))
-    if (author_formal_dir / "csf_train_freeze.yaml").exists():
+    if stage == "tss_signal_ready" and (
+        (author_formal_dir / "route_inheritance_contract.yaml").exists() or structural_binding_checks
+    ):
+        findings.extend(_check_tss_signal_ready_route_binding(lineage_root, author_formal_dir))
+    if stage == "csf_train_freeze" and (author_formal_dir / "csf_train_freeze.yaml").exists():
         findings.extend(_check_csf_train_freeze_signal_binding(lineage_root, author_formal_dir))
 
     return findings

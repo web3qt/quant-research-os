@@ -199,6 +199,59 @@ qros-review-cycle prepare
 
 这保证 agent 不能跳过 `qros-validate-stage --stage csf_holdout_validation`、semantic validator 或 preflight 直接进入 reviewer lane。
 
+## TSS Cases
+
+TSS (`time_series_signal`) 的行为 case 对齐 CSF 的 validator-before-review 纪律，但 stage 名和语义使用 `tss_*` 主线：
+
+- `tss_data_ready_runs_validators_before_review`
+- `tss_data_ready_rejects_gate`
+- `tss_signal_ready_runs_validators_before_review`
+- `tss_signal_ready_rejects_gate`
+- `tss_train_freeze_runs_validators_before_review`
+- `tss_train_freeze_rejects_gate`
+- `tss_test_evidence_runs_validators_before_review`
+- `tss_test_evidence_rejects_gate`
+- `tss_backtest_ready_runs_validators_before_review`
+- `tss_backtest_ready_rejects_gate`
+- `tss_holdout_validation_runs_validators_before_review`
+- `tss_holdout_validation_rejects_gate`
+
+每个 `*_runs_validators_before_review` case 使用 `expected_events.ordered_substrings` 锁定对应阶段的顺序：
+
+```text
+qros-validate-stage --stage tss_data_ready
+tss_data_ready semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+
+qros-validate-stage --stage tss_signal_ready
+tss_signal_ready semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+
+qros-validate-stage --stage tss_train_freeze
+tss_train_freeze semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+
+qros-validate-stage --stage tss_test_evidence
+tss_test_evidence semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+
+qros-validate-stage --stage tss_backtest_ready
+tss_backtest_ready semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+
+qros-validate-stage --stage tss_holdout_validation
+tss_holdout_validation semantic validator
+qros-review-preflight
+qros-review-cycle prepare
+```
+
+每个 `*_rejects_gate` case 则锁定 gate 被拒后不得继续 reviewer lane：不得出现 `qros-review-cycle prepare`，也不得调用对应 stage review skill。
+
 这些 case 定义在：
 
 ```text

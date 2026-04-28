@@ -1,5 +1,8 @@
 # 07_holdout_validation_sop — Holdout Validation 阶段标准操作流程（机构级）
 
+> [!WARNING]
+> Legacy compatibility doc. For new `time_series_signal` lineages, use the canonical TSS route `02_tss_data_ready -> 03_tss_signal_ready -> 04_tss_train_freeze -> 05_tss_test_evidence -> 06_tss_backtest_ready -> 07_tss_holdout_validation`. Do not cite this unprefixed SOP as the normal path for new TSS work.
+
 | 字段 | 值 |
 |------|-----|
 | Doc ID | SOP-HOLDOUT-v1.0 |

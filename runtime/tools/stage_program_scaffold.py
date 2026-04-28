@@ -99,6 +99,103 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "inputs": ["06_backtest/engine_compare.csv", "07_holdout/holdout_validation_draft.yaml"],
         "outputs": ["07_holdout/holdout_run_manifest.json", "07_holdout/holdout_gate_decision.md"],
     },
+    "tss_data_ready": {
+        "stage_id": "tss_data_ready",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_data_ready"),
+        "module": "runtime.tools.tss_data_ready_runtime",
+        "function": "build_tss_data_ready_from_mandate",
+        "stage_dir": Path("02_tss_data_ready"),
+        "inputs": [
+            "01_mandate/author/formal/mandate.md",
+            "02_tss_data_ready/author/draft/tss_data_ready_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "02_tss_data_ready/author/formal/time_index_manifest.json",
+            "02_tss_data_ready/author/formal/run_manifest.json",
+        ],
+    },
+    "tss_signal_ready": {
+        "stage_id": "tss_signal_ready",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_signal_ready"),
+        "module": "runtime.tools.tss_signal_ready_runtime",
+        "function": "build_tss_signal_ready_from_data_ready",
+        "stage_dir": Path("03_tss_signal_ready"),
+        "inputs": [
+            "02_tss_data_ready/author/formal/time_index_manifest.json",
+            "03_tss_signal_ready/author/draft/tss_signal_ready_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "03_tss_signal_ready/author/formal/signal_manifest.yaml",
+            "03_tss_signal_ready/author/formal/route_inheritance_contract.yaml",
+            "03_tss_signal_ready/author/formal/run_manifest.json",
+        ],
+    },
+    "tss_train_freeze": {
+        "stage_id": "tss_train_freeze",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_train_freeze"),
+        "module": "runtime.tools.tss_train_runtime",
+        "function": "build_tss_train_freeze_from_signal_ready",
+        "stage_dir": Path("04_tss_train_freeze"),
+        "inputs": [
+            "03_tss_signal_ready/author/formal/signal_manifest.yaml",
+            "04_tss_train_freeze/author/draft/tss_train_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "04_tss_train_freeze/author/formal/tss_train_freeze.yaml",
+            "04_tss_train_freeze/author/formal/train_threshold_ledger.csv",
+        ],
+    },
+    "tss_test_evidence": {
+        "stage_id": "tss_test_evidence",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_test_evidence"),
+        "module": "runtime.tools.tss_test_evidence_runtime",
+        "function": "build_tss_test_evidence_from_train_freeze",
+        "stage_dir": Path("05_tss_test_evidence"),
+        "inputs": [
+            "04_tss_train_freeze/author/formal/tss_train_freeze.yaml",
+            "05_tss_test_evidence/author/draft/tss_test_evidence_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "05_tss_test_evidence/author/formal/signal_performance_summary.json",
+            "05_tss_test_evidence/author/formal/tss_test_gate_table.csv",
+        ],
+    },
+    "tss_backtest_ready": {
+        "stage_id": "tss_backtest_ready",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_backtest_ready"),
+        "module": "runtime.tools.tss_backtest_runtime",
+        "function": "build_tss_backtest_ready_from_test_evidence",
+        "stage_dir": Path("06_tss_backtest_ready"),
+        "inputs": [
+            "05_tss_test_evidence/author/formal/tss_selected_variants_test.csv",
+            "06_tss_backtest_ready/author/draft/tss_backtest_ready_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "06_tss_backtest_ready/author/formal/strategy_contract.yaml",
+            "06_tss_backtest_ready/author/formal/tss_backtest_gate_table.csv",
+        ],
+    },
+    "tss_holdout_validation": {
+        "stage_id": "tss_holdout_validation",
+        "route": "time_series_signal",
+        "program_dir": Path("program/time_series_signal/tss_holdout_validation"),
+        "module": "runtime.tools.tss_holdout_runtime",
+        "function": "build_tss_holdout_validation_from_backtest_ready",
+        "stage_dir": Path("07_tss_holdout_validation"),
+        "inputs": [
+            "06_tss_backtest_ready/author/formal/tss_backtest_gate_table.csv",
+            "07_tss_holdout_validation/author/draft/tss_holdout_validation_freeze_draft.yaml",
+        ],
+        "outputs": [
+            "07_tss_holdout_validation/author/formal/tss_holdout_run_manifest.json",
+            "07_tss_holdout_validation/author/formal/holdout_backtest_compare.parquet",
+        ],
+    },
     "csf_data_ready": {
         "stage_id": "data_ready",
         "route": "cross_sectional_factor",

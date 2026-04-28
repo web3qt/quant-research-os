@@ -34,6 +34,14 @@ def test_lineage_local_program_gate_truth_is_present_in_gate_yaml() -> None:
     assert stage_program_keys["data_ready"]["program_dir"] == "outputs/<lineage_id>/program/time_series/data_ready/"
     assert stage_program_keys["train_calibration"]["program_dir"] == "outputs/<lineage_id>/program/time_series/train_freeze/"
     assert (
+        stage_program_keys["tss_data_ready"]["program_dir"]
+        == "outputs/<lineage_id>/program/time_series_signal/tss_data_ready/"
+    )
+    assert (
+        stage_program_keys["tss_signal_ready"]["program_dir"]
+        == "outputs/<lineage_id>/program/time_series_signal/tss_signal_ready/"
+    )
+    assert (
         stage_program_keys["csf_holdout_validation"]["program_dir"]
         == "outputs/<lineage_id>/program/cross_sectional_factor/holdout_validation/"
     )
@@ -51,3 +59,5 @@ def test_session_usage_documents_program_gate_status_fields() -> None:
     assert "required_program_entrypoint" in usage
     assert "program_contract_status" in usage
     assert "provenance_status" in usage
+    assert "program/time_series_signal/tss_data_ready" in usage
+    assert "02_tss_data_ready" in usage

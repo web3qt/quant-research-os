@@ -38,22 +38,22 @@
         <mxCell id="12" value="Mandate 额外冻结的路线身份&#xa;research_route&#xa;factor_role: standalone_alpha / regime_filter / combo_filter&#xa;factor_structure: single_factor / multi_factor_score&#xa;portfolio_expression: standalone_alpha=&gt; long_short_market_neutral / long_only_rank / short_only_rank / benchmark_relative_long_only / group_relative_long_short；regime_filter=&gt; target_strategy_filter；combo_filter=&gt; target_strategy_filter / target_strategy_overlay&#xa;neutralization_policy: none / market_beta_neutral / group_neutral" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
           <mxGeometry x="1210" y="260" width="440" height="150" as="geometry"/>
         </mxCell>
-        <mxCell id="13" value="02_data_ready&#xa;共享底层数据、对齐、QC、universe admission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="13" value="02_tss_data_ready&#xa;单资产时序底座、对齐、QC、样本充分性" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="1800" y="90" width="190" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="14" value="03_signal_ready&#xa;冻结 signal contract / param_id / 时间语义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="14" value="03_tss_signal_ready&#xa;冻结 signal contract / param_id / 时间语义" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="2050" y="90" width="190" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="15" value="04_train_freeze&#xa;只定尺子: 阈值 / regime / rejects / ledger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="15" value="04_tss_train_freeze&#xa;只定尺子: 阈值 / regime / rejects / ledger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="2300" y="90" width="200" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="16" value="05_test_evidence&#xa;独立样本统计证据&#xa;multiple testing / admissibility" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="16" value="05_tss_test_evidence&#xa;独立样本 forward evidence&#xa;事件数量 / hit rate / decay" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="2560" y="90" width="200" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="17" value="06_backtest&#xa;双引擎回测 + 容量 + 异常收益复核" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="17" value="06_tss_backtest_ready&#xa;执行回测 + 净成本 + 容量复核" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="2820" y="90" width="200" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="18" value="07_holdout&#xa;最终未参与设计窗口&#xa;滚动 OOS / regime shift / decay" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="18" value="07_tss_holdout_validation&#xa;最终未参与设计窗口&#xa;OOS / regime shift / decay" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="3080" y="90" width="210" height="90" as="geometry"/>
         </mxCell>
         <mxCell id="19" value="02_csf_data_ready&#xa;date x asset 面板、membership、eligibility mask" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" vertex="1" parent="1">

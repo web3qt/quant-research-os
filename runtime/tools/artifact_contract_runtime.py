@@ -20,6 +20,12 @@ ARTIFACT_CONTRACTS = {
     "csf_test_evidence": ROOT / "contracts" / "artifacts" / "csf_test_evidence_artifacts.yaml",
     "csf_backtest_ready": ROOT / "contracts" / "artifacts" / "csf_backtest_ready_artifacts.yaml",
     "csf_holdout_validation": ROOT / "contracts" / "artifacts" / "csf_holdout_validation_artifacts.yaml",
+    "tss_data_ready": ROOT / "contracts" / "artifacts" / "tss_data_ready_artifacts.yaml",
+    "tss_signal_ready": ROOT / "contracts" / "artifacts" / "tss_signal_ready_artifacts.yaml",
+    "tss_train_freeze": ROOT / "contracts" / "artifacts" / "tss_train_freeze_artifacts.yaml",
+    "tss_test_evidence": ROOT / "contracts" / "artifacts" / "tss_test_evidence_artifacts.yaml",
+    "tss_backtest_ready": ROOT / "contracts" / "artifacts" / "tss_backtest_ready_artifacts.yaml",
+    "tss_holdout_validation": ROOT / "contracts" / "artifacts" / "tss_holdout_validation_artifacts.yaml",
 }
 
 

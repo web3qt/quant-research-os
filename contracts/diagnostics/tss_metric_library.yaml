@@ -1,0 +1,290 @@
+schema_id: tss-metric-library-v1
+schema_version: v1
+
+metrics:
+  time_index_coverage:
+    display_name: Time Index Coverage
+    category: data_quality
+    meaning: 衡量 TSS 时间索引在目标资产与时间窗口上的有效覆盖比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - time_index_manifest.json.coverage_ratio
+    v1_observation_mode: read_existing
+
+  asset_count:
+    display_name: Asset Count
+    category: data_quality
+    meaning: 衡量 TSS 数据阶段参与研究的资产数量或资产-时间索引厚度。
+    expected_direction: higher_is_better
+    required_inputs:
+      - asset_time_index.parquet.asset_id
+    v1_observation_mode: derive_from_existing
+
+  split_sample_adequacy:
+    display_name: Split Sample Adequacy
+    category: data_quality
+    meaning: 衡量 train、test、backtest 和 holdout 时间切分是否具备足够样本。
+    expected_direction: pass_is_better
+    required_inputs:
+      - split_sample_adequacy_report.yaml.final_verdict
+    v1_observation_mode: read_existing
+
+  quality_flag_rate:
+    display_name: Quality Flag Rate
+    category: data_quality
+    meaning: 衡量质量标记覆盖比例，用于判断异常时间点、停牌或缺失值是否被显式记录。
+    expected_direction: context_dependent
+    required_inputs:
+      - quality_flags.parquet.flag_rate
+    v1_observation_mode: read_existing
+
+  signal_non_null_ratio:
+    display_name: Signal Non-null Ratio
+    category: signal_quality
+    meaning: 衡量 signal_panel 中最终信号字段的非空比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_manifest.yaml.final_signal_field
+      - signal_panel.parquet
+    v1_observation_mode: derive_from_existing
+
+  signal_event_count:
+    display_name: Signal Event Count
+    category: signal_quality
+    meaning: 衡量 signal_event_panel 中真实落盘的信号事件数量。
+    expected_direction: context_dependent
+    required_inputs:
+      - signal_event_panel.parquet
+    v1_observation_mode: derive_from_existing
+
+  route_inheritance:
+    display_name: Route Inheritance
+    category: signal_quality
+    meaning: 检查 TSS route 身份字段是否从 mandate 精确继承。
+    expected_direction: exact_match_is_better
+    required_inputs:
+      - route_inheritance_contract.yaml
+    v1_observation_mode: gap_detect_only
+
+  parameter_count:
+    display_name: Parameter Count
+    category: signal_quality
+    meaning: 记录 param_manifest 中候选信号参数组合数量，用于理解搜索面大小。
+    expected_direction: context_dependent
+    required_inputs:
+      - param_manifest.csv
+    v1_observation_mode: derive_from_existing
+
+  threshold_ledger_coverage:
+    display_name: Threshold Ledger Coverage
+    category: train_governance
+    meaning: 检查训练阶段阈值选择是否有可审计 ledger。
+    expected_direction: complete_is_better
+    required_inputs:
+      - train_threshold_ledger.csv
+    v1_observation_mode: gap_detect_only
+
+  variant_ledger_coverage:
+    display_name: Variant Ledger Coverage
+    category: train_governance
+    meaning: 检查 candidate、kept 和 rejected signal variants 是否都有可审计记录。
+    expected_direction: complete_is_better
+    required_inputs:
+      - train_variant_ledger.csv
+    v1_observation_mode: gap_detect_only
+
+  reject_reason_completeness:
+    display_name: Reject Reason Completeness
+    category: train_governance
+    meaning: 检查被拒绝 variants 是否都有明确 reject reason。
+    expected_direction: complete_is_better
+    required_inputs:
+      - train_variant_rejects.csv.reject_reason
+    v1_observation_mode: gap_detect_only
+
+  train_quality_score:
+    display_name: Train Quality Score
+    category: train_governance
+    meaning: 记录 tss_train_freeze 中保留信号的训练期质量分数。
+    expected_direction: higher_is_better
+    required_inputs:
+      - tss_train_freeze.yaml.train_quality_score
+    v1_observation_mode: read_existing
+
+  mean_forward_return:
+    display_name: Mean Forward Return
+    category: event_evidence
+    meaning: 衡量信号触发后 forward return 的均值，是 TSS test evidence 的核心方向性证据。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.mean_forward_return
+      - event_forward_return.parquet.forward_return
+    v1_observation_mode: read_existing
+
+  hit_rate:
+    display_name: Hit Rate
+    category: event_evidence
+    meaning: 衡量信号触发后方向判断正确的事件比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.hit_rate
+    v1_observation_mode: read_existing
+
+  base_rate_uplift:
+    display_name: Base Rate Uplift
+    category: event_evidence
+    meaning: 衡量信号命中率相对无信号基准命中率的提升。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.base_rate_uplift
+      - signal_performance_summary.json.base_rate
+    v1_observation_mode: read_existing
+
+  event_count:
+    display_name: Event Count
+    category: event_evidence
+    meaning: 衡量 test evidence 中可用信号事件数量，避免少数事件主导结论。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.event_count
+      - event_forward_return.parquet
+    v1_observation_mode: read_existing
+
+  signal_frequency:
+    display_name: Signal Frequency
+    category: event_evidence
+    meaning: 衡量信号触发频率，用于判断信号是否过稀疏或过度频繁。
+    expected_direction: context_dependent
+    required_inputs:
+      - signal_performance_summary.json.signal_frequency
+    v1_observation_mode: read_existing
+
+  mean_rank_ic:
+    display_name: Mean Rank IC
+    category: event_evidence
+    meaning: 衡量 TSS 信号值排序与未来收益排序的一致性。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.mean_rank_ic
+    v1_observation_mode: read_existing
+
+  mfe_mae:
+    display_name: MFE / MAE
+    category: event_evidence
+    meaning: 衡量信号触发后有利波动与不利波动的相对关系。
+    expected_direction: higher_is_better
+    required_inputs:
+      - signal_performance_summary.json.mfe_mae
+      - event_forward_return.parquet.mfe
+      - event_forward_return.parquet.mae
+    v1_observation_mode: read_existing
+
+  mean_gross_return:
+    display_name: Mean Gross Return
+    category: portfolio_quality
+    meaning: 衡量 TSS 组合扣成本前平均收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_gross_return
+    v1_observation_mode: read_existing
+
+  mean_net_return:
+    display_name: Mean Net Return
+    category: portfolio_quality
+    meaning: 衡量 TSS 组合扣成本后平均收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_net_return
+    v1_observation_mode: read_existing
+
+  gross_net_erosion:
+    display_name: Gross / Net Erosion
+    category: portfolio_quality
+    meaning: 衡量交易成本、滑点或换手对原始收益的侵蚀。
+    expected_direction: lower_is_better
+    required_inputs:
+      - portfolio_summary.parquet.mean_gross_return
+      - portfolio_summary.parquet.mean_net_return
+    v1_observation_mode: derive_from_existing
+
+  max_drawdown:
+    display_name: Max Drawdown
+    category: portfolio_quality
+    meaning: 衡量 TSS 回测组合曲线的最大回撤。
+    expected_direction: lower_abs_is_better
+    required_inputs:
+      - portfolio_summary.parquet.max_drawdown
+    v1_observation_mode: read_existing
+
+  turnover:
+    display_name: Turnover
+    category: trading_cost_and_capacity
+    meaning: 衡量 TSS 策略的调仓强度和交易频率。
+    expected_direction: context_dependent
+    required_inputs:
+      - turnover_capacity_report.parquet.turnover
+    v1_observation_mode: read_existing
+
+  capacity_utilization:
+    display_name: Capacity Utilization
+    category: trading_cost_and_capacity
+    meaning: 衡量当前交易规模相对可承载容量的压力。
+    expected_direction: lower_is_better
+    required_inputs:
+      - turnover_capacity_report.parquet.capacity_utilization
+    v1_observation_mode: read_existing
+
+  direction_match:
+    display_name: Direction Match
+    category: holdout_stability
+    meaning: 检查 holdout 中信号方向是否与 test / backtest 阶段冻结方向一致。
+    expected_direction: true_is_better
+    required_inputs:
+      - holdout_event_compare.parquet.direction_match
+    v1_observation_mode: read_existing
+
+  holdout_mean_forward_return:
+    display_name: Holdout Mean Forward Return
+    category: holdout_stability
+    meaning: 衡量 holdout 样本中信号触发后的 forward return 均值。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_event_compare.parquet.holdout_mean_forward_return
+    v1_observation_mode: read_existing
+
+  holdout_hit_rate:
+    display_name: Holdout Hit Rate
+    category: holdout_stability
+    meaning: 衡量 holdout 样本中信号方向判断正确的事件比例。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_event_compare.parquet.holdout_hit_rate
+    v1_observation_mode: read_existing
+
+  holdout_mean_net_return:
+    display_name: Holdout Mean Net Return
+    category: holdout_stability
+    meaning: 衡量 holdout 样本中扣成本后的组合收益。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_backtest_compare.parquet.holdout_mean_net_return
+    v1_observation_mode: read_existing
+
+  net_return_delta:
+    display_name: Net Return Delta
+    category: holdout_degradation
+    meaning: 衡量 holdout 扣成本收益相对 backtest 的变化。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_backtest_compare.parquet.net_return_delta
+    v1_observation_mode: read_existing
+
+  drawdown_delta:
+    display_name: Drawdown Delta
+    category: holdout_degradation
+    meaning: 衡量 holdout 回撤相对 backtest 回撤的变化。
+    expected_direction: higher_is_better
+    required_inputs:
+      - holdout_backtest_compare.parquet.backtest_max_drawdown
+      - holdout_backtest_compare.parquet.holdout_max_drawdown
+    v1_observation_mode: derive_from_existing

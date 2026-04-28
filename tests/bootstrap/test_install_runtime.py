@@ -58,11 +58,13 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert manifest["installed_runtime_files"] == [
         "bin/qros-agent-eval",
         "bin/qros-audit-reviewer",
+        "bin/qros-factor-diagnostics",
         "bin/qros-progress",
         "bin/qros-review",
         "bin/qros-review-cycle",
         "bin/qros-review-preflight",
         "bin/qros-session",
+        "bin/qros-signal-diagnostics",
         "bin/qros-spawn-reviewer",
         "bin/qros-start-review",
         "bin/qros-start-spawned-review",

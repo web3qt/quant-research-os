@@ -1,0 +1,110 @@
+schema_id: tss-test-evidence-artifacts-v1
+schema_version: v1
+stage: tss_test_evidence
+stage_dir: 05_tss_test_evidence/author/formal
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  event_forward_return.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - horizon
+      - asset
+      - timestamp
+      - forward_return
+    non_empty: true
+
+  signal_performance_summary.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_test_evidence
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: primary_key
+        description: 声明测试证据主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - variant_id
+          - horizon
+      - path: selected_variant_ids
+        description: 列出已选择变体 ID。
+        type: list[string]
+      - path: primary_evidence_contract
+        description: 声明主证据合同。
+        type: string
+      - path: mean_forward_return
+        description: 记录平均前瞻收益。
+        type: number
+      - path: event_count
+        description: 记录事件数量。
+        type: integer
+
+  tss_test_gate_table.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - horizon
+      - verdict
+      - primary_evidence_contract
+      - reason
+    non_empty: true
+
+  tss_selected_variants_test.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - horizon
+      - status
+    non_empty: true
+
+  run_manifest.json:
+    type: json
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段产物混用。
+        type: enum
+        values:
+          - tss_test_evidence
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把产物绑定到唯一研究线。
+        type: string
+      - path: research_route
+        description: 声明研究路线，用于确认该产物进入时序信号流程。
+        type: enum
+        values:
+          - time_series_signal
+      - path: source_stage
+        description: 记录该产物承接的上游阶段。
+        type: enum
+        values:
+          - tss_train_freeze
+      - path: primary_key
+        description: 声明测试证据主键字段组合。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - variant_id
+          - horizon
+      - path: machine_artifacts
+        description: 列出机器可读产物路径。
+        type: list[string]
+      - path: consumer_stage
+        description: 声明该产物交付给哪个下游阶段使用。
+        type: enum
+        values:
+          - tss_backtest_ready
+      - path: replay_command
+        description: 记录复现命令。
+        type: string

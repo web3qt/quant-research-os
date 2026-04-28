@@ -135,5 +135,11 @@ class AgentHarness:
             "csf_test_evidence": "05_csf_test_evidence",
             "csf_backtest_ready": "06_csf_backtest_ready",
             "csf_holdout_validation": "07_csf_holdout_validation",
+            "tss_data_ready": "02_tss_data_ready",
+            "tss_signal_ready": "03_tss_signal_ready",
+            "tss_train_freeze": "04_tss_train_freeze",
+            "tss_test_evidence": "05_tss_test_evidence",
+            "tss_backtest_ready": "06_tss_backtest_ready",
+            "tss_holdout_validation": "07_tss_holdout_validation",
         }
         return mapping.get(stage_id, stage_id)
