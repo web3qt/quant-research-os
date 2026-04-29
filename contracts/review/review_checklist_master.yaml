@@ -522,6 +522,194 @@ stages:
         evidence:
           - "holdout_test_compare.parquet"
 
+  tss_data_ready:
+    stage_name: "TSS Data Ready"
+    checks:
+      - id: "TSS-DATA-001"
+        severity: "blocking"
+        check: "time_index_manifest 已冻结 asset x timestamp 主键、bar size 和 timestamp semantics"
+        evidence:
+          - "time_index_manifest.json"
+      - id: "TSS-DATA-002"
+        severity: "blocking"
+        check: "asset_time_index 已物化为正式 machine artifact，不能只有目录或说明文档"
+        evidence:
+          - "asset_time_index.parquet"
+      - id: "TSS-DATA-003"
+        severity: "blocking"
+        check: "缺失、stale、坏价和异常值语义已通过 quality_flags 显式记录"
+        evidence:
+          - "quality_flags.parquet"
+      - id: "TSS-DATA-004"
+        severity: "blocking"
+        check: "train/test/backtest/holdout split 样本充足性已审计"
+        evidence:
+          - "split_sample_adequacy_report.yaml"
+      - id: "TSS-DATA-005"
+        severity: "blocking"
+        check: "stage-local rebuild 程序和 run manifest 已冻结，数据底座可复现"
+        evidence:
+          - "rebuild_tss_data_ready.py"
+          - "run_manifest.json"
+
+  tss_signal_ready:
+    stage_name: "TSS Signal Ready"
+    checks:
+      - id: "TSS-SIGNAL-001"
+        severity: "blocking"
+        check: "signal_manifest 已冻结 signal field、horizon、触发语义和方向"
+        evidence:
+          - "signal_manifest.yaml"
+      - id: "TSS-SIGNAL-002"
+        severity: "blocking"
+        check: "param_id 身份已显式落地，且下游只能消费冻结 param_manifest"
+        evidence:
+          - "param_manifest.csv"
+      - id: "TSS-SIGNAL-003"
+        severity: "blocking"
+        check: "signal_panel 和 signal_event_panel 已物化，不能在 train/test 临时重算同名信号"
+        evidence:
+          - "signal_panel.parquet"
+          - "signal_event_panel.parquet"
+      - id: "TSS-SIGNAL-004"
+        severity: "blocking"
+        check: "route_inheritance_contract 绑定 mandate 的 time_series_signal 路线，未漂移到其他 route"
+        evidence:
+          - "route_inheritance_contract.yaml"
+      - id: "TSS-SIGNAL-005"
+        severity: "reservation"
+        check: "稀疏触发事件、覆盖率边界和字段语义已在 catalog/dictionary 中说明"
+        evidence:
+          - "artifact_catalog.md"
+          - "field_dictionary.md"
+
+  tss_train_freeze:
+    stage_name: "TSS Train Freeze"
+    checks:
+      - id: "TSS-TRAIN-001"
+        severity: "blocking"
+        check: "tss_train_freeze 已冻结 train window、candidate_variant_ids、kept_variant_ids 和 threshold 复用规则"
+        evidence:
+          - "tss_train_freeze.yaml"
+      - id: "TSS-TRAIN-002"
+        severity: "blocking"
+        check: "train_threshold_ledger 已保存，test 阶段不得重估 threshold"
+        evidence:
+          - "train_threshold_ledger.csv"
+      - id: "TSS-TRAIN-003"
+        severity: "blocking"
+        check: "train_variant_ledger 已保存，kept variants 可追溯到 candidate variants"
+        evidence:
+          - "train_variant_ledger.csv"
+      - id: "TSS-TRAIN-004"
+        severity: "blocking"
+        check: "train_variant_rejects 已保存，rejected variants 有可审计原因"
+        evidence:
+          - "train_variant_rejects.csv"
+      - id: "TSS-TRAIN-005"
+        severity: "blocking"
+        check: "未根据 test/backtest 结果回写 train freeze"
+        evidence:
+          - "tss_train_freeze.yaml"
+          - "review notes"
+
+  tss_test_evidence:
+    stage_name: "TSS Test Evidence"
+    checks:
+      - id: "TSS-TEST-001"
+        severity: "blocking"
+        check: "event_forward_return 已在独立 test 窗口物化，且事件样本可审计"
+        evidence:
+          - "event_forward_return.parquet"
+      - id: "TSS-TEST-002"
+        severity: "blocking"
+        check: "signal_performance_summary 和 tss_test_gate_table 已记录 base rate 对照与 formal gate 结果"
+        evidence:
+          - "signal_performance_summary.json"
+          - "tss_test_gate_table.csv"
+      - id: "TSS-TEST-003"
+        severity: "blocking"
+        check: "selected variants 只来自 train-freeze kept variants，且 membership proof 已物化"
+        evidence:
+          - "tss_selected_variants_test.csv"
+          - "selected_variant_membership_proof.csv"
+      - id: "TSS-TEST-004"
+        severity: "blocking"
+        check: "split/threshold attestation 证明 test window 独立，且没有在 test 重估 threshold"
+        evidence:
+          - "split_threshold_attestation.yaml"
+      - id: "TSS-TEST-005"
+        severity: "blocking"
+        check: "upstream binding digest ledger 绑定 train freeze、split 和 review closure，且不是 stale scope"
+        evidence:
+          - "upstream_binding_digest_ledger.yaml"
+      - id: "TSS-TEST-006"
+        severity: "reservation"
+        check: "事件分布、少数 regime 集中和 residual risks 已在审查材料中说明"
+        evidence:
+          - "artifact_catalog.md"
+          - "field_dictionary.md"
+
+  tss_backtest_ready:
+    stage_name: "TSS Backtest Ready"
+    checks:
+      - id: "TSS-BACKTEST-001"
+        severity: "blocking"
+        check: "strategy_contract 已冻结交易规则、成本规则、风险约束和 signal consumption scope"
+        evidence:
+          - "strategy_contract.yaml"
+      - id: "TSS-BACKTEST-002"
+        severity: "blocking"
+        check: "engine_compare 已记录执行一致性或差异解释"
+        evidence:
+          - "engine_compare.csv"
+      - id: "TSS-BACKTEST-003"
+        severity: "blocking"
+        check: "position_timeseries 与 trade_ledger 已物化，资金记账路径可复现"
+        evidence:
+          - "position_timeseries.parquet"
+          - "trade_ledger.csv"
+      - id: "TSS-BACKTEST-004"
+        severity: "blocking"
+        check: "tss_backtest_gate_table 已记录成本后收益和风险门禁，不得回写 test selected variants"
+        evidence:
+          - "tss_backtest_gate_table.csv"
+      - id: "TSS-BACKTEST-005"
+        severity: "reservation"
+        check: "capacity、turnover 和 residual execution risks 已在审查材料中说明"
+        evidence:
+          - "artifact_catalog.md"
+          - "field_dictionary.md"
+
+  tss_holdout_validation:
+    stage_name: "TSS Holdout Validation"
+    checks:
+      - id: "TSS-HOLDOUT-001"
+        severity: "blocking"
+        check: "tss_holdout_run_manifest 声明 holdout 只复用冻结方案，未执行调参"
+        evidence:
+          - "tss_holdout_run_manifest.json"
+      - id: "TSS-HOLDOUT-002"
+        severity: "blocking"
+        check: "holdout_signal_diagnostics 已记录方向、触发频率和覆盖退化"
+        evidence:
+          - "holdout_signal_diagnostics.parquet"
+      - id: "TSS-HOLDOUT-003"
+        severity: "blocking"
+        check: "holdout_event_compare 已冻结事件路径与 base rate 对照"
+        evidence:
+          - "holdout_event_compare.parquet"
+      - id: "TSS-HOLDOUT-004"
+        severity: "blocking"
+        check: "holdout_backtest_compare 已记录成本后表现，方向翻转或失效必须有治理结论"
+        evidence:
+          - "holdout_backtest_compare.parquet"
+      - id: "TSS-HOLDOUT-005"
+        severity: "reservation"
+        check: "rolling_holdout_stability 已记录漂移和窗口稳定性"
+        evidence:
+          - "rolling_holdout_stability.json"
+
   data_ready:
     stage_name: "Data Ready"
     recommended_gate_doc: "data_ready_gate_decision.md"

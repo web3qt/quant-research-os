@@ -236,6 +236,72 @@ CSF_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = (
     "field_dictionary.md",
 )
 
+TSS_DATA_READY_REQUIRED_OUTPUTS = (
+    "time_index_manifest.json",
+    "asset_time_index.parquet",
+    "quality_flags.parquet",
+    "split_sample_adequacy_report.yaml",
+    "run_manifest.json",
+    "rebuild_tss_data_ready.py",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
+TSS_SIGNAL_READY_REQUIRED_OUTPUTS = (
+    "signal_manifest.yaml",
+    "param_manifest.csv",
+    "signal_panel.parquet",
+    "signal_event_panel.parquet",
+    "route_inheritance_contract.yaml",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
+TSS_TRAIN_FREEZE_REQUIRED_OUTPUTS = (
+    "tss_train_freeze.yaml",
+    "train_threshold_ledger.csv",
+    "train_variant_ledger.csv",
+    "train_variant_rejects.csv",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
+TSS_TEST_EVIDENCE_REQUIRED_OUTPUTS = (
+    "event_forward_return.parquet",
+    "signal_performance_summary.json",
+    "tss_test_gate_table.csv",
+    "tss_selected_variants_test.csv",
+    "split_threshold_attestation.yaml",
+    "selected_variant_membership_proof.csv",
+    "upstream_binding_digest_ledger.yaml",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
+TSS_BACKTEST_READY_REQUIRED_OUTPUTS = (
+    "strategy_contract.yaml",
+    "engine_compare.csv",
+    "position_timeseries.parquet",
+    "trade_ledger.csv",
+    "tss_backtest_gate_table.csv",
+    "run_manifest.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
+TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = (
+    "tss_holdout_run_manifest.json",
+    "holdout_signal_diagnostics.parquet",
+    "holdout_event_compare.parquet",
+    "holdout_backtest_compare.parquet",
+    "rolling_holdout_stability.json",
+    "artifact_catalog.md",
+    "field_dictionary.md",
+)
+
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
 
 STAGE_EVALUATOR_SPECS: dict[str, StageEvaluatorSpec] = {
@@ -351,6 +417,54 @@ STAGE_EVALUATOR_SPECS: dict[str, StageEvaluatorSpec] = {
         artifact_root_kind="author_formal",
         reviewable=True,
     ),
+    "02_tss_data_ready": StageEvaluatorSpec(
+        stage="tss_data_ready",
+        stage_dir_name="02_tss_data_ready",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_DATA_READY_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
+    "03_tss_signal_ready": StageEvaluatorSpec(
+        stage="tss_signal_ready",
+        stage_dir_name="03_tss_signal_ready",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_SIGNAL_READY_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
+    "04_tss_train_freeze": StageEvaluatorSpec(
+        stage="tss_train_freeze",
+        stage_dir_name="04_tss_train_freeze",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_TRAIN_FREEZE_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
+    "05_tss_test_evidence": StageEvaluatorSpec(
+        stage="tss_test_evidence",
+        stage_dir_name="05_tss_test_evidence",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_TEST_EVIDENCE_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
+    "06_tss_backtest_ready": StageEvaluatorSpec(
+        stage="tss_backtest_ready",
+        stage_dir_name="06_tss_backtest_ready",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_BACKTEST_READY_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
+    "07_tss_holdout_validation": StageEvaluatorSpec(
+        stage="tss_holdout_validation",
+        stage_dir_name="07_tss_holdout_validation",
+        route_family="time_series_signal",
+        required_outputs=tuple(TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS),
+        artifact_root_kind="author_formal",
+        reviewable=True,
+    ),
 }
 
 STAGE_EVALUATOR_SPEC_ALIASES: dict[str, str] = {
@@ -368,6 +482,12 @@ STAGE_EVALUATOR_SPEC_ALIASES: dict[str, str] = {
     "csf_test_evidence": "05_csf_test_evidence",
     "csf_backtest_ready": "06_csf_backtest_ready",
     "csf_holdout_validation": "07_csf_holdout_validation",
+    "tss_data_ready": "02_tss_data_ready",
+    "tss_signal_ready": "03_tss_signal_ready",
+    "tss_train_freeze": "04_tss_train_freeze",
+    "tss_test_evidence": "05_tss_test_evidence",
+    "tss_backtest_ready": "06_tss_backtest_ready",
+    "tss_holdout_validation": "07_tss_holdout_validation",
 }
 
 

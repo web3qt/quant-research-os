@@ -5,9 +5,11 @@ import os
 from subprocess import run
 import sys
 
+import pytest
 import yaml
 
 from tests.helpers.repo_paths import REPO_ROOT
+from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, _require_stage_config
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
@@ -249,35 +251,24 @@ def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) 
     assert "Stage: mandate" in result.stdout
 
 
-def test_run_stage_review_script_fails_actionably_when_checklist_stage_is_missing(tmp_path: Path) -> None:
-    repo_root = REPO_ROOT
-    lineage_root = tmp_path / "outputs" / "btc"
-    stage_dir = lineage_root / "05_tss_test_evidence"
-    (stage_dir / "author" / "formal").mkdir(parents=True)
-    script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
+def test_review_runtime_config_error_names_missing_checklist_stage(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "btc" / "05_tss_test_evidence"
+    lineage_root = stage_dir.parent
 
-    result = run(
-        [
-            sys.executable,
-            str(script_path),
-            "--stage-dir",
-            str(stage_dir),
-            "--lineage-root",
-            str(lineage_root),
-            "--reviewer-id",
-            "reviewer-agent",
-        ],
-        cwd=tmp_path,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    with pytest.raises(ReviewRuntimeConfigurationError) as excinfo:
+        _require_stage_config(
+            {"stages": {}},
+            "tss_test_evidence",
+            schema_path=REPO_ROOT / "contracts" / "review" / "review_checklist_master.yaml",
+            missing_label="review checklist stage",
+            stage_dir=stage_dir,
+            lineage_root=lineage_root,
+        )
 
-    assert result.returncode != 0
-    assert "Traceback" not in result.stderr
-    assert "missing review checklist stage: tss_test_evidence" in result.stderr
-    assert "contracts/review/review_checklist_master.yaml" in result.stderr
-    assert "stages.tss_test_evidence" in result.stderr
+    message = str(excinfo.value)
+    assert "missing review checklist stage: tss_test_evidence" in message
+    assert "contracts/review/review_checklist_master.yaml" in message
+    assert "stages.tss_test_evidence" in message
 
 
 def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_path: Path) -> None:
