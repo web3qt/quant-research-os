@@ -82,6 +82,8 @@ User message → QROS trigger detected?
 - **qros-test-evidence-failure** — test_evidence stage failure classification and triage
 - **qros-backtest-failure** — backtest_ready stage failure classification and triage
 - **qros-holdout-failure** — holdout_validation stage failure classification and triage
+- **qros-tss-train-freeze-failure** — tss_train_freeze route-specific failure classification and triage
+- **qros-tss-test-evidence-failure** — tss_test_evidence route-specific failure classification and triage
 - **qros-lineage-change-control** — Change control for scope/split/universe modifications
 
 ## Core Principles
