@@ -211,7 +211,7 @@ Canonical program tree：
 
 **禁止**：在 test 里重估 train 分位阈值；看了 backtest 再回写 test 白名单不做 retry 记账；临时新增 Mandate 中未声明的正式规则。
 
-**必备输出**：`event_forward_return.parquet`, `signal_performance_summary.json`, `tss_test_gate_table.csv`, `tss_selected_variants_test.csv`, `run_manifest.json`, `artifact_catalog.md`, `field_dictionary.md`
+**必备输出**：`event_forward_return.parquet`, `signal_performance_summary.json`, `tss_test_gate_table.csv`, `tss_selected_variants_test.csv`, `split_threshold_attestation.yaml`, `selected_variant_membership_proof.csv`, `upstream_binding_digest_ledger.yaml`, `run_manifest.json`, `artifact_catalog.md`, `field_dictionary.md`
 
 详见：`05_tss_test_evidence_sop_cn.md`
 

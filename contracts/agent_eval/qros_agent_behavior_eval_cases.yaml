@@ -867,6 +867,9 @@ cases:
     expected_artifacts:
       present:
         - 05_tss_test_evidence/author/formal/signal_performance_summary.json
+        - 05_tss_test_evidence/author/formal/split_threshold_attestation.yaml
+        - 05_tss_test_evidence/author/formal/selected_variant_membership_proof.csv
+        - 05_tss_test_evidence/author/formal/upstream_binding_digest_ledger.yaml
       absent:
         - 05_tss_test_evidence/review/request/adversarial_review_request.yaml
     expected_events:

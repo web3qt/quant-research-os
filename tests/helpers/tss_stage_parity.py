@@ -155,6 +155,13 @@ TSS_STAGE_META: dict[str, dict[str, Any]] = {
     },
 }
 
+TSS_TEST_EVIDENCE_PREFLIGHT_TERMS = (
+    "split_threshold_attestation.yaml",
+    "selected_variant_membership_proof.csv",
+    "upstream_binding_digest_ledger.yaml",
+    "TSS-TEST-SEMANTIC-001",
+)
+
 
 def assert_tss_artifact_contract_is_stage_specific(stage: str) -> None:
     meta = TSS_STAGE_META[stage]
@@ -212,6 +219,10 @@ def assert_tss_skill_guidance_is_contract_first(stage: str) -> None:
     assert "不是横截面排序" in author
     assert "qros-review-cycle prepare" in review
     assert "qros-factor-diagnostics" not in author + review
+    if stage == "tss_test_evidence":
+        for term in TSS_TEST_EVIDENCE_PREFLIGHT_TERMS:
+            assert term in author
+            assert term in review
 
 
 def assert_tss_sop_documents_contract_first_usage(stage: str) -> None:
@@ -223,6 +234,9 @@ def assert_tss_sop_documents_contract_first_usage(stage: str) -> None:
     assert "research_route = time_series_signal" in content
     assert "单个资产用自己的历史预测自己的未来路径/方向" in content
     assert "不是横截面排序" in content
+    if stage == "tss_test_evidence":
+        for term in TSS_TEST_EVIDENCE_PREFLIGHT_TERMS:
+            assert term in content
 
 
 def _build_formal_dir(stage: str, tmp_path: Path) -> Path:

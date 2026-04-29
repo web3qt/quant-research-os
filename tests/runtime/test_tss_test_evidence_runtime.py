@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -15,18 +16,64 @@ def _write_yaml(path: Path, payload: dict) -> None:
 
 
 def _prepare_tss_train_freeze_stage(lineage_root: Path) -> None:
+    mandate_formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True)
+    (mandate_formal_dir / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "2024-01-01/2024-01-01",
+                "test": "2024-01-02/2024-01-02",
+                "backtest": "2024-01-03/2024-01-03",
+                "holdout": "2024-01-04/2024-01-04",
+                "bar_size": "1d",
+                "holding_horizons": ["1d"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
     formal_dir = lineage_root / "04_tss_train_freeze" / "author" / "formal"
     formal_dir.mkdir(parents=True)
-    (formal_dir / "tss_train_freeze.yaml").write_text("stage: tss_train_freeze\n", encoding="utf-8")
+    (formal_dir / "tss_train_freeze.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "stage": "tss_train_freeze",
+                "lineage_id": lineage_root.name,
+                "research_route": "time_series_signal",
+                "train_window": {"source": "time_split.json::train"},
+                "kept_variant_ids": ["baseline_v1"],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
     (formal_dir / "train_threshold_ledger.csv").write_text(
-        "variant_id,threshold,status\nbaseline_v1,0.0,kept\n",
+        "variant_id,threshold_name,threshold_value,selection_rule\nbaseline_v1,signal_value,0.0,baseline threshold\n",
         encoding="utf-8",
     )
     (formal_dir / "train_variant_ledger.csv").write_text(
-        "variant_id,status\nbaseline_v1,kept\n",
+        "variant_id,status,selection_rule\nbaseline_v1,kept,baseline-only\n",
         encoding="utf-8",
     )
     (formal_dir / "train_variant_rejects.csv").write_text("variant_id,reject_reason\n", encoding="utf-8")
+
+    closure_dir = lineage_root / "04_tss_train_freeze" / "review" / "closure"
+    closure_dir.mkdir(parents=True)
+    (closure_dir / "stage_completion_certificate.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "stage": "tss_train_freeze",
+                "stage_status": "PASS",
+                "final_verdict": "PASS",
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
 
 
 def _tss_test_evidence_draft(*, confirmed: bool) -> dict:
@@ -117,3 +164,41 @@ def test_build_tss_test_evidence_writes_planned_formal_artifacts(tmp_path: Path)
     assert (formal_dir / "tss_test_gate_table.csv").exists()
     assert (formal_dir / "tss_selected_variants_test.csv").exists()
     assert pq.read_table(formal_dir / "event_forward_return.parquet").num_rows > 0
+
+
+def test_build_tss_test_evidence_writes_review_scoped_proof_artifacts(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "tss_case"
+    _prepare_tss_train_freeze_stage(lineage_root)
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_test_evidence_freeze_draft.yaml",
+        _tss_test_evidence_draft(confirmed=True),
+    )
+
+    build_tss_test_evidence_from_train_freeze(lineage_root)
+
+    formal_dir = stage_dir / "author" / "formal"
+    assert (formal_dir / "split_threshold_attestation.yaml").exists()
+    assert (formal_dir / "selected_variant_membership_proof.csv").exists()
+    assert (formal_dir / "upstream_binding_digest_ledger.yaml").exists()
+
+    attestation = yaml.safe_load((formal_dir / "split_threshold_attestation.yaml").read_text(encoding="utf-8"))
+    assert attestation["stage"] == "tss_test_evidence"
+    assert attestation["test_window"]["source"] == "time_split.json::test"
+    assert attestation["threshold_provenance"]["no_test_window_retuning"] is True
+
+    membership = (formal_dir / "selected_variant_membership_proof.csv").read_text(encoding="utf-8")
+    assert "baseline_v1,1d,selected,kept" in membership
+
+    digest_ledger = yaml.safe_load((formal_dir / "upstream_binding_digest_ledger.yaml").read_text(encoding="utf-8"))
+    assert {item["logical_name"] for item in digest_ledger["bindings"]} >= {
+        "time_split",
+        "train_freeze_contract",
+        "train_variant_ledger",
+        "train_threshold_ledger",
+        "train_freeze_review_closure",
+    }
+
+    manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert "split_threshold_attestation.yaml" in manifest["stage_outputs"]
+    assert "../04_tss_train_freeze/author/formal/tss_train_freeze.yaml" in manifest["input_roots"]

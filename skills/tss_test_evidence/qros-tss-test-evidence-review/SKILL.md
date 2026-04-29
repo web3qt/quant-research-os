@@ -35,6 +35,9 @@ description: Use when a QROS time_series_signal lineage is ready for explicit ts
 - `05_tss_test_evidence/author/formal/signal_performance_summary.json`
 - `05_tss_test_evidence/author/formal/tss_test_gate_table.csv`
 - `05_tss_test_evidence/author/formal/tss_selected_variants_test.csv`
+- `05_tss_test_evidence/author/formal/split_threshold_attestation.yaml`
+- `05_tss_test_evidence/author/formal/selected_variant_membership_proof.csv`
+- `05_tss_test_evidence/author/formal/upstream_binding_digest_ledger.yaml`
 
 ## 必需输出
 
@@ -46,6 +49,8 @@ description: Use when a QROS time_series_signal lineage is ready for explicit ts
 ## 正式门禁
 
 - 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage tss_test_evidence`。
+- 进入 reviewer lane 前必须通过 deterministic preflight；ARTIFACT-CONTRACT-001 与 TSS-TEST-SEMANTIC-001 都是 review 前阻断项。
+- `adversarial_review_request.yaml` 中 `upstream_binding_artifact_paths` 不得为空，且必须包含本阶段 proof artifacts。
 - 只能审查 `research_route = time_series_signal` 的 `05_tss_test_evidence` 产物。
 - 不得产出或消费 `csf_*` 横截面因子产物。
 - 不得把 Rank IC / Top-Bottom / bucket monotonicity 当作 TSS 主证据。

@@ -20,9 +20,15 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 
 ## Required Inputs
 
+- `01_mandate/author/formal/time_split.json`
 - `04_tss_train_freeze/author/formal/tss_train_freeze.yaml`
 - `04_tss_train_freeze/author/formal/train_variant_ledger.csv`
+- `04_tss_train_freeze/author/formal/train_threshold_ledger.csv`
+- `04_tss_train_freeze/author/formal/train_variant_rejects.csv`
 - `04_tss_train_freeze/review/closure/stage_completion_certificate.yaml`
+
+Stage-program data input:
+
 - `03_tss_signal_ready/author/formal/signal_event_panel.parquet`
 
 ## Required Outputs
@@ -31,6 +37,9 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 - `signal_performance_summary.json`
 - `tss_test_gate_table.csv`
 - `tss_selected_variants_test.csv`
+- `split_threshold_attestation.yaml`
+- `selected_variant_membership_proof.csv`
+- `upstream_binding_digest_ledger.yaml`
 - `run_manifest.json`
 - `artifact_catalog.md`
 - `field_dictionary.md`
@@ -61,6 +70,8 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 - `signal_performance_summary.json` 必须解释 TSS 方向/路径证据和残留风险。
 - `tss_test_gate_table.csv` 必须分清 formal gate 与 audit-only。
 - `tss_selected_variants_test.csv` 只能从 train 冻结 variant 中筛选，不能新增 param_id。
+- 进入 review 前必须已物化 split/threshold、selected membership 和 upstream digest proof；缺少这些 proof artifacts 时不得进入 reviewer lane。
+- `TSS-TEST-SEMANTIC-001` 是 review 前阻断项；split/threshold、selected membership 与 upstream digest proof 必须先满足 deterministic preflight。
 
 ## Working Rules
 

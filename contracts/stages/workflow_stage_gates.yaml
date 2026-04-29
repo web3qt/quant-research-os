@@ -1524,6 +1524,9 @@ stages:
       - signal_performance_summary.json
       - tss_test_gate_table.csv
       - tss_selected_variants_test.csv
+      - split_threshold_attestation.yaml
+      - selected_variant_membership_proof.csv
+      - upstream_binding_digest_ledger.yaml
       - run_manifest.json
       - artifact_catalog.md
       - field_dictionary.md
@@ -1532,6 +1535,9 @@ stages:
       - signal_performance_summary.json
       - tss_test_gate_table.csv
       - tss_selected_variants_test.csv
+      - split_threshold_attestation.yaml
+      - selected_variant_membership_proof.csv
+      - upstream_binding_digest_ledger.yaml
       - run_manifest.json
     human_artifacts:
       - artifact_catalog.md
@@ -1540,9 +1546,11 @@ stages:
       pass_all_of:
         - 只复用 tss_train_freeze 的冻结 variants
         - selected variants 是 train kept variants 的子集
+        - split/threshold、selected membership 和 upstream digest proof 已物化并通过 preflight
         - 事件样本数量和 base rate 对照已审计
       fail_any_of:
         - test 中新增未冻结 variant
+        - split/threshold attestation、selected membership proof 或 upstream digest ledger 缺失或过期
         - 证据只由极少数事件支撑
     audit_only:
       - 事件分布是否集中在少数 regime

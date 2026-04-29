@@ -15,6 +15,11 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
+from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
+from tests.runtime.test_tss_test_evidence_runtime import (
+    _prepare_tss_train_freeze_stage,
+    _tss_test_evidence_draft,
+)
 
 
 MANDATE_REQUIRED_OUTPUTS = [
@@ -301,6 +306,34 @@ def test_ensure_adversarial_review_request_splits_signal_ready_stage_content_and
     assert request_payload["upstream_binding_artifact_paths"] == ["route_inheritance_contract.yaml"]
     assert request_payload["stage_content_provenance_paths"] == ["program_execution_manifest.json"]
     assert request_payload["upstream_binding_provenance_paths"] == []
+
+
+def test_ensure_adversarial_review_request_includes_tss_test_evidence_proof_artifacts(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "tss_review_scope_case"
+    _prepare_tss_train_freeze_stage(lineage_root)
+    ensure_stage_program(lineage_root, "tss_test_evidence")
+    write_fake_stage_provenance(lineage_root, "tss_test_evidence")
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    _write_yaml(
+        stage_dir / "author" / "draft" / "tss_test_evidence_freeze_draft.yaml",
+        _tss_test_evidence_draft(confirmed=True),
+    )
+    build_tss_test_evidence_from_train_freeze(lineage_root)
+
+    _write_adversarial_review_request(stage_dir, stage_key="tss_test_evidence", author_identity="author-agent")
+
+    request_payload = _review_request_payload(stage_dir)
+    proof_artifacts = {
+        "split_threshold_attestation.yaml",
+        "selected_variant_membership_proof.csv",
+        "upstream_binding_digest_ledger.yaml",
+    }
+    assert proof_artifacts.issubset(set(request_payload["required_artifact_paths"]))
+    assert request_payload["upstream_binding_artifact_paths"] == [
+        "selected_variant_membership_proof.csv",
+        "split_threshold_attestation.yaml",
+        "upstream_binding_digest_ledger.yaml",
+    ]
 
 
 def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) -> None:

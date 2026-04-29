@@ -13,7 +13,67 @@ artifacts:
       - asset
       - timestamp
       - forward_return
+      - asset_forward_return
+      - signal_direction
+      - label_timestamp
     non_empty: true
+
+  split_threshold_attestation.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段。
+        type: enum
+        values:
+          - tss_test_evidence
+      - path: lineage_id
+        description: 当前研究线 ID。
+        type: string
+      - path: research_route
+        description: 确认该产物属于 TSS 路线。
+        type: enum
+        values:
+          - time_series_signal
+      - path: train_window
+        description: train window 来源与边界。
+        type: map
+      - path: test_window
+        description: test window 来源与边界。
+        type: map
+      - path: label_window
+        description: label timestamp 最大允许边界。
+        type: map
+      - path: threshold_provenance
+        description: train threshold 复用证明。
+        type: map
+
+  selected_variant_membership_proof.csv:
+    type: csv
+    required_columns:
+      - variant_id
+      - horizon
+      - status
+      - train_kept_status
+      - threshold_source
+      - membership_verdict
+    non_empty: true
+
+  upstream_binding_digest_ledger.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段。
+        type: enum
+        values:
+          - tss_test_evidence
+      - path: lineage_id
+        description: 当前研究线 ID。
+        type: string
+      - path: bindings
+        description: 上游冻结产物 digest 绑定。
+        type: list[map]
 
   signal_performance_summary.json:
     type: json
@@ -100,6 +160,30 @@ artifacts:
       - path: machine_artifacts
         description: 列出机器可读产物路径。
         type: list[string]
+      - path: input_roots
+        description: 列出本阶段绑定的上游输入路径。
+        type: list[string]
+      - path: stage_outputs
+        description: 列出本阶段正式输出文件。
+        type: list[string]
+      - path: program_dir
+        description: 记录 lineage-local stage program 目录。
+        type: string
+      - path: program_entrypoint
+        description: 记录 stage program 入口。
+        type: string
+      - path: program_execution_manifest
+        description: 记录程序执行清单。
+        type: string
+      - path: selected_variant_ids
+        description: 冻结进入下游的 selected variants。
+        type: list[string]
+      - path: selection_rule
+        description: 记录 selected variants 的选择规则。
+        type: string
+      - path: primary_evidence_contract
+        description: 声明本阶段主证据合同。
+        type: string
       - path: consumer_stage
         description: 声明该产物交付给哪个下游阶段使用。
         type: enum
@@ -108,3 +192,13 @@ artifacts:
       - path: replay_command
         description: 记录复现命令。
         type: string
+
+  artifact_catalog.md:
+    type: markdown
+    required_sections:
+      - 产物清单
+
+  field_dictionary.md:
+    type: markdown
+    required_sections:
+      - 字段字典

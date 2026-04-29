@@ -22,6 +22,15 @@ def build_review_scope(
     if "csf_train_freeze.yaml" in required_artifacts:
         upstream_binding.add("csf_train_freeze.yaml")
 
+    if stage == "tss_test_evidence":
+        upstream_binding.update(
+            {
+                "split_threshold_attestation.yaml",
+                "selected_variant_membership_proof.csv",
+                "upstream_binding_digest_ledger.yaml",
+            }
+        )
+
     stage_content_artifacts = sorted(
         artifact for artifact in required_artifacts if artifact not in content_exclusions
     )

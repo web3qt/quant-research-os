@@ -159,3 +159,24 @@ def test_current_readme_and_visual_docs_use_prefixed_tss_and_csf_stage_names() -
             assert token in content, f"{label} missing {token}"
         for token in legacy_tokens:
             assert token not in content, f"{label} still contains {token}"
+
+
+def test_tss_stage_artifact_map_uses_current_tss_test_evidence_outputs() -> None:
+    content = (ROOT / "docs" / "visuals" / "qros-stage-artifact-map.drawio").read_text(encoding="utf-8")
+
+    for token in [
+        "event_forward_return.parquet",
+        "signal_performance_summary.json",
+        "split_threshold_attestation.yaml",
+        "selected_variant_membership_proof.csv",
+        "upstream_binding_digest_ledger.yaml",
+    ]:
+        assert token in content
+
+    for stale_token in [
+        "forward_return_evidence.parquet",
+        "event_outcome_panel.parquet",
+        "signal_decay_report.json",
+        "tss_test_contract",
+    ]:
+        assert stale_token not in content

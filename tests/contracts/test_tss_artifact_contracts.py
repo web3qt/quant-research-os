@@ -53,7 +53,12 @@ EXPECTED = {
             "signal_performance_summary.json",
             "tss_test_gate_table.csv",
             "tss_selected_variants_test.csv",
+            "split_threshold_attestation.yaml",
+            "selected_variant_membership_proof.csv",
+            "upstream_binding_digest_ledger.yaml",
             "run_manifest.json",
+            "artifact_catalog.md",
+            "field_dictionary.md",
         },
     },
     "tss_backtest_ready": {
