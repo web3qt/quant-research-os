@@ -7,6 +7,7 @@ import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    ALLOWED_REVIEW_LOOP_OUTCOMES,
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
     canonicalize_runtime_review_result,
@@ -22,6 +23,22 @@ from runtime.tools.review_skillgen.review_scope_builder import (
 RAW_REVIEWER_FINDINGS_FILENAME = "reviewer_findings.raw.yaml"
 
 
+def _allowed_review_loop_outcomes_message() -> str:
+    return ", ".join(sorted(ALLOWED_REVIEW_LOOP_OUTCOMES))
+
+
+def _require_raw_string_list(payload: dict[str, Any], key: str, *, path: Path) -> list[str]:
+    value = payload.get(key, [])
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{path}: {key} must be a list of strings when provided")
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError(f"{path}: {key} must be a list of strings when provided")
+    return [item for item in value]
+
+
 def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(payload, dict):
@@ -29,14 +46,20 @@ def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
     outcome = payload.get("review_loop_outcome")
     if not isinstance(outcome, str) or not outcome.strip():
         raise ValueError(f"{path}: review_loop_outcome must be a non-empty string")
+    outcome = outcome.strip()
+    if outcome not in ALLOWED_REVIEW_LOOP_OUTCOMES:
+        raise ValueError(
+            f"{path}: unsupported raw review_loop_outcome {outcome!r}; "
+            f"allowed values: {_allowed_review_loop_outcomes_message()}"
+        )
     return {
-        "review_loop_outcome": outcome.strip(),
-        "blocking_findings": [str(item) for item in payload.get("blocking_findings", []) or []],
-        "reservation_findings": [str(item) for item in payload.get("reservation_findings", []) or []],
-        "info_findings": [str(item) for item in payload.get("info_findings", []) or []],
-        "residual_risks": [str(item) for item in payload.get("residual_risks", []) or []],
-        "allowed_modifications": [str(item) for item in payload.get("allowed_modifications", []) or []],
-        "downstream_permissions": [str(item) for item in payload.get("downstream_permissions", []) or []],
+        "review_loop_outcome": outcome,
+        "blocking_findings": _require_raw_string_list(payload, "blocking_findings", path=path),
+        "reservation_findings": _require_raw_string_list(payload, "reservation_findings", path=path),
+        "info_findings": _require_raw_string_list(payload, "info_findings", path=path),
+        "residual_risks": _require_raw_string_list(payload, "residual_risks", path=path),
+        "allowed_modifications": _require_raw_string_list(payload, "allowed_modifications", path=path),
+        "downstream_permissions": _require_raw_string_list(payload, "downstream_permissions", path=path),
         "rollback_stage": payload.get("rollback_stage"),
         "review_summary": payload.get("review_summary"),
     }
