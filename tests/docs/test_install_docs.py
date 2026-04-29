@@ -30,6 +30,8 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review-cycle" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
+    assert "setup --check" in combined
+    assert "source_git_commit drift" in combined
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
     assert "Restart Codex" in combined
     assert "卸载" in combined

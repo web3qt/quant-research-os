@@ -119,6 +119,6 @@ test -f ~/.codex/qros/install-manifest.json
 ls ./.qros/bin
 ```
 
-3. 如果 skill 内容看起来过旧，从 active research repo 根目录运行 `qros-update`。
+3. 如果怀疑 repo-local runtime 和 QROS source repo 不一致，从 active research repo 运行 `<source_repo>/setup --host codex --mode repo-local --check`。如果输出包含 `source_git_commit drift`，从 active research repo 根目录运行 `qros-update`。
 
 4. 重启 Codex。Skills 会在 Codex 启动时发现。

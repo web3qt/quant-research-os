@@ -64,11 +64,20 @@ test -f ~/.codex/qros/install-manifest.json
 test -d ./.qros
 ```
 
+如果需要检查当前 repo-local runtime 是否和 QROS source repo 对齐，可以从 active research repo 运行 `setup --check` 形式的安装检查：
+
+```bash
+<source_repo>/setup --host codex --mode repo-local --check
+```
+
+当 `install-manifest.json` 里的 `source_git_commit drift` 被检测到时，检查会提示当前安装记录的 revision 和 source repo 当前 revision。处理方式是从 active research repo 运行 `qros-update`，然后 Restart Codex。
+
 它会验证：
 
 - Codex 能通过 `~/.codex/skills/` 发现 QROS skills
 - 安装元数据存在于 `~/.codex/qros/`
 - runtime assets 存在于 `./.qros/`
+- `source_git_commit` 没有相对 QROS source repo 发生 drift
 
 ## 安装后的第一批命令
 

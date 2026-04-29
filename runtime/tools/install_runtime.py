@@ -244,6 +244,26 @@ def check_install(
         messages.append(
             f"manifest install_mode mismatch: expected {target.mode}, found {manifest.get('install_mode')}"
         )
+    installed_commit = manifest.get("source_git_commit")
+    current_commit = _git_commit(repo_root)
+    if (
+        isinstance(installed_commit, str)
+        and installed_commit.strip()
+        and current_commit
+        and installed_commit.strip() != current_commit
+    ):
+        messages.append(
+            "\n".join(
+                [
+                    "QROS install drift detected:",
+                    f"manifest: {target.manifest_path}",
+                    f"installed source_git_commit: {installed_commit.strip()}",
+                    f"current source_git_commit: {current_commit}",
+                    "fix: run `qros-update` from the active research repo, then Restart Codex "
+                    "so installed skills and repo-local wrappers match the source repo.",
+                ]
+            )
+        )
 
     return not messages, messages
 

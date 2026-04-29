@@ -133,6 +133,33 @@ def test_manifest_fields_include_install_metadata(tmp_path: Path, monkeypatch: p
     assert manifest["source_git_commit"]
 
 
+def test_check_install_reports_source_commit_drift_with_update_hint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    install_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+    manifest_path = install_root / ".qros" / "install-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["source_git_commit"] = "stale-installed-revision"
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    ok, messages = check_install(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    message = "\n".join(messages)
+    assert ok is False
+    assert "QROS install drift detected" in message
+    assert "installed source_git_commit: stale-installed-revision" in message
+    assert "current source_git_commit:" in message
+    assert "qros-update" in message
+    assert "Restart Codex" in message
+
+
 def test_list_skill_dirs_rejects_duplicate_flattened_skill_names(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     source_root = repo_root / "skills"
