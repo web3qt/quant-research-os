@@ -13,6 +13,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from runtime.tools.review_session_runtime import prepare_review_cycle_for_handoff  # noqa: E402
+from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError  # noqa: E402
+from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
@@ -58,15 +60,18 @@ def main() -> int:
     args = _parse_args()
     if args.command != "prepare":
         raise SystemExit(f"unsupported command: {args.command}")
-    payload = prepare_review_cycle_for_handoff(
-        cwd=Path.cwd(),
-        explicit_context=_explicit_context(args),
-        reviewer_identity=args.reviewer_id,
-        reviewer_session_id=args.reviewer_session_id,
-        launcher_session_id=args.launcher_session_id,
-        launcher_thread_id=args.launcher_thread_id,
-        spawned_agent_id=args.spawned_agent_id,
-    )
+    try:
+        payload = prepare_review_cycle_for_handoff(
+            cwd=Path.cwd(),
+            explicit_context=_explicit_context(args),
+            reviewer_identity=args.reviewer_id,
+            reviewer_session_id=args.reviewer_session_id,
+            launcher_session_id=args.launcher_session_id,
+            launcher_thread_id=args.launcher_thread_id,
+            spawned_agent_id=args.spawned_agent_id,
+        )
+    except (ReviewRuntimeConfigurationError, StageEvaluatorConfigurationError) as exc:
+        raise SystemExit(str(exc)) from None
     if args.json:
         print(json.dumps(_json_safe(payload), ensure_ascii=False, indent=2))
         return 0

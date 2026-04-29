@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract
 from runtime.tools.lineage_program_runtime import inspect_stage_program, load_provenance_manifest
 from runtime.tools.research_session import (
     _author_formal_dir,
@@ -18,6 +19,13 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
+from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_skillgen.review_engine import (
+    CHECKLIST_PATH as DEFAULT_CHECKLIST_PATH,
+    GATES_PATH as DEFAULT_GATES_PATH,
+    ReviewRuntimeConfigurationError,
+    _require_stage_config,
+)
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
     compute_author_materialization_digest,
@@ -25,6 +33,13 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     review_runtime_state_path,
     write_review_runtime_state,
 )
+from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError, evaluate_stage
+
+
+ROOT = Path(__file__).resolve().parents[2]
+GATES_PATH = DEFAULT_GATES_PATH
+CHECKLIST_PATH = DEFAULT_CHECKLIST_PATH
+SHARED_REVIEW_PROTOCOL_PATH = ROOT / "docs" / "guides" / "qros-review-shared-protocol.md"
 
 
 def _stage_dir_for_context(*, cwd: Path | None, explicit_context: dict[str, Any] | None) -> dict[str, Any]:
@@ -71,6 +86,65 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
     )
 
 
+def _preflight_review_runtime_config(*, stage: str, stage_dir: Path, lineage_root: Path) -> None:
+    gates = load_gate_schema(GATES_PATH)
+    checklist = load_checklist_schema(CHECKLIST_PATH)
+    _require_stage_config(
+        gates,
+        stage,
+        schema_path=GATES_PATH,
+        missing_label="stage gate",
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+    )
+    _require_stage_config(
+        checklist,
+        stage,
+        schema_path=CHECKLIST_PATH,
+        missing_label="review checklist stage",
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+    )
+
+    try:
+        load_artifact_contract(stage)
+    except ArtifactContractError as exc:
+        raise ReviewRuntimeConfigurationError(
+            "\n".join(
+                [
+                    "QROS review runtime configuration error:",
+                    f"missing artifact contract stage: {stage}",
+                    f"stage_dir: {stage_dir}",
+                    f"lineage_root: {lineage_root}",
+                    "missing_entry: runtime/tools/artifact_contract_runtime.py -> "
+                    f"ARTIFACT_CONTRACTS[{stage!r}]",
+                    "fix: add the stage artifact contract under contracts/artifacts/ and register it in ARTIFACT_CONTRACTS.",
+                ]
+            )
+        ) from exc
+
+    try:
+        evaluate_stage(stage_dir, lineage_root=lineage_root)
+    except StageEvaluatorConfigurationError as exc:
+        raise exc
+
+    if not SHARED_REVIEW_PROTOCOL_PATH.exists():
+        raise ReviewRuntimeConfigurationError(
+            "\n".join(
+                [
+                    "QROS review runtime configuration error:",
+                    "missing shared review protocol doc.",
+                    f"stage: {stage}",
+                    f"stage_dir: {stage_dir}",
+                    f"lineage_root: {lineage_root}",
+                    f"missing_entry: {SHARED_REVIEW_PROTOCOL_PATH}",
+                    "fix: ensure docs/guides/qros-review-shared-protocol.md is installed; "
+                    "for a consumer repo, run qros-update or rerun QROS setup.",
+                ]
+            )
+        )
+
+
 def _prepare_review_cycle(
     *,
     cwd: Path | None,
@@ -90,6 +164,7 @@ def _prepare_review_cycle(
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
         raise ValueError(f"current_stage {current_stage} is not a reviewable stage")
+    _preflight_review_runtime_config(stage=spec.stage_id, stage_dir=stage_dir, lineage_root=lineage_root)
     provenance = load_provenance_manifest(stage_dir)
     if provenance is None:
         raise ValueError(f"{stage_dir}: program_execution_manifest.json provenance is missing")
