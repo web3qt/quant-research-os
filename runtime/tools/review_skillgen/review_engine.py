@@ -154,8 +154,8 @@ def _check_global_evidence(stage_dir: Path, stage_checks: dict[str, Any]) -> lis
     if _find_stage_file(stage_dir, ["field_dictionary.md", "*_fields.md"]) is None:
         findings.append("Missing required global evidence: field_dictionary.md or *_fields.md")
 
-    if _find_stage_file(stage_dir, ["run_manifest.json", "repro_manifest.json"]) is None:
-        findings.append("Missing required global evidence: run_manifest.json or repro_manifest.json")
+    if _find_stage_file(stage_dir, ["run_manifest.json", "repro_manifest.json", "*_run_manifest.json"]) is None:
+        findings.append("Missing required global evidence: run_manifest.json, *_run_manifest.json, or repro_manifest.json")
 
     recommended_gate_doc = stage_checks.get("recommended_gate_doc")
     if recommended_gate_doc and not (stage_dir / recommended_gate_doc).exists():
