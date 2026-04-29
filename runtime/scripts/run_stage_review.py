@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, run_stage_review
+from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError
 
 
 def _parse_args() -> argparse.Namespace:
@@ -36,14 +37,17 @@ def main() -> int:
             "lineage_root": args.lineage_root.resolve(),
         }
 
-    payload = run_stage_review(
-        cwd=Path.cwd(),
-        explicit_context=explicit_context,
-        reviewer_identity=args.reviewer_id,
-        reviewer_role=args.reviewer_role,
-        reviewer_session_id=args.reviewer_session_id,
-        reviewer_mode=args.reviewer_mode,
-    )
+    try:
+        payload = run_stage_review(
+            cwd=Path.cwd(),
+            explicit_context=explicit_context,
+            reviewer_identity=args.reviewer_id,
+            reviewer_role=args.reviewer_role,
+            reviewer_session_id=args.reviewer_session_id,
+            reviewer_mode=args.reviewer_mode,
+        )
+    except (ReviewRuntimeConfigurationError, StageEvaluatorConfigurationError) as exc:
+        raise SystemExit(str(exc)) from None
     print(f"Review loop outcome: {payload['review_loop_outcome']}")
     print(f"Final verdict: {payload['final_verdict']}")
     print(f"Stage: {payload['stage']}")

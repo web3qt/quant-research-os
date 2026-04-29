@@ -42,6 +42,86 @@ GATES_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
 CHECKLIST_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
 
 
+class ReviewRuntimeConfigurationError(RuntimeError):
+    """QROS review runtime 配置缺口，面向 CLI 输出可操作修复信息。"""
+
+
+def _repo_relative(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _format_available_stage_keys(stages: dict[str, Any]) -> str:
+    keys = sorted(str(key) for key in stages)
+    if len(keys) <= 24:
+        return ", ".join(keys)
+    return ", ".join(keys[:24]) + f", ... ({len(keys)} total)"
+
+
+def _require_stage_config(
+    schema: dict[str, Any],
+    stage: str,
+    *,
+    schema_path: Path,
+    missing_label: str,
+    stage_dir: Path,
+    lineage_root: Path,
+) -> dict[str, Any]:
+    stages = schema.get("stages")
+    relative_path = _repo_relative(schema_path)
+    if not isinstance(stages, dict):
+        raise ReviewRuntimeConfigurationError(
+            "\n".join(
+                [
+                    "QROS review runtime configuration error:",
+                    f"{relative_path} must contain a mapping at `stages`.",
+                    f"stage: {stage}",
+                    f"stage_dir: {stage_dir}",
+                    f"lineage_root: {lineage_root}",
+                    f"fix: repair `{relative_path}` so `stages` is a mapping.",
+                ]
+            )
+        )
+
+    if stage in stages:
+        value = stages[stage]
+        if not isinstance(value, dict):
+            raise ReviewRuntimeConfigurationError(
+                "\n".join(
+                    [
+                        "QROS review runtime configuration error:",
+                        f"{relative_path} entry `stages.{stage}` must be a mapping.",
+                        f"stage: {stage}",
+                        f"stage_dir: {stage_dir}",
+                        f"lineage_root: {lineage_root}",
+                        f"fix: repair `{relative_path}` entry `stages.{stage}`.",
+                    ]
+                )
+            )
+        return value
+
+    raise ReviewRuntimeConfigurationError(
+        "\n".join(
+            [
+                "QROS review runtime configuration error:",
+                f"missing {missing_label}: {stage}",
+                f"stage: {stage}",
+                f"stage_dir: {stage_dir}",
+                f"lineage_root: {lineage_root}",
+                f"missing_entry: {relative_path} -> stages.{stage}",
+                (
+                    "fix: add "
+                    f"`{stage}:` under `stages:` in `{relative_path}`; "
+                    "if the stage name is wrong, update `runtime/tools/review_skillgen/context_inference.py`."
+                ),
+                f"available_stages: {_format_available_stage_keys(stages)}",
+            ]
+        )
+    )
+
+
 def _find_stage_file(stage_dir: Path, patterns: list[str]) -> Path | None:
     for pattern in patterns:
         if "*" in pattern:
@@ -446,8 +526,22 @@ def run_stage_review(
 
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)
-    stage_contract = gates["stages"][stage]
-    stage_checks = checklist["stages"][stage]
+    stage_contract = _require_stage_config(
+        gates,
+        stage,
+        schema_path=GATES_PATH,
+        missing_label="stage gate",
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+    )
+    stage_checks = _require_stage_config(
+        checklist,
+        stage,
+        schema_path=CHECKLIST_PATH,
+        missing_label="review checklist stage",
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+    )
 
     runtime_identity = _runtime_identity_from_receipt(
         stage_dir=stage_dir,

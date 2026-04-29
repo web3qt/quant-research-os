@@ -29,6 +29,10 @@ STAGE_EVALUATOR_FILENAME = "stage_evaluator.json"
 STAGE_EVALUATOR_RESULTS_FILENAME = "stage_evaluator_results.jsonl"
 
 
+class StageEvaluatorConfigurationError(RuntimeError):
+    """Stage evaluator 配置缺口，面向 CLI 输出可操作修复信息。"""
+
+
 @dataclass(frozen=True)
 class StageEvaluatorSpec:
     stage: str
@@ -389,14 +393,58 @@ def _dedupe(items: list[str]) -> list[str]:
     return ordered
 
 
+def _known_stage_dirs() -> str:
+    names = sorted(STAGE_EVALUATOR_SPECS)
+    return ", ".join(names)
+
+
+def _known_aliases() -> str:
+    names = sorted(STAGE_EVALUATOR_SPEC_ALIASES)
+    if len(names) <= 28:
+        return ", ".join(names)
+    return ", ".join(names[:28]) + f", ... ({len(names)} total)"
+
+
 def _spec_for_stage_dir(stage_dir: Path) -> StageEvaluatorSpec:
     alias = STAGE_EVALUATOR_SPEC_ALIASES.get(stage_dir.name)
     if alias is not None:
-        return STAGE_EVALUATOR_SPECS[alias]
-    try:
+        try:
+            return STAGE_EVALUATOR_SPECS[alias]
+        except KeyError as exc:
+            raise StageEvaluatorConfigurationError(
+                "\n".join(
+                    [
+                        "QROS stage evaluator configuration error:",
+                        f"stage evaluator alias points to missing spec: {stage_dir.name} -> {alias}",
+                        f"stage_dir: {stage_dir}",
+                        "missing_entry: runtime/tools/stage_evaluator.py -> "
+                        f"STAGE_EVALUATOR_SPECS[{alias!r}]",
+                        "fix: add the missing StageEvaluatorSpec to STAGE_EVALUATOR_SPECS, "
+                        "or update STAGE_EVALUATOR_SPEC_ALIASES to point at an existing spec.",
+                        f"known_stage_dirs: {_known_stage_dirs()}",
+                    ]
+                )
+            ) from exc
+
+    if stage_dir.name in STAGE_EVALUATOR_SPECS:
         return STAGE_EVALUATOR_SPECS[stage_dir.name]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported stage directory for evaluator: {stage_dir}") from exc
+
+    raise StageEvaluatorConfigurationError(
+        "\n".join(
+            [
+                "QROS stage evaluator configuration error:",
+                f"missing evaluator spec/alias for stage directory: {stage_dir.name}",
+                f"stage_dir: {stage_dir}",
+                "missing_entry: runtime/tools/stage_evaluator.py -> "
+                f"STAGE_EVALUATOR_SPECS[{stage_dir.name!r}] or "
+                f"STAGE_EVALUATOR_SPEC_ALIASES[{stage_dir.name!r}]",
+                "fix: add a StageEvaluatorSpec to STAGE_EVALUATOR_SPECS and, if callers use a "
+                "stage id or routed directory name, add the corresponding STAGE_EVALUATOR_SPEC_ALIASES entry.",
+                f"known_stage_dirs: {_known_stage_dirs()}",
+                f"known_aliases: {_known_aliases()}",
+            ]
+        )
+    )
 
 
 def _artifact_root(stage_dir: Path, spec: StageEvaluatorSpec) -> Path:

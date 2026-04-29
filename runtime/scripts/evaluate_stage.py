@@ -11,7 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.tools.stage_evaluator import evaluate_stage, write_stage_evaluator_artifacts  # noqa: E402
+from runtime.tools.stage_evaluator import (  # noqa: E402
+    StageEvaluatorConfigurationError,
+    evaluate_stage,
+    write_stage_evaluator_artifacts,
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -24,16 +28,19 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    if args.write:
-        payload = write_stage_evaluator_artifacts(
-            args.stage_dir.resolve(),
-            lineage_root=args.lineage_root.resolve() if args.lineage_root is not None else None,
-        )
-    else:
-        payload = evaluate_stage(
-            args.stage_dir.resolve(),
-            lineage_root=args.lineage_root.resolve() if args.lineage_root is not None else None,
-        )
+    try:
+        if args.write:
+            payload = write_stage_evaluator_artifacts(
+                args.stage_dir.resolve(),
+                lineage_root=args.lineage_root.resolve() if args.lineage_root is not None else None,
+            )
+        else:
+            payload = evaluate_stage(
+                args.stage_dir.resolve(),
+                lineage_root=args.lineage_root.resolve() if args.lineage_root is not None else None,
+            )
+    except StageEvaluatorConfigurationError as exc:
+        raise SystemExit(str(exc)) from None
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 

@@ -249,6 +249,37 @@ def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) 
     assert "Stage: mandate" in result.stdout
 
 
+def test_run_stage_review_script_fails_actionably_when_checklist_stage_is_missing(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    lineage_root = tmp_path / "outputs" / "btc"
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    (stage_dir / "author" / "formal").mkdir(parents=True)
+    script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(lineage_root),
+            "--reviewer-id",
+            "reviewer-agent",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "Traceback" not in result.stderr
+    assert "missing review checklist stage: tss_test_evidence" in result.stderr
+    assert "contracts/review/review_checklist_master.yaml" in result.stderr
+    assert "stages.tss_test_evidence" in result.stderr
+
+
 def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     stage_dir = _prepare_mandate_stage(tmp_path)

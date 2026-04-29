@@ -105,6 +105,28 @@ def test_evaluate_stage_script_emits_json_for_pre_review_stage(tmp_path: Path) -
     assert payload["status"] == "review_confirmation_pending"
 
 
+def test_evaluate_stage_script_fails_actionably_when_evaluator_spec_is_missing(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "btc"
+    stage_dir = lineage_root / "05_tss_test_evidence"
+    stage_dir.mkdir(parents=True)
+    script_path = REPO_ROOT / "runtime" / "scripts" / "evaluate_stage.py"
+
+    result = run(
+        [sys.executable, str(script_path), "--stage-dir", str(stage_dir), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode != 0
+    assert "Traceback" not in result.stderr
+    assert "missing evaluator spec/alias for stage directory: 05_tss_test_evidence" in result.stderr
+    assert "runtime/tools/stage_evaluator.py" in result.stderr
+    assert "STAGE_EVALUATOR_SPECS" in result.stderr
+    assert "STAGE_EVALUATOR_SPEC_ALIASES" in result.stderr
+
+
 def test_stage_evaluator_matches_runtime_for_fix_required_review_state(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "topic_a"
