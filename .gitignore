@@ -9,8 +9,8 @@ outputs/*
 governance/*
 .omc/*
 .omx/
-.claude/
-.claude-plugin/
+.claude/settings.local.json
+.claude/settings.json
 .pytest_cache/
 .qros/
 .codex/*
