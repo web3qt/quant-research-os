@@ -4,12 +4,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TARGET_CWD="$PWD"
+HOST="codex"
 ARGS=()
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --cwd)
       TARGET_CWD="$2"
+      shift 2
+      ;;
+    --host)
+      HOST="$2"
       shift 2
       ;;
     *)
@@ -52,7 +57,7 @@ fi
 
 cd "$TARGET_CWD"
 if [ "${#ARGS[@]}" -gt 0 ]; then
-  exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" "${ARGS[@]}"
+  exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" --host "$HOST" "${ARGS[@]}"
 fi
 
-exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD"
+exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" --host "$HOST"

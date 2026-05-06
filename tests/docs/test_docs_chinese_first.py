@@ -50,7 +50,7 @@ CHINESE_FIRST_HEADINGS = {
         "## Closure Artifacts / 关闭产物",
     ),
     Path("docs/guides/codex-stage-review-skill-usage.md"): (
-        "# Codex 阶段 Review Skill 使用说明",
+        "# 阶段 Review Skill 使用说明",
         "## 作用域",
         "## 这些 Skill 做什么",
         "## 规则输入",

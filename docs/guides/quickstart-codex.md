@@ -1,5 +1,9 @@
 # QROS Codex 快速开始
 
+---
+
+<br>
+
 ## 1. 安装
 
 先在 active research repo 根目录打开 Codex。
@@ -11,6 +15,10 @@ Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quan
 ```
 
 Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`，然后要求你重启 Codex。重启后，在同一个 active research repo 中运行 `qros-research-session`。
+
+---
+
+<br>
 
 ## 2. 从统一 Skill 开始
 
@@ -25,9 +33,13 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 
-如果你第一次看到 `research_intent`、`window_contract`、`delivery_contract` 这类 group 名，先看：
+> 如果你第一次看到 `research_intent`、`window_contract`、`delivery_contract` 这类 group 名，先看：
+>
+> - `docs/guides/stage-freeze-group-field-guide.md`
 
-- `docs/guides/stage-freeze-group-field-guide.md`
+---
+
+<br>
 
 ## 3. 让 Agent 推进当前流程
 
@@ -67,6 +79,10 @@ Agent 应该做这些事：
 - `docs/guides/stage-freeze-group-field-guide.md`
 - `docs/guides/qros-research-session-usage.md`
 
+---
+
+<br>
+
 ## 4. 你应该看到什么
 
 Agent 应该报告：
@@ -81,18 +97,26 @@ Agent 应该报告：
 
 底层 runtime 会把 artifacts 写到 active research repo 的 `outputs/<lineage_id>/` 下。
 
-对 route-specific `tss_*` / `csf_*` 阶段，这些 artifacts 必须是真实阶段交付。目录骨架、placeholder 文件和只有文档解释的替代物，不足以声称阶段完成。
+> 对 route-specific `tss_*` / `csf_*` 阶段，这些 artifacts 必须是真实阶段交付。目录骨架、placeholder 文件和只有文档解释的替代物，不足以声称阶段完成。
 
-Review failure 不是普通 debug，也不是普通调试。如果某个 stage review 以 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 结束，session 应停止普通阶段推进，暴露 `requires_failure_handling`，并切换到 `qros-stage-failure-handler`。
+> **Review failure 不是普通 debug，也不是普通调试。** 如果某个 stage review 以 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE` 结束，session 应停止普通阶段推进，暴露 `requires_failure_handling`，并切换到 `qros-stage-failure-handler`。
 
-如果 controlled retry 写出的 `failure_packages/*/post_retry_decision.yaml` 中 `normal_progression_allowed: false`，runtime 应暴露 `FAILURE_DISPOSITION_REQUIRED`。在 failure package 写出带 `NO_GO` 或 `CHILD_LINEAGE` 的 `failure_disposition.yaml` 之前，原 lineage 不得重新进入 review 或 next-stage progression；即使 disposition 已写出，原 lineage 的普通推进仍保持阻塞。
+> 如果 controlled retry 写出的 `failure_packages/*/post_retry_decision.yaml` 中 `normal_progression_allowed: false`，runtime 应暴露 `FAILURE_DISPOSITION_REQUIRED`。在 failure package 写出带 `NO_GO` 或 `CHILD_LINEAGE` 的 `failure_disposition.yaml` 之前，原 lineage 不得重新进入 review 或 next-stage progression；即使 disposition 已写出，原 lineage 的普通推进仍保持阻塞。
+
+---
+
+<br>
 
 ## 5. 内部 Runtime 说明
 
 QROS 内部仍使用脚本做 deterministic state transitions，但这些是 runtime 内部机制，不是普通用户的主入口。
 
+---
+
+<br>
+
 ## 6. 结束状态
 
 route-specific holdout review closure 后，runtime 会进入对应的 `<route>_holdout_validation_next_stage_confirmation_pending`。显式 `CONFIRM_NEXT_STAGE` 后，它会进入 `<route>_holdout_validation_review_complete`，不会继续进入更后面的治理阶段。
 
-Codex 直接通过 `~/.codex/skills/` 发现 QROS；`./setup` 会把扁平化的 `qros-*` skills 写到那里。
+> Codex 直接通过 `~/.codex/skills/` 发现 QROS；`./setup` 会把扁平化的 `qros-*` skills 写到那里。

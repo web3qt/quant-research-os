@@ -12,7 +12,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
-    SPAWNED_REVIEWER_RECEIPT_FILENAME,
+    REVIEWER_RECEIPT_FILENAME,
     load_adversarial_review_result,
 )
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
@@ -588,7 +588,7 @@ def _review_request_path(stage_dir: Path) -> Path:
 
 
 def _review_receipt_path(stage_dir: Path) -> Path:
-    return stage_dir / "review" / "request" / SPAWNED_REVIEWER_RECEIPT_FILENAME
+    return stage_dir / "review" / "request" / REVIEWER_RECEIPT_FILENAME
 
 
 def _review_result_path(stage_dir: Path) -> Path:
@@ -651,7 +651,7 @@ def _review_summary(stage_dir: Path, *, reviewable: bool) -> dict[str, Any]:
         "reviewable": reviewable,
         "review_transition_confirmed": review_transition_confirmed,
         "review_request_present": request_present,
-        "spawned_reviewer_receipt_present": receipt_present,
+        "reviewer_receipt_present": receipt_present,
         "review_result_present": result_present,
         "review_audit_present": audit_present,
         "audit_status": audit_payload.get("audit_status"),
@@ -746,7 +746,7 @@ def _evaluate_idea_intake(stage_dir: Path, lineage_root: Path, spec: StageEvalua
             "reviewable": False,
             "review_transition_confirmed": False,
             "review_request_present": False,
-            "spawned_reviewer_receipt_present": False,
+            "reviewer_receipt_present": False,
             "review_result_present": False,
             "review_audit_present": False,
             "audit_status": None,
@@ -794,14 +794,14 @@ def _evaluate_reviewable_stage(stage_dir: Path, lineage_root: Path, spec: StageE
         reason = "review confirmation exists, but adversarial review request is missing"
         passed = False
         can_progress = False
-    elif not review_summary["spawned_reviewer_receipt_present"]:
+    elif not review_summary["reviewer_receipt_present"]:
         status = "review_pending"
-        reason = "review request exists, but spawned reviewer receipt is still missing"
+        reason = "review request exists, but reviewer receipt is still missing"
         passed = False
         can_progress = False
     elif not review_summary["review_result_present"]:
         status = "review_in_progress"
-        reason = "spawned reviewer is still expected to produce adversarial_review_result.yaml"
+        reason = "reviewer is still expected to produce adversarial_review_result.yaml"
         passed = False
         can_progress = False
     elif review_summary["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:

@@ -13,12 +13,16 @@ from typing import Literal
 
 InstallMode = Literal["repo-local", "user-global", "auto"]
 ResolvedInstallMode = Literal["repo-local", "user-global"]
-InstallHost = Literal["codex"]
+InstallHost = Literal["codex", "claude-code"]
 
-SUPPORTED_HOSTS: set[str] = {"codex"}
+SUPPORTED_HOSTS: set[str] = {"codex", "claude-code"}
 SUPPORTED_MODES: set[str] = {"repo-local", "user-global", "auto"}
 SKILLS_SOURCE_DIR = Path("skills")
-GLOBAL_METADATA_ROOT = Path(".codex") / "qros"
+
+_HOST_CONFIG: dict[str, str] = {
+    "codex": ".codex",
+    "claude-code": ".claude",
+}
 
 
 @dataclass(frozen=True)
@@ -71,21 +75,23 @@ def resolve_install_mode(mode: str, cwd: Path) -> ResolvedInstallMode:
     return mode
 
 
-def resolve_install_target(mode: str, cwd: Path, home: Path) -> InstallTarget:
+def resolve_install_target(mode: str, cwd: Path, home: Path, host: str = "codex") -> InstallTarget:
     resolved_mode = resolve_install_mode(mode, cwd)
+    host_dir = _HOST_CONFIG[host]
+
     if resolved_mode == "repo-local":
         runtime_root = cwd / ".qros"
         return InstallTarget(
             mode=resolved_mode,
-            skills_root=home / ".codex" / "skills",
+            skills_root=home / host_dir / "skills",
             runtime_root=runtime_root,
             manifest_path=runtime_root / "install-manifest.json",
         )
 
-    runtime_root = home / GLOBAL_METADATA_ROOT
+    runtime_root = home / host_dir / "qros"
     return InstallTarget(
         mode=resolved_mode,
-        skills_root=home / ".codex" / "skills",
+        skills_root=home / host_dir / "skills",
         runtime_root=runtime_root,
         manifest_path=runtime_root / "install-manifest.json",
     )
@@ -135,10 +141,11 @@ def build_manifest(
     target: InstallTarget,
     installed_skills: list[str],
     installed_runtime_files: list[str],
+    host: str = "codex",
 ) -> dict[str, object]:
     return {
         "project_name": repo_root.name,
-        "host": "codex",
+        "host": host,
         "install_mode": target.mode,
         "installed_at": datetime.now(UTC).isoformat(),
         "source_repo_path": str(repo_root),
@@ -160,7 +167,7 @@ def install_qros(
 ) -> InstallResult:
     _validate_host(host)
     repo_root = repo_root.resolve()
-    target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve())
+    target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve(), host=host)
     skill_dirs = list_skill_dirs(repo_root)
     runtime_assets = list_runtime_assets(repo_root) if target.mode == "repo-local" else []
 
@@ -188,6 +195,7 @@ def install_qros(
         target=target,
         installed_skills=skills_written,
         installed_runtime_files=sorted(runtime_written),
+        host=host,
     )
     target.manifest_path.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
@@ -211,7 +219,7 @@ def check_install(
 ) -> tuple[bool, list[str]]:
     _validate_host(host)
     repo_root = repo_root.resolve()
-    target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve())
+    target = resolve_install_target(mode=mode, cwd=cwd.resolve(), home=home.resolve(), host=host)
     messages: list[str] = []
 
     expected_skill_dirs = list_skill_dirs(repo_root)
@@ -301,7 +309,7 @@ def _git_commit(repo_root: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Install QROS runtime assets for Codex.")
+    parser = argparse.ArgumentParser(description="Install QROS runtime assets.")
     parser.add_argument("--host", default="codex")
     parser.add_argument("--mode", default="auto", choices=sorted(SUPPORTED_MODES))
     parser.add_argument("--refresh", action="store_true")
@@ -314,7 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     home = Path.home()
 
     try:
-        target = resolve_install_target(mode=args.mode, cwd=cwd, home=home)
+        target = resolve_install_target(mode=args.mode, cwd=cwd, home=home, host=args.host)
         if args.check:
             ok, messages = check_install(
                 repo_root=repo_root,

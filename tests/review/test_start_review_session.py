@@ -40,22 +40,22 @@ def test_start_review_session_registers_active_cycle_and_receipt(tmp_path: Path)
     assert payload["stage"] == "mandate"
     assert (stage_dir / "review" / "request" / "adversarial_review_request.yaml").exists()
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
-    assert receipt_payload["spawn_mode"] == "review_session"
-    assert receipt_payload["spawned_agent_id"] == "review-session-1"
+    assert receipt_payload["execution_mode"] == "review_session"
+    assert receipt_payload["reviewer_agent_id"] == "review-session-1"
     state_payload = load_review_runtime_state(stage_dir / "review" / "state" / "review_runtime_state.yaml")
     assert state_payload["review_state"] == "review_in_progress"
     assert state_payload["active_review_cycle_id"] == payload["review_cycle_id"]
 
 
-def test_start_spawned_review_cycle_registers_spawned_agent_receipt(tmp_path: Path) -> None:
+def test_start_review_cycle_registers_spawned_agent_receipt(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    start_spawned_review_cycle = getattr(review_session_runtime, "start_spawned_review_cycle", None)
+    start_review_cycle = getattr(review_session_runtime, "start_review_cycle", None)
 
-    assert callable(start_spawned_review_cycle)
+    assert callable(start_review_cycle)
 
-    payload = start_spawned_review_cycle(
+    payload = start_review_cycle(
         explicit_context={
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
@@ -64,15 +64,15 @@ def test_start_spawned_review_cycle_registers_spawned_agent_receipt(tmp_path: Pa
         reviewer_session_id="review-session-1",
         launcher_session_id="launcher-session-1",
         launcher_thread_id="launcher-thread-1",
-        spawned_agent_id="reviewer-child-1",
+        reviewer_agent_id="reviewer-child-1",
     )
 
     assert payload["stage"] == "mandate"
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
-    assert receipt_payload["spawn_mode"] == "spawned_agent"
-    assert receipt_payload["spawned_agent_id"] == "reviewer-child-1"
+    assert receipt_payload["execution_mode"] == "spawned_agent"
+    assert receipt_payload["reviewer_agent_id"] == "reviewer-child-1"
     state_payload = load_review_runtime_state(stage_dir / "review" / "state" / "review_runtime_state.yaml")
     assert state_payload["review_state"] == "review_in_progress"
     assert state_payload["active_review_cycle_id"] == payload["review_cycle_id"]
@@ -170,9 +170,9 @@ def test_start_review_session_script_emits_registered_cycle(tmp_path: Path) -> N
     assert "Review cycle:" in result.stdout
 
 
-def test_start_spawned_review_cycle_script_emits_spawned_agent_receipt(tmp_path: Path) -> None:
+def test_start_review_cycle_script_emits_spawned_agent_receipt(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    script_path = REPO_ROOT / "runtime" / "scripts" / "start_spawned_review_cycle.py"
+    script_path = REPO_ROOT / "runtime" / "scripts" / "start_review_cycle.py"
 
     result = run(
         [
@@ -190,7 +190,7 @@ def test_start_spawned_review_cycle_script_emits_spawned_agent_receipt(tmp_path:
             "launcher-session-1",
             "--launcher-thread-id",
             "launcher-thread-1",
-            "--spawned-agent-id",
+            "--reviewer-agent-id",
             "reviewer-child-1",
         ],
         cwd=tmp_path,
@@ -200,12 +200,12 @@ def test_start_spawned_review_cycle_script_emits_spawned_agent_receipt(tmp_path:
     )
 
     assert result.returncode == 0, result.stderr
-    assert "Spawn mode: spawned_agent" in result.stdout
+    assert "Execution mode: spawned_agent" in result.stdout
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
-    assert receipt_payload["spawn_mode"] == "spawned_agent"
-    assert receipt_payload["spawned_agent_id"] == "reviewer-child-1"
+    assert receipt_payload["execution_mode"] == "spawned_agent"
+    assert receipt_payload["reviewer_agent_id"] == "reviewer-child-1"
 
 
 def test_qros_review_script_can_infer_identity_from_review_session_receipt(tmp_path: Path) -> None:

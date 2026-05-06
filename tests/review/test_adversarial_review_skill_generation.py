@@ -29,7 +29,7 @@ def test_generator_writes_mainline_and_csf_review_skills(tmp_path: Path) -> None
     output_root = tmp_path / "generated"
 
     result = run(
-        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
+        [sys.executable, "runtime/scripts/gen_stage_review_skills.py", "--host", "codex", "--output-root", str(output_root)],
         cwd=repo_root,
         check=False,
         capture_output=True,
@@ -62,7 +62,7 @@ def test_generated_review_skill_template_references_shared_protocol(tmp_path: Pa
     output_root = tmp_path / "generated"
 
     result = run(
-        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
+        [sys.executable, "runtime/scripts/gen_stage_review_skills.py", "--host", "codex", "--output-root", str(output_root)],
         cwd=repo_root,
         check=False,
         capture_output=True,
@@ -92,7 +92,7 @@ def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> 
     assert protocol_path.exists()
     assert "adversarial reviewer-agent" in content
     assert "adversarial_review_request.yaml" in content
-    assert "spawned_reviewer_receipt.yaml" in content
+    assert "reviewer_receipt.yaml" in content
     assert "reviewer_write_scope_baseline.yaml" in content
     assert "adversarial_review_result.yaml" in content
     assert "reviewer_write_scope_audit.yaml" in content
@@ -100,7 +100,7 @@ def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> 
     assert "launcher_review_ready_status" in content
     assert "launcher_checked_artifact_paths" in content
     assert "launcher_handoff_context_paths" in content
-    assert "spawned_agent_id" in content
+    assert "reviewer_agent_id" in content
     assert "FIX_REQUIRED" in content
     assert "closure-ready adverse verdict" in content
     assert "review-ready" in content

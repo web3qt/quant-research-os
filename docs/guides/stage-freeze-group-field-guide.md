@@ -15,6 +15,10 @@
 
 无前缀的 `Data Ready`、`Signal Ready`、`Train Freeze`、`Test Evidence`、`Backtest Ready`、`Holdout Validation` 小节用于解释通用 freeze group 语义。新的 `time_series_signal` lineage 在 runtime 中使用 `tss_*` stage 名；读这些通用字段时，应把它们映射到对应的 `tss_data_ready`、`tss_signal_ready`、`tss_train_freeze`、`tss_test_evidence`、`tss_backtest_ready`、`tss_holdout_validation`。
 
+<br>
+
+---
+
 ## 使用方式
 
 看到一份 freeze draft 时，按下面顺序读：
@@ -23,6 +27,10 @@
 2. 用表格逐字段对照
 3. 如果字段缺失，先判断是“补说明”还是“合同没冻结”
 4. 如果字段内容变化，先判断是不是已经改变了研究合同
+
+<br>
+
+---
 
 ## Mandate / 研究授权阶段
 
@@ -84,6 +92,10 @@
 | `artifact_contract_note` | 每阶段必须交什么正式产物 | 没有这个，阶段完成会变成主观判断 | 只写“需要报告” |
 | `crowding_capacity_note` | 后续容量和拥挤审计的基准说明 | backtest 阶段必须沿用同一基准 | 等到 backtest 才临时补 |
 
+<br>
+
+---
+
 ## Data Ready / 数据就绪阶段
 
 ### `extraction_contract`
@@ -139,6 +151,10 @@
 | `consumer_stage` | 下一个正式消费这些产物的阶段 | 明确交付对象，防止多套输入并存 | 不写下游消费者 |
 | `frozen_inputs_note` | 下游必须复用这一批冻结对象的说明 | 防止 signal_ready 重新造一套输入 | 写成泛泛备注，没约束力 |
 
+<br>
+
+---
+
 ## Signal Ready / 信号就绪阶段
 
 ### `signal_expression`
@@ -191,6 +207,10 @@
 | `machine_artifacts` | 必须真实物化的机器可读输出，如 `param_manifest.csv` | Train 只能消费正式 signal 产物 | 列了一堆未来计划文件 |
 | `doc_artifacts` | companion 文档清单 | 下游需要字段和覆盖解释 | 只有机器文件，没有 companion doc |
 | `consumer_stage` | 正式下游阶段 | 锁定交付对象 | 不写或写多个含混消费者 |
+
+<br>
+
+---
 
 ## Train Freeze / 训练冻结阶段
 
@@ -247,6 +267,10 @@
 | `consumer_stage` | 正式消费者 | 明确这些输出给谁用 | 不写下游 |
 | `reuse_constraints` | test 对 train 输出的复用边界 | 防止 test 重新估 train 尺子 | 只写“供下游参考” |
 
+<br>
+
+---
+
 ## Test Evidence / 测试证据阶段
 
 ### `window_contract`
@@ -299,6 +323,10 @@
 | `consumer_stage` | 正式下游 | 锁定 backtest 是唯一消费者 | 写成多个含混下游 |
 | `frozen_spec_note` | `selected_symbols` 和 `best_h` 的冻结说明 | 防止 backtest 自己重建 spec | 不强调“必须复用” |
 
+<br>
+
+---
+
 ## Backtest Ready / 回测就绪阶段
 
 ### `execution_policy`
@@ -347,6 +375,10 @@
 | `machine_artifacts` | backtest 必须正式交付的机器文件 | holdout 和 reviewer 只能消费这些正式回测结果 | 只保留截图或 summary |
 | `consumer_stage` | 正式下游 | 指明 holdout_validation 是下一消费者 | 不写下游 |
 | `frozen_config_note` | holdout 如何复用 backtest 冻结配置 | 防止 holdout 自己再配置一套 | 只写“可供参考” |
+
+<br>
+
+---
 
 ## Holdout Validation / 留出验证阶段
 
@@ -410,6 +442,10 @@
 - 文档写了，所以算完成
 - 本地跑过了，所以算完成
 - 有截图了，所以算完成
+
+<br>
+
+---
 
 ## CSF Route / 横截面因子路线
 

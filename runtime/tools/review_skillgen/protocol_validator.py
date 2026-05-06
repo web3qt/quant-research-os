@@ -6,7 +6,7 @@ from typing import Any
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
-    SPAWNED_REVIEWER_RECEIPT_FILENAME,
+    REVIEWER_RECEIPT_FILENAME,
     validate_receipt_against_request,
     validate_result_against_request,
 )
@@ -28,7 +28,7 @@ def load_and_validate_protocol(
     runtime_identity: Any,
 ) -> dict[str, Any]:
     request_path = review_request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME
-    receipt_path = review_request_dir / SPAWNED_REVIEWER_RECEIPT_FILENAME
+    receipt_path = review_request_dir / REVIEWER_RECEIPT_FILENAME
     result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
     audit_path = review_result_dir / REVIEWER_WRITE_SCOPE_AUDIT_FILENAME
     stage_dir = review_request_dir.parent.parent

@@ -6,7 +6,7 @@ import yaml
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ReviewerRuntimeIdentity,
     ensure_adversarial_review_request,
-    issue_spawned_reviewer_receipt,
+    issue_reviewer_receipt,
 )
 from runtime.tools.review_skillgen.review_result_writer import ensure_runtime_review_result
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
@@ -48,13 +48,13 @@ def _prepare_mandate_review_case(tmp_path: Path) -> Path:
         program_hash="writer-hash",
         stage_invoked_at="2026-04-19T00:00:00+00:00",
     )
-    issue_spawned_reviewer_receipt(
+    issue_reviewer_receipt(
         stage_dir,
         reviewer_identity="reviewer-agent",
         reviewer_session_id="review-session",
         launcher_session_id="launcher-session",
         launcher_thread_id="leader-thread",
-        spawned_agent_id="reviewer-child-agent",
+        reviewer_agent_id="reviewer-child-agent",
     )
     return stage_dir
 
@@ -65,7 +65,7 @@ def test_ensure_runtime_review_result_materializes_canonical_result_from_raw_fin
         (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
     )
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
     _write_yaml(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
@@ -107,7 +107,7 @@ def test_ensure_runtime_review_result_prefers_fresh_raw_findings_over_existing_c
         (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
     )
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
@@ -174,7 +174,7 @@ def test_ensure_runtime_review_result_rejects_unsupported_raw_outcome_before_wri
         (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
     )
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
     raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
     _write_yaml(
@@ -220,7 +220,7 @@ def test_ensure_runtime_review_result_rejects_non_list_raw_finding_fields_before
         (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
     )
     receipt_payload = yaml.safe_load(
-        (stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").read_text(encoding="utf-8")
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
     raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
     _write_yaml(

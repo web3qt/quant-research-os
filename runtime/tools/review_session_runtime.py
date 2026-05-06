@@ -15,7 +15,7 @@ from runtime.tools.research_session import (
 )
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
-    issue_spawned_reviewer_receipt,
+    issue_reviewer_receipt,
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
@@ -233,7 +233,7 @@ def _build_review_cycle_payload(
         "current_stage": prepared["current_stage"],
         "review_cycle_id": request_payload["review_cycle_id"],
         "request_path": str((stage_dir / "review" / "request" / "adversarial_review_request.yaml").relative_to(lineage_root)),
-        "receipt_path": str((stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml").relative_to(lineage_root)),
+        "receipt_path": str((stage_dir / "review" / "request" / "reviewer_receipt.yaml").relative_to(lineage_root)),
         "archived_paths": prepared["archived_paths"],
         "review_runtime_state": prepared["state_payload"],
         "request_payload": request_payload,
@@ -257,6 +257,7 @@ def _reviewer_handoff_prompt(
     reviewer_identity: str,
     reviewer_session_id: str,
     display_root: Path | None,
+    host: str = "codex",
 ) -> str:
     stage_dir = Path(payload["stage_dir"]).resolve()
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
@@ -265,36 +266,36 @@ def _reviewer_handoff_prompt(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         display_root=display_root,
     )
-    return "\n".join(
-        [
-            f"Handoff for QROS {payload['stage']} adversarial review.",
-            "",
-            f"Lineage: {payload['lineage_id']}",
-            f"Stage: {payload['stage']}",
-            f"Review cycle: {payload['review_cycle_id']}",
-            f"Reviewer identity: {reviewer_identity}",
-            f"Reviewer session id / agent id: {reviewer_session_id}",
-            "",
-            "Hard constraints:",
-            "- Do not run qros-review.",
-            "- Do not write closure artifacts.",
-            "- Do not modify author/formal or review/request files.",
-            "",
-            "Permitted reads only:",
-            f"- {request_root}/*",
-            f"- {author_root}/*",
-            "",
-            "Permitted write only:",
-            f"- {result_path}",
-            "",
-            "Write reviewer_findings.raw.yaml with top-level fields:",
-            "review_loop_outcome",
-            "blocking_findings",
-            "reservation_findings",
-            "info_findings",
-            "residual_risks",
-        ]
-    )
+    lines = [
+        f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
+        "",
+        f"Lineage: {payload['lineage_id']}",
+        f"Stage: {payload['stage']}",
+        f"Review cycle: {payload['review_cycle_id']}",
+        f"Host: {host}",
+        f"Reviewer identity: {reviewer_identity}",
+        f"Reviewer session id / agent id: {reviewer_session_id}",
+        "",
+        "Hard constraints:",
+        "- Do not run qros-review.",
+        "- Do not write closure artifacts.",
+        "- Do not modify author/formal or review/request files.",
+        "",
+        "Permitted reads only:",
+        f"- {request_root}/*",
+        f"- {author_root}/*",
+        "",
+        "Permitted write only:",
+        f"- {result_path}",
+        "",
+        "Write reviewer_findings.raw.yaml with top-level fields:",
+        "review_loop_outcome",
+        "blocking_findings",
+        "reservation_findings",
+        "info_findings",
+        "residual_risks",
+    ]
+    return "\n".join(lines)
 
 
 def _closer_command(
@@ -325,16 +326,18 @@ def prepare_review_cycle_for_handoff(
     reviewer_session_id: str,
     launcher_session_id: str,
     launcher_thread_id: str,
-    spawned_agent_id: str,
+    reviewer_agent_id: str,
+    host: str = "codex",
 ) -> dict[str, Any]:
-    payload = start_spawned_review_cycle(
+    payload = start_review_cycle(
         cwd=cwd,
         explicit_context=explicit_context,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,
         launcher_thread_id=launcher_thread_id,
-        spawned_agent_id=spawned_agent_id,
+        reviewer_agent_id=reviewer_agent_id,
+        host=host,
     )
     display_root = cwd.resolve() if cwd is not None else None
     return {
@@ -344,6 +347,7 @@ def prepare_review_cycle_for_handoff(
             reviewer_identity=reviewer_identity,
             reviewer_session_id=reviewer_session_id,
             display_root=display_root,
+            host=host,
         ),
         "closer_command": _closer_command(
             payload=payload,
@@ -354,7 +358,7 @@ def prepare_review_cycle_for_handoff(
     }
 
 
-def start_spawned_review_cycle(
+def start_review_cycle(
     *,
     cwd: Path | None = None,
     explicit_context: dict[str, Any] | None = None,
@@ -362,23 +366,24 @@ def start_spawned_review_cycle(
     reviewer_session_id: str,
     launcher_session_id: str,
     launcher_thread_id: str,
-    spawned_agent_id: str,
+    reviewer_agent_id: str,
+    host: str = "codex",
 ) -> dict[str, Any]:
-    # 当前 launcher 会话只负责注册 spawned-agent review cycle，不直接产出 reviewer judgement。
     prepared = _prepare_review_cycle(
         cwd=cwd,
         explicit_context=explicit_context,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )
-    receipt_payload = issue_spawned_reviewer_receipt(
+    receipt_payload = issue_reviewer_receipt(
         prepared["stage_dir"],
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,
         launcher_thread_id=launcher_thread_id,
-        spawned_agent_id=spawned_agent_id,
-        spawn_mode="spawned_agent",
+        reviewer_agent_id=reviewer_agent_id,
+        execution_mode="spawned_agent",
+        host=host,
     )
     return _build_review_cycle_payload(
         prepared=prepared,
@@ -394,6 +399,7 @@ def start_review_session(
     reviewer_session_id: str,
     launcher_session_id: str,
     launcher_thread_id: str,
+    host: str = "codex",
 ) -> dict[str, Any]:
     prepared = _prepare_review_cycle(
         cwd=cwd,
@@ -401,14 +407,15 @@ def start_review_session(
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )
-    receipt_payload = issue_spawned_reviewer_receipt(
+    receipt_payload = issue_reviewer_receipt(
         prepared["stage_dir"],
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,
         launcher_thread_id=launcher_thread_id,
-        spawned_agent_id=reviewer_session_id,
-        spawn_mode="review_session",
+        reviewer_agent_id=reviewer_session_id,
+        execution_mode="review_session",
+        host=host,
     )
     return _build_review_cycle_payload(
         prepared=prepared,

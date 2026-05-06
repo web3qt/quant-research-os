@@ -17,20 +17,35 @@ from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurati
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError  # noqa: E402
 
 
+def _resolve_host_from_manifest(cwd: Path) -> str:
+    manifest_path = cwd / ".qros" / "install-manifest.json"
+    if manifest_path.exists():
+        try:
+            import json
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            host = manifest.get("host")
+            if host in ("codex", "claude-code"):
+                return host
+        except Exception:
+            pass
+    return "codex"
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare QROS review cycles.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     prepare = subparsers.add_parser("prepare", help="Prepare request, receipt, handoff prompt, and closer command.")
     prepare.add_argument("--stage-dir", type=Path, default=None)
     prepare.add_argument("--lineage-root", type=Path, default=None)
+    prepare.add_argument("--host", choices=["codex", "claude-code"], default=None)
     prepare.add_argument("--reviewer-id", default=os.environ.get("QROS_REVIEWER_ID", "codex-reviewer"))
     prepare.add_argument(
         "--reviewer-session-id",
-        default=os.environ.get("QROS_REVIEWER_SESSION_ID") or os.environ.get("CODEX_THREAD_ID") or "spawned-reviewer",
+        default=os.environ.get("QROS_REVIEWER_SESSION_ID", "spawned-reviewer"),
     )
-    prepare.add_argument("--launcher-session-id", default=os.environ.get("CODEX_THREAD_ID", "local-launcher-session"))
-    prepare.add_argument("--launcher-thread-id", default=os.environ.get("CODEX_THREAD_ID", "local-launcher-thread"))
-    prepare.add_argument("--spawned-agent-id", required=True)
+    prepare.add_argument("--launcher-session-id", default=os.environ.get("QROS_LAUNCHER_SESSION_ID", "local-launcher-session"))
+    prepare.add_argument("--launcher-thread-id", default=os.environ.get("QROS_LAUNCHER_THREAD_ID", "local-launcher-thread"))
+    prepare.add_argument("--reviewer-agent-id", required=True)
     prepare.add_argument("--json", action="store_true")
     return parser.parse_args()
 
@@ -60,15 +75,18 @@ def main() -> int:
     args = _parse_args()
     if args.command != "prepare":
         raise SystemExit(f"unsupported command: {args.command}")
+    cwd = Path.cwd()
+    host = args.host or _resolve_host_from_manifest(cwd)
     try:
         payload = prepare_review_cycle_for_handoff(
-            cwd=Path.cwd(),
+            cwd=cwd,
             explicit_context=_explicit_context(args),
             reviewer_identity=args.reviewer_id,
             reviewer_session_id=args.reviewer_session_id,
             launcher_session_id=args.launcher_session_id,
             launcher_thread_id=args.launcher_thread_id,
-            spawned_agent_id=args.spawned_agent_id,
+            reviewer_agent_id=args.reviewer_agent_id,
+            host=host,
         )
     except (ReviewRuntimeConfigurationError, StageEvaluatorConfigurationError) as exc:
         raise SystemExit(str(exc)) from None
@@ -76,6 +94,7 @@ def main() -> int:
         print(json.dumps(_json_safe(payload), ensure_ascii=False, indent=2))
         return 0
 
+    print(f"Host: {host}")
     print(f"Lineage: {payload['lineage_id']}")
     print(f"Stage: {payload['stage']}")
     print(f"Review cycle: {payload['review_cycle_id']}")

@@ -1,148 +1,257 @@
-# 🧭 QROS
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square&logo=python" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/tests-897-green?style=flat-square" alt="Tests 897">
+  <img src="https://img.shields.io/badge/version-0.4.4-blue?style=flat-square" alt="Version 0.4.4">
+  <img src="https://img.shields.io/badge/hosts-Codex%20%7C%20Claude%20Code-purple?style=flat-square" alt="Hosts">
+  <img src="https://img.shields.io/badge/stages-20-blueviolet?style=flat-square" alt="20 Stages">
+  <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License MIT">
+</p>
 
-> 把研究想法推进成一条**可审查、可复现、可追溯**的 research lineage。
+<h1 align="center">🧭 QROS</h1>
 
-`治理框架` `Codex 技能` `阶段门禁` `正式产物` `失败处置`
+<p align="center"><b>量化研究治理操作系统</b> — 把研究想法推进成可审查、可复现、可追溯的 research lineage。</p>
 
-QROS 是面向 agent 的量化研究治理框架。它不替你发明 alpha，也不替某条具体研究线保存真实策略代码；它负责把研究过程里的 freeze、review、formal artifacts、failure routing 和 provenance 固定下来。
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-主流程">Pipeline</a> ·
+  <a href="#-仓库地图">Repo Map</a> ·
+  <a href="#-review-规则">Review</a> ·
+  <a href="docs/README.md">Docs</a>
+</p>
 
-> [!IMPORTANT]
-> QROS 是 **框架仓**，不是策略实现仓。
-> 真实研究程序和正式研究产物应写在 active research repo 的 `outputs/<lineage_id>/` 下。
+---
 
-## 先从这里开始
+> 💡 **一句话定位**：QROS 不替你发明 alpha，也不替某条研究线保存策略代码；它负责把研究过程里的 freeze、review、formal artifacts、failure routing 和 provenance 固定下来。
 
-新建一个研究文件夹，打开 Codex，然后输入：
+<br>
+
+## 📌 为什么需要
+
+Agent 已经能写代码、跑回测、生成报告。但量化研究的核心风险不在执行，在治理：
+
+<p align="center">
+<table>
+<tr><td align="center">🎯</td><td><b>阶段门禁</b></td><td>每个阶段的输入、输出、冻结和审查都有 formal contract，不能跳过</td></tr>
+<tr><td align="center">📋</td><td><b>独立审查</b></td><td>写代码的 author 不能当自己的 reviewer，adversarial reviewer 必须独立</td></tr>
+<tr><td align="center">⚖️</td><td><b>产物真值</b></td><td>空目录、placeholder 文件和合同说明文档不算阶段完成</td></tr>
+<tr><td align="center">♻️</td><td><b>失败处置</b></td><td>review 失败不是 debug，有专门的 failure routing、rollback 和 child lineage 路径</td></tr>
+</table>
+</p>
+
+> ⚠️ QROS 是 **框架仓**，不是策略实现仓。真实研究程序和正式研究产物应写在 active research repo 的 `outputs/<lineage_id>/` 下。
+
+<br>
+
+## 🚀 Quick Start
+
+<table>
+<tr>
+<td width="50%">
+
+### 安装
+
+**Codex** — 在 Codex 里输入：
 
 ```text
-Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md
+Fetch and follow instructions from
+https://raw.githubusercontent.com/
+web3qt/quant-research-os/refs/heads/
+main/.codex/INSTALL.md
 ```
 
-安装或刷新完成后， 重启codex，然后开始，研究的相关文件都会在这个文件夹下。
-然后就可以通过下面的开始研究开始，agent 会推动你一步步的研究。
+重启 Codex，然后开始研究。
 
-| 你想做什么 | 输入什么 |
-| --- | --- |
-| 开始或继续一条研究线 | `$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT，横截面研究` |
-| 查看 QROS 使用帮助 | `$qros-research-session help` |
-| 查看当前研究进度 | `$qros-progress` |
-| 查看横截面因子阶段质量诊断 | `$qros-factor-diagnostics` |
-| 查看时序信号阶段质量诊断 | `$qros-signal-diagnostics` |
-| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
-
-> [!TIP]
-> 普通使用者默认只需要记住一条主路径：安装好以后，先从 `$qros-research-session` 开始。
-
-`$qros-progress` 是只读进度查询入口。它默认读取当前 repo 的 `outputs/`，选择最近修改的 lineage，返回当前 stage、active skill、gate 状态、blocking reason 和 next action；它不写 artifact，也不推进 stage。
-
-`$qros-factor-diagnostics` 是可选 diagnostics 入口。它查看 CSF 阶段的数据质量、因子质量、回测结果和 holdout 稳定性；它不是 review，不是 gate，不写 review closure，也不替代 `$qros-review`。
-
-`$qros-signal-diagnostics` 是可选 diagnostics 入口。它查看 TSS (`time_series_signal`) 阶段的时间序列信号质量、事件证据、回测结果和 holdout 稳定性；它同样不是 review，不是 gate，不写 review closure，也不替代 `$qros-review`。
-
-在 Codex 里可以这样问：
+**Claude Code** — 直接告诉 Claude Code：
 
 ```text
+请阅读并按照 https://raw.githubusercontent.com/
+web3qt/quant-research-os/refs/heads/
+main/.claude/INSTALL.md 的指示安装 QROS
+```
+
+</td>
+<td width="50%">
+
+### 5 分钟开始一条研究线
+
+```text
+$qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT，横截面研究
+
+# 查看进度（只读）
+$qros-progress
+
+# 查看因子质量
 $qros-factor-diagnostics 看下当前 lineage 的因子诊断
 $qros-factor-diagnostics 看下 csf_test_evidence 阶段的 Rank IC、分层和稳定性
-$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益、回撤、换手和容量
-$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有退化或 regime shift
-$qros-factor-diagnostics mean IC 为负说明什么，跟当前策略方向有没有冲突
-$qros-factor-diagnostics 不要只给数字，用中文解释这些指标说明什么
+$qros-factor-diagnostics 看下 csf_backtest_ready 阶段的成本后收益和换手
+$qros-factor-diagnostics 看下 csf_holdout_validation 阶段有没有样本外退化
 
+# 查看信号质量
 $qros-signal-diagnostics 看下当前 TSS lineage 的信号诊断
-$qros-signal-diagnostics 看下 tss_test_evidence 阶段的 hit rate、forward return 和事件数量
 $qros-signal-diagnostics 看下 tss_backtest_ready 阶段的成本后收益、回撤和换手
 $qros-signal-diagnostics 看下 tss_holdout_validation 阶段有没有样本外退化
-$qros-signal-diagnostics mean_rank_ic 小于 0 说明什么，按高信号做多会不会站错方向
-$qros-signal-diagnostics 不要只给数字，用中文解释这些指标说明什么
+
+# 更新版本
+$qros-update
 ```
 
-## QROS 负责什么
+</td>
+</tr>
+</table>
 
-| 领域 | QROS 做什么 | QROS 不做什么 |
-| --- | --- | --- |
-| 流程 | 固定 stage flow、freeze group、review gate、failure routing | 代替研究员判断 alpha 是否成立 |
-| 产物 | 定义 formal artifact shape 和 machine-readable contract | 把 placeholder 文件当作 stage 完成 |
-| 运行时 | 校验并调用 lineage-local stage program | 偷偷生成框架侧 completion fallback |
-| 审查 | 要求独立 adversarial reviewer 和 closure evidence | 让 author 自己给自己放行 |
+<br>
 
-> [!NOTE]
-> QROS 的重点不是“多生成几个文件”，而是让每个阶段的输入、输出、审查和失败处置都有可追溯的证据链。
+## 🗺️ 主流程
 
-## 主流程
-
-`qros-research-session` 是当前普通研究工作的统一入口。
-
-当前 single-entry 编排会推进到 `holdout_validation review` closure。closure 后先进入 `holdout_validation_next_stage_confirmation_pending`；显式执行 `CONFIRM_NEXT_STAGE` 后进入 `holdout_validation_review_complete` 终态，不再继续更后面的治理阶段。
+`qros-research-session` 是统一入口，推进到 `holdout_validation review` closure 为止。
 
 ```text
-idea_intake
-  -> mandate
-  -> route selection
-     -> time_series_signal
-     -> cross_sectional_factor
-  -> holdout_validation review closure
-  -> holdout_validation_review_complete
+00_idea_intake -> 01_mandate -> route selection
+  ├─ time_series_signal
+  │    -> 02_tss_data_ready
+  │    -> 03_tss_signal_ready
+  │    -> 04_tss_train_freeze
+  │    -> 05_tss_test_evidence
+  │    -> 06_tss_backtest_ready
+  │    -> 07_tss_holdout_validation
+  └─ cross_sectional_factor
+       -> 02_csf_data_ready
+       -> 03_csf_signal_ready
+       -> 04_csf_train_freeze
+       -> 05_csf_test_evidence
+       -> 06_csf_backtest_ready
+       -> 07_csf_holdout_validation
+                                        -> review_complete
 ```
 
-<details>
-<summary>展开完整阶段图</summary>
+<br>
 
-```text
-00_idea_intake -> 01_mandate
-├─ time_series_signal
-│  -> 02_tss_data_ready
-│  -> 03_tss_signal_ready
-│  -> 04_tss_train_freeze
-│  -> 05_tss_test_evidence
-│  -> 06_tss_backtest_ready
-│  -> 07_tss_holdout_validation
-└─ cross_sectional_factor
-   -> 02_csf_data_ready
-   -> 03_csf_signal_ready
-   -> 04_csf_train_freeze
-   -> 05_csf_test_evidence
-   -> 06_csf_backtest_ready
-   -> 07_csf_holdout_validation
+## 🏗️ 仓库地图
+
+```
+                    contracts/  ← machine-readable truth
+                         │
+           ┌─────────────┼─────────────┐
+           ▼             ▼             ▼
+      runtime/       skills/      templates/
+   (bin/scripts/    (author/review   (SKILL.md
+    tools/hooks)    failure/core)    generator)
+           │             │
+           ▼             ▼
+     tests/          docs/
+   (897 tests)    (SOP/guides/visuals)
 ```
 
-</details>
+<p align="center">
+<table>
+<tr><td width="25%"><b>contracts/</b></td><td>机器真值层 — gate 定义、checklist、artifact schema</td></tr>
+<tr><td><b>skills/</b></td><td>Agent 行为层 — 20 阶段 author/review/failure skills</td></tr>
+<tr><td><b>runtime/</b></td><td>运行时层 — bin 入口 + scripts wrapper + tools 引擎</td></tr>
+<tr><td><b>templates/</b></td><td>生成模板层 — host-agnostic review skill 模板</td></tr>
+<tr><td><b>docs/</b></td><td>解释层 — 安装、SOP、使用指南</td></tr>
+<tr><td><b>tests/</b></td><td>验证层 — 897 条测试覆盖全流程</td></tr>
+</table>
+</p>
 
-## 仓库地图
+<br>
 
-| 目录 | 作用 |
-| --- | --- |
-| `contracts/` | machine-readable truth，供 runtime、review engine 和 skill generation 读取 |
-| `skills/` | author、review、failure handling、orchestrator skill source |
-| `runtime/bin/` | 稳定用户入口，例如 `qros-session`、`qros-review`、`qros-verify` |
-| `runtime/scripts/` | command-line wrappers 和 deterministic task runner |
-| `runtime/tools/` | stage runtime、gate 校验、program/provenance 处理 |
-| `docs/` | 安装、SOP、字段说明、使用路径 |
-| `tests/` | bootstrap、安装、workflow、runtime、anti-drift regression |
+## 🛡️ Review 规则
 
-## Review 规则
+<table>
+<tr>
+<td width="33%" align="center"><b>🔒 独立审查</b></td>
+<td width="33%" align="center"><b>📋 Formal Gate</b></td>
+<td width="33%" align="center"><b>🚫 失败处置</b></td>
+</tr>
+<tr>
+<td>每个 review 阶段要求<br>独立 adversarial reviewer<br>author 不能自审</td>
+<td>reviewer 检查 artifact、<br>provenance 和 stage program<br>源码，不是走形式</td>
+<td>FIX_REQUIRED 退回 author<br>NO-GO / CHILD LINEAGE<br>走 failure routing</td>
+</tr>
+</table>
 
-- 每个 `*_review` 阶段都要求独立 adversarial reviewer。
-- reviewer 必须检查 stage artifact、provenance，以及对应的 lineage-local route-aware stage program 源码。
-- 只有 `CLOSURE_READY_*` 才能继续运行 `./.qros/bin/qros-review` 写 closure artifacts。
-- `FIX_REQUIRED` 会把流程退回 author-fix loop，禁止直接写 `stage_completion_certificate.yaml`。
+<br>
 
-> [!WARNING]
-> 不要因为目录存在、文件占位或只有合同说明文档，就宣称某个 stage 已完成。
-> QROS 的完成标准是 formal artifacts、provenance、review closure 和 gate 语义同时成立。
+## 🖥️ 支持的宿主
 
-## 常用文档
+<table>
+<tr>
+<td width="50%" align="center"><b>Codex</b></td>
+<td width="50%" align="center"><b>Claude Code</b></td>
+</tr>
+<tr>
+<td>
+
+完整支持，当前主路径
+
+```bash
+# 安装
+Fetch INSTALL.md
+
+# review 子代理
+spawn_agent (fork_context=false)
+
+# skills 路径
+~/.codex/skills/qros-*/
+```
+
+</td>
+<td>
+
+完整支持，通过 plugin
+
+```bash
+# 安装
+/plugin install qros@quant-research-os
+
+# review 子代理
+.claude-plugin/agents/qros-reviewer.md
+
+# skills 路径
+.claude-plugin/skills/qros-*/
+```
+
+</td>
+</tr>
+</table>
+
+<br>
+
+## ✅ 质量体系
+
+<table>
+<tr>
+<td width="33%" align="center"><b>🧪 测试</b></td>
+<td width="33%" align="center"><b>🔍 Anti-Drift</b></td>
+<td width="33%" align="center"><b>📊 Verification</b></td>
+</tr>
+<tr>
+<td>897 条测试<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
+<td>CI 自动回归检测<br>metamorphic testing<br>snapshot baseline<br>drift coverage matrix</td>
+<td>smoke / full-smoke 分层<br>contract validation<br>semantic validation<br>upstream binding check</td>
+</tr>
+</table>
+
+<br>
+
+## 📚 常用文档
 
 | 想了解 | 去哪里 |
-| --- | --- |
-| 文档导航 | [docs/README.md](docs/README.md) |
-| QROS 工作原理 | [docs/guides/how-qros-works.md](docs/guides/how-qros-works.md) |
-| Codex 安装说明 | [docs/guides/installation.md](docs/guides/installation.md) |
-| QROS for Codex | [docs/README.codex.md](docs/README.codex.md) |
-| Codex 快速开始 | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
-| 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
-| 因子阶段 diagnostics | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
-| 时序信号 diagnostics | [docs/guides/qros-signal-diagnostics.md](docs/guides/qros-signal-diagnostics.md) |
-| Release notes | [RELEASE_NOTES.md](RELEASE_NOTES.md) |
-| 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
-| 验证分层 | [docs/guides/qros-verification-tiers.md](docs/guides/qros-verification-tiers.md) |
+|------|------|
+| 📖 文档导航 | [docs/README.md](docs/README.md) |
+| 🚀 安装说明 | [docs/guides/installation.md](docs/guides/installation.md) |
+| ⚡ Quick Start | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
+| 📋 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
+| 🔍 Review 约束地图 | [docs/guides/qros-review-constraint-map.md](docs/guides/qros-review-constraint-map.md) |
+| 📊 CSF 因子诊断 | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
+| 📈 TSS 信号诊断 | [docs/guides/qros-signal-diagnostics.md](docs/guides/qros-signal-diagnostics.md) |
+| 🔧 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
+| 📋 Release Notes | [RELEASE_NOTES.md](RELEASE_NOTES.md) |
+
+<br>
+
+---
+
+<p align="center">
+  <sub>QROS · 治理框架 · 20 阶段 · 双宿主 · 897 测试 · contract-first</sub>
+</p>

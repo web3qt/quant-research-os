@@ -37,7 +37,7 @@ jobs:
             tests/review/test_generation.py \
             tests/review/test_generated_skills_fresh.py
       - name: Generator freshness
-        run: python runtime/scripts/gen_codex_stage_review_skills.py --dry-run
+        run: python runtime/scripts/gen_stage_review_skills.py --dry-run
       - name: Snapshot baseline compare
         run: |
           python runtime/scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
@@ -78,7 +78,7 @@ jobs:
           python -m pip install PyYAML pytest pyarrow
       - name: Anti-drift nightly pipeline
         run: |
-          python runtime/scripts/gen_codex_stage_review_skills.py --dry-run
+          python runtime/scripts/gen_stage_review_skills.py --dry-run
           python runtime/scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
           mkdir -p /tmp/blessed_snapshots
           cp tests/fixtures/anti_drift/*_snapshot.json /tmp/blessed_snapshots/

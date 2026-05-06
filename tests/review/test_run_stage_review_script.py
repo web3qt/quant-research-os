@@ -77,7 +77,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     ]
     required_provenance_paths = ["program_execution_manifest.json"]
     launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
-    handoff_manifest_path = stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml"
+    handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
     _write_yaml(
         handoff_manifest_path,
         {
@@ -114,7 +114,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
             "required_reviewer_mode": "adversarial",
-            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
             "required_result_write_root": "review/result",
             "launcher_review_ready_status": "complete",
@@ -124,17 +124,20 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         },
     )
     _write_yaml(
-        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
+        stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
             "review_cycle_id": "cycle-1",
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",
-            "spawn_mode": "spawned_agent",
-            "spawned_agent_id": "reviewer-child-agent",
-            "fork_context": False,
+            "execution_mode": "spawned_agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "host": "codex",
+            "reviewer_invocation_kind": "codex_spawn_agent",
+            "context_isolation_policy": "fork_context_false",
+            "handoff_delivery_method": "send_input",
             "write_root": "review/result",
-            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
             "requested_reviewer_identity": "reviewer-agent",
             "requested_reviewer_session_id": "review-session",
@@ -145,7 +148,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         stage_dir,
         review_cycle_id="cycle-1",
         launcher_thread_id="leader-thread",
-        spawned_agent_id="reviewer-child-agent",
+        reviewer_agent_id="reviewer-child-agent",
     )
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
@@ -179,7 +182,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
 
 def _handoff_manifest_digest(stage_dir: Path) -> str:
     return hashlib.sha256(
-        (stage_dir / "review" / "request" / "spawned_reviewer_handoff_manifest.yaml")
+        (stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml")
         .read_text(encoding="utf-8")
         .encode("utf-8")
     ).hexdigest()
@@ -319,11 +322,11 @@ def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_pa
     assert not (stage_dir / "review" / "result" / "reviewer_findings.raw.yaml").exists()
 
 
-def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) -> None:
+def test_issue_reviewer_receipt_script_writes_receipt(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     stage_dir = _prepare_mandate_stage(tmp_path)
-    script_path = repo_root / "runtime" / "scripts" / "issue_spawned_reviewer_receipt.py"
-    receipt_path = stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml"
+    script_path = repo_root / "runtime" / "scripts" / "issue_reviewer_receipt.py"
+    receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
     receipt_path.unlink()
 
     result = run(
@@ -342,7 +345,7 @@ def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) ->
             "launcher-session",
             "--launcher-thread-id",
             "leader-thread",
-            "--spawned-agent-id",
+            "--reviewer-agent-id",
             "reviewer-child-agent",
         ],
         cwd=tmp_path,
@@ -356,7 +359,7 @@ def test_issue_spawned_reviewer_receipt_script_writes_receipt(tmp_path: Path) ->
     receipt_payload = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
     assert receipt_payload["requested_reviewer_identity"] == "reviewer-agent"
     assert receipt_payload["requested_reviewer_session_id"] == "review-session"
-    assert receipt_payload["spawned_agent_id"] == "reviewer-child-agent"
+    assert receipt_payload["reviewer_agent_id"] == "reviewer-child-agent"
 
 
 def test_audit_reviewer_write_scope_script_writes_pass_artifact(tmp_path: Path) -> None:

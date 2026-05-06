@@ -28,7 +28,6 @@ LEGACY_RUNTIME_TOKENS = (
     "stage-failure-harness",
     "shadow",
     "Shadow",
-    "setup --host codex",
     "git clone",
     "git pull",
     "tools/research_session.py",

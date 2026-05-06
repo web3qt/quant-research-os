@@ -25,8 +25,9 @@ class UpdateResult:
     local_manifest_path: Path
 
 
-def global_manifest_path(home: Path) -> Path:
-    return home / ".codex" / "qros" / "install-manifest.json"
+def global_manifest_path(home: Path, host: str = "codex") -> Path:
+    host_dir = ".claude" if host == "claude-code" else ".codex"
+    return home / host_dir / "qros" / "install-manifest.json"
 
 
 def default_source_repo(home: Path) -> Path:
@@ -38,11 +39,12 @@ def resolve_source_repo(
     explicit_source_repo: Path | None,
     home: Path,
     repo_root_fallback: Path | None,
+    host: str = "codex",
 ) -> Path:
     if explicit_source_repo is not None:
         return explicit_source_repo.resolve()
 
-    manifest_repo = _source_repo_from_manifest(global_manifest_path(home))
+    manifest_repo = _source_repo_from_manifest(global_manifest_path(home, host=host))
     if manifest_repo is not None and manifest_repo.exists():
         return manifest_repo.resolve()
 
@@ -60,12 +62,14 @@ def run_qros_update(
     repo_root_fallback: Path | None = None,
     repo_url: str = DEFAULT_REPO_URL,
     branch: str = DEFAULT_BRANCH,
+    host: str = "codex",
 ) -> UpdateResult:
     resolved_target_cwd = target_cwd.resolve()
     source_repo = resolve_source_repo(
         explicit_source_repo=explicit_source_repo,
         home=home,
         repo_root_fallback=repo_root_fallback,
+        host=host,
     )
     updated_repo = ensure_managed_source_repo(
         source_repo=source_repo,
@@ -78,12 +82,14 @@ def run_qros_update(
         cwd=updated_repo,
         home=home,
         mode="user-global",
+        host=host,
     )
     install_qros(
         repo_root=updated_repo,
         cwd=resolved_target_cwd,
         home=home,
         mode="repo-local",
+        host=host,
     )
 
     global_ok, global_messages = check_install(
@@ -91,12 +97,14 @@ def run_qros_update(
         cwd=updated_repo,
         home=home,
         mode="user-global",
+        host=host,
     )
     local_ok, local_messages = check_install(
         repo_root=updated_repo,
         cwd=resolved_target_cwd,
         home=home,
         mode="repo-local",
+        host=host,
     )
     if not global_ok or not local_ok:
         raise UpdateError(
@@ -113,7 +121,7 @@ def run_qros_update(
         source_repo=updated_repo,
         target_cwd=resolved_target_cwd,
         source_git_commit=_git_commit(updated_repo),
-        global_manifest_path=global_manifest_path(home),
+        global_manifest_path=global_manifest_path(home, host=host),
         local_manifest_path=resolved_target_cwd / ".qros" / "install-manifest.json",
     )
 

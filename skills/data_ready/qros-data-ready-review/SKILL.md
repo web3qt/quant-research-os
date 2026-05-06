@@ -22,11 +22,11 @@ description: Codex review skill for Data Ready stage verification.
 
 ## 独立 reviewer 子代理要求
 
-- 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个独立 review session / Codex review session
+- 本 skill 是用户显式进入的 stage-specific review 入口；不再要求你手动再开一个独立 review session
 - 进入本 skill 后，必须在**当前会话**里用 `spawn_agent` 拉起独立 reviewer 子代理，且 `fork_context` 必须是 `false`
 - 先用一个最小初始化消息创建 reviewer 子代理，要求它先等待 binding / handoff，不要在 receipt 写出前擅自写文件
-- reviewer 子代理创建后，主线程优先运行 `./.qros/bin/qros-review-cycle prepare --spawned-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id>`
-- `qros-review-cycle prepare` 负责注册 active review cycle，写出 `review/request/*` 与 `spawned_reviewer_receipt.yaml`，并输出 reviewer handoff prompt 与 closer command
+- reviewer 子代理创建后，主线程优先运行 `./.qros/bin/qros-review-cycle prepare --reviewer-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id> --host codex`
+- `qros-review-cycle prepare` 负责注册 active review cycle，写出 `review/request/*` 与 `reviewer_receipt.yaml`，并输出 reviewer handoff prompt 与 closer command
 - 主线程随后必须用 `send_input` 把 request / handoff manifest / stage-specific gate 交给 reviewer 子代理
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
 - reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`

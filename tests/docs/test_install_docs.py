@@ -79,3 +79,19 @@ def test_install_docs_reference_stage_field_guide() -> None:
     assert "search_governance_contract" in guide
     assert "portfolio_contract" in guide
     assert "stability_contract" in guide
+
+
+def test_claude_code_bootstrap_docs_present() -> None:
+    installation = Path("docs/guides/installation.md").read_text(encoding="utf-8")
+
+    assert "Claude Code repo bootstrap" in installation
+    assert "--host claude-code --mode repo-local" in installation
+    assert "~/.claude/skills" in installation
+    assert "~/.claude/qros/install-manifest.json" in installation
+    assert "--host claude-code --cwd" in installation
+    assert "host = claude-code" in installation
+    assert "## Claude Code" in installation
+    assert ".claude-plugin/agents/qros-reviewer.md" in installation
+    # Codex paths still present
+    assert "~/.codex/skills" in installation
+    assert "Restart Codex" in installation

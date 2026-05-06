@@ -7,6 +7,25 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE_PATH = ROOT / "templates" / "skills" / "review-stage" / "SKILL.md.tmpl"
 
+HOST_VARS: dict[str, dict[str, str]] = {
+    "codex": {
+        "HOST_LABEL": "Codex",
+        "HOST_KEY": "codex",
+        "HOST_SPAWN_TOOL": "`spawn_agent`",
+        "HOST_ISOLATION_POLICY": "且 `fork_context` 必须是 `false`",
+        "HOST_HANDOFF_METHOD": "`send_input`",
+        "HOST_SPAWNED_AGENT_ID_FLAG": "--reviewer-agent-id",
+    },
+    "claude-code": {
+        "HOST_LABEL": "Claude Code",
+        "HOST_KEY": "claude-code",
+        "HOST_SPAWN_TOOL": "通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task",
+        "HOST_ISOLATION_POLICY": "子代理上下文由 Claude Code 平台隔离保证",
+        "HOST_HANDOFF_METHOD": "将 handoff manifest 作为 task prompt 传入",
+        "HOST_SPAWNED_AGENT_ID_FLAG": "--reviewer-agent-id",
+    },
+}
+
 
 def _render_simple_list(title: str, items: list[str]) -> str:
     lines = [f"{title}:"]
@@ -129,12 +148,18 @@ def render_stage_skill(
     skill_name: str,
     gate_schema: dict[str, Any],
     checklist_schema: dict[str, Any],
+    host: str = "codex",
 ) -> str:
     stage_contract = gate_schema["stages"][stage_key]
     stage_checks = checklist_schema["stages"][stage_key]["checks"]
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    return (
-        template.replace("{{SKILL_NAME}}", skill_name)
+
+    host_vars = HOST_VARS.get(host, HOST_VARS["codex"])
+    rendered = template
+    for var_name, var_value in host_vars.items():
+        rendered = rendered.replace("{{" + var_name + "}}", var_value)
+    rendered = (
+        rendered.replace("{{SKILL_NAME}}", skill_name)
         .replace("{{STAGE_NAME}}", stage_contract["stage_name"])
         .replace("{{STAGE_PURPOSE}}", stage_contract["purpose"])
         .replace(
@@ -152,3 +177,4 @@ def render_stage_skill(
         .replace("{{DOWNSTREAM_BLOCK}}", _render_downstream(stage_contract))
         .replace("{{DETERMINISTIC_PREFLIGHT_BLOCK}}", _render_deterministic_preflight(stage_key))
     )
+    return rendered

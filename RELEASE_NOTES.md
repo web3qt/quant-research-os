@@ -2,6 +2,37 @@
 
 本文件记录 QROS 从第一个可用版本到当前版本的用户可见变化。QROS 是流程与治理仓；release notes 重点记录 workflow、runtime、skill、contract、文档和验证能力的变化。
 
+---
+
+<br>
+
+## 0.4.5 - 2026-05-06
+
+### 新增
+
+- 新增 host-neutral review protocol 设计，review runtime 不再绑定 codex，支持 codex 和 claude-code 双 host。
+- 新增 host-aware reviewer invocation kinds、context isolation policies 和 handoff delivery methods 三层抽象，用于描述不同 host 的 review agent 启动方式。
+- 新增 `_resolve_host_from_manifest` 自动从 `.qros/install-manifest.json` 推断 host，review cycle 无需显式传 `--host`。
+
+### 改进
+
+- 重命名所有 `spawned_reviewer_*` 符号为 `reviewer_*`（receipt、handoff manifest、env vars），消除 codex spawn 耦合。
+- 环境变量统一：`CODEX_THREAD_ID` → `QROS_REVIEWER_SESSION_ID` / `QROS_LAUNCHER_SESSION_ID` / `QROS_LAUNCHER_THREAD_ID`，参数 `--spawned-agent-id` → `--reviewer-agent-id`。
+- 删除 codex-specific 入口脚本：`qros-spawn-reviewer`、`qros-start-spawned-review`、`start_spawned_review_cycle.py`、`gen_codex_stage_review_skills.py`、`issue_spawned_reviewer_receipt.py`。
+- reviewer handoff prompt 根据 host 生成不同的约束指令和 write-scope 提示。
+- 同步更新全部 review skill SKILL.md（CSF/TSS/backtest/signal/data/holdout/train_freeze/mandate/test_evidence）使用 host-neutral contract 名称。
+- 同步更新 README、installation guide、stage-freeze field guide、review constraint map、review shared protocol 等文档。
+- 新增 `.planning/codebase/` 全量代码地图（ARCHITECTURE、CONCERNS、CONVENTIONS、INTEGRATIONS、STACK、STRUCTURE、TESTING）和 Phase 3 host-neutral review protocol spec。
+
+### 验证
+
+- 更新全部 review runtime tests 适配 host-neutral contract 和新命名。
+- `pyproject.toml` 版本同步到 `0.4.5`。
+
+---
+
+<br>
+
 ## 0.4.4 - 2026-05-06
 
 ### 新增
@@ -24,6 +55,10 @@
 - 本版本发布前已运行 focused tests、docs/bootstrap minimum、smoke 和 full-smoke。
 - `pyproject.toml` 与 `uv.lock` 同步到 `0.4.4`。
 
+---
+
+<br>
+
 ## 0.4.3 - 2026-04-28
 
 ### 新增
@@ -44,7 +79,7 @@
 - 将 QROS 当前主流程明确拆成 `time_series_signal` 与 `cross_sectional_factor` 两条 route，避免继续把无前缀 `data_ready / signal_ready / ...` 当作新 TSS lineage 的 canonical 口径。
 - 更新 `qros-research-session`、`using-qros`、README、Codex guide、quickstart、SOP 和可视化文档，使用户入口和 runtime 实现一致。
 - 将 `docs/` 下的主要用户 / 维护者文档改成中文优先展示，同时保留命令、字段名、stage id、schema id 和 artifact 名。
-- README 起步说明改为“新建研究文件夹并在其中打开 Codex”，强调研究产物会写入该研究文件夹。
+- README 起步说明改为"新建研究文件夹并在其中打开 Codex"，强调研究产物会写入该研究文件夹。
 
 ### 验证
 
@@ -52,6 +87,10 @@
 - 为中文优先文档新增 `tests/docs/test_docs_chinese_first.py`，防止主要入口文档回退成英文主标题。
 - 本版本发布前已运行 focused docs tests、完整 `tests/docs`、docs/bootstrap minimum、smoke 和 full-smoke。
 - `pyproject.toml` 与 `uv.lock` 同步到 `0.4.3`。
+
+---
+
+<br>
 
 ## 0.4.2 - 2026-04-27
 
@@ -63,7 +102,7 @@
   - `contracts/diagnostics/factor_metric_library.yaml`
   - `contracts/diagnostics/csf_stage_diagnostic_profiles.yaml`
 - 新增 runtime diagnostics engine：读取 formal artifacts，汇总 observed diagnostics、missing diagnostics、evidence gaps 和 next diagnostics。
-- 新增中文解释型输出：observed metric 现在包含 `severity`、`interpretation` 和 `strategy_link`，例如 Rank IC 为负时会解释“因子排序与未来收益排序反向”，并提示检查 `factor_direction`。
+- 新增中文解释型输出：observed metric 现在包含 `severity`、`interpretation` 和 `strategy_link`，例如 Rank IC 为负时会解释"因子排序与未来收益排序反向"，并提示检查 `factor_direction`。
 
 ### 改进
 
@@ -85,6 +124,10 @@
 - 本版本发布前已运行 focused tests、docs/bootstrap minimum 和 smoke。
 - `pyproject.toml` 与 `uv.lock` 同步到 `0.4.2`。
 
+---
+
+<br>
+
 ## 0.4.1 - 2026-04-27
 
 ### 改进
@@ -97,6 +140,10 @@
 
 - 将版本从 `0.4.0` 提升到 `0.4.1`。
 - 同步更新 `pyproject.toml` 与 `uv.lock`。
+
+---
+
+<br>
 
 ## 0.4.0 - 2026-04-27
 
@@ -122,6 +169,10 @@
 
 - 修复 anti-drift CI 依赖安装，明确安装 `pyarrow` 和项目测试依赖。
 
+---
+
+<br>
+
 ## 0.3.0 - 2026-04-23
 
 ### 新增
@@ -144,6 +195,10 @@
 - 让 stale review handoff 在 reviewer launch 前失败。
 - 阻止 reviewer write-scope drift 后继续写 closure。
 
+---
+
+<br>
+
 ## 0.2.0 - 2026-04-16
 
 ### 新增
@@ -163,6 +218,10 @@
 
 - 修复 Codex-first delivery 和 runtime layering 的多处文档 / wrapper 不一致。
 - 缩小 shared skill drift，恢复 verification trust。
+
+---
+
+<br>
 
 ## 0.1.0 - 2026-04-09
 

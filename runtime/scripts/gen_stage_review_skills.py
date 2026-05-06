@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 import sys
 
@@ -12,7 +13,6 @@ from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_ga
 from runtime.tools.review_skillgen.render import render_stage_skill
 
 
-DRY_RUN = "--dry-run" in sys.argv[1:]
 GATE_SCHEMA_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
 CHECKLIST_SCHEMA_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
 REVIEW_SKILLS = {
@@ -46,20 +46,21 @@ SKILL_GROUPS = {
     "qros-csf-holdout-validation-review": "csf_holdout_validation",
 }
 
+HOST_OUTPUT_ROOTS: dict[str, str] = {
+    "codex": "skills",
+    "claude-code": ".claude-plugin/skills",
+}
+
+HOST_LABELS: dict[str, str] = {
+    "codex": "Codex",
+    "claude-code": "Claude Code",
+}
+
 
 def _require_existing_file(path: Path, *, label: str) -> Path:
     if not path.exists():
         raise FileNotFoundError(f"{label} not found: {path}")
     return path
-
-
-def _parse_output_root(argv: list[str]) -> Path:
-    if "--output-root" not in argv:
-        return ROOT
-    idx = argv.index("--output-root")
-    if idx + 1 >= len(argv):
-        raise SystemExit("--output-root requires a path")
-    return Path(argv[idx + 1]).resolve()
 
 
 def _render_skill_outputs(
@@ -68,30 +69,30 @@ def _render_skill_outputs(
     gates: dict,
     checklist: dict,
     output_root: Path,
+    host: str,
 ) -> dict[Path, str]:
     stage_name = gates["stages"][stage_key]["stage_name"]
-    skill_md = render_stage_skill(stage_key, skill_name, gates, checklist)
+    host_label = HOST_LABELS.get(host, "Codex")
+    skill_md = render_stage_skill(stage_key, skill_name, gates, checklist, host=host)
     openai_yaml = "\n".join(
         [
             f"name: {skill_name}",
-            f"description: Codex review skill for {stage_name} stage verification.",
+            f"description: {host_label} review skill for {stage_name} stage verification.",
             "",
         ]
     )
 
     skill_group = SKILL_GROUPS[skill_name]
-    skill_dir = output_root / "skills" / skill_group / skill_name
+    skills_root = HOST_OUTPUT_ROOTS.get(host, "skills")
+    skill_dir = output_root / skills_root / skill_group / skill_name
     return {
         skill_dir / "SKILL.md": skill_md,
         skill_dir / "agents" / "openai.yaml": openai_yaml,
     }
 
 
-def _write_skill(stage_key: str, skill_name: str, gates: dict, checklist: dict, output_root: Path) -> None:
-    outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, output_root)
-    skill_dir = output_root / "skills" / SKILL_GROUPS[skill_name] / skill_name
-    skill_dir.mkdir(parents=True, exist_ok=True)
-
+def _write_skill(stage_key: str, skill_name: str, gates: dict, checklist: dict, output_root: Path, host: str) -> None:
+    outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, output_root, host)
     for output_path, content in outputs.items():
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(content, encoding="utf-8")
@@ -107,22 +108,30 @@ def _is_fresh(outputs: dict[Path, str]) -> bool:
     return True
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate QROS stage review skills.")
+    parser.add_argument("--host", choices=["codex", "claude-code"], required=True)
+    parser.add_argument("--output-root", type=Path, default=ROOT)
+    parser.add_argument("--dry-run", action="store_true")
+    return parser.parse_args()
+
+
 def main() -> int:
-    output_root = _parse_output_root(sys.argv[1:])
+    args = _parse_args()
     gates = load_gate_schema(_require_existing_file(GATE_SCHEMA_PATH, label="gate schema"))
     checklist = load_checklist_schema(_require_existing_file(CHECKLIST_SCHEMA_PATH, label="checklist schema"))
 
     any_stale = False
     for stage_key, skill_name in REVIEW_SKILLS.items():
-        outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, output_root)
-        if DRY_RUN:
+        outputs = _render_skill_outputs(stage_key, skill_name, gates, checklist, args.output_root, args.host)
+        if args.dry_run:
             if _is_fresh(outputs):
                 print(f"FRESH: {skill_name}")
             else:
                 print(f"STALE: {skill_name}")
                 any_stale = True
         else:
-            _write_skill(stage_key, skill_name, gates, checklist, output_root)
+            _write_skill(stage_key, skill_name, gates, checklist, args.output_root, args.host)
 
     return 1 if any_stale else 0
 

@@ -13,16 +13,31 @@ Run this skill from the active research repo root. The current working directory
 
 Bring the user to the latest published `origin/main` version of QROS and leave the current working repo ready to use immediately.
 
+## Host awareness
+
+This skill is host-aware. The update behavior differs by host:
+
+- **Codex** (`--host codex`, default): Refreshes `~/.codex/skills/` and the current repo's `./.qros/` runtime.
+- **Claude Code** (`--host claude-code`): Refreshes `~/.claude/skills/` and the current repo's `./.qros/` runtime.
+
+Note: if QROS skills were installed via `/plugin install qros@quant-research-os`, the plugin-managed skill copy takes precedence over `~/.claude/skills/`. Run `/plugin update qros@quant-research-os` to refresh plugin-managed skills, then run this update for repo-local runtime refresh.
+
 ## Required behavior
 
 - Treat published `origin/main` as the source of truth.
 - Refresh both surfaces:
-  - global Codex install state under `~/.codex/skills/` and `~/.codex/qros/`
+  - global install state (Codex: `~/.codex/skills/` and `~/.codex/qros/`; Claude Code: `~/.claude/skills/` and `~/.claude/qros/`)
   - the current repo's local runtime under `./.qros/`
 - Prefer the stable update entry instead of replaying ad hoc shell steps:
 
+For Codex:
 ```bash
-<source_repo>/runtime/bin/qros-update --cwd "$PWD"
+<source_repo>/runtime/bin/qros-update --host codex --cwd "$PWD"
+```
+
+For Claude Code:
+```bash
+<source_repo>/runtime/bin/qros-update --host claude-code --cwd "$PWD"
 ```
 
 ## Self-heal expectations
@@ -64,6 +79,7 @@ After success, keep the user-facing message short:
 
 - confirm QROS was updated
 - include the installed commit
+- include the host name (Codex or Claude Code)
 - confirm the current repo's `./.qros/` runtime was refreshed
 
 Do not dump the full repair log unless the user asks.

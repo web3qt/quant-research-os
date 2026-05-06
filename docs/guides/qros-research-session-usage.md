@@ -10,6 +10,10 @@
 `docs/guides/stage-freeze-group-field-guide.md`
 当作 companion 说明文档一起看。它专门解释 `research_intent`、`scope_contract`、`window_contract`、`delivery_contract` 这类通用字段在回答什么问题。
 
+<br>
+
+---
+
 ## 当前覆盖边界
 
 当前版本覆盖：
@@ -48,6 +52,10 @@
 当前版本**不会**继续进入：
 
 - 更后面的研究阶段
+
+<br>
+
+---
 
 ## 用户入口
 
@@ -98,6 +106,10 @@ QROS 仓库是工作流框架，不是研究产物仓。安装后，agent 应该
 - 如果 `raw_idea` 解析出的 slug 已经存在，runtime 会阻止隐式 resume，并要求你显式给出 `lineage_id` 才继续那条线
 
 
+<br>
+
+---
+
 ## 硬门禁：Lineage-local Stage Programs
 
 从 `mandate` 开始，session runtime 只做治理，不再把 framework-side shared build helper 当作阶段完成来源。每个可执行阶段都要满足：
@@ -122,7 +134,7 @@ Canonical program tree：
 
 真实研究流里，`mandate` 之后的 stage program 由 Codex 在当前 author lane 显式生成或刷新；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper。每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 `program_hash`、entrypoint、authoring session 和 output refs 记账，其中 `program_hash` 记录的是整个 `program_dir` 的 hash，而不是单个 `run_stage.py` 文件。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder；fixture/demo-only helper 也必须与真实研究流主路径隔离。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。这时正确动作不是等 runtime 补默认程序，而是让 Codex 在当前 research repo 中显式生成或刷新本 stage 的 lineage-local stage program。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。对大 stage，stage program 可以声明 `prebuild_schema_gate`，让 runtime 先跑 dry-run schema report，检查 required columns、primary key、coverage fields 和 manifest fields，通过后才触发全量 build。当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这就是当前的 mandate-first / mandate-only rollout truth。只要 `mandate` 的 `author/formal/*` required outputs 已齐，runtime 就会先跑 `qros-review-preflight`。如果 author outputs 过不了这道 reviewer-lane gate，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。对 `mandate` 来说，preflight 不是 optional hygiene check，而是 reviewer lane 之前的强制门禁，必须先拦下 thin wrapper stage program、placeholder 文件和 contract-only fake machine artifacts。其余 post-mandate `*_review_confirmation_pending` 目前仍要求主 Agent 完成 `review-ready` 自查与 handoff 准备，但 runtime 还没有统一自动执行这道 deterministic preflight；不要把它写成已经全量 rollout。新的治理方向下，review 不再要求你手动再开一个 Codex review session；显式动作改成进入对应的 `qros-*-review`。该 stage-specific review skill 会在**当前会话**里用 `spawn_agent` 拉起 reviewer 子代理，再调用 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 request/receipt 并生成 reviewer handoff prompt；reviewer 子代理完成后运行输出的 `./.qros/bin/qros-review` closer 命令做 raw findings 规范化、write-scope audit 和 closure。
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。这时正确动作不是等 runtime 补默认程序，而是让 Codex 在当前 research repo 中显式生成或刷新本 stage 的 lineage-local stage program。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。对大 stage，stage program 可以声明 `prebuild_schema_gate`，让 runtime 先跑 dry-run schema report，检查 required columns、primary key、coverage fields 和 manifest fields，通过后才触发全量 build。当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这就是当前的 mandate-first / mandate-only rollout truth。只要 `mandate` 的 `author/formal/*` required outputs 已齐，runtime 就会先跑 `qros-review-preflight`。如果 author outputs 过不了这道 reviewer-lane gate，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。对 `mandate` 来说，preflight 不是 optional hygiene check，而是 reviewer lane 之前的强制门禁，必须先拦下 thin wrapper stage program、placeholder 文件和 contract-only fake machine artifacts。其余 post-mandate `*_review_confirmation_pending` 目前仍要求主 Agent 完成 `review-ready` 自查与 handoff 准备，但 runtime 还没有统一自动执行这道 deterministic preflight；不要把它写成已经全量 rollout。新的治理方向下，review 不再要求你手动再开一个 Codex review session；显式动作改成进入对应的 `qros-*-review`。该 stage-specific review skill 会在**当前会话**里通过 host 特定的机制拉起 reviewer 子代理（Codex 下为 `spawn_agent`，Claude Code 下通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task），再调用 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 request/receipt 并生成 reviewer handoff prompt；reviewer 子代理完成后运行输出的 `./.qros/bin/qros-review` closer 命令做 raw findings 规范化、write-scope audit 和 closure。
 
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 
@@ -150,7 +162,7 @@ Canonical program tree：
 
 - `review/review_cycle_trace.jsonl`
 
-它会把 request、receipt、audit、review verdict 这些关键节点记下来。以后你拿 `review_cycle_id`、`reviewer_session_id`、`spawned_agent_id` 或 `launcher_thread_id` 做回溯，会比只看聊天记录顺得多。
+它会把 request、receipt、audit、review verdict 这些关键节点记下来。以后你拿 `review_cycle_id`、`reviewer_session_id`、`reviewer_agent_id` 或 `launcher_thread_id` 做回溯，会比只看聊天记录顺得多。
 
 如果 reviewer 返回 `FIX_REQUIRED`，主 Agent 也不应该直接原地再叫一个 reviewer 来“复看一眼”。正确顺序是：
 
@@ -213,6 +225,10 @@ failure package 也会接管 runtime 状态。若最新 `failure_packages/*/post
 `csf_backtest_ready` 也采用 contract-first 口径：`contracts/artifacts/csf_backtest_ready_artifacts.yaml` 是 backtest formal artifact shape 真值，skill 只解释确认顺序、组合语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_backtest_ready`，并通过 csf_backtest_ready semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_backtest_ready` review。该 preflight 会检查 `portfolio_contract.yaml`、`portfolio_weight_panel.parquet`、`turnover_capacity_report.parquet`、`portfolio_summary.parquet`、`csf_backtest_gate_table.csv`、`csf_backtest_gate_decision.md`、`target_strategy_compare.parquet` 与上游 `csf_test_evidence` selected variants 的绑定。
 
 `csf_holdout_validation` 也采用 contract-first 口径：`contracts/artifacts/csf_holdout_validation_artifacts.yaml` 是 holdout formal artifact shape 真值，skill 只解释确认顺序、最终验证语义和 review 边界。author build 后必须运行 `qros-validate-stage --stage csf_holdout_validation`，并通过 csf_holdout_validation semantic validator / deterministic preflight；validator/preflight 不通过，不得进入 `csf_holdout_validation` review。该 preflight 会检查 `csf_holdout_run_manifest.json`、`holdout_factor_diagnostics.parquet`、`holdout_test_compare.parquet`、`holdout_portfolio_compare.parquet`、`rolling_holdout_stability.json`、`regime_shift_audit.json` 与上游 `csf_backtest_ready` frozen portfolio / selected variants 的绑定。
+
+<br>
+
+---
 
 ## 内部 Runtime
 
@@ -418,6 +434,10 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 - reviewer child 只写 `review/result/*`
 - 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
+<br>
+
+---
+
 ## 阶段识别方式
 
 session runtime 会按下面这个顺序检查磁盘状态：
@@ -439,6 +459,10 @@ session runtime 会按下面这个顺序检查磁盘状态：
 15. 收到最终 `CONFIRM_NEXT_STAGE` 后 -> `<route>_holdout_validation_review_complete`，例如 `tss_holdout_validation_review_complete` 或 `csf_holdout_validation_review_complete`
 
 如果某个 reviewed stage 的 closure verdict 是 `PASS FOR RETRY`、`RETRY`、`NO-GO` 或 `CHILD LINEAGE`，session 必须停止正常推进，转入 `qros-stage-failure-handler`，而不是继续打开下一个阶段。
+
+<br>
+
+---
 
 ## 预期用户体验
 
@@ -464,6 +488,10 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - 对 TSS，用户会看到 `tss_data_ready`、`tss_signal_ready`、`tss_train_freeze`、`tss_test_evidence`、`tss_backtest_ready`、`tss_holdout_validation`
 - 对 CSF，用户会看到 `csf_data_ready`、`csf_signal_ready`、`csf_train_freeze`、`csf_test_evidence`、`csf_backtest_ready`、`csf_holdout_validation`
 - 不把空目录、placeholder 文件或只有合同语义的 markdown 视为任何 route-specific stage 已完成
+
+<br>
+
+---
 
 ## 示例路径
 
@@ -537,6 +565,10 @@ session runtime 会按下面这个顺序检查磁盘状态：
 67. 这个 build 应该真实物化 single-window、merged-window 和 comparison outputs，而不是只 scaffold 目录或写 placeholder 文件
 68. tss_holdout_validation review closure 完成后，QROS 先进入 `tss_holdout_validation_next_stage_confirmation_pending`；收到最终 `CONFIRM_NEXT_STAGE` 后进入 `tss_holdout_validation_review_complete`，而不是继续进入更后面的治理阶段
 
+<br>
+
+---
+
 ## 为什么需要它
 
 这个设计的目标，是把内部脚本隐藏在一个一致的 skill 流程后面。
@@ -546,7 +578,7 @@ session runtime 会按下面这个顺序检查磁盘状态：
 在 review 阶段，session 现在会显式区分几类状态：
 
 - `awaiting_adversarial_review`：当前 stage 还没有 active review cycle，或 reviewer 子代理尚未写出 review 结果
-- `awaiting_spawned_reviewer_completion`：active review cycle 已注册，当前只等待该 reviewer 子代理落 `review/result/*`
+- `awaiting_reviewer_completion`：active review cycle 已注册，当前只等待该 reviewer 子代理落 `review/result/*`
 - `awaiting_reviewer_write_scope_audit`：closure-ready result 已存在，但 deterministic closer 还没完成 audit / closure
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须显式回 author lane 修复
 - `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closer 写正式 closure artifacts

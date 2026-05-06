@@ -9,7 +9,7 @@ from tests.session.test_research_session_runtime import _write_minimal_stage_out
 from runtime.tools.research_session import _program_spec_for_session_stage, run_research_session
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
-    issue_spawned_reviewer_receipt,
+    issue_reviewer_receipt,
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
@@ -112,20 +112,20 @@ def _request_review_cycle_id(stage_dir: Path) -> str:
     return _review_request_payload(stage_dir)["review_cycle_id"]
 
 
-def _write_spawned_reviewer_receipt(
+def _write_reviewer_receipt(
     stage_dir: Path,
     *,
     reviewer_identity: str = "reviewer-agent",
     reviewer_session_id: str = "reviewer-session",
-    spawned_agent_id: str = "reviewer-child-agent",
+    reviewer_agent_id: str = "reviewer-child-agent",
 ) -> None:
-    issue_spawned_reviewer_receipt(
+    issue_reviewer_receipt(
         stage_dir,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id="launcher-session",
         launcher_thread_id="leader-thread",
-        spawned_agent_id=spawned_agent_id,
+        reviewer_agent_id=reviewer_agent_id,
     )
 
 
@@ -206,7 +206,7 @@ def test_run_stage_review_rejects_self_review_from_runtime_contract(tmp_path: Pa
         stage_key="mandate",
         author_identity="author-agent",
     )
-    _write_spawned_reviewer_receipt(stage_dir, reviewer_identity="author-agent")
+    _write_reviewer_receipt(stage_dir, reviewer_identity="author-agent")
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -238,7 +238,7 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
         stage_key="mandate",
         author_identity="author-agent",
     )
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -343,7 +343,7 @@ def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) 
         stage_key="mandate",
         author_identity="author-agent",
     )
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -377,7 +377,7 @@ def test_run_stage_review_rewrites_scope_to_match_runtime_request(tmp_path: Path
         stage_key="mandate",
         author_identity="author-agent",
     )
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",
@@ -476,7 +476,7 @@ def test_run_research_session_reports_awaiting_adversarial_review_with_route_par
     assert status.current_skill == expected_skill
     assert status.stage_status == "awaiting_adversarial_review"
     assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
-    assert "spawned_reviewer_receipt.yaml" in (status.blocking_reason or "")
+    assert "reviewer_receipt.yaml" in (status.blocking_reason or "")
 
 
 @pytest.mark.parametrize(
@@ -514,7 +514,7 @@ def test_run_research_session_routes_fix_required_back_to_author_with_route_pari
         stage_dir_name=stage_dir_name,
     )
     _write_adversarial_review_request(stage_dir, stage_key=stage_key)
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key=stage_key,
@@ -532,20 +532,20 @@ def test_run_research_session_routes_fix_required_back_to_author_with_route_pari
     assert "fresh reviewer cycle" in status.next_action
 
 
-def test_run_research_session_waits_for_spawned_reviewer_child_after_receipt(tmp_path: Path) -> None:
+def test_run_research_session_waits_for_reviewer_child_after_receipt(tmp_path: Path) -> None:
     outputs_root, stage_dir = _prepare_review_runtime_case(
         tmp_path,
-        lineage_id="btc_spawned_wait_case",
+        lineage_id="btc_reviewer_wait_case",
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
     _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
-    _write_spawned_reviewer_receipt(stage_dir, spawned_agent_id="reviewer-child-agent")
+    _write_reviewer_receipt(stage_dir, reviewer_agent_id="reviewer-child-agent")
 
-    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_spawned_wait_case")
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_reviewer_wait_case")
 
     assert status.current_stage == "test_evidence_review"
-    assert status.stage_status == "awaiting_spawned_reviewer_completion"
+    assert status.stage_status == "awaiting_reviewer_completion"
     assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
     assert "reviewer-child-agent" in (status.blocking_reason or "")
     assert "reviewer-child-agent" in status.next_action
@@ -559,7 +559,7 @@ def test_run_research_session_waits_for_reviewer_write_scope_audit_before_closur
         stage_dir_name="05_test_evidence",
     )
     _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="test_evidence",
@@ -598,8 +598,8 @@ def test_run_research_session_keeps_review_pending_when_result_exists_without_re
     assert status.current_stage == "test_evidence_review"
     assert status.stage_status == "awaiting_adversarial_review"
     assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
-    assert "spawned_reviewer_receipt.yaml" in (status.blocking_reason or "")
-    assert "spawned_reviewer_receipt.yaml" in status.next_action
+    assert "reviewer_receipt.yaml" in (status.blocking_reason or "")
+    assert "reviewer_receipt.yaml" in status.next_action
 
 
 def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_path: Path) -> None:
@@ -610,19 +610,22 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
         stage_dir_name="05_test_evidence",
     )
     _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_yaml(
-        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
+        stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
-            "review_cycle_id": _request_review_cycle_id(stage_dir),
+            "review_cycle_id": "bad-mismatched-cycle-id",
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",
-            "spawn_mode": "spawned_agent",
-            "spawned_agent_id": "reviewer-child-agent",
-            "fork_context": True,
+            "host": "codex",
+            "execution_mode": "spawned_agent",
+            "reviewer_invocation_kind": "codex_spawn_agent",
+            "context_isolation_policy": "fork_context_false",
+            "handoff_delivery_method": "send_input",
+            "reviewer_agent_id": "reviewer-child-agent",
             "write_root": "review/result",
-            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": _review_request_payload(stage_dir)["handoff_manifest_digest"],
             "requested_reviewer_identity": "reviewer-agent",
             "requested_reviewer_session_id": "reviewer-session",
@@ -636,7 +639,7 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
     assert status.stage_status == "awaiting_adversarial_review"
     assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
     assert "proof chain is invalid" in (status.blocking_reason or "")
-    assert "spawned_reviewer_receipt.yaml" in status.next_action
+    assert "reviewer_receipt.yaml" in status.next_action
 
 
 def test_run_research_session_keeps_review_pending_when_request_handoff_is_invalid(tmp_path: Path) -> None:
@@ -669,7 +672,7 @@ def test_run_research_session_invalidates_stale_review_cycle_after_author_output
         stage_dir_name="05_test_evidence",
     )
     _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="test_evidence",
@@ -689,7 +692,7 @@ def test_run_research_session_invalidates_stale_review_cycle_after_author_output
     assert "stale" in (status.blocking_reason or "").lower()
 
 
-def test_run_stage_review_rejects_missing_spawned_reviewer_receipt(tmp_path: Path) -> None:
+def test_run_stage_review_rejects_missing_reviewer_receipt(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
     _write_adversarial_review_result(
@@ -700,7 +703,7 @@ def test_run_stage_review_rejects_missing_spawned_reviewer_receipt(tmp_path: Pat
         write_audit=False,
     )
 
-    with pytest.raises(ValueError, match="spawned_reviewer_receipt"):
+    with pytest.raises(ValueError, match="reviewer_receipt"):
         run_stage_review(
             cwd=stage_dir,
             reviewer_identity="reviewer-agent",
@@ -713,7 +716,7 @@ def test_run_stage_review_rejects_missing_spawned_reviewer_receipt(tmp_path: Pat
 def test_run_stage_review_rejects_reviewer_binding_mismatch(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
-    _write_spawned_reviewer_receipt(
+    _write_reviewer_receipt(
         stage_dir,
         reviewer_identity="other-reviewer",
         reviewer_session_id="other-session",
@@ -726,7 +729,7 @@ def test_run_stage_review_rejects_reviewer_binding_mismatch(tmp_path: Path) -> N
         write_audit=False,
     )
 
-    with pytest.raises(ValueError, match="spawned_reviewer_receipt"):
+    with pytest.raises(ValueError, match="reviewer_receipt"):
         run_stage_review(
             cwd=stage_dir,
             reviewer_identity="reviewer-agent",
@@ -736,21 +739,24 @@ def test_run_stage_review_rejects_reviewer_binding_mismatch(tmp_path: Path) -> N
         )
 
 
-def test_run_stage_review_rejects_missing_spawned_agent_id(tmp_path: Path) -> None:
+def test_run_stage_review_rejects_missing_reviewer_agent_id(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_yaml(
-        stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml",
+        stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
             "review_cycle_id": _request_review_cycle_id(stage_dir),
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",
-            "spawn_mode": "spawned_agent",
-            "fork_context": False,
+            "execution_mode": "spawned_agent",
+            "host": "codex",
+            "reviewer_invocation_kind": "codex_spawn_agent",
+            "context_isolation_policy": "fork_context_false",
+            "handoff_delivery_method": "send_input",
             "write_root": "review/result",
-            "handoff_manifest_path": "review/request/spawned_reviewer_handoff_manifest.yaml",
+            "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": _review_request_payload(stage_dir)["handoff_manifest_digest"],
             "requested_reviewer_identity": "reviewer-agent",
             "requested_reviewer_session_id": "reviewer-session",
@@ -765,7 +771,7 @@ def test_run_stage_review_rejects_missing_spawned_agent_id(tmp_path: Path) -> No
         write_audit=False,
     )
 
-    with pytest.raises(ValueError, match="spawned_agent_id"):
+    with pytest.raises(ValueError, match="reviewer_agent_id"):
         run_stage_review(
             cwd=stage_dir,
             reviewer_identity="reviewer-agent",
@@ -778,7 +784,7 @@ def test_run_stage_review_rejects_missing_spawned_agent_id(tmp_path: Path) -> No
 def test_run_stage_review_recreates_missing_reviewer_write_scope_audit(tmp_path: Path) -> None:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage_key="mandate",

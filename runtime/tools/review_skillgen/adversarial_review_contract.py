@@ -17,8 +17,8 @@ from runtime.tools.review_skillgen.review_scope_builder import (
 
 ADVERSARIAL_REVIEW_REQUEST_FILENAME = "adversarial_review_request.yaml"
 ADVERSARIAL_REVIEW_RESULT_FILENAME = "adversarial_review_result.yaml"
-SPAWNED_REVIEWER_RECEIPT_FILENAME = "spawned_reviewer_receipt.yaml"
-SPAWNED_REVIEWER_HANDOFF_MANIFEST_FILENAME = "spawned_reviewer_handoff_manifest.yaml"
+REVIEWER_RECEIPT_FILENAME = "reviewer_receipt.yaml"
+REVIEWER_HANDOFF_MANIFEST_FILENAME = "reviewer_handoff_manifest.yaml"
 REVIEW_FINDINGS_FILENAME = "review_findings.yaml"
 REQUIRED_REVIEWER_MODE = "adversarial"
 REVIEWER_EXECUTION_MODE_SPAWNED = "spawned_agent"
@@ -32,6 +32,39 @@ REQUIRED_REVIEWER_HISTORY_INHERITANCE = "none"
 REQUIRED_RESULT_WRITE_ROOT = "review/result"
 RUNTIME_LAUNCHER_OWNER = "qros-runtime-launcher"
 REQUIRED_LAUNCHER_REVIEW_READY_STATUS = "complete"
+
+ALLOWED_HOSTS = {"codex", "claude-code"}
+REVIEWER_INVOCATION_KIND_CODEX_SPAWN = "codex_spawn_agent"
+REVIEWER_INVOCATION_KIND_CLAUDE_PLUGIN = "claude_plugin_agent"
+ALLOWED_REVIEWER_INVOCATION_KINDS = {
+    REVIEWER_INVOCATION_KIND_CODEX_SPAWN,
+    REVIEWER_INVOCATION_KIND_CLAUDE_PLUGIN,
+}
+CONTEXT_ISOLATION_FORK_FALSE = "fork_context_false"
+CONTEXT_ISOLATION_SEPARATE_SUBAGENT = "separate_subagent_context"
+ALLOWED_CONTEXT_ISOLATION_POLICIES = {
+    CONTEXT_ISOLATION_FORK_FALSE,
+    CONTEXT_ISOLATION_SEPARATE_SUBAGENT,
+}
+HANDOFF_DELIVERY_SEND_INPUT = "send_input"
+HANDOFF_DELIVERY_AGENT_TASK = "agent_task_context"
+ALLOWED_HANDOFF_DELIVERY_METHODS = {
+    HANDOFF_DELIVERY_SEND_INPUT,
+    HANDOFF_DELIVERY_AGENT_TASK,
+}
+
+HOST_REVIEWER_INVOCATION_KIND: dict[str, str] = {
+    "codex": REVIEWER_INVOCATION_KIND_CODEX_SPAWN,
+    "claude-code": REVIEWER_INVOCATION_KIND_CLAUDE_PLUGIN,
+}
+HOST_CONTEXT_ISOLATION: dict[str, str] = {
+    "codex": CONTEXT_ISOLATION_FORK_FALSE,
+    "claude-code": CONTEXT_ISOLATION_SEPARATE_SUBAGENT,
+}
+HOST_HANDOFF_DELIVERY: dict[str, str] = {
+    "codex": HANDOFF_DELIVERY_SEND_INPUT,
+    "claude-code": HANDOFF_DELIVERY_AGENT_TASK,
+}
 FIX_REQUIRED_OUTCOME = "FIX_REQUIRED"
 CLOSURE_READY_OUTCOMES = {
     "CLOSURE_READY_PASS": "PASS",
@@ -97,11 +130,11 @@ def _stage_dir_from_request_path(request_path: Path) -> Path:
 
 
 def _handoff_manifest_path_for_stage(stage_dir: Path) -> Path:
-    return stage_dir / "review" / "request" / SPAWNED_REVIEWER_HANDOFF_MANIFEST_FILENAME
+    return stage_dir / "review" / "request" / REVIEWER_HANDOFF_MANIFEST_FILENAME
 
 
 def _receipt_path_for_stage(stage_dir: Path) -> Path:
-    return stage_dir / "review" / "request" / SPAWNED_REVIEWER_RECEIPT_FILENAME
+    return stage_dir / "review" / "request" / REVIEWER_RECEIPT_FILENAME
 
 
 def _expected_launcher_handoff_context_paths(required_artifact_paths: list[str]) -> list[str]:
@@ -450,7 +483,7 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
     manifest_text = manifest_path.read_text(encoding="utf-8")
     if _digest_text(manifest_text) != data["handoff_manifest_digest"]:
         raise ValueError(f"{request_path}: handoff manifest digest does not match {manifest_path}")
-    manifest_payload = load_spawned_reviewer_handoff_manifest(manifest_path)
+    manifest_payload = load_reviewer_handoff_manifest(manifest_path)
     for key in (
         "review_cycle_id",
         "lineage_id",
@@ -474,7 +507,7 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def load_spawned_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
+def load_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
     manifest_path = Path(path)
     payload = _require_mapping(manifest_path)
     data = {
@@ -555,30 +588,37 @@ def load_spawned_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def issue_spawned_reviewer_receipt(
+def issue_reviewer_receipt(
     stage_dir: Path,
     *,
     reviewer_identity: str,
     reviewer_session_id: str,
     launcher_session_id: str,
     launcher_thread_id: str,
-    spawned_agent_id: str,
-    spawn_mode: str = REVIEWER_EXECUTION_MODE_SPAWNED,
+    reviewer_agent_id: str,
+    execution_mode: str = REVIEWER_EXECUTION_MODE_SPAWNED,
+    host: str = "codex",
     launcher_owner: str = RUNTIME_LAUNCHER_OWNER,
 ) -> dict[str, Any]:
     from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
+
+    if host not in ALLOWED_HOSTS:
+        raise ValueError(f"unsupported host: {host!r}")
 
     request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
     request_payload = load_adversarial_review_request(request_path)
     receipt_path = _receipt_path_for_stage(stage_dir)
     payload = {
         "review_cycle_id": request_payload["review_cycle_id"],
+        "host": host,
         "launcher_owner": launcher_owner,
         "launcher_session_id": launcher_session_id,
         "launcher_thread_id": launcher_thread_id,
-        "spawn_mode": spawn_mode,
-        "spawned_agent_id": spawned_agent_id,
-        "fork_context": False,
+        "execution_mode": execution_mode,
+        "reviewer_invocation_kind": HOST_REVIEWER_INVOCATION_KIND[host],
+        "context_isolation_policy": HOST_CONTEXT_ISOLATION[host],
+        "handoff_delivery_method": HOST_HANDOFF_DELIVERY[host],
+        "reviewer_agent_id": reviewer_agent_id,
         "write_root": REQUIRED_RESULT_WRITE_ROOT,
         "handoff_manifest_path": request_payload["handoff_manifest_path"],
         "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
@@ -587,13 +627,13 @@ def issue_spawned_reviewer_receipt(
         "receipt_written_at": datetime.now(timezone.utc).isoformat(),
     }
     if receipt_path.exists():
-        existing = load_spawned_reviewer_receipt(receipt_path)
+        existing = load_reviewer_receipt(receipt_path)
         if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
             write_reviewer_write_scope_baseline(
                 stage_dir,
                 review_cycle_id=existing["review_cycle_id"],
                 launcher_thread_id=existing["launcher_thread_id"],
-                spawned_agent_id=existing["spawned_agent_id"],
+                reviewer_agent_id=existing["reviewer_agent_id"],
             )
             return existing
     receipt_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
@@ -601,18 +641,21 @@ def issue_spawned_reviewer_receipt(
         stage_dir,
         review_cycle_id=payload["review_cycle_id"],
         launcher_thread_id=payload["launcher_thread_id"],
-        spawned_agent_id=payload["spawned_agent_id"],
+        reviewer_agent_id=payload["reviewer_agent_id"],
     )
     append_review_cycle_event(
         stage_dir,
         event_type="receipt_issued",
         review_cycle_id=payload["review_cycle_id"],
         payload={
+            "host": payload["host"],
             "launcher_session_id": payload["launcher_session_id"],
             "launcher_thread_id": payload["launcher_thread_id"],
             "requested_reviewer_identity": payload["requested_reviewer_identity"],
             "requested_reviewer_session_id": payload["requested_reviewer_session_id"],
-            "spawned_agent_id": payload["spawned_agent_id"],
+            "reviewer_agent_id": payload["reviewer_agent_id"],
+            "execution_mode": payload["execution_mode"],
+            "context_isolation_policy": payload["context_isolation_policy"],
             "write_root": payload["write_root"],
             "handoff_manifest_digest": payload["handoff_manifest_digest"],
         },
@@ -620,19 +663,22 @@ def issue_spawned_reviewer_receipt(
     return payload
 
 
-def load_spawned_reviewer_receipt(path: str | Path) -> dict[str, Any]:
+def load_reviewer_receipt(path: str | Path) -> dict[str, Any]:
     receipt_path = Path(path)
     if not receipt_path.exists():
-        raise ValueError(f"{receipt_path}: {SPAWNED_REVIEWER_RECEIPT_FILENAME} is missing")
+        raise ValueError(f"{receipt_path}: {REVIEWER_RECEIPT_FILENAME} is missing")
     payload = _require_mapping(receipt_path)
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=receipt_path),
+        "host": _require_string(payload, "host", path=receipt_path),
         "launcher_owner": _require_string(payload, "launcher_owner", path=receipt_path),
         "launcher_session_id": _require_string(payload, "launcher_session_id", path=receipt_path),
         "launcher_thread_id": _require_string(payload, "launcher_thread_id", path=receipt_path),
-        "spawn_mode": _require_string(payload, "spawn_mode", path=receipt_path),
-        "spawned_agent_id": _require_string(payload, "spawned_agent_id", path=receipt_path),
-        "fork_context": _require_bool(payload, "fork_context", path=receipt_path),
+        "execution_mode": _require_string(payload, "execution_mode", path=receipt_path),
+        "reviewer_invocation_kind": _require_string(payload, "reviewer_invocation_kind", path=receipt_path),
+        "context_isolation_policy": _require_string(payload, "context_isolation_policy", path=receipt_path),
+        "handoff_delivery_method": _require_string(payload, "handoff_delivery_method", path=receipt_path),
+        "reviewer_agent_id": _require_string(payload, "reviewer_agent_id", path=receipt_path),
         "write_root": _require_string(payload, "write_root", path=receipt_path),
         "handoff_manifest_path": _require_string(payload, "handoff_manifest_path", path=receipt_path),
         "handoff_manifest_digest": _require_string(payload, "handoff_manifest_digest", path=receipt_path),
@@ -640,9 +686,23 @@ def load_spawned_reviewer_receipt(path: str | Path) -> dict[str, Any]:
         "requested_reviewer_session_id": _require_string(payload, "requested_reviewer_session_id", path=receipt_path),
         "receipt_written_at": _require_string(payload, "receipt_written_at", path=receipt_path),
     }
-    if data["spawn_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
+    if data["host"] not in ALLOWED_HOSTS:
+        raise ValueError(f"{receipt_path}: host must be one of {sorted(ALLOWED_HOSTS)!r}")
+    if data["execution_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
         raise ValueError(
-            f"{receipt_path}: spawn_mode must be one of {sorted(ALLOWED_REVIEWER_EXECUTION_MODES)!r}"
+            f"{receipt_path}: execution_mode must be one of {sorted(ALLOWED_REVIEWER_EXECUTION_MODES)!r}"
+        )
+    if data["reviewer_invocation_kind"] not in ALLOWED_REVIEWER_INVOCATION_KINDS:
+        raise ValueError(
+            f"{receipt_path}: reviewer_invocation_kind must be one of {sorted(ALLOWED_REVIEWER_INVOCATION_KINDS)!r}"
+        )
+    if data["context_isolation_policy"] not in ALLOWED_CONTEXT_ISOLATION_POLICIES:
+        raise ValueError(
+            f"{receipt_path}: context_isolation_policy must be one of {sorted(ALLOWED_CONTEXT_ISOLATION_POLICIES)!r}"
+        )
+    if data["handoff_delivery_method"] not in ALLOWED_HANDOFF_DELIVERY_METHODS:
+        raise ValueError(
+            f"{receipt_path}: handoff_delivery_method must be one of {sorted(ALLOWED_HANDOFF_DELIVERY_METHODS)!r}"
         )
     return data
 
@@ -754,9 +814,9 @@ def validate_receipt_against_request(
         receipt_payload=receipt_payload,
     )
     if receipt_payload["requested_reviewer_identity"] != runtime_identity.reviewer_identity:
-        raise ValueError("runtime reviewer identity does not match spawned_reviewer_receipt.yaml")
+        raise ValueError("runtime reviewer identity does not match reviewer_receipt.yaml")
     if receipt_payload["requested_reviewer_session_id"] != runtime_identity.reviewer_session_id:
-        raise ValueError("runtime reviewer session does not match spawned_reviewer_receipt.yaml")
+        raise ValueError("runtime reviewer session does not match reviewer_receipt.yaml")
 
 
 def validate_receipt_contract(
@@ -765,25 +825,55 @@ def validate_receipt_contract(
     receipt_payload: dict[str, Any],
 ) -> None:
     if receipt_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
-        raise ValueError("spawned_reviewer_receipt.yaml review_cycle_id does not match the active request")
+        raise ValueError("reviewer_receipt.yaml review_cycle_id does not match the active request")
     if receipt_payload["launcher_owner"] != RUNTIME_LAUNCHER_OWNER:
-        raise ValueError("spawned_reviewer_receipt.yaml launcher_owner is not the fixed runtime launcher")
-    if receipt_payload["spawn_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
+        raise ValueError("reviewer_receipt.yaml launcher_owner is not the fixed runtime launcher")
+    if receipt_payload["host"] not in ALLOWED_HOSTS:
+        raise ValueError(f"reviewer_receipt.yaml host must be one of {sorted(ALLOWED_HOSTS)!r}")
+    if receipt_payload["execution_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
         raise ValueError(
-            "spawned_reviewer_receipt.yaml spawn_mode must be a supported review execution mode"
+            "reviewer_receipt.yaml execution_mode must be a supported review execution mode"
         )
-    if not receipt_payload["spawned_agent_id"].strip():
-        raise ValueError("spawned_reviewer_receipt.yaml spawned_agent_id must be a non-empty string")
+    if receipt_payload["reviewer_invocation_kind"] not in ALLOWED_REVIEWER_INVOCATION_KINDS:
+        raise ValueError(
+            "reviewer_receipt.yaml reviewer_invocation_kind must be a supported invocation kind"
+        )
+    if receipt_payload["context_isolation_policy"] not in ALLOWED_CONTEXT_ISOLATION_POLICIES:
+        raise ValueError(
+            "reviewer_receipt.yaml context_isolation_policy must be a supported isolation policy"
+        )
+    if receipt_payload["handoff_delivery_method"] not in ALLOWED_HANDOFF_DELIVERY_METHODS:
+        raise ValueError(
+            "reviewer_receipt.yaml handoff_delivery_method must be a supported handoff delivery method"
+        )
+    expected_invocation_kind = HOST_REVIEWER_INVOCATION_KIND.get(receipt_payload["host"])
+    if receipt_payload["reviewer_invocation_kind"] != expected_invocation_kind:
+        raise ValueError(
+            f"reviewer_receipt.yaml reviewer_invocation_kind {receipt_payload['reviewer_invocation_kind']!r} "
+            f"does not match expected {expected_invocation_kind!r} for host {receipt_payload['host']!r}"
+        )
+    expected_isolation = HOST_CONTEXT_ISOLATION.get(receipt_payload["host"])
+    if receipt_payload["context_isolation_policy"] != expected_isolation:
+        raise ValueError(
+            f"reviewer_receipt.yaml context_isolation_policy {receipt_payload['context_isolation_policy']!r} "
+            f"does not match expected {expected_isolation!r} for host {receipt_payload['host']!r}"
+        )
+    expected_handoff = HOST_HANDOFF_DELIVERY.get(receipt_payload["host"])
+    if receipt_payload["handoff_delivery_method"] != expected_handoff:
+        raise ValueError(
+            f"reviewer_receipt.yaml handoff_delivery_method {receipt_payload['handoff_delivery_method']!r} "
+            f"does not match expected {expected_handoff!r} for host {receipt_payload['host']!r}"
+        )
+    if not receipt_payload["reviewer_agent_id"].strip():
+        raise ValueError("reviewer_receipt.yaml reviewer_agent_id must be a non-empty string")
     if not receipt_payload["launcher_thread_id"].strip():
-        raise ValueError("spawned_reviewer_receipt.yaml launcher_thread_id must be a non-empty string")
-    if receipt_payload["fork_context"] is not False:
-        raise ValueError("spawned_reviewer_receipt.yaml fork_context must be false")
+        raise ValueError("reviewer_receipt.yaml launcher_thread_id must be a non-empty string")
     if receipt_payload["write_root"] != request_payload["required_result_write_root"]:
-        raise ValueError("spawned_reviewer_receipt.yaml write_root does not match the active request")
+        raise ValueError("reviewer_receipt.yaml write_root does not match the active request")
     if receipt_payload["handoff_manifest_path"] != request_payload["handoff_manifest_path"]:
-        raise ValueError("spawned_reviewer_receipt.yaml handoff_manifest_path does not match the active request")
+        raise ValueError("reviewer_receipt.yaml handoff_manifest_path does not match the active request")
     if receipt_payload["handoff_manifest_digest"] != request_payload["handoff_manifest_digest"]:
-        raise ValueError("spawned_reviewer_receipt.yaml handoff_manifest_digest does not match the active request")
+        raise ValueError("reviewer_receipt.yaml handoff_manifest_digest does not match the active request")
 
 
 def validate_result_against_request(
@@ -835,18 +925,18 @@ def validate_result_contract(
     if result_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
         raise ValueError("adversarial_review_result.yaml review_cycle_id does not match the active request")
     if receipt_payload["requested_reviewer_identity"] != result_payload["reviewer_identity"]:
-        raise ValueError("adversarial_review_result.yaml reviewer_identity does not match spawned_reviewer_receipt.yaml")
+        raise ValueError("adversarial_review_result.yaml reviewer_identity does not match reviewer_receipt.yaml")
     if receipt_payload["requested_reviewer_session_id"] != result_payload["reviewer_session_id"]:
-        raise ValueError("adversarial_review_result.yaml reviewer_session_id does not match spawned_reviewer_receipt.yaml")
-    if receipt_payload["spawned_agent_id"] != result_payload["reviewer_agent_id"]:
-        raise ValueError("adversarial_review_result.yaml reviewer_agent_id does not match spawned_reviewer_receipt.yaml")
+        raise ValueError("adversarial_review_result.yaml reviewer_session_id does not match reviewer_receipt.yaml")
+    if receipt_payload["reviewer_agent_id"] != result_payload["reviewer_agent_id"]:
+        raise ValueError("adversarial_review_result.yaml reviewer_agent_id does not match reviewer_receipt.yaml")
     if result_payload["reviewer_execution_mode"] not in ALLOWED_REVIEWER_EXECUTION_MODES:
         raise ValueError(
             "adversarial_review_result.yaml reviewer_execution_mode must be a supported review execution mode"
         )
-    if result_payload["reviewer_execution_mode"] != receipt_payload["spawn_mode"]:
+    if result_payload["reviewer_execution_mode"] != receipt_payload["execution_mode"]:
         raise ValueError(
-            "adversarial_review_result.yaml reviewer_execution_mode does not match spawned_reviewer_receipt.yaml"
+            "adversarial_review_result.yaml reviewer_execution_mode does not match reviewer_receipt.yaml"
         )
     if result_payload["reviewer_context_source"] != REQUIRED_REVIEWER_CONTEXT_SOURCE:
         raise ValueError("adversarial_review_result.yaml reviewer_context_source must be explicit_handoff_only")
@@ -855,4 +945,4 @@ def validate_result_contract(
     if result_payload["handoff_manifest_digest"] != request_payload["handoff_manifest_digest"]:
         raise ValueError("adversarial_review_result.yaml handoff_manifest_digest does not match the active request")
     if result_payload["handoff_manifest_digest"] != receipt_payload["handoff_manifest_digest"]:
-        raise ValueError("adversarial_review_result.yaml handoff_manifest_digest does not match spawned_reviewer_receipt.yaml")
+        raise ValueError("adversarial_review_result.yaml handoff_manifest_digest does not match reviewer_receipt.yaml")

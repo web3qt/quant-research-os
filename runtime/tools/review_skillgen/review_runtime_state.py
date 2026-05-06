@@ -23,8 +23,8 @@ REVIEW_RUNTIME_STATE_ALLOWED_VALUES = {
 }
 _ACTIVE_REQUEST_FILES = (
     "adversarial_review_request.yaml",
-    "spawned_reviewer_handoff_manifest.yaml",
-    "spawned_reviewer_receipt.yaml",
+    "reviewer_handoff_manifest.yaml",
+    "reviewer_receipt.yaml",
     "reviewer_write_scope_baseline.yaml",
 )
 _ACTIVE_RESULT_FILES = (

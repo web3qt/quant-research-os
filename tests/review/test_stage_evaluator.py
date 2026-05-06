@@ -21,7 +21,7 @@ from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from tests.session.test_research_session_runtime import (
     _write_adversarial_review_request,
     _write_adversarial_review_result,
-    _write_spawned_reviewer_receipt,
+    _write_reviewer_receipt,
     _write_stage_completion_certificate,
     _write_minimal_stage_outputs,
 )
@@ -51,7 +51,7 @@ def test_write_stage_evaluator_artifacts_writes_current_and_ledger_for_passed_st
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",
@@ -133,7 +133,7 @@ def test_stage_evaluator_matches_runtime_for_fix_required_review_state(tmp_path:
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",
@@ -158,7 +158,7 @@ def test_stage_evaluator_matches_runtime_for_review_audit_pending_state(tmp_path
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",
@@ -186,7 +186,7 @@ def test_stage_evaluator_invalidates_stale_review_cycle_after_author_output_chan
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",

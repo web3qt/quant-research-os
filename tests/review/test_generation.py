@@ -3,13 +3,13 @@ from subprocess import run
 import sys
 
 from tests.helpers.repo_paths import REPO_ROOT
-from runtime.scripts.gen_codex_stage_review_skills import CHECKLIST_SCHEMA_PATH, GATE_SCHEMA_PATH
+from runtime.scripts.gen_stage_review_skills import CHECKLIST_SCHEMA_PATH, GATE_SCHEMA_PATH
 
 
 def test_generator_writes_review_skills_with_csf_parity(tmp_path: Path) -> None:
     output_root = tmp_path / "generated"
     result = run(
-        [sys.executable, "runtime/scripts/gen_codex_stage_review_skills.py", "--output-root", str(output_root)],
+        [sys.executable, "runtime/scripts/gen_stage_review_skills.py", "--host", "codex", "--output-root", str(output_root)],
         check=False,
         capture_output=True,
         text=True,
@@ -33,9 +33,9 @@ def test_generator_writes_review_skills_with_csf_parity(tmp_path: Path) -> None:
 
 def test_generator_runs_outside_repo_root() -> None:
     repo_root = REPO_ROOT
-    script_path = repo_root / "runtime" / "scripts" / "gen_codex_stage_review_skills.py"
+    script_path = repo_root / "runtime" / "scripts" / "gen_stage_review_skills.py"
     result = run(
-        [sys.executable, str(script_path), "--dry-run"],
+        [sys.executable, str(script_path), "--host", "codex", "--dry-run"],
         cwd=repo_root.parent,
         check=False,
         capture_output=True,

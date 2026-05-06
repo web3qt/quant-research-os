@@ -13,7 +13,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
     load_adversarial_review_request,
-    load_spawned_reviewer_receipt,
+    load_reviewer_receipt,
     resolve_closure_verdict,
 )
 from runtime.tools.review_skillgen.closure_models import build_review_payload
@@ -463,8 +463,8 @@ def _runtime_identity_from_receipt(
     reviewer_session_id: str | None,
     reviewer_mode: str | None,
 ) -> ReviewerRuntimeIdentity:
-    receipt_path = stage_dir / "review" / "request" / "spawned_reviewer_receipt.yaml"
-    receipt_payload = load_spawned_reviewer_receipt(receipt_path) if receipt_path.exists() else None
+    receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
+    receipt_payload = load_reviewer_receipt(receipt_path) if receipt_path.exists() else None
     return _runtime_identity(
         reviewer_identity=reviewer_identity or (receipt_payload.get("requested_reviewer_identity") if receipt_payload else None),
         reviewer_role=reviewer_role,
@@ -554,7 +554,7 @@ def run_stage_review(
         review_request_dir=review_request_dir,
         review_result_dir=review_result_dir,
         request_loader=load_adversarial_review_request,
-        receipt_loader=load_spawned_reviewer_receipt,
+        receipt_loader=load_reviewer_receipt,
         runtime_identity=runtime_identity,
     )
     request_payload = protocol_payload["request_payload"]
@@ -661,7 +661,7 @@ def run_stage_review(
             "reviewed_provenance_paths": review_result["reviewed_provenance_paths"],
         },
         "adversarial_review_request": request_payload,
-        "spawned_reviewer_receipt": receipt_payload,
+        "reviewer_receipt": receipt_payload,
         "reviewer_write_scope_audit": audit_payload,
         "adversarial_review_result": review_result,
         "contract_source": str(GATES_PATH.relative_to(ROOT)),
@@ -735,7 +735,7 @@ def run_stage_review(
         downstream_permissions=downstream_permissions,
         review_scope=common_payload["review_scope"],
         adversarial_review_request=request_payload,
-        spawned_reviewer_receipt=receipt_payload,
+        reviewer_receipt=receipt_payload,
         reviewer_write_scope_audit=audit_payload,
         adversarial_review_result=review_result,
         contract_source=common_payload["contract_source"],

@@ -1,8 +1,14 @@
 # QROS 因子诊断
 
+<p align="center"><i>横截面因子研究阶段 -- 可选质量诊断工具</i></p>
+
 `qros-factor-diagnostics` 是可选 diagnostics 入口，用来查看横截面因子研究阶段的数据质量、因子质量、回测结果和 holdout 稳定性。
 
-它不是 review，不是 gate，也不写 review closure。正式放行仍然由 `qros-review`、review preflight 和 runtime gate 决定。
+> 它不是 review，不是 gate，也不写 review closure。正式放行仍然由 `qros-review`、review preflight 和 runtime gate 决定。
+
+---
+
+<br>
 
 ## 怎么用
 
@@ -25,9 +31,11 @@ $qros-factor-diagnostics 只看当前 lineage 的 backtest 质量和成本侵蚀
 $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 ```
 
-普通用户不需要手动执行 `./.qros/bin/qros-factor-diagnostics`。
+> 普通用户不需要手动执行 `./.qros/bin/qros-factor-diagnostics`。
 
-## 维护者 / 调试入口
+<br>
+
+### 维护者 / 调试入口
 
 如果需要 deterministic runtime debugging，才在 active research repo 根目录运行：
 
@@ -37,6 +45,10 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 ./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-factor-diagnostics --lineage-id <lineage_id> --stage csf_backtest_ready --json
 ```
+
+---
+
+<br>
 
 ## 输出说明
 
@@ -51,7 +63,7 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 - evidence gaps：证据缺口
 - next diagnostics：建议补充的诊断项
 
-`Health` 只是研究质量诊断，不是正式 `PASS / FAIL`。
+> `Health` 只是研究质量诊断，不是正式 `PASS / FAIL`。
 
 默认报告不应该只是指标数字。它应该先用中文说明这些数代表什么，再说明和当前策略假设的关系，例如：
 
@@ -59,7 +71,11 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 - 成本后收益弱于成本前收益：可能表示信号有原始收益，但被换手、手续费、滑点或容量约束吃掉。
 - holdout 退化：可能表示样本外市场状态不同、训练期过拟合，或成本/风险暴露没有延续。
 
-## 支持阶段
+---
+
+<br>
+
+### 支持阶段
 
 当前覆盖 `cross_sectional_factor` 路线：
 
@@ -72,17 +88,20 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 | `csf_backtest_ready` | gross/net return、gross/net erosion、max drawdown、turnover、capacity utilization、Sharpe / Profit Factor 缺口 |
 | `csf_holdout_validation` | direction_match、holdout mean net return、net return delta、drawdown delta、rolling stability、regime shift audit |
 
-## 边界
+---
 
-这个命令只读：
+<br>
 
-- 不创建 lineage
-- 不写 formal artifact
-- 不写 `review/closure`
-- 不写 `stage_completion_certificate.yaml`
-- 不修改任何 `*_gate_decision.md`
-- 不推进 stage
-- 不替代 `qros-review`
+### 边界
+
+> 这个命令只读：
+> - 不创建 lineage
+> - 不写 formal artifact
+> - 不写 `review/closure`
+> - 不写 `stage_completion_certificate.yaml`
+> - 不修改任何 `*_gate_decision.md`
+> - 不推进 stage
+> - 不替代 `qros-review`
 
 建议使用方式：
 

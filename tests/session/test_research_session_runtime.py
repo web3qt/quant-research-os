@@ -7,7 +7,7 @@ import yaml
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
-    issue_spawned_reviewer_receipt,
+    issue_reviewer_receipt,
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
@@ -173,20 +173,20 @@ def _review_request_payload(stage_dir: Path) -> dict:
     return load_adversarial_review_request(stage_dir / "review" / "request" / "adversarial_review_request.yaml")
 
 
-def _write_spawned_reviewer_receipt(
+def _write_reviewer_receipt(
     stage_dir: Path,
     *,
     reviewer_identity: str = "reviewer-agent",
     reviewer_session_id: str = "review-session",
-    spawned_agent_id: str = "reviewer-child-agent",
+    reviewer_agent_id: str = "reviewer-child-agent",
 ) -> None:
-    issue_spawned_reviewer_receipt(
+    issue_reviewer_receipt(
         stage_dir,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id="launcher-session",
         launcher_thread_id="leader-thread",
-        spawned_agent_id=spawned_agent_id,
+        reviewer_agent_id=reviewer_agent_id,
     )
 
 
@@ -2549,7 +2549,7 @@ def test_run_research_session_ignores_removed_review_governance_lane(tmp_path: P
         stage="mandate",
         program_dir="program/mandate",
     )
-    _write_spawned_reviewer_receipt(mandate_dir)
+    _write_reviewer_receipt(mandate_dir)
     _write_adversarial_review_result(
         mandate_dir,
         stage="mandate",
@@ -2705,7 +2705,7 @@ def test_run_research_session_exposes_author_fix_substate_for_fix_required_revie
 
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",
@@ -2734,7 +2734,7 @@ def test_run_research_session_exposes_review_closure_substate_after_closure_read
 
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _write_spawned_reviewer_receipt(stage_dir)
+    _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
         stage="mandate",

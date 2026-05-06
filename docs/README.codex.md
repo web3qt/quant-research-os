@@ -70,7 +70,7 @@ $qros-signal-diagnostics 不要只给数字，用中文解释这些指标说明�
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
 ./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-signal-diagnostics --stage tss_test_evidence
-./.qros/bin/qros-review-cycle prepare --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --spawned-agent-id reviewer-child-agent
+./.qros/bin/qros-review-cycle prepare --host codex --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --reviewer-agent-id reviewer-child-agent
 ./.qros/bin/qros-review
 ```
 

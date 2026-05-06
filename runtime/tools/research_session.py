@@ -177,11 +177,11 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
-    SPAWNED_REVIEWER_RECEIPT_FILENAME,
+    REVIEWER_RECEIPT_FILENAME,
     ensure_adversarial_review_request,
     load_adversarial_review_request,
     load_adversarial_review_result,
-    load_spawned_reviewer_receipt,
+    load_reviewer_receipt,
     validate_receipt_contract,
     validate_result_contract,
 )
@@ -524,7 +524,7 @@ def _review_request_path(stage_dir: Path) -> Path:
 
 
 def _review_receipt_path(stage_dir: Path) -> Path:
-    return _stage_context(stage_dir)["review_request_dir"] / SPAWNED_REVIEWER_RECEIPT_FILENAME
+    return _stage_context(stage_dir)["review_request_dir"] / REVIEWER_RECEIPT_FILENAME
 
 
 def _review_result_path(stage_dir: Path) -> Path:
@@ -2807,7 +2807,7 @@ def _resume_hint(
                 f"then rerun qros-session --lineage-id {lineage_id}."
             )
         return (
-            f"Enter {current_skill}, let it use spawn_agent and ./.qros/bin/qros-review-cycle prepare for {_stage_base_name(current_stage)}, "
+            f"Enter {current_skill}, launch a reviewer and run ./.qros/bin/qros-review-cycle prepare for {_stage_base_name(current_stage)}, "
             f"then rerun qros-session --lineage-id {lineage_id}."
         )
     if current_stage.endswith("_review"):
@@ -3009,11 +3009,11 @@ def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
     return load_reviewer_write_scope_audit(audit_path)
 
 
-def _load_spawned_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
+def _load_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
     receipt_path = _review_receipt_path(stage_dir)
     if not receipt_path.exists():
         return None
-    return load_spawned_reviewer_receipt(receipt_path)
+    return load_reviewer_receipt(receipt_path)
 
 
 def _review_proof_chain_error(stage_dir: Path) -> str | None:
@@ -3030,10 +3030,10 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
     result_path = _review_result_path(stage_dir)
     if not receipt_path.exists():
         if result_path.exists():
-            return f"{SPAWNED_REVIEWER_RECEIPT_FILENAME} is missing"
+            return f"{REVIEWER_RECEIPT_FILENAME} is missing"
         return None
     try:
-        receipt_payload = load_spawned_reviewer_receipt(receipt_path)
+        receipt_payload = load_reviewer_receipt(receipt_path)
         validate_receipt_contract(
             request_payload=request_payload,
             receipt_payload=receipt_payload,
@@ -3078,7 +3078,7 @@ def _review_write_scope_audit_error(stage_dir: Path) -> str | None:
     if not receipt_path.exists() or not audit_path.exists():
         return None
     try:
-        receipt_payload = load_spawned_reviewer_receipt(receipt_path)
+        receipt_payload = load_reviewer_receipt(receipt_path)
         audit_payload = load_reviewer_write_scope_audit(audit_path)
         validate_reviewer_write_scope_audit(
             receipt_payload=receipt_payload,
@@ -3158,7 +3158,7 @@ def _review_substate(
     lineage_root: Path,
 ) -> tuple[str, str, str, str]:
     request_path = _review_request_path(stage_dir)
-    review_receipt = _load_spawned_reviewer_receipt_if_present(stage_dir)
+    review_receipt = _load_reviewer_receipt_if_present(stage_dir)
     review_result = _load_adversarial_review_result_if_present(stage_dir)
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
@@ -3168,43 +3168,43 @@ def _review_substate(
     review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
 
     def _review_actor_label(receipt_payload: dict[str, Any]) -> str:
-        if receipt_payload.get("spawn_mode") == "review_session":
+        if receipt_payload.get("execution_mode") == "review_session":
             return f"review session {receipt_payload['requested_reviewer_session_id']}"
-        return f"spawned reviewer child {receipt_payload['spawned_agent_id']}"
+        return f"reviewer agent {receipt_payload['reviewer_agent_id']}"
 
     if not request_path.exists():
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
-            f"Enter {review_skill} in the current session; that review skill should use spawn_agent, run ./.qros/bin/qros-review-cycle prepare for {stage_base}, and then wait for reviewer output.",
+            f"Enter {review_skill} in the current session; launch a reviewer agent, run ./.qros/bin/qros-review-cycle prepare for {stage_base}, and then wait for reviewer output.",
         )
     if review_receipt is None and proof_chain_error is not None:
-        if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
+        if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (
                 "awaiting_adversarial_review",
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"{stage_base} has reviewer artifacts on disk, but {SPAWNED_REVIEWER_RECEIPT_FILENAME} is missing.",
-                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
+                f"{stage_base} has reviewer artifacts on disk, but {REVIEWER_RECEIPT_FILENAME} is missing.",
+                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
             )
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} has an invalid adversarial review request or handoff proof; the proof chain is invalid: {proof_chain_error}",
-            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer child for {review_skill}.",
+            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer for {review_skill}.",
         )
     if review_result is None:
         if review_receipt is not None and proof_chain_error is not None:
             return (
                 "awaiting_adversarial_review",
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"{stage_base} has a spawned reviewer receipt on disk, but the proof chain is invalid: {proof_chain_error}",
-                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
+                f"{stage_base} has a reviewer receipt on disk, but the proof chain is invalid: {proof_chain_error}",
+                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before running {review_skill}.",
             )
         if review_receipt is not None:
             actor_label = _review_actor_label(review_receipt)
             return (
-                "awaiting_spawned_reviewer_completion",
+                "awaiting_reviewer_completion",
                 "ADVERSARIAL_REVIEW_PENDING",
                 f"{stage_base} has an active {actor_label} and is waiting for it to write {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
                 f"Wait for {actor_label} to finish and write {ADVERSARIAL_REVIEW_RESULT_FILENAME}, then rerun {review_skill}.",
@@ -3212,22 +3212,22 @@ def _review_substate(
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
-            f"{stage_base} is waiting for a spawned reviewer child to register {SPAWNED_REVIEWER_RECEIPT_FILENAME} before review can begin.",
-            f"Enter {review_skill} in the current session, spawn the reviewer child, run ./.qros/bin/qros-review-cycle prepare, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"{stage_base} is waiting for a reviewer to register {REVIEWER_RECEIPT_FILENAME} before review can begin.",
+            f"Enter {review_skill} in the current session, launch the reviewer, run ./.qros/bin/qros-review-cycle prepare, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
-            f"{stage_base} has reviewer artifacts on disk, but the spawned reviewer proof chain is invalid: {proof_chain_error}",
-            f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then rerun {review_skill}.",
+            f"{stage_base} has reviewer artifacts on disk, but the reviewer proof chain is invalid: {proof_chain_error}",
+            f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then rerun {review_skill}.",
         )
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
         return (
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh spawned-agent reviewer cycle.",
+            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh reviewer cycle.",
         )
     if review_audit is None:
         return (
@@ -4326,45 +4326,45 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Enter {review_skill} in the current session; it should spawn a reviewer child and run ./.qros/bin/qros-review-cycle prepare to register the active review cycle.",
+            f"Enter {review_skill} in the current session; launch a reviewer and run ./.qros/bin/qros-review-cycle prepare to register the active review cycle.",
         )
     if not receipt_exists and proof_chain_error is not None:
-        if SPAWNED_REVIEWER_RECEIPT_FILENAME in proof_chain_error:
+        if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing {ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing {ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
             )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer child; proof chain validation failed.",
+            f"Refresh {ADVERSARIAL_REVIEW_REQUEST_FILENAME} and the handoff manifest before launching a reviewer; proof chain validation failed.",
         )
     if not receipt_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Launch a spawned reviewer child, issue {SPAWNED_REVIEWER_RECEIPT_FILENAME}, then wait for "
+            f"Launch a reviewer, issue {REVIEWER_RECEIPT_FILENAME}, then wait for "
             f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if review_result is None:
         if receipt_exists and proof_chain_error is not None:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing "
+                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing "
                 f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
             )
-        review_receipt = _load_spawned_reviewer_receipt_if_present(stage_dir)
+        review_receipt = _load_reviewer_receipt_if_present(stage_dir)
         if review_receipt is not None:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"Wait for spawned reviewer child {review_receipt['spawned_agent_id']} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+                f"Wait for reviewer agent {review_receipt['reviewer_agent_id']} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
             )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Wait for the spawned reviewer child recorded in {SPAWNED_REVIEWER_RECEIPT_FILENAME} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"Wait for the reviewer recorded in {REVIEWER_RECEIPT_FILENAME} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Reissue {SPAWNED_REVIEWER_RECEIPT_FILENAME} via the runtime launcher and regenerate "
+            f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher and regenerate "
             f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
         )
     if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
@@ -4499,7 +4499,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
         return (
             "REVIEW_CONFIRMATION_PENDING",
-            f"Enter {review_skill} in the current session. That stage-specific review skill should use spawn_agent, run ./.qros/bin/qros-review-cycle prepare, and then complete review with ./.qros/bin/qros-review.",
+            f"Enter {review_skill} in the current session. That stage-specific review skill should launch a reviewer, run ./.qros/bin/qros-review-cycle prepare, and then complete review with ./.qros/bin/qros-review.",
         )
 
 
