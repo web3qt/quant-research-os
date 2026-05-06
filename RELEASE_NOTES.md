@@ -2,6 +2,28 @@
 
 本文件记录 QROS 从第一个可用版本到当前版本的用户可见变化。QROS 是流程与治理仓；release notes 重点记录 workflow、runtime、skill、contract、文档和验证能力的变化。
 
+## 0.4.4 - 2026-05-06
+
+### 新增
+
+- 新增 TSS test evidence review runtime parity 覆盖，锁定 route-specific review runtime 与 stage evaluator 的一致性。
+- 新增 TSS failure routing skills：
+  - `qros-tss-test-evidence-failure`
+  - `qros-tss-train-freeze-failure`
+
+### 改进
+
+- 强化 `tss_test_evidence` proof gates、artifact contract runtime 与 semantic validation，减少 formal artifacts 缺字段或证据漂移时被误放行的风险。
+- review runtime 现在会在 handoff 前预检配置，并对 route-specific run manifests、raw reviewer findings schema 和全局 evidence 输出更明确的错误。
+- install runtime 增加 QROS install drift 报告，便于识别 active research repo 中的 `.qros/` 与当前发布版本不一致。
+- 同步更新 TSS SOP、stage artifact map、review checklist、installation docs 和 using-qros 文档入口。
+
+### 验证
+
+- 为 TSS test evidence proof gates、review preflight、review result writer、failure skills、install runtime 和 route docs 增加回归测试。
+- 本版本发布前已运行 focused tests、docs/bootstrap minimum、smoke 和 full-smoke。
+- `pyproject.toml` 与 `uv.lock` 同步到 `0.4.4`。
+
 ## 0.4.3 - 2026-04-28
 
 ### 新增
