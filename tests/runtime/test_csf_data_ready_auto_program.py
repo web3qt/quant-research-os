@@ -148,12 +148,12 @@ def test_materialize_fixture_stage_program_for_csf_data_ready_is_valid(tmp_path:
     program_dir = materialize_fixture_stage_program(lineage_root, "csf_data_ready")
 
     assert program_dir == lineage_root / "program/cross_sectional_factor/data_ready"
-    inspection = inspect_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+    inspection = inspect_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
     assert inspection.program_contract_status == "valid"
-    validated = validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+    validated = validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
     assert validated.entrypoint == "run_stage.py"
     assert validated.route == "cross_sectional_factor"
-    assert validated.stage_id == "data_ready"
+    assert validated.stage_id == "csf_data_ready"
 
 
 def test_run_research_session_uses_explicit_fixture_stage_program_for_csf_data_ready(

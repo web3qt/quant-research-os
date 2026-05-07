@@ -26,6 +26,15 @@ POST_MANDATE_REVIEW_CONFIRMATION_STAGES = (
     "csf_holdout_validation_review_confirmation_pending",
 )
 
+CSF_SESSION_STAGE_KEYS = (
+    "csf_data_ready",
+    "csf_signal_ready",
+    "csf_train_freeze",
+    "csf_test_evidence",
+    "csf_backtest_ready",
+    "csf_holdout_validation",
+)
+
 
 def _write_required_author_outputs(lineage_root: Path, current_stage: str) -> Path:
     spec = SESSION_STAGE_PROGRAM_SPECS[current_stage.removesuffix("_review_confirmation_pending")]
@@ -40,6 +49,11 @@ def _write_required_author_outputs(lineage_root: Path, current_stage: str) -> Pa
             output_path.mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, current_stage.removesuffix("_review_confirmation_pending"))
     return author_formal_dir.parent.parent
+
+
+def test_csf_session_stage_program_specs_use_canonical_stage_ids() -> None:
+    for stage_key in CSF_SESSION_STAGE_KEYS:
+        assert SESSION_STAGE_PROGRAM_SPECS[stage_key].stage_id == stage_key
 
 
 def test_review_entry_preflight_runs_for_mandate_review_confirmation_pending(

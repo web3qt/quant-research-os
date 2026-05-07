@@ -46,7 +46,7 @@ def test_validate_stage_program_rejects_post_mandate_thin_wrapper(tmp_path: Path
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -66,7 +66,7 @@ def test_validate_stage_program_rejects_post_mandate_thin_wrapper(tmp_path: Path
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -91,7 +91,7 @@ def test_validate_stage_program_rejects_local_shim_forwarding_to_builder(tmp_pat
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -105,7 +105,7 @@ def test_validate_stage_program_rejects_local_shim_forwarding_to_builder(tmp_pat
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -134,7 +134,7 @@ def test_validate_stage_program_rejects_sibling_helper_forwarding_to_builder(tmp
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -148,7 +148,7 @@ def test_validate_stage_program_rejects_sibling_helper_forwarding_to_builder(tmp
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -170,7 +170,7 @@ def test_validate_stage_program_rejects_parent_package_import_forwarding_to_buil
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -184,7 +184,7 @@ def test_validate_stage_program_rejects_parent_package_import_forwarding_to_buil
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -206,7 +206,7 @@ def test_validate_stage_program_rejects_star_import_forwarding_to_builder(tmp_pa
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -220,7 +220,7 @@ def test_validate_stage_program_rejects_star_import_forwarding_to_builder(tmp_pa
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -244,7 +244,7 @@ def test_validate_stage_program_rejects_top_level_runtime_import_forwarding_to_b
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -258,7 +258,7 @@ def test_validate_stage_program_rejects_top_level_runtime_import_forwarding_to_b
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -283,7 +283,7 @@ def test_validate_stage_program_rejects_local_alias_forwarding_to_builder_name(
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -297,7 +297,7 @@ def test_validate_stage_program_rejects_local_alias_forwarding_to_builder_name(
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 
@@ -322,7 +322,7 @@ def test_validate_stage_program_rejects_local_alias_forwarding_to_builder_module
     _write_yaml(
         program_dir / "stage_program.yaml",
         {
-            "stage_id": "data_ready",
+            "stage_id": "csf_data_ready",
             "route": "cross_sectional_factor",
             "lineage_id": "btc_alt_k",
             "entrypoint": "run_stage.py",
@@ -336,7 +336,7 @@ def test_validate_stage_program_rejects_local_alias_forwarding_to_builder_module
     )
 
     with pytest.raises(StageProgramRuntimeError, match="thin wrapper") as excinfo:
-        validate_stage_program(lineage_root, "data_ready", "cross_sectional_factor")
+        validate_stage_program(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert excinfo.value.reason_code == "STAGE_PROGRAM_INVALID"
 

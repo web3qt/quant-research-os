@@ -197,7 +197,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         ],
     },
     "csf_data_ready": {
-        "stage_id": "data_ready",
+        "stage_id": "csf_data_ready",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/data_ready"),
         "module": "runtime.tools.csf_data_ready_runtime",
@@ -211,7 +211,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         ],
     },
     "csf_signal_ready": {
-        "stage_id": "signal_ready",
+        "stage_id": "csf_signal_ready",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/signal_ready"),
         "module": "runtime.tools.csf_signal_ready_runtime",
@@ -226,7 +226,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         ],
     },
     "csf_train_freeze": {
-        "stage_id": "train_freeze",
+        "stage_id": "csf_train_freeze",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/train_freeze"),
         "module": "runtime.tools.csf_train_runtime",
@@ -236,7 +236,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "outputs": ["04_csf_train_freeze/csf_train_freeze.yaml", "04_csf_train_freeze/csf_train_contract.md"],
     },
     "csf_test_evidence": {
-        "stage_id": "test_evidence",
+        "stage_id": "csf_test_evidence",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/test_evidence"),
         "module": "runtime.tools.csf_test_evidence_runtime",
@@ -246,7 +246,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "outputs": ["05_csf_test_evidence/csf_test_gate_table.csv", "05_csf_test_evidence/csf_test_contract.md"],
     },
     "csf_backtest_ready": {
-        "stage_id": "backtest_ready",
+        "stage_id": "csf_backtest_ready",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/backtest_ready"),
         "module": "runtime.tools.csf_backtest_runtime",
@@ -256,7 +256,7 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "outputs": ["06_csf_backtest_ready/csf_backtest_gate_table.csv", "06_csf_backtest_ready/csf_backtest_contract.md"],
     },
     "csf_holdout_validation": {
-        "stage_id": "holdout_validation",
+        "stage_id": "csf_holdout_validation",
         "route": "cross_sectional_factor",
         "program_dir": Path("program/cross_sectional_factor/holdout_validation"),
         "module": "runtime.tools.csf_holdout_runtime",

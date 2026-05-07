@@ -30,6 +30,12 @@ StageId = Literal[
     "tss_test_evidence",
     "tss_backtest_ready",
     "tss_holdout_validation",
+    "csf_data_ready",
+    "csf_signal_ready",
+    "csf_train_freeze",
+    "csf_test_evidence",
+    "csf_backtest_ready",
+    "csf_holdout_validation",
 ]
 RouteId = Literal["route_neutral", "time_series_signal", "cross_sectional_factor"]
 EntryType = Literal["python", "rust", "bash"]
@@ -59,6 +65,14 @@ ALLOWED_DEPENDS_ON_PROGRAMS = {
 }
 HASH_EXCLUDED_FILES = {PROVENANCE_MANIFEST_FILE}
 HASH_EXCLUDED_DIRS = {".cache", "__pycache__", ".pytest_cache"}
+CSF_STAGE_PROGRAM_LOCAL_NAMES = {
+    "csf_data_ready": "data_ready",
+    "csf_signal_ready": "signal_ready",
+    "csf_train_freeze": "train_freeze",
+    "csf_test_evidence": "test_evidence",
+    "csf_backtest_ready": "backtest_ready",
+    "csf_holdout_validation": "holdout_validation",
+}
 
 
 class StageProgramRuntimeError(ValueError):
@@ -141,7 +155,9 @@ def stage_program_relative_dir(stage_id: StageId, route: RouteId) -> Path:
             return Path("program") / "time_series_signal" / stage_id
         return Path("program") / "time_series" / stage_id
     if route == "cross_sectional_factor":
-        return Path("program") / "cross_sectional_factor" / stage_id
+        # CSF 的 gate identity 使用 csf_*，但 lineage-local program 目录沿用无前缀名称。
+        local_name = CSF_STAGE_PROGRAM_LOCAL_NAMES.get(stage_id, stage_id)
+        return Path("program") / "cross_sectional_factor" / local_name
     raise StageProgramRuntimeError(
         "STAGE_PROGRAM_INVALID",
         f"unsupported route for stage program resolution: {route}",

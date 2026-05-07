@@ -108,9 +108,9 @@
 | PROV-01 | Phase 1 | Complete |
 | PROV-02 | Phase 1 | Complete |
 | PROV-03 | Phase 1 | Complete |
-| CSF-01 | Phase 2 | Pending |
-| CSF-02 | Phase 2 | Pending |
-| CSF-03 | Phase 2 | Pending |
+| CSF-01 | Phase 2 | Complete |
+| CSF-02 | Phase 2 | Complete |
+| CSF-03 | Phase 2 | Complete |
 | REV-01 | Phase 3 | Pending |
 | REV-02 | Phase 3 | Pending |
 | REV-03 | Phase 4 | Pending |
@@ -124,6 +124,6 @@
 
 ## Next Step
 
-Phase 1 is complete. Continue with Phase 2 because canonical CSF stage identity is the next blocker for reliable review/preflight behavior.
+Phase 2 is complete. Continue with Phase 3 because review session integrity is the next blocker for reliable independent review closure.
 
-`$gsd-plan-phase 2`
+`$gsd-plan-phase 3`

@@ -13,9 +13,9 @@
 
 ### CSF Stage Identity
 
-- [ ] **CSF-01**: Runtime session specs use canonical `csf_*` stage ids for all CSF stages while preserving route metadata.
-- [ ] **CSF-02**: CSF lineage-local program path resolution maps canonical `csf_*` stages to established non-prefixed directories such as `program/cross_sectional_factor/data_ready`.
-- [ ] **CSF-03**: Focused tests lock CSF stage id and program path behavior across `research_session`, `stage_program_scaffold`, and `lineage_program_runtime`.
+- [x] **CSF-01**: Runtime session specs use canonical `csf_*` stage ids for all CSF stages while preserving route metadata.
+- [x] **CSF-02**: CSF lineage-local program path resolution maps canonical `csf_*` stages to established non-prefixed directories such as `program/cross_sectional_factor/data_ready`.
+- [x] **CSF-03**: Focused tests lock CSF stage id and program path behavior across `research_session`, `stage_program_scaffold`, and `lineage_program_runtime`.
 
 ### Review Integrity
 
@@ -61,9 +61,9 @@
 | PROV-01 | Phase 1 | Complete |
 | PROV-02 | Phase 1 | Complete |
 | PROV-03 | Phase 1 | Complete |
-| CSF-01 | Phase 2 | Pending |
-| CSF-02 | Phase 2 | Pending |
-| CSF-03 | Phase 2 | Pending |
+| CSF-01 | Phase 2 | Complete |
+| CSF-02 | Phase 2 | Complete |
+| CSF-03 | Phase 2 | Complete |
 | REV-01 | Phase 3 | Pending |
 | REV-02 | Phase 3 | Pending |
 | REV-03 | Phase 4 | Pending |

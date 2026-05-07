@@ -195,10 +195,59 @@ def test_stage_program_resolution_uses_route_aware_paths(tmp_path: Path) -> None
     assert stage_program_relative_dir("signal_ready", "cross_sectional_factor") == Path(
         "program/cross_sectional_factor/signal_ready"
     )
+    assert stage_program_relative_dir("csf_data_ready", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/data_ready"
+    )
+    assert stage_program_relative_dir("csf_signal_ready", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/signal_ready"
+    )
+    assert stage_program_relative_dir("csf_train_freeze", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/train_freeze"
+    )
+    assert stage_program_relative_dir("csf_test_evidence", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/test_evidence"
+    )
+    assert stage_program_relative_dir("csf_backtest_ready", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/backtest_ready"
+    )
+    assert stage_program_relative_dir("csf_holdout_validation", "cross_sectional_factor") == Path(
+        "program/cross_sectional_factor/holdout_validation"
+    )
     assert stage_program_dir(lineage_root, "data_ready", "time_series_signal") == lineage_root / "program/time_series/data_ready"
     assert stage_program_dir(lineage_root, "tss_data_ready", "time_series_signal") == (
         lineage_root / "program/time_series_signal/tss_data_ready"
     )
+    assert stage_program_dir(lineage_root, "csf_data_ready", "cross_sectional_factor") == (
+        lineage_root / "program/cross_sectional_factor/data_ready"
+    )
+
+
+def test_csf_stage_program_scaffold_specs_use_canonical_stage_ids_with_local_program_dirs() -> None:
+    expected_program_dirs = {
+        "csf_data_ready": Path("program/cross_sectional_factor/data_ready"),
+        "csf_signal_ready": Path("program/cross_sectional_factor/signal_ready"),
+        "csf_train_freeze": Path("program/cross_sectional_factor/train_freeze"),
+        "csf_test_evidence": Path("program/cross_sectional_factor/test_evidence"),
+        "csf_backtest_ready": Path("program/cross_sectional_factor/backtest_ready"),
+        "csf_holdout_validation": Path("program/cross_sectional_factor/holdout_validation"),
+    }
+
+    for stage_key, expected_program_dir in expected_program_dirs.items():
+        assert STAGE_PROGRAM_SPECS[stage_key]["stage_id"] == stage_key
+        assert STAGE_PROGRAM_SPECS[stage_key]["program_dir"] == expected_program_dir
+
+
+def test_materialized_csf_stage_program_manifest_uses_canonical_stage_id_with_local_program_dir(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+
+    program_dir = ensure_stage_program(lineage_root, "csf_data_ready")
+    manifest = yaml.safe_load((program_dir / "stage_program.yaml").read_text(encoding="utf-8"))
+
+    assert program_dir == lineage_root / "program/cross_sectional_factor/data_ready"
+    assert manifest["stage_id"] == "csf_data_ready"
+    assert manifest["route"] == "cross_sectional_factor"
 
 
 def test_tss_stage_program_scaffold_specs_use_tss_stage_keys() -> None:
