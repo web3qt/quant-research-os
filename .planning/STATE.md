@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-07)
 
 **Core value:** QROS must enforce stage-gated research progression from disk evidence, canonical contracts, and independent review rather than from agent confidence or local improvisation.
-**Current focus:** Phase 03 — Research Session Entry Discipline
+**Current focus:** Phase 04 -- Review Artifact Ownership
 
 ## Current Position
 
@@ -44,4 +44,4 @@ Last activity: 2026-05-07
 
 ### Todos
 
-- Plan Phase 3 with `$gsd-plan-phase 3`.
+- Plan Phase 4 with `$gsd-plan-phase 4`.

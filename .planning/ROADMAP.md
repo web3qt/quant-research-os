@@ -154,10 +154,10 @@
 | CSF-01 | Phase 2 | Complete |
 | CSF-02 | Phase 2 | Complete |
 | CSF-03 | Phase 2 | Complete |
-| ENTRY-01 | Phase 3 | Pending |
-| ENTRY-02 | Phase 3 | Pending |
-| ENTRY-03 | Phase 3 | Pending |
-| ENTRY-04 | Phase 3 | Pending |
+| ENTRY-01 | Phase 3 | Complete |
+| ENTRY-02 | Phase 3 | Complete |
+| ENTRY-03 | Phase 3 | Complete |
+| ENTRY-04 | Phase 3 | Complete |
 | REV-01 | Phase 4 | Pending |
 | REV-02 | Phase 4 | Pending |
 | CLOS-01 | Phase 4 | Pending |
@@ -190,6 +190,6 @@
 
 ## Next Step
 
-Phase 3 needs a fresh plan. Plan Phase 3 to enforce `qros-research-session` as the normal stage progression gate and block mismatched stage-specific skills.
+Phase 4 needs a fresh plan. Plan Phase 4 to enforce runtime-owned review request, result, and closure artifact ownership.
 
-`$gsd-plan-phase 3`
+`$gsd-plan-phase 4`

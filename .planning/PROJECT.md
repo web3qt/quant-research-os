@@ -33,18 +33,18 @@ QROS must enforce stage-gated research progression from disk evidence, canonical
 <!-- Shipped and confirmed valuable. -->
 
 - [x] Installed QROS wrappers detect source-repo path, commit, and dirty-state drift before runtime actions can be trusted. Validated in Phase 1: Install Provenance Guard.
+- [x] CSF stage ids remain canonical as `csf_*` while lineage-local program directories keep established non-prefixed names such as `data_ready` and `signal_ready`. Validated in Phase 2: Canonical CSF Stage Identity.
+- [x] Stage-specific author/review skills refuse to continue when the runtime stage does not match the requested stage, routing users back through `qros-research-session`. Validated in Phase 3: Research Session Entry Discipline.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] CSF stage ids remain canonical as `csf_*` while lineage-local program directories keep established non-prefixed names such as `data_ready` and `signal_ready`.
 - [ ] Review closure cannot produce promotable PASS from a local/manual recovery session unless that recovery mode is explicit and audited.
 - [ ] Reviewer handoffs and closer validation prevent or clearly repair invalid raw outcomes such as `PASS`, `REJECT`, or structured finding objects.
 - [ ] Installed wrappers use a stable Python interpreter compatible with QROS requirements instead of whichever `python3` appears first.
 - [ ] Post-mandate review confirmation stages run deterministic preflight as a runtime gate, not merely as agent self-discipline.
 - [ ] Mandate author/review gates block time splits whose train/test/backtest/holdout windows exceed the scanned source data min/max.
-- [ ] Stage-specific author/review skills refuse to continue when the runtime stage does not match the requested stage, routing users back through `qros-research-session`.
 - [ ] Review request, canonical result, and closure artifacts are generated only by QROS runtime commands and protected by digest/write-owner checks.
 - [ ] High-severity reservations such as factor direction reversal, monotonicity failure, concentration risk, or insufficient holdout sample size cannot silently remain ordinary PASS.
 - [ ] Final stage verdict `FAIL` automatically routes to `qros-stage-failure-handler` and is clearly distinguished from review process PASS.
