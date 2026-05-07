@@ -124,6 +124,6 @@
 
 ## Next Step
 
-Phase 2 is complete. Continue with Phase 3 because review session integrity is the next blocker for reliable independent review closure.
+Phase 3 is planned. Execute Phase 3 to make manual review recovery visibly non-equivalent to independent reviewer closure.
 
-`$gsd-plan-phase 3`
+`$gsd-execute-phase 3`
