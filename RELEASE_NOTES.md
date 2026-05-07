@@ -6,6 +6,24 @@
 
 <br>
 
+## 0.4.7 - 2026-05-07
+
+### 改进
+
+- `qros-update` 默认改为 `--host auto`，会自动按显式 `--host`、`QROS_HOST`、当前 repo 的 `./.qros/install-manifest.json.host`、当前 agent 环境变量顺序解析 Codex / Claude Code host。
+- `qros-update` shell wrapper 不再默认硬编码 Codex；Claude Code research repo 可以直接运行 `./.qros/bin/qros-update` 刷新 `~/.claude/*` 与 repo-local runtime。
+- `run_qros_update.py` 输出 resolved host，方便确认本次更新到底刷新了 Codex 还是 Claude Code surface。
+- 更新 `qros-update` skill、installation guide 和 Codex README，使用户文档与 auto-host runtime 行为一致。
+
+### 验证
+
+- 本版本发布前已运行 qros-update focused tests、docs/bootstrap minimum 和 smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.7`。
+
+---
+
+<br>
+
 ## 0.4.6 - 2026-05-07
 
 ### 新增

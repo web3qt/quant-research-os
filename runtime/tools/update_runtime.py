@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Mapping
 
-from runtime.tools.install_runtime import check_install, install_qros
+from runtime.tools.install_runtime import SUPPORTED_HOSTS, check_install, install_qros
 
 
 DEFAULT_BRANCH = "main"
@@ -23,6 +25,7 @@ class UpdateResult:
     source_git_commit: str
     global_manifest_path: Path
     local_manifest_path: Path
+    host: str
 
 
 def global_manifest_path(home: Path, host: str = "codex") -> Path:
@@ -32,6 +35,38 @@ def global_manifest_path(home: Path, host: str = "codex") -> Path:
 
 def default_source_repo(home: Path) -> Path:
     return home / "workspace" / "quant-research-os"
+
+
+def resolve_update_host(
+    requested_host: str | None = "auto",
+    *,
+    target_cwd: Path,
+    environ: Mapping[str, str] | None = None,
+) -> str:
+    """解析 qros-update 的目标 host。
+
+    显式 `--host` 优先；`auto` 依次读取 QROS_HOST、repo-local manifest、当前 agent 环境。
+    """
+
+    if requested_host in SUPPORTED_HOSTS:
+        return str(requested_host)
+    if requested_host not in (None, "", "auto"):
+        raise UpdateError(f"unsupported host: {requested_host}")
+
+    env = os.environ if environ is None else environ
+    env_host = _normalize_host(env.get("QROS_HOST"))
+    if env_host is not None:
+        return env_host
+
+    local_host = _host_from_manifest(target_cwd / ".qros" / "install-manifest.json")
+    if local_host is not None:
+        return local_host
+
+    if _looks_like_claude_code(env):
+        return "claude-code"
+    if _looks_like_codex(env):
+        return "codex"
+    return "codex"
 
 
 def resolve_source_repo(
@@ -62,14 +97,15 @@ def run_qros_update(
     repo_root_fallback: Path | None = None,
     repo_url: str = DEFAULT_REPO_URL,
     branch: str = DEFAULT_BRANCH,
-    host: str = "codex",
+    host: str = "auto",
 ) -> UpdateResult:
     resolved_target_cwd = target_cwd.resolve()
+    resolved_host = resolve_update_host(host, target_cwd=resolved_target_cwd)
     source_repo = resolve_source_repo(
         explicit_source_repo=explicit_source_repo,
         home=home,
         repo_root_fallback=repo_root_fallback,
-        host=host,
+        host=resolved_host,
     )
     updated_repo = ensure_managed_source_repo(
         source_repo=source_repo,
@@ -82,14 +118,14 @@ def run_qros_update(
         cwd=updated_repo,
         home=home,
         mode="user-global",
-        host=host,
+        host=resolved_host,
     )
     install_qros(
         repo_root=updated_repo,
         cwd=resolved_target_cwd,
         home=home,
         mode="repo-local",
-        host=host,
+        host=resolved_host,
     )
 
     global_ok, global_messages = check_install(
@@ -97,14 +133,14 @@ def run_qros_update(
         cwd=updated_repo,
         home=home,
         mode="user-global",
-        host=host,
+        host=resolved_host,
     )
     local_ok, local_messages = check_install(
         repo_root=updated_repo,
         cwd=resolved_target_cwd,
         home=home,
         mode="repo-local",
-        host=host,
+        host=resolved_host,
     )
     if not global_ok or not local_ok:
         raise UpdateError(
@@ -121,8 +157,9 @@ def run_qros_update(
         source_repo=updated_repo,
         target_cwd=resolved_target_cwd,
         source_git_commit=_git_commit(updated_repo),
-        global_manifest_path=global_manifest_path(home, host=host),
+        global_manifest_path=global_manifest_path(home, host=resolved_host),
         local_manifest_path=resolved_target_cwd / ".qros" / "install-manifest.json",
+        host=resolved_host,
     )
 
 
@@ -177,6 +214,50 @@ def _source_repo_from_manifest(manifest_path: Path) -> Path | None:
     if not isinstance(source_repo_path, str) or not source_repo_path.strip():
         return None
     return Path(source_repo_path).expanduser()
+
+
+def _host_from_manifest(manifest_path: Path) -> str | None:
+    if not manifest_path.exists():
+        return None
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return _normalize_host(payload.get("host"))
+
+
+def _normalize_host(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().lower().replace("_", "-")
+    if normalized in SUPPORTED_HOSTS:
+        return normalized
+    return None
+
+
+def _looks_like_claude_code(environ: Mapping[str, str]) -> bool:
+    return any(
+        environ.get(name)
+        for name in (
+            "CLAUDECODE",
+            "CLAUDE_CODE",
+            "CLAUDECODE_CWD",
+            "CLAUDE_CODE_ENTRYPOINT",
+            "CLAUDE_CODE_SSE_PORT",
+        )
+    )
+
+
+def _looks_like_codex(environ: Mapping[str, str]) -> bool:
+    return any(
+        environ.get(name)
+        for name in (
+            "CODEX_THREAD_ID",
+            "CODEX_SANDBOX",
+            "CODEX_CI",
+            "CODEX_MANAGED_BY_NPM",
+        )
+    )
 
 
 def _ensure_origin_remote(*, source_repo: Path, repo_url: str) -> None:

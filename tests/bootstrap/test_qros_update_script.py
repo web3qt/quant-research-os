@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 from tests.helpers.repo_paths import REPO_ROOT
-from runtime.tools.update_runtime import resolve_source_repo, run_qros_update
+from runtime.tools.update_runtime import resolve_source_repo, resolve_update_host, run_qros_update
 
 
 def _copy_repo_fixture(tmp_path: Path) -> Path:
@@ -80,6 +80,44 @@ def test_resolve_source_repo_prefers_global_manifest(tmp_path: Path, monkeypatch
     assert resolved == managed_repo.resolve()
 
 
+def test_resolve_update_host_prefers_explicit_qros_host_env(tmp_path: Path) -> None:
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+
+    assert resolve_update_host(
+        "auto",
+        target_cwd=target_cwd,
+        environ={"QROS_HOST": "claude-code", "CODEX_THREAD_ID": "codex-thread"},
+    ) == "claude-code"
+
+
+def test_resolve_update_host_uses_repo_local_manifest_before_runtime_environment(tmp_path: Path) -> None:
+    target_cwd = tmp_path / "research-project"
+    manifest_path = target_cwd / ".qros" / "install-manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps({"host": "claude-code"}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    assert resolve_update_host(
+        "auto",
+        target_cwd=target_cwd,
+        environ={"CODEX_SANDBOX": "seatbelt", "CODEX_THREAD_ID": "codex-thread"},
+    ) == "claude-code"
+
+
+def test_resolve_update_host_detects_codex_runtime_environment(tmp_path: Path) -> None:
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+
+    assert resolve_update_host(
+        "auto",
+        target_cwd=target_cwd,
+        environ={"CODEX_SANDBOX": "seatbelt", "CODEX_THREAD_ID": "codex-thread"},
+    ) == "codex"
+
+
 def test_run_qros_update_refreshes_user_global_and_repo_local(tmp_path: Path, monkeypatch) -> None:
     _, origin_repo = _init_origin_repo(tmp_path)
     managed_repo = tmp_path / "managed-repo"
@@ -105,6 +143,38 @@ def test_run_qros_update_refreshes_user_global_and_repo_local(tmp_path: Path, mo
     assert (target_cwd / ".qros" / "install-manifest.json").exists()
     assert (target_cwd / ".qros" / "bin" / "qros-update").exists()
     assert result.source_git_commit
+
+
+def test_run_qros_update_auto_host_uses_repo_local_manifest(tmp_path: Path, monkeypatch) -> None:
+    _, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    target_cwd = tmp_path / "research-project"
+    manifest_path = target_cwd / ".qros" / "install-manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps({"host": "claude-code"}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("HOME", str(home_root))
+
+    result = run_qros_update(
+        target_cwd=target_cwd,
+        home=home_root,
+        explicit_source_repo=managed_repo,
+        repo_root_fallback=managed_repo,
+        repo_url=str(origin_repo),
+    )
+
+    assert result.source_repo == managed_repo.resolve()
+    assert (home_root / ".claude" / "qros" / "install-manifest.json").exists()
+    assert (home_root / ".claude" / "skills" / "qros-update" / "SKILL.md").exists()
+    assert not (home_root / ".codex" / "qros").exists()
+    local_manifest = json.loads((target_cwd / ".qros" / "install-manifest.json").read_text(encoding="utf-8"))
+    assert local_manifest["host"] == "claude-code"
 
 
 def test_run_qros_update_self_heals_dirty_managed_repo(tmp_path: Path, monkeypatch) -> None:
@@ -180,3 +250,41 @@ def test_qros_update_wrapper_refreshes_current_repo(tmp_path: Path, monkeypatch)
     assert completed.returncode == 0, completed.stderr
     assert "QROS updated to" in completed.stdout
     assert (target_cwd / ".qros" / "bin" / "qros-update").exists()
+
+
+def test_qros_update_wrapper_auto_host_respects_qros_host_env(tmp_path: Path, monkeypatch) -> None:
+    _, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
+    env["QROS_HOST"] = "claude-code"
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+
+    completed = subprocess.run(
+        [
+            str(managed_repo / "runtime" / "bin" / "qros-update"),
+            "--cwd",
+            str(target_cwd),
+            "--source-repo",
+            str(managed_repo),
+            "--repo-url",
+            str(origin_repo),
+        ],
+        cwd=target_cwd,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "Host: claude-code" in completed.stdout
+    assert (home_root / ".claude" / "qros" / "install-manifest.json").exists()
+    assert not (home_root / ".codex" / "qros").exists()

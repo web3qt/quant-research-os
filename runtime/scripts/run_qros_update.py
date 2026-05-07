@@ -16,7 +16,7 @@ from runtime.tools.update_runtime import DEFAULT_BRANCH, DEFAULT_REPO_URL, Updat
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Update QROS to the latest published main and refresh the current repo-local runtime.")
     parser.add_argument("--cwd", type=Path, default=None)
-    parser.add_argument("--host", default="codex", choices=["codex", "claude-code"])
+    parser.add_argument("--host", default="auto", choices=["auto", "codex", "claude-code"])
     parser.add_argument("--source-repo", type=Path, default=None)
     parser.add_argument("--repo-url", default=DEFAULT_REPO_URL)
     parser.add_argument("--branch", default=DEFAULT_BRANCH)
@@ -42,6 +42,7 @@ def main() -> int:
         return 1
 
     print(f"QROS updated to {result.source_git_commit or 'unknown-commit'}")
+    print(f"Host: {result.host}")
     print(f"Source repo: {result.source_repo}")
     print(f"Global manifest: {result.global_manifest_path}")
     print(f"Repo-local manifest: {result.local_manifest_path}")

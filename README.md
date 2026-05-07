@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square&logo=python" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/tests-897-green?style=flat-square" alt="Tests 897">
-  <img src="https://img.shields.io/badge/version-0.4.6-blue?style=flat-square" alt="Version 0.4.6">
+  <img src="https://img.shields.io/badge/version-0.4.7-blue?style=flat-square" alt="Version 0.4.7">
   <img src="https://img.shields.io/badge/hosts-Codex%20%7C%20Claude%20Code-purple?style=flat-square" alt="Hosts">
   <img src="https://img.shields.io/badge/stages-20-blueviolet?style=flat-square" alt="20 Stages">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License MIT">

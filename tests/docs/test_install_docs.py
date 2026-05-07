@@ -88,6 +88,8 @@ def test_claude_code_bootstrap_docs_present() -> None:
     assert "--host claude-code --mode repo-local" in installation
     assert "~/.claude/skills" in installation
     assert "~/.claude/qros/install-manifest.json" in installation
+    assert 'qros-update` 默认会自动识别当前 host' in installation
+    assert 'qros-update --cwd "$PWD"' in installation
     assert "--host claude-code --cwd" in installation
     assert "host = claude-code" in installation
     assert "## Claude Code" in installation

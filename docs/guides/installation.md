@@ -88,7 +88,13 @@ Claude Code 的 global skills 存储在 `~/.claude/skills/`，global install man
 
 ### 更新
 
-Claude Code 用户更新 QROS runtime：
+Claude Code 用户更新 QROS runtime 时，`qros-update` 默认会自动识别当前 host。识别顺序是：显式 `--host`、`QROS_HOST`、当前 repo 的 `./.qros/install-manifest.json.host`、当前 agent 环境变量，最后 fallback 到 Codex。
+
+```bash
+<source_repo>/runtime/bin/qros-update --cwd "$PWD"
+```
+
+如果需要手动指定 Claude Code：
 
 ```bash
 <source_repo>/runtime/bin/qros-update --host claude-code --cwd "$PWD"
@@ -96,7 +102,7 @@ Claude Code 用户更新 QROS runtime：
 
 > 注意：如果 QROS skills 是通过 `/plugin install qros@quant-research-os` 安装的，plugin-managed skills 优先于 `~/.claude/skills/` 下的文件。需要同时运行：
 > - `/plugin update qros@quant-research-os` (刷新 plugin-managed skills)
-> - `qros-update --host claude-code` (刷新 repo-local `./.qros/` runtime)
+> - `qros-update` 或 `qros-update --host claude-code` (刷新 repo-local `./.qros/` runtime)
 
 <br>
 

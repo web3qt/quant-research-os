@@ -1,6 +1,6 @@
 ---
 name: qros-update
-description: Update QROS to the latest published main and refresh the current repo-local runtime for the active Codex workspace
+description: Update QROS to the latest published main and refresh the current repo-local runtime for the active host workspace
 ---
 
 # QROS Update
@@ -15,9 +15,17 @@ Bring the user to the latest published `origin/main` version of QROS and leave t
 
 ## Host awareness
 
-This skill is host-aware. The update behavior differs by host:
+This skill is host-aware. By default `qros-update` uses `--host auto` and resolves the host in this order:
 
-- **Codex** (`--host codex`, default): Refreshes `~/.codex/skills/` and the current repo's `./.qros/` runtime.
+1. explicit `--host codex` or `--host claude-code`
+2. `QROS_HOST`
+3. the current repo's `./.qros/install-manifest.json.host`
+4. current agent environment markers (`CLAUDE_CODE` / `CLAUDECODE_*` or `CODEX_*`)
+5. fallback to Codex
+
+The update behavior differs by resolved host:
+
+- **Codex** (`--host codex`): Refreshes `~/.codex/skills/` and the current repo's `./.qros/` runtime.
 - **Claude Code** (`--host claude-code`): Refreshes `~/.claude/skills/` and the current repo's `./.qros/` runtime.
 
 Note: if QROS skills were installed via `/plugin install qros@quant-research-os`, the plugin-managed skill copy takes precedence over `~/.claude/skills/`. Run `/plugin update qros@quant-research-os` to refresh plugin-managed skills, then run this update for repo-local runtime refresh.
@@ -30,12 +38,17 @@ Note: if QROS skills were installed via `/plugin install qros@quant-research-os`
   - the current repo's local runtime under `./.qros/`
 - Prefer the stable update entry instead of replaying ad hoc shell steps:
 
-For Codex:
+Auto-detect current host:
+```bash
+<source_repo>/runtime/bin/qros-update --cwd "$PWD"
+```
+
+Explicit Codex override:
 ```bash
 <source_repo>/runtime/bin/qros-update --host codex --cwd "$PWD"
 ```
 
-For Claude Code:
+Explicit Claude Code override:
 ```bash
 <source_repo>/runtime/bin/qros-update --host claude-code --cwd "$PWD"
 ```
@@ -46,7 +59,7 @@ This skill is for the agent, not the user. Do not surface common update errors i
 
 Before telling the user anything failed, automatically repair and retry these cases:
 
-- missing `~/.codex/qros/install-manifest.json`
+- missing host-specific install manifest (`~/.codex/qros/install-manifest.json` or `~/.claude/qros/install-manifest.json`)
 - stale or missing `source_repo_path`
 - missing managed source repo clone
 - dirty or drifted managed source repo
@@ -56,13 +69,14 @@ Before telling the user anything failed, automatically repair and retry these ca
 
 Default recovery order:
 
-1. Read `~/.codex/qros/install-manifest.json` and use `source_repo_path` when it exists.
-2. If manifest is missing or stale, try `~/workspace/quant-research-os`.
-3. If the managed source repo still does not exist, clone the official QROS repo.
-4. Update the managed source repo to `origin/main`.
-5. Refresh `user-global`.
-6. Refresh the current repo's `repo-local`.
-7. Run install checks.
+1. Resolve host with `--host auto` unless the user explicitly requested a host.
+2. Read the host-specific global manifest and use `source_repo_path` when it exists.
+3. If manifest is missing or stale, try `~/workspace/quant-research-os`.
+4. If the managed source repo still does not exist, clone the official QROS repo.
+5. Update the managed source repo to `origin/main`.
+6. Refresh `user-global`.
+7. Refresh the current repo's `repo-local`.
+8. Run install checks.
 
 ## When to stop and surface a blocker
 
