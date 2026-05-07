@@ -1,8 +1,8 @@
 # Roadmap: v1.0 QROS Hardening
 
 **Created:** 2026-05-07
-**Milestone goal:** Close the governance and runtime gaps exposed by the `btc_alt` CSF session audit.
-**Phase numbering:** Starts at Phase 1 because no previous GSD milestone state exists in this repo.
+**Milestone goal:** Close the governance and runtime gaps exposed by the `btc_alt` CSF session audits.
+**Phase numbering:** Preserves completed Phase 1/2 work and expands the remaining active milestone scope.
 
 ## Summary
 
@@ -10,14 +10,18 @@
 |-------|------|------|--------------|
 | 1 | Install Provenance Guard | Prevent active research repos from silently using the wrong QROS source clone or stale runtime source. | PROV-01, PROV-02, PROV-03 |
 | 2 | Canonical CSF Stage Identity | Align CSF stage ids, scaffold specs, and program directory resolution. | CSF-01, CSF-02, CSF-03 |
-| 3 | Review Session Integrity | Prevent local/manual review recovery from producing an ordinary promotable PASS. | REV-01, REV-02 |
-| 4 | Raw Review Schema Hardening | Make reviewer raw schema expectations and closer repair guidance deterministic. | REV-03, REV-04 |
-| 5 | Python Wrapper Selection | Make installed wrappers use a stable, supported Python interpreter. | WRAP-01, WRAP-02 |
-| 6 | Post-Mandate Preflight Gate | Promote post-mandate preflight from agent discipline to runtime gate. | PREF-01, PREF-02 |
+| 3 | Research Session Entry Discipline | Make `qros-research-session` the normal progression gate and block stage-specific skills when runtime state is mismatched. | ENTRY-01, ENTRY-02, ENTRY-03, ENTRY-04 |
+| 4 | Review Artifact Ownership | Prevent launcher-lane or manual writes from producing promotable review request, result, or closure artifacts. | REV-01, REV-02, CLOS-01, CLOS-02, CLOS-03, CLOS-04 |
+| 5 | Review Verdict Semantics | Harden raw reviewer schema and escalate high-severity reservations into conditional or blocking gate outcomes. | REV-03, REV-04, SEV-01, SEV-02, SEV-03, SEV-04 |
+| 6 | Mandate Data Range and Preflight Gates | Block impossible time splits and require deterministic preflight before post-mandate review launch. | DATA-01, DATA-02, DATA-03, DATA-04, PREF-01, PREF-02 |
+| 7 | Runtime Source and Dependency Isolation | Bind installed manifests to the current QROS checkout and remove ad hoc system Python/package installs from normal workflows. | PROV-04, WRAP-01, WRAP-02, DEP-01, DEP-02 |
+| 8 | Failure Verdict Routing | Route stage final verdict FAIL to failure handling and prevent review-process PASS from being mistaken for strategy success. | FAIL-01, FAIL-02, FAIL-03, FAIL-04 |
 
 ## Phase Details
 
 ### Phase 1: Install Provenance Guard
+
+**Status:** Complete
 
 **Goal:** Installed QROS runtimes detect and explain source repo path, commit, dirty-state, and interpreter drift before session/review commands rely on the wrong framework source.
 
@@ -29,9 +33,11 @@
 3. Dirty-state or commit drift is surfaced before review/session actions can claim a clean framework basis.
 4. Focused bootstrap/install tests cover the manifest and drift behavior.
 
-**Validation:** focused bootstrap/install tests + smoke + full-smoke.
+**Validation:** completed in Phase 1.
 
 ### Phase 2: Canonical CSF Stage Identity
+
+**Status:** Complete
 
 **Goal:** Keep canonical CSF stage ids as `csf_*` while preserving established lineage-local program directories.
 
@@ -43,63 +49,100 @@
 3. Review/preflight program identity checks accept canonical CSF identity and established CSF program paths.
 4. Focused tests fail on the old `csf_data_ready -> data_ready` identity drift.
 
-**Validation:** focused runtime/review tests + smoke + full-smoke.
+**Validation:** completed in Phase 2.
 
-### Phase 3: Review Session Integrity
+### Phase 3: Research Session Entry Discipline
 
-**Goal:** Make independent adversarial review materially enforceable and make manual recovery visibly non-equivalent.
+**Goal:** Ensure normal QROS stage progression is owned by `qros-research-session`, while stage-specific skills act only when the runtime state already matches.
 
-**Requirements:** REV-01, REV-02
+**Requirements:** ENTRY-01, ENTRY-02, ENTRY-03, ENTRY-04
+
+**Success criteria:**
+1. Runtime exposes a stage/route check that stage-specific author and review skills can call before doing work.
+2. Author skills block when the current runtime stage is not the requested author stage or confirmation state.
+3. Review skills block when the current runtime stage is not the requested review stage or review-confirmation state.
+4. Blocking messages name the observed runtime stage, requested stage, and the canonical recovery command through `qros-research-session`.
+5. Tests cover the drift observed when `csf_data_ready` authoring happened while progress still reported mandate handoff pending.
+
+**Validation:** focused skill/runtime gating tests + smoke + full-smoke.
+
+### Phase 4: Review Artifact Ownership
+
+**Goal:** Make independent review closure materially enforceable and prevent hand-written review artifacts from masquerading as runtime closure.
+
+**Requirements:** REV-01, REV-02, CLOS-01, CLOS-02, CLOS-03, CLOS-04
 
 **Success criteria:**
 1. Closure logic refuses promotable PASS from `local-review-session-*` unless an explicit manual recovery contract is present.
-2. Review receipts and closure artifacts record reviewer execution mode clearly.
-3. Skills/docs describe manual recovery as downgraded governance, not a replacement for independent reviewer spawn.
-4. Tests cover normal reviewer PASS, local recovery block, and explicit recovery metadata.
+2. Review receipts and closure artifacts record reviewer execution mode, launcher owner, writer identity, and recovery status.
+3. `review/request/*` generated by `qros-review-cycle prepare` carries digests that `qros-review` validates before closure.
+4. `adversarial_review_result.yaml` and `review/closure/*` are regenerated from raw reviewer findings by runtime code, not accepted from launcher-written files.
+5. Tests cover normal independent PASS, local recovery block, explicit recovery metadata, and launcher-lane edit detection.
 
-**Validation:** focused review runtime tests + smoke + full-smoke.
+**Validation:** focused review runtime/protocol tests + smoke + full-smoke.
 
-### Phase 4: Raw Review Schema Hardening
+### Phase 5: Review Verdict Semantics
 
-**Goal:** Prevent invalid reviewer raw files from requiring improvised human/agent schema repair.
+**Goal:** Prevent invalid raw reviewer schema and high-risk reservations from requiring improvised interpretation or ordinary PASS promotion.
 
-**Requirements:** REV-03, REV-04
+**Requirements:** REV-03, REV-04, SEV-01, SEV-02, SEV-03, SEV-04
 
 **Success criteria:**
 1. Reviewer handoff manifests list the exact allowed raw `review_loop_outcome` values.
 2. Stage review skills instruct flat `list[string]` findings and reject structured finding objects.
-3. Deterministic closer error messages identify invalid enum values and expected replacements where unambiguous.
-4. Tests cover invalid `PASS`, invalid `REJECT`, and structured finding object errors.
+3. Deterministic closer errors identify invalid enum values such as `PASS` and `REJECT` and show expected replacements.
+4. Stage policy defines high-severity escalation classes for direction reversal, monotonicity failure, concentration risk, and weak holdout power.
+5. Closure can return `CONDITIONAL_PASS` or `FIX_REQUIRED` when those classes cross thresholds.
+6. Tests cover invalid raw schema plus escalation behavior for each high-severity reservation class.
 
-**Validation:** focused review result writer/protocol tests + smoke + full-smoke.
+**Validation:** focused review result writer, policy, and closure tests + smoke + full-smoke.
 
-### Phase 5: Python Wrapper Selection
+### Phase 6: Mandate Data Range and Preflight Gates
 
-**Goal:** Ensure installed `.qros/bin/*` wrappers select a supported, stable Python interpreter.
+**Goal:** Block impossible mandate time splits and make deterministic review preflight a runtime gate before post-mandate review launch.
 
-**Requirements:** WRAP-01, WRAP-02
+**Requirements:** DATA-01, DATA-02, DATA-03, DATA-04, PREF-01, PREF-02
 
 **Success criteria:**
-1. Install records the Python interpreter used to install/copy runtime assets.
-2. Wrappers prefer that interpreter when it exists and satisfies Python >=3.11.
+1. Mandate preflight scans declared source data min/max for supported local data layouts.
+2. `time_split.json` windows outside observed source data bounds produce blocking findings before downstream authoring.
+3. Preflight evidence is written as a machine-readable artifact or review-ready record that reviewers can inspect.
+4. Runtime invokes review preflight for TSS and CSF post-mandate `*_review_confirmation_pending` stages.
+5. Preflight failure blocks review progression with a machine-readable blocking reason.
+6. Tests cover a holdout window outside available data and require a deterministic blocker.
+
+**Validation:** focused mandate/preflight/session tests + smoke + full-smoke.
+
+### Phase 7: Runtime Source and Dependency Isolation
+
+**Goal:** Ensure installed QROS commands use the intended checkout and a stable dependency environment rather than the host's incidental Python/packages.
+
+**Requirements:** PROV-04, WRAP-01, WRAP-02, DEP-01, DEP-02
+
+**Success criteria:**
+1. Installed manifests bind to the current user-selected QROS checkout and fail clearly when a different source clone is used.
+2. Wrappers prefer the install-recorded Python interpreter when it exists and satisfies Python >=3.11.
 3. Fallback interpreter probing rejects unsupported versions with clear diagnostics.
-4. Tests simulate incompatible `python3` and verify wrappers do not silently use it.
+4. Normal QROS commands resolve dependencies from a fixed venv or runtime bundle.
+5. Runtime diagnostics reject or warn on ad hoc `--break-system-packages` dependency installs during normal workflows.
+6. Tests simulate wrong checkout, incompatible `python3`, and missing dependency bundle cases.
 
-**Validation:** focused bootstrap/wrapper tests + smoke + full-smoke.
+**Validation:** focused bootstrap/wrapper/dependency tests + smoke + full-smoke.
 
-### Phase 6: Post-Mandate Preflight Gate
+### Phase 8: Failure Verdict Routing
 
-**Goal:** Require deterministic preflight before launching review for every post-mandate review confirmation stage.
+**Goal:** Make stage final verdict failure unambiguous and route it into QROS failure handling automatically.
 
-**Requirements:** PREF-01, PREF-02
+**Requirements:** FAIL-01, FAIL-02, FAIL-03, FAIL-04
 
 **Success criteria:**
-1. Runtime invokes review preflight for TSS and CSF post-mandate `*_review_confirmation_pending` stages.
-2. Preflight failure blocks review progression with a machine-readable blocking reason.
-3. Existing tests that locked "no post-mandate preflight" are replaced with tests requiring preflight.
-4. Stage-specific skills and docs stop describing post-mandate preflight as merely self-discipline.
+1. Review closure distinguishes review-process outcome from stage final verdict in machine-readable and user-facing outputs.
+2. Stage final verdict `FAIL` blocks normal downstream progression even when review-loop outcome is closure-ready.
+3. Runtime automatically routes to `qros-stage-failure-handler` with stage, route, findings, and allowed next actions.
+4. Holdout failure closure records valid next actions: stop lineage, child lineage, or explicit failure triage.
+5. Tests cover review PASS with stage final verdict FAIL and verify failure-handler routing.
 
-**Validation:** focused session/review tests + smoke + full-smoke.
+**Validation:** focused failure-routing/research-session tests + smoke + full-smoke.
 
 ## Coverage
 
@@ -111,19 +154,42 @@
 | CSF-01 | Phase 2 | Complete |
 | CSF-02 | Phase 2 | Complete |
 | CSF-03 | Phase 2 | Complete |
-| REV-01 | Phase 3 | Pending |
-| REV-02 | Phase 3 | Pending |
-| REV-03 | Phase 4 | Pending |
-| REV-04 | Phase 4 | Pending |
-| WRAP-01 | Phase 5 | Pending |
-| WRAP-02 | Phase 5 | Pending |
+| ENTRY-01 | Phase 3 | Pending |
+| ENTRY-02 | Phase 3 | Pending |
+| ENTRY-03 | Phase 3 | Pending |
+| ENTRY-04 | Phase 3 | Pending |
+| REV-01 | Phase 4 | Pending |
+| REV-02 | Phase 4 | Pending |
+| CLOS-01 | Phase 4 | Pending |
+| CLOS-02 | Phase 4 | Pending |
+| CLOS-03 | Phase 4 | Pending |
+| CLOS-04 | Phase 4 | Pending |
+| REV-03 | Phase 5 | Pending |
+| REV-04 | Phase 5 | Pending |
+| SEV-01 | Phase 5 | Pending |
+| SEV-02 | Phase 5 | Pending |
+| SEV-03 | Phase 5 | Pending |
+| SEV-04 | Phase 5 | Pending |
+| DATA-01 | Phase 6 | Pending |
+| DATA-02 | Phase 6 | Pending |
+| DATA-03 | Phase 6 | Pending |
+| DATA-04 | Phase 6 | Pending |
 | PREF-01 | Phase 6 | Pending |
 | PREF-02 | Phase 6 | Pending |
+| PROV-04 | Phase 7 | Pending |
+| WRAP-01 | Phase 7 | Pending |
+| WRAP-02 | Phase 7 | Pending |
+| DEP-01 | Phase 7 | Pending |
+| DEP-02 | Phase 7 | Pending |
+| FAIL-01 | Phase 8 | Pending |
+| FAIL-02 | Phase 8 | Pending |
+| FAIL-03 | Phase 8 | Pending |
+| FAIL-04 | Phase 8 | Pending |
 
-**Coverage:** 14/14 requirements mapped.
+**Coverage:** 37/37 requirements mapped.
 
 ## Next Step
 
-Phase 3 is planned. Execute Phase 3 to make manual review recovery visibly non-equivalent to independent reviewer closure.
+Phase 3 needs a fresh plan. Plan Phase 3 to enforce `qros-research-session` as the normal stage progression gate and block mismatched stage-specific skills.
 
-`$gsd-execute-phase 3`
+`$gsd-plan-phase 3`

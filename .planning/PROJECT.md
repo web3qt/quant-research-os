@@ -12,15 +12,19 @@ QROS must enforce stage-gated research progression from disk evidence, canonical
 
 ## Current Milestone: v1.0 QROS Hardening
 
-**Goal:** Close the governance and runtime gaps exposed by the `btc_alt` CSF session audit so installed QROS research repos cannot silently drift across source clones, CSF stage identities, review lanes, Python runtimes, or preflight gates.
+**Goal:** Close the governance and runtime gaps exposed by the `btc_alt` CSF session audits so installed QROS research repos cannot silently drift across source clones, CSF stage identities, runtime entrypoints, review lanes, Python environments, preflight gates, severity semantics, or failure routing.
 
 **Target features:**
 - Source-repo provenance guard for installed `.qros` wrappers and manifests.
 - Canonical CSF stage id and lineage-local program path resolution.
-- Independent reviewer enforcement and manual recovery downgrade semantics.
-- Strict raw reviewer schema guidance and actionable closer errors.
-- Stable Python interpreter selection for installed wrappers.
-- Runtime-enforced post-mandate deterministic preflight gates.
+- Installed source checkout binding against the user's current QROS checkout.
+- `qros-research-session` as the canonical stage progression entrypoint, with stage-specific skills refusing mismatched runtime stages.
+- Mandate data-source range preflight that blocks frozen time splits outside available data.
+- Generated-only review request/result/closure ownership with digest validation.
+- Independent reviewer enforcement, manual recovery downgrade semantics, and strict raw reviewer schema guidance.
+- Stable Python interpreter and dependency environment selection for installed wrappers.
+- High-severity reservation escalation to `CONDITIONAL_PASS` or `FIX_REQUIRED`.
+- Automatic failure-handler routing whenever a stage final verdict is `FAIL`.
 
 ## Requirements
 
@@ -39,6 +43,11 @@ QROS must enforce stage-gated research progression from disk evidence, canonical
 - [ ] Reviewer handoffs and closer validation prevent or clearly repair invalid raw outcomes such as `PASS`, `REJECT`, or structured finding objects.
 - [ ] Installed wrappers use a stable Python interpreter compatible with QROS requirements instead of whichever `python3` appears first.
 - [ ] Post-mandate review confirmation stages run deterministic preflight as a runtime gate, not merely as agent self-discipline.
+- [ ] Mandate author/review gates block time splits whose train/test/backtest/holdout windows exceed the scanned source data min/max.
+- [ ] Stage-specific author/review skills refuse to continue when the runtime stage does not match the requested stage, routing users back through `qros-research-session`.
+- [ ] Review request, canonical result, and closure artifacts are generated only by QROS runtime commands and protected by digest/write-owner checks.
+- [ ] High-severity reservations such as factor direction reversal, monotonicity failure, concentration risk, or insufficient holdout sample size cannot silently remain ordinary PASS.
+- [ ] Final stage verdict `FAIL` automatically routes to `qros-stage-failure-handler` and is clearly distinguished from review process PASS.
 
 ### Out of Scope
 
@@ -61,12 +70,23 @@ The audited Codex session `019e00c7-0b34-7a62-914b-062f206506fb` progressed a CS
 - Installed wrappers selected `python3`, causing one environment to use Python 3.9 while QROS expects Python 3.11+ and CI uses Python 3.13.
 - Post-mandate deterministic preflight remained partly dependent on agent behavior rather than runtime enforcement.
 
+A later Claude Code session `eab22e58-0013-4200-83b4-0ea8873a0a63` progressed a `btc_alt` CSF lineage through holdout. It exposed stricter workflow gaps:
+
+- Mandate froze a holdout window outside the real Binance futures data range before the user forced a source-range check.
+- Stage-specific author/review skills advanced even when `qros-progress` still reported an earlier runtime confirmation state.
+- Several review directories were hand-written by the launcher lane instead of being produced solely by `qros-review-cycle` and `qros-review`.
+- High-risk findings such as factor direction reversal, monotonicity failure, concentrated backtest returns, and weak holdout sample size remained reservations while progression continued.
+- Holdout review process passed while stage final verdict failed, creating ambiguity until the user/agent explicitly interpreted the result.
+- Dependencies were installed ad hoc with `--break-system-packages` instead of using a fixed QROS runtime environment.
+
 ## Constraints
 
 - **Repository boundary**: Do not store live strategy implementation in this repo - preserve QROS as workflow/governance infrastructure.
 - **Compatibility**: Preserve established lineage-local CSF program directories (`data_ready`, `signal_ready`, etc.) while making canonical stage identity machine-readable.
 - **Review integrity**: Independent adversarial review must stay materially separate from authoring; recovery paths must be visibly weaker than normal review.
 - **Runtime portability**: Wrapper behavior must be deterministic across Codex/Claude hosts and Python environments.
+- **Entry discipline**: Normal research progression must flow through `qros-research-session`; direct stage skills may only operate when the runtime state matches.
+- **Failure semantics**: Review-process PASS must never obscure a stage final verdict FAIL.
 - **Verification**: Changes touching research-session flow, review orchestration, CSF routing, or wrapper runtime require focused tests, smoke, and full-smoke.
 
 ## Key Decisions
@@ -78,6 +98,8 @@ The audited Codex session `019e00c7-0b34-7a62-914b-062f206506fb` progressed a CS
 | Keep CSF program directories non-prefixed | Existing lineage-local programs and user-facing paths already use `program/cross_sectional_factor/data_ready` style paths | - Pending |
 | Treat local review session PASS as non-promotable unless explicitly recovered | Prevent silent self-review from masquerading as independent adversarial review | - Pending |
 | Skip external research for this milestone | The scope is remediation from local audit evidence, not discovery of a new product feature | - Pending |
+| Extend v1.0 instead of starting v1.1 | The milestone is already active and partially completed; overlapping hardening milestones would fragment remediation | - Pending |
+| Treat high-severity reservation classes as gate semantics | Warnings about direction reversal, monotonicity, concentration, or weak holdout power materially affect downstream trust | - Pending |
 
 ## Evolution
 
@@ -97,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-07 after completing Phase 1: Install Provenance Guard*
+*Last updated: 2026-05-07 after expanding milestone v1.0 from Claude Code session audit*
