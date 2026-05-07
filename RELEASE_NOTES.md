@@ -6,6 +6,23 @@
 
 <br>
 
+## 0.4.9 - 2026-05-07
+
+### 修复
+
+- `qros-update --host auto` 现在会在 `QROS_HOST` 之后优先读取当前 agent 环境标记，再读取 repo-local manifest，避免旧版更新曾把 Claude Code repo 的 manifest 误写成 Codex 后继续锁死在 Codex surface。
+- 保留 repo-local manifest 作为环境不明确时的 fallback，因此普通无 env wrapper 仍能按已有安装记录刷新。
+- 更新 `qros-update` skill 和 installation guide，明确旧 wrapper 迁移后的自愈行为边界。
+
+### 验证
+
+- 本版本发布前已运行 qros-update focused tests、docs/bootstrap minimum 和 smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.9`。
+
+---
+
+<br>
+
 ## 0.4.8 - 2026-05-07
 
 ### 修复

@@ -61,14 +61,15 @@ def resolve_update_host(
     if env_host is not None:
         return env_host
 
-    local_host = _host_from_manifest(target_cwd / ".qros" / "install-manifest.json")
-    if local_host is not None:
-        return local_host
-
     if _looks_like_claude_code(env):
         return "claude-code"
     if _looks_like_codex(env):
         return "codex"
+
+    local_host = _host_from_manifest(target_cwd / ".qros" / "install-manifest.json")
+    if local_host is not None:
+        return local_host
+
     return "codex"
 
 
@@ -102,11 +103,13 @@ def run_qros_update(
     branch: str = DEFAULT_BRANCH,
     host: str = "auto",
     legacy_default_host: bool = False,
+    environ: Mapping[str, str] | None = None,
 ) -> UpdateResult:
     resolved_target_cwd = target_cwd.resolve()
     resolved_host = resolve_update_host(
         host,
         target_cwd=resolved_target_cwd,
+        environ=environ,
         legacy_default_host=legacy_default_host,
     )
     source_repo = resolve_source_repo(

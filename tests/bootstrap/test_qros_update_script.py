@@ -103,12 +103,28 @@ def test_resolve_update_host_reinterprets_legacy_codex_default_as_auto(tmp_path:
     assert resolve_update_host(
         "codex",
         target_cwd=target_cwd,
-        environ={"CODEX_THREAD_ID": "codex-thread"},
+        environ={},
         legacy_default_host=True,
     ) == "claude-code"
 
 
-def test_resolve_update_host_uses_repo_local_manifest_before_runtime_environment(tmp_path: Path) -> None:
+def test_resolve_update_host_uses_current_runtime_environment_before_repo_local_manifest(tmp_path: Path) -> None:
+    target_cwd = tmp_path / "research-project"
+    manifest_path = target_cwd / ".qros" / "install-manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps({"host": "codex"}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    assert resolve_update_host(
+        "auto",
+        target_cwd=target_cwd,
+        environ={"CLAUDE_CODE_ENTRYPOINT": "cli"},
+    ) == "claude-code"
+
+
+def test_resolve_update_host_uses_repo_local_manifest_when_runtime_environment_is_ambiguous(tmp_path: Path) -> None:
     target_cwd = tmp_path / "research-project"
     manifest_path = target_cwd / ".qros" / "install-manifest.json"
     manifest_path.parent.mkdir(parents=True)
@@ -120,7 +136,7 @@ def test_resolve_update_host_uses_repo_local_manifest_before_runtime_environment
     assert resolve_update_host(
         "auto",
         target_cwd=target_cwd,
-        environ={"CODEX_SANDBOX": "seatbelt", "CODEX_THREAD_ID": "codex-thread"},
+        environ={},
     ) == "claude-code"
 
 
@@ -152,6 +168,7 @@ def test_run_qros_update_refreshes_user_global_and_repo_local(tmp_path: Path, mo
         explicit_source_repo=managed_repo,
         repo_root_fallback=managed_repo,
         repo_url=str(origin_repo),
+        environ={},
     )
 
     assert result.source_repo == managed_repo.resolve()
@@ -184,6 +201,7 @@ def test_run_qros_update_auto_host_uses_repo_local_manifest(tmp_path: Path, monk
         explicit_source_repo=managed_repo,
         repo_root_fallback=managed_repo,
         repo_url=str(origin_repo),
+        environ={},
     )
 
     assert result.source_repo == managed_repo.resolve()
