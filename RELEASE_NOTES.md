@@ -6,6 +6,29 @@
 
 <br>
 
+## 0.4.6 - 2026-05-07
+
+### 新增
+
+- 新增 `qros-check-stage-entry` repo-local runtime guard，用于 stage-specific author / review skill 进入前校验当前 lineage 的 runtime `current_stage`。
+- 新增 `runtime/tools/stage_entry_guard.py` 与 `runtime/scripts/check_stage_entry.py`，支持 JSON 输出和明确的 mismatch 诊断。
+
+### 改进
+
+- 所有 stage-specific author skills 现在必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`，防止 current stage 仍停在上游 handoff / confirmation 时直接写下游 artifact。
+- 所有 stage-specific review skills 现在必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`，防止 stage 不匹配时启动 reviewer 或运行 `qros-review-cycle prepare`。
+- review skill 生成模板已同步更新，后续重新生成 review skills 时会保留 runtime entry guard。
+- 更新 `qros-research-session`、`using-qros`、installation guide 和 research session usage 文档，明确 `qros-research-session` 是普通阶段推进的唯一总控入口。
+
+### 验证
+
+- 本版本发布前已运行 focused tests、docs/bootstrap minimum、smoke 和 full-smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.6`。
+
+---
+
+<br>
+
 ## 0.4.5 - 2026-05-06
 
 ### 新增
