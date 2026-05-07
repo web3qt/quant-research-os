@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
 
+import runtime.tools.install_runtime as install_runtime
 from runtime.tools.install_runtime import InstallError, check_install, install_qros, list_skill_dirs, resolve_install_mode
 
 
@@ -55,6 +57,16 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert "qros-backtest-ready-author" in manifest["installed_skills"]
     assert "qros-holdout-validation-author" in manifest["installed_skills"]
     assert "source_git_commit" in manifest
+    assert "source_repo_path" in manifest
+    assert "source_git_dirty" in manifest
+    assert "source_git_status_short" in manifest
+    assert "python_executable" in manifest
+    assert "python_version" in manifest
+    assert manifest["source_repo_path"] == str(repo_root.resolve())
+    assert isinstance(manifest["source_git_dirty"], bool)
+    assert isinstance(manifest["source_git_status_short"], list)
+    assert manifest["python_executable"] == str(Path(sys.executable).resolve())
+    assert manifest["python_version"].startswith(f"{sys.version_info.major}.{sys.version_info.minor}")
     assert manifest["installed_runtime_files"] == [
         "bin/qros-agent-eval",
         "bin/qros-audit-reviewer",
@@ -129,6 +141,11 @@ def test_manifest_fields_include_install_metadata(tmp_path: Path, monkeypatch: p
     assert manifest["installed_skills"]
     assert manifest["installed_runtime_files"]
     assert manifest["source_git_commit"]
+    assert manifest["source_repo_path"] == str(repo_root.resolve())
+    assert isinstance(manifest["source_git_dirty"], bool)
+    assert isinstance(manifest["source_git_status_short"], list)
+    assert manifest["python_executable"] == str(Path(sys.executable).resolve())
+    assert manifest["python_version"].startswith(f"{sys.version_info.major}.{sys.version_info.minor}")
 
 
 def test_check_install_reports_source_commit_drift_with_update_hint(
@@ -156,6 +173,59 @@ def test_check_install_reports_source_commit_drift_with_update_hint(
     assert "current source_git_commit:" in message
     assert "qros-update" in message
     assert "Restart Codex" in message
+
+
+def test_check_install_reports_source_repo_path_drift_with_installed_and_current_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    install_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+    manifest_path = install_root / ".qros" / "install-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["source_repo_path"] = "/tmp/not-the-active-qros-source"
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    ok, messages = check_install(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    message = "\n".join(messages)
+    assert ok is False
+    assert "QROS source repo path drift detected:" in message
+    assert "installed source_repo_path:" in message
+    assert "current source_repo_path:" in message
+    assert "fix: run qros-update from the active research repo" in message
+
+
+def test_check_install_reports_source_git_dirty_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    install_root.mkdir()
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+    manifest_path = install_root / ".qros" / "install-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["source_git_dirty"] = False
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    monkeypatch.setattr(install_runtime, "_git_status_short", lambda repo_root: " M runtime/tools/install_runtime.py\n")
+
+    ok, messages = check_install(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    message = "\n".join(messages)
+    assert ok is False
+    assert "QROS source_git_dirty drift detected:" in message
+    assert "installed source_git_dirty: false" in message
+    assert "current source_git_dirty: true" in message
+    assert "fix: commit, stash, or reinstall QROS from the intended source checkout" in message
 
 
 def test_list_skill_dirs_rejects_duplicate_flattened_skill_names(tmp_path: Path) -> None:

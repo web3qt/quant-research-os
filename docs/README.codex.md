@@ -119,6 +119,6 @@ test -f ~/.codex/qros/install-manifest.json
 ls ./.qros/bin
 ```
 
-3. 如果怀疑 repo-local runtime 和 QROS source repo 不一致，从 active research repo 运行 `<source_repo>/setup --host codex --mode repo-local --check`。如果输出包含 `source_git_commit drift`，从 active research repo 根目录运行 `qros-update`。
+3. 如果怀疑 repo-local runtime 和 QROS source repo 不一致，从 active research repo 运行 `<source_repo>/setup --host codex --mode repo-local --check`。如果输出包含 `source_repo_path drift`、`source_git_commit drift` 或 dirty-state drift，先确认当前 source checkout 是否正确，必要时 commit 或 stash 本地改动，再从 active research repo 根目录运行 `qros-update`。
 
 4. 重启 Codex。Skills 会在 Codex 启动时发现。

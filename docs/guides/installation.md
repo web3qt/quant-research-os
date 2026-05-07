@@ -136,6 +136,19 @@ test -d ./.qros
 
 > 它是项目本地 wrapper 层，不再复制整套 runtime 源码镜像。
 
+`install-manifest.json` 是 repo-local runtime 的来源证明。关键字段包括：
+
+| 字段 | 含义 |
+| --- | --- |
+| `source_repo_path` | 安装时使用的 QROS source checkout 绝对路径 |
+| `source_git_commit` | 安装时 source checkout 的 Git commit |
+| `source_git_dirty` | 安装时 source checkout 是否有未提交改动 |
+| `source_git_status_short` | 安装时 `git status --short` 的逐行快照 |
+| `python_executable` | 安装时运行 setup 的 Python interpreter 绝对路径 |
+| `python_version` | 安装时运行 setup 的 Python 版本 |
+
+当前阶段里，`python_executable` 和 `python_version` 只作为审计 provenance 记录；wrapper 优先使用安装时 interpreter 的执行策略由后续 Python wrapper 阶段处理。
+
 ---
 
 <br>
@@ -184,14 +197,16 @@ test -d ./.qros
 <source_repo>/setup --host codex --mode repo-local --check
 ```
 
-> 当 `install-manifest.json` 里的 `source_git_commit drift` 被检测到时，检查会提示当前安装记录的 revision 和 source repo 当前 revision。处理方式是从 active research repo 运行 `qros-update`，然后 Restart Codex。
+> 当 `install-manifest.json` 里的 `source_repo_path drift`、`source_git_commit drift` 或 `source_git_dirty drift` 被检测到时，检查会提示当前安装记录的 source path、revision 或 dirty-state 与 source repo 当前状态的差异。处理方式是从 active research repo 运行 `qros-update`，必要时先 commit 或 stash QROS source checkout 的本地改动，然后 Restart Codex。
 
 它会验证：
 
 - Codex 能通过 `~/.codex/skills/` 发现 QROS skills
 - 安装元数据存在于 `~/.codex/qros/`
 - runtime assets 存在于 `./.qros/`
+- `source_repo_path` 指向当前检查的 QROS source repo
 - `source_git_commit` 没有相对 QROS source repo 发生 drift
+- `source_git_dirty` 没有从安装时的 clean state 漂移到当前 dirty state
 
 ---
 

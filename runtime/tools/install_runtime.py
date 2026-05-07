@@ -143,6 +143,7 @@ def build_manifest(
     installed_runtime_files: list[str],
     host: str = "codex",
 ) -> dict[str, object]:
+    git_status_short = _git_status_short(repo_root)
     return {
         "project_name": repo_root.name,
         "host": host,
@@ -150,6 +151,10 @@ def build_manifest(
         "installed_at": datetime.now(UTC).isoformat(),
         "source_repo_path": str(repo_root),
         "source_git_commit": _git_commit(repo_root),
+        "source_git_dirty": bool(git_status_short.strip()),
+        "source_git_status_short": git_status_short.splitlines(),
+        "python_executable": _python_executable(),
+        "python_version": _python_version(),
         "skills_root": str(target.skills_root),
         "runtime_root": str(target.runtime_root),
         "installed_skills": installed_skills,
@@ -242,7 +247,18 @@ def check_install(
         return False, messages
 
     manifest = json.loads(target.manifest_path.read_text(encoding="utf-8"))
-    for key in ("host", "install_mode", "installed_skills", "installed_runtime_files", "source_git_commit"):
+    for key in (
+        "host",
+        "install_mode",
+        "installed_skills",
+        "installed_runtime_files",
+        "source_repo_path",
+        "source_git_commit",
+        "source_git_dirty",
+        "source_git_status_short",
+        "python_executable",
+        "python_version",
+    ):
         if key not in manifest:
             messages.append(f"manifest missing field: {key}")
 
@@ -252,6 +268,21 @@ def check_install(
         messages.append(
             f"manifest install_mode mismatch: expected {target.mode}, found {manifest.get('install_mode')}"
         )
+    installed_source_repo_path = manifest.get("source_repo_path")
+    if isinstance(installed_source_repo_path, str) and installed_source_repo_path.strip():
+        current_source_repo_path = str(repo_root)
+        if installed_source_repo_path.strip() != current_source_repo_path:
+            messages.append(
+                "\n".join(
+                    [
+                        "QROS source repo path drift detected:",
+                        f"manifest: {target.manifest_path}",
+                        f"installed source_repo_path: {installed_source_repo_path.strip()}",
+                        f"current source_repo_path: {current_source_repo_path}",
+                        "fix: run qros-update from the active research repo",
+                    ]
+                )
+            )
     installed_commit = manifest.get("source_git_commit")
     current_commit = _git_commit(repo_root)
     if (
@@ -269,6 +300,20 @@ def check_install(
                     f"current source_git_commit: {current_commit}",
                     "fix: run `qros-update` from the active research repo, then Restart Codex "
                     "so installed skills and repo-local wrappers match the source repo.",
+                ]
+            )
+        )
+    current_git_status_short = _git_status_short(repo_root)
+    current_git_dirty = bool(current_git_status_short.strip())
+    if manifest.get("source_git_dirty") is False and current_git_dirty:
+        messages.append(
+            "\n".join(
+                [
+                    "QROS source_git_dirty drift detected:",
+                    f"manifest: {target.manifest_path}",
+                    "installed source_git_dirty: false",
+                    "current source_git_dirty: true",
+                    "fix: commit, stash, or reinstall QROS from the intended source checkout",
                 ]
             )
         )
@@ -306,6 +351,27 @@ def _git_commit(repo_root: Path) -> str:
     except (OSError, subprocess.CalledProcessError):
         return ""
     return result.stdout.strip()
+
+
+def _git_status_short(repo_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "status", "--short"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    return result.stdout
+
+
+def _python_version() -> str:
+    return ".".join(map(str, sys.version_info[:3]))
+
+
+def _python_executable() -> str:
+    return str(Path(sys.executable).resolve())
 
 
 def main(argv: list[str] | None = None) -> int:
