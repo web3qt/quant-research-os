@@ -105,9 +105,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROV-01 | Phase 1 | Pending |
-| PROV-02 | Phase 1 | Pending |
-| PROV-03 | Phase 1 | Pending |
+| PROV-01 | Phase 1 | Complete |
+| PROV-02 | Phase 1 | Complete |
+| PROV-03 | Phase 1 | Complete |
 | CSF-01 | Phase 2 | Pending |
 | CSF-02 | Phase 2 | Pending |
 | CSF-03 | Phase 2 | Pending |
@@ -124,6 +124,6 @@
 
 ## Next Step
 
-Start with Phase 1 because source provenance drift can invalidate every later runtime/review result.
+Phase 1 is complete. Continue with Phase 2 because canonical CSF stage identity is the next blocker for reliable review/preflight behavior.
 
-`$gsd-plan-phase 1`
+`$gsd-plan-phase 2`

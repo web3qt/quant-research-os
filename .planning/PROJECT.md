@@ -28,13 +28,12 @@ QROS must enforce stage-gated research progression from disk evidence, canonical
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet - this milestone establishes the first GSD-tracked hardening baseline.)
+- [x] Installed QROS wrappers detect source-repo path, commit, and dirty-state drift before runtime actions can be trusted. Validated in Phase 1: Install Provenance Guard.
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Installed QROS wrappers detect source-repo path, commit, and dirty-state drift before runtime actions can be trusted.
 - [ ] CSF stage ids remain canonical as `csf_*` while lineage-local program directories keep established non-prefixed names such as `data_ready` and `signal_ready`.
 - [ ] Review closure cannot produce promotable PASS from a local/manual recovery session unless that recovery mode is explicit and audited.
 - [ ] Reviewer handoffs and closer validation prevent or clearly repair invalid raw outcomes such as `PASS`, `REJECT`, or structured finding objects.
@@ -74,6 +73,7 @@ The audited Codex session `019e00c7-0b34-7a62-914b-062f206506fb` progressed a CS
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Record install provenance before wrapper enforcement | Source checkout and Python interpreter metadata must be visible before active research repos trust installed runtime assets | Validated in Phase 1 |
 | Keep CSF artifact stages canonical as `csf_*` | Review, preflight, gates, and docs already treat CSF stages as route-specific contracts | - Pending |
 | Keep CSF program directories non-prefixed | Existing lineage-local programs and user-facing paths already use `program/cross_sectional_factor/data_ready` style paths | - Pending |
 | Treat local review session PASS as non-promotable unless explicitly recovered | Prevent silent self-review from masquerading as independent adversarial review | - Pending |
@@ -97,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-07 after starting milestone v1.0 QROS Hardening*
+*Last updated: 2026-05-07 after completing Phase 1: Install Provenance Guard*
