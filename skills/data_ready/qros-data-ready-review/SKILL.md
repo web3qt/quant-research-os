@@ -9,6 +9,14 @@ description: Codex review skill for Data Ready stage verification.
 
 产出共享、可审计、strategy-agnostic 的 Layer 0 数据基础层
 
+## Runtime Stage Admission
+
+开始本 stage-specific review 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage data_ready --lane review`
+
+若命令失败，必须停止；不得继续 review，不得启动 reviewer，不得运行 `qros-review-cycle prepare`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## 共享审查协议
 
 执行本 stage review 前，必须先阅读并遵守 `docs/guides/qros-review-shared-protocol.md`。

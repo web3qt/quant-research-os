@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+TARGET_CWD="$PWD"
+ARGS=()
+HAS_OUTPUTS_ROOT=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --cwd)
+      TARGET_CWD="$2"
+      shift 2
+      ;;
+    --outputs-root)
+      HAS_OUTPUTS_ROOT=1
+      ARGS+=("$1" "$2")
+      shift 2
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+PYTHON_BIN=""
+for CANDIDATE in python python3; do
+  if command -v "$CANDIDATE" >/dev/null 2>&1 && "$CANDIDATE" - <<'PY' >/dev/null 2>&1
+import sys
+
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+  then
+    PYTHON_BIN="$CANDIDATE"
+    break
+  fi
+done
+
+if [ -z "$PYTHON_BIN" ]; then
+  echo "qros-check-stage-entry requires Python 3.11+" >&2
+  exit 1
+fi
+
+source "$SCRIPT_DIR/qros-wrapper-lib"
+RUNTIME_ROOT="$(qros_resolve_runtime_root "$SCRIPT_DIR" "$PYTHON_BIN" strict)"
+
+PROJECT_ROOT="$(cd "$TARGET_CWD" && pwd)"
+cd "$PROJECT_ROOT"
+
+if [ "$HAS_OUTPUTS_ROOT" -eq 0 ]; then
+  ARGS=(--outputs-root "$PROJECT_ROOT/outputs" "${ARGS[@]}")
+fi
+
+exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/check_stage_entry.py" "${ARGS[@]}"

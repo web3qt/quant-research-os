@@ -11,6 +11,14 @@ description: Use when a QROS time_series_signal lineage is at the tss_data_ready
 
 TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，不是横截面排序，也不是在同一时点把多个资产互相排名。
 
+## Runtime Stage Admission
+
+开始本 stage-specific author 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage tss_data_ready --lane author`
+
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## Artifact Contract Truth
 
 - `contracts/artifacts/tss_data_ready_artifacts.yaml` 是本阶段 formal artifact shape 的字段真值。

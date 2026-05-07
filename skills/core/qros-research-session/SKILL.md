@@ -71,6 +71,14 @@ The user should not need to remember internal commands. Runtime commands are bac
 
 QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
 
+## Stage-Specific Entry Discipline
+
+- `qros-research-session` 是普通阶段推进的唯一总控入口；stage-specific author/review skill 只能在 runtime `current_stage` 已经匹配时接手
+- 进入任何 stage-specific author skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`
+- 进入任何 stage-specific review skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`
+- guard 失败时，不得继续 authoring、不得起 reviewer、不得运行 `qros-review-cycle prepare`；按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state
+- 这层 guard 专门防止 `current_stage` 仍停在上游 handoff、review confirmation 或 next-stage confirmation 时，agent 直接跳到下游 stage-specific skill
+
 ## TSS Route Branch
 
 When `research_route = time_series_signal`, use the TSS branch. TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，不是横截面排序；不得把 Rank IC / Top-Bottom / bucket monotonicity 当作 TSS 主证据。

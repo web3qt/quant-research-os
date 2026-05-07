@@ -53,7 +53,7 @@ Claude Code 通过 `.claude-plugin/` 目录提供完整的 QROS skill discovery 
 /plugin install qros@quant-research-os
 ```
 
-> Plugin install 不等于 QROS workflow ready：当前 active research repo 仍然需要 `./.qros/bin` repo-local runtime 才能运行 `qros-session`、`qros-progress` 和 `qros-review`。
+> Plugin install 不等于 QROS workflow ready：当前 active research repo 仍然需要 `./.qros/bin` repo-local runtime 才能运行 `qros-session`、`qros-progress`、`qros-check-stage-entry` 和 `qros-review`。
 
 安装后，Claude Code 会以 plugin namespace 暴露 QROS skills，包括 13 个 stage-specific review skills 和独立的 adversarial reviewer agent（`.claude-plugin/agents/qros-reviewer.md`）。
 
@@ -70,7 +70,7 @@ Claude Code 通过 `.claude-plugin/` 目录提供完整的 QROS skill discovery 
 
 ## Claude Code repo bootstrap
 
-Claude Code 安装 plugin 之后，还需要初始化 active research repo 的 `./.qros` runtime 才能运行 `qros-session`、`qros-progress` 和 `qros-review`。
+Claude Code 安装 plugin 之后，还需要初始化 active research repo 的 `./.qros` runtime 才能运行 `qros-session`、`qros-progress`、`qros-check-stage-entry` 和 `qros-review`。
 
 在 active research repo 根目录运行 repo bootstrap：
 
@@ -239,7 +239,7 @@ test -d ./.qros
 
 正常使用时，不需要从 `./.qros/bin/qros-session` 开始。
 
-`./.qros/bin/qros-session`、`./.qros/bin/qros-review` 和 `./.qros/bin/qros-verify` 主要用于：
+`./.qros/bin/qros-session`、`./.qros/bin/qros-check-stage-entry`、`./.qros/bin/qros-review` 和 `./.qros/bin/qros-verify` 主要用于：
 
 - deterministic debugging
 - 手工恢复

@@ -9,6 +9,14 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 
 把原始 idea 压成 `00_idea_intake` 的正式产物，而不是直接写 mandate。
 
+## Runtime Stage Admission
+
+开始本 stage-specific author 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage idea_intake --lane author`
+
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## Required Outputs
 
 - `idea_brief.md`

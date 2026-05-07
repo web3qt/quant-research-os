@@ -160,6 +160,7 @@ def render_stage_skill(
         rendered = rendered.replace("{{" + var_name + "}}", var_value)
     rendered = (
         rendered.replace("{{SKILL_NAME}}", skill_name)
+        .replace("{{STAGE_KEY}}", stage_key)
         .replace("{{STAGE_NAME}}", stage_contract["stage_name"])
         .replace("{{STAGE_PURPOSE}}", stage_contract["purpose"])
         .replace(

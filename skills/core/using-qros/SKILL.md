@@ -29,6 +29,8 @@ Before responding to any request, check if it matches QROS triggers:
 
 在 Codex 中，用户入口应写成 `$qros-research-session`、`$qros-progress`、`$qros-stage-display` 或对应 `$qros-*-review`。不要让用户直接执行底层脚本；底层 runtime 命令只作为 agent 的 backend mechanics、debugging 和 manual recovery。
 
+stage-specific `$qros-*-author` / `$qros-*-review` 不是普通阶段跳转入口。它们开始前必须先通过 repo-local `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author|review`；失败时应回到 `$qros-research-session` 恢复 runtime `current_stage`，不能直接补 artifact 或起 reviewer。
+
 ```
 User message → QROS trigger detected?
 ├─ Yes → Invoke $qros-research-session skill via Skill tool

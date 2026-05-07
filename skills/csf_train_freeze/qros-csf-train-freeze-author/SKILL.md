@@ -15,6 +15,14 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 formal artifact shape 的真值层是 `contracts/artifacts/csf_train_freeze_artifacts.yaml`。本 skill 只负责执行顺序、确认边界和用户交互，不得手写或自行扩展 formal artifact shape。
 
+## Runtime Stage Admission
+
+开始本 stage-specific author 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage csf_train_freeze --lane author`
+
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## Required Inputs
 
 - `03_csf_signal_ready/author/formal/factor_manifest.yaml`

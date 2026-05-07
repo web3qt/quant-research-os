@@ -20,10 +20,10 @@
 
 ### Runtime Entry Discipline
 
-- [ ] **ENTRY-01**: `qros-research-session` is the canonical normal entrypoint for stage progression from idea intake through holdout.
-- [ ] **ENTRY-02**: Stage-specific author skills refuse to continue when the runtime current stage does not match the requested author stage.
-- [ ] **ENTRY-03**: Stage-specific review skills refuse to launch review when the runtime current stage does not match the requested review stage.
-- [ ] **ENTRY-04**: Refusal messages route the user to the exact `qros-research-session` or recovery command needed to realign runtime state.
+- [x] **ENTRY-01**: `qros-research-session` is the canonical normal entrypoint for stage progression from idea intake through holdout.
+- [x] **ENTRY-02**: Stage-specific author skills refuse to continue when the runtime current stage does not match the requested author stage.
+- [x] **ENTRY-03**: Stage-specific review skills refuse to launch review when the runtime current stage does not match the requested review stage.
+- [x] **ENTRY-04**: Refusal messages route the user to the exact `qros-research-session` or recovery command needed to realign runtime state.
 
 ### Mandate Data Range Preflight
 
@@ -102,10 +102,10 @@
 | CSF-01 | Phase 2 | Complete |
 | CSF-02 | Phase 2 | Complete |
 | CSF-03 | Phase 2 | Complete |
-| ENTRY-01 | Phase 3 | Pending |
-| ENTRY-02 | Phase 3 | Pending |
-| ENTRY-03 | Phase 3 | Pending |
-| ENTRY-04 | Phase 3 | Pending |
+| ENTRY-01 | Phase 3 | Complete |
+| ENTRY-02 | Phase 3 | Complete |
+| ENTRY-03 | Phase 3 | Complete |
+| ENTRY-04 | Phase 3 | Complete |
 | REV-01 | Phase 4 | Pending |
 | REV-02 | Phase 4 | Pending |
 | CLOS-01 | Phase 4 | Pending |

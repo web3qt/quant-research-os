@@ -13,6 +13,14 @@ description: Use when a reviewed mandate must be frozen into formal csf_data_rea
 
 QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `02_csf_data_ready` 需要交付的面板与覆盖证据，而不是把空目录、placeholder 文件或只有合同语义的说明文档当作 csf_data_ready 完成。
 
+## Runtime Stage Admission
+
+开始本 stage-specific author 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage csf_data_ready --lane author`
+
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## Artifact Contract Truth
 
 `contracts/artifacts/csf_data_ready_artifacts.yaml` 是本阶段 formal artifact shape 的机器真值层。不得把 `SKILL.md` 当作字段真值；本 skill 只负责引导执行顺序、freeze confirmation、真实物化和校验动作。

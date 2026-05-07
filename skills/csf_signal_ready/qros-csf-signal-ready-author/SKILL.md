@@ -13,6 +13,14 @@ description: Use when reviewed csf_data_ready outputs must be frozen into formal
 
 QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实研究产物。agent 使用本 skill 时，必须在当前 research repo 里真实物化 `03_csf_signal_ready` 需要交付的 factor panel、factor manifest 和 coverage 证据，而不是把空目录、placeholder 文件或只有合同语义的说明文档当作 csf_signal_ready 完成。
 
+## Runtime Stage Admission
+
+开始本 stage-specific author 工作前，必须先在当前 research repo 运行：
+
+`./.qros/bin/qros-check-stage-entry --stage csf_signal_ready --lane author`
+
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+
 ## Contract-first Truth
 
 - `contracts/artifacts/csf_signal_ready_artifacts.yaml` 是本阶段 formal artifact shape 的字段真值
