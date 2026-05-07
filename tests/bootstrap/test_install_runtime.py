@@ -81,6 +81,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
         "bin/qros-update",
         "bin/qros-validate-stage",
         "bin/qros-verify",
+        "bin/qros-wrapper-lib",
     ]
 
 

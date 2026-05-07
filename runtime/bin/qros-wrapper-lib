@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+qros_resolve_runtime_root() {
+  local script_dir="$1"
+  local python_bin="$2"
+  local mode="${3:-strict}"
+  local manifest_path="$script_dir/../install-manifest.json"
+
+  "$python_bin" - "$manifest_path" "$script_dir" "$mode" <<'PY'
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _runtime_dir(source_repo: Path) -> Path:
+    return source_repo / "runtime" / "scripts"
+
+
+def _display(path: Path) -> str:
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
+def _git_dirty(source_repo: Path) -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(source_repo), "status", "--short"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return bool(result.stdout.strip())
+
+
+manifest_path = Path(sys.argv[1])
+script_dir = Path(sys.argv[2])
+mode = sys.argv[3]
+fallback_runtime = (script_dir / ".." / ".." / "runtime").resolve()
+allow_drift = os.environ.get("QROS_ALLOW_PROVENANCE_DRIFT") == "1"
+expected_source = os.environ.get("QROS_EXPECTED_SOURCE_REPO", "").strip()
+
+if not manifest_path.exists():
+    if (fallback_runtime / "scripts").is_dir():
+        print(fallback_runtime)
+        raise SystemExit(0)
+    print(f"Unable to locate QROS runtime root from {script_dir}", file=sys.stderr)
+    raise SystemExit(1)
+
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+source_text = str(manifest.get("source_repo_path", "")).strip()
+source_repo = Path(source_text) if source_text else Path("")
+source_runtime = _runtime_dir(source_repo) if source_text else Path("")
+issues: list[str] = []
+
+if not source_text or not source_runtime.is_dir():
+    issues.append(
+        "\n".join(
+            [
+                "QROS source repo path drift detected:",
+                f"manifest: {manifest_path}",
+                f"installed source_repo_path: {source_text or '<missing>'}",
+                "current source_repo_path: <unavailable; runtime/scripts missing>",
+                "fix: run qros-update from the active research repo",
+            ]
+        )
+    )
+else:
+    resolved_source = source_repo.resolve()
+    if expected_source:
+        resolved_expected = Path(expected_source).resolve()
+        if resolved_expected != resolved_source:
+            issues.append(
+                "\n".join(
+                    [
+                        "QROS source repo path drift detected:",
+                        f"manifest: {manifest_path}",
+                        f"installed source_repo_path: {_display(source_repo)}",
+                        f"expected source_repo_path from QROS_EXPECTED_SOURCE_REPO: {resolved_expected}",
+                        "fix: rerun qros-update from the intended active research repo or unset QROS_EXPECTED_SOURCE_REPO",
+                    ]
+                )
+            )
+    if manifest.get("source_git_dirty") is False and _git_dirty(resolved_source):
+        issues.append(
+            "\n".join(
+                [
+                    "QROS source_git_dirty drift detected:",
+                    f"manifest: {manifest_path}",
+                    "installed source_git_dirty: false",
+                    "current source_git_dirty: true",
+                    "fix: commit, stash, or reinstall QROS from the intended source checkout",
+                ]
+            )
+        )
+
+if issues:
+    print("\n".join(issues), file=sys.stderr)
+    print("override: set QROS_ALLOW_PROVENANCE_DRIFT=1 for emergency/manual recovery", file=sys.stderr)
+    if allow_drift:
+        print("QROS provenance drift override active via QROS_ALLOW_PROVENANCE_DRIFT=1", file=sys.stderr)
+    elif mode != "recovery":
+        raise SystemExit(1)
+
+if source_text and source_runtime.is_dir():
+    print(source_repo.resolve() / "runtime")
+    raise SystemExit(0)
+
+if (fallback_runtime / "scripts").is_dir():
+    print(fallback_runtime)
+    raise SystemExit(0)
+
+print(f"Unable to locate QROS runtime root from {script_dir}", file=sys.stderr)
+raise SystemExit(1)
+PY
+}

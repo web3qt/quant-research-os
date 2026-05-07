@@ -149,6 +149,18 @@ test -d ./.qros
 
 当前阶段里，`python_executable` 和 `python_version` 只作为审计 provenance 记录；wrapper 优先使用安装时 interpreter 的执行策略由后续 Python wrapper 阶段处理。
 
+### wrapper provenance guard
+
+Repo-local `./.qros/bin/qros-*` wrappers 会在运行 session、review、validation、progress 或 diagnostics 脚本前读取 `./.qros/install-manifest.json`，并检查来源约束：
+
+- `source_repo_path` 必须指向仍然存在且包含 `runtime/scripts` 的 QROS source checkout
+- 如果设置了 `QROS_EXPECTED_SOURCE_REPO=/abs/path/to/quant-research-os`，manifest 里的 `source_repo_path` 必须与它解析到同一个 checkout
+- 如果 manifest 记录 `source_git_dirty: false`，当前 source checkout 不能变成 dirty state
+
+普通 wrapper 遇到这些 drift 会停止并打印 `QROS source repo path drift detected:` 或 `QROS source_git_dirty drift detected:`。恢复命令是 `qros-update`；它会继续进入 recovery diagnostics，便于从 active research repo 刷新 repo-local runtime。
+
+`QROS_ALLOW_PROVENANCE_DRIFT=1` 只用于 emergency/manual recovery。它会让 wrapper 打印显式 override 警告后继续，不应作为正常研究流程使用。
+
 ---
 
 <br>
