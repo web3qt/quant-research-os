@@ -6,6 +6,23 @@
 
 <br>
 
+## 0.4.8 - 2026-05-07
+
+### 修复
+
+- 修复旧版 repo-local `qros-update` wrapper 的迁移问题：旧 wrapper 会默认传 `--host codex`，最新 updater 现在会把这种未标记的历史默认值当作 `auto`，继续按 `QROS_HOST`、当前 repo 的 `./.qros/install-manifest.json.host` 和 agent 环境解析真实 host。
+- 新版 `qros-update` wrapper 在用户显式传 `--host codex` 或 `--host claude-code` 时会附带 explicit marker，确保手动覆盖仍然优先。
+- 更新 installation guide 和 `qros-update` skill，明确旧 wrapper 直接运行也能在拉到新版 source 后刷新 Claude Code surface。
+
+### 验证
+
+- 本版本发布前已运行 qros-update focused tests、docs/bootstrap minimum 和 smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.8`。
+
+---
+
+<br>
+
 ## 0.4.7 - 2026-05-07
 
 ### 改进

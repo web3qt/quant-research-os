@@ -17,11 +17,13 @@ Bring the user to the latest published `origin/main` version of QROS and leave t
 
 This skill is host-aware. By default `qros-update` uses `--host auto` and resolves the host in this order:
 
-1. explicit `--host codex` or `--host claude-code`
+1. explicit `--host codex` or `--host claude-code` from the current wrapper
 2. `QROS_HOST`
 3. the current repo's `./.qros/install-manifest.json.host`
 4. current agent environment markers (`CLAUDE_CODE` / `CLAUDECODE_*` or `CODEX_*`)
 5. fallback to Codex
+
+Compatibility note: old repo-local `qros-update` wrappers always passed `--host codex` as their default. The latest updater treats that unmarked legacy default as `auto`, so a Claude Code repo with `QROS_HOST=claude-code` or `./.qros/install-manifest.json.host = claude-code` still refreshes the Claude Code surface after the source checkout is updated.
 
 The update behavior differs by resolved host:
 

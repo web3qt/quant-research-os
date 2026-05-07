@@ -17,6 +17,11 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Update QROS to the latest published main and refresh the current repo-local runtime.")
     parser.add_argument("--cwd", type=Path, default=None)
     parser.add_argument("--host", default="auto", choices=["auto", "codex", "claude-code"])
+    parser.add_argument(
+        "--host-explicit",
+        action="store_true",
+        help="Mark --host as a user override. Omitted by legacy wrappers that passed codex as their default.",
+    )
     parser.add_argument("--source-repo", type=Path, default=None)
     parser.add_argument("--repo-url", default=DEFAULT_REPO_URL)
     parser.add_argument("--branch", default=DEFAULT_BRANCH)
@@ -36,6 +41,7 @@ def main() -> int:
             repo_url=args.repo_url,
             branch=args.branch,
             host=args.host,
+            legacy_default_host=args.host == "codex" and not args.host_explicit,
         )
     except UpdateError as exc:
         print(f"QROS update failed: {exc}", file=sys.stderr)

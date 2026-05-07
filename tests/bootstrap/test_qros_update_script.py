@@ -91,6 +91,23 @@ def test_resolve_update_host_prefers_explicit_qros_host_env(tmp_path: Path) -> N
     ) == "claude-code"
 
 
+def test_resolve_update_host_reinterprets_legacy_codex_default_as_auto(tmp_path: Path) -> None:
+    target_cwd = tmp_path / "research-project"
+    manifest_path = target_cwd / ".qros" / "install-manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps({"host": "claude-code"}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    assert resolve_update_host(
+        "codex",
+        target_cwd=target_cwd,
+        environ={"CODEX_THREAD_ID": "codex-thread"},
+        legacy_default_host=True,
+    ) == "claude-code"
+
+
 def test_resolve_update_host_uses_repo_local_manifest_before_runtime_environment(tmp_path: Path) -> None:
     target_cwd = tmp_path / "research-project"
     manifest_path = target_cwd / ".qros" / "install-manifest.json"
@@ -270,6 +287,114 @@ def test_qros_update_wrapper_auto_host_respects_qros_host_env(tmp_path: Path, mo
     completed = subprocess.run(
         [
             str(managed_repo / "runtime" / "bin" / "qros-update"),
+            "--cwd",
+            str(target_cwd),
+            "--source-repo",
+            str(managed_repo),
+            "--repo-url",
+            str(origin_repo),
+        ],
+        cwd=target_cwd,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "Host: claude-code" in completed.stdout
+    assert (home_root / ".claude" / "qros" / "install-manifest.json").exists()
+    assert not (home_root / ".codex" / "qros").exists()
+
+
+def test_qros_update_wrapper_explicit_codex_host_wins_over_qros_host_env(tmp_path: Path, monkeypatch) -> None:
+    _, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
+    env["QROS_HOST"] = "claude-code"
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+
+    completed = subprocess.run(
+        [
+            str(managed_repo / "runtime" / "bin" / "qros-update"),
+            "--host",
+            "codex",
+            "--cwd",
+            str(target_cwd),
+            "--source-repo",
+            str(managed_repo),
+            "--repo-url",
+            str(origin_repo),
+        ],
+        cwd=target_cwd,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "Host: codex" in completed.stdout
+    assert (home_root / ".codex" / "qros" / "install-manifest.json").exists()
+    assert not (home_root / ".claude" / "qros").exists()
+
+
+def test_qros_update_wrapper_legacy_codex_default_still_respects_qros_host_env(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+    legacy_bin = tmp_path / "legacy-qros-update"
+    legacy_bin.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                'TARGET_CWD="$PWD"',
+                "ARGS=()",
+                'while [ "$#" -gt 0 ]; do',
+                '  case "$1" in',
+                "    --cwd)",
+                '      TARGET_CWD="$2"',
+                "      shift 2",
+                "      ;;",
+                "    *)",
+                '      ARGS+=("$1")',
+                "      shift",
+                "      ;;",
+                "  esac",
+                "done",
+                f'exec "{sys.executable}" "{managed_repo / "runtime" / "scripts" / "run_qros_update.py"}" --cwd "$TARGET_CWD" --host codex "${{ARGS[@]}}"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    legacy_bin.chmod(0o755)
+    monkeypatch.setenv("HOME", str(home_root))
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
+    env["QROS_HOST"] = "claude-code"
+    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+
+    completed = subprocess.run(
+        [
+            str(legacy_bin),
             "--cwd",
             str(target_cwd),
             "--source-repo",

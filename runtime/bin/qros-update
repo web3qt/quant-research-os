@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TARGET_CWD="$PWD"
 HOST="auto"
+HOST_EXPLICIT=0
 ARGS=()
 
 while [ "$#" -gt 0 ]; do
@@ -15,6 +16,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --host)
       HOST="$2"
+      HOST_EXPLICIT=1
       shift 2
       ;;
     *)
@@ -34,8 +36,13 @@ source "$SCRIPT_DIR/qros-wrapper-lib"
 RUNTIME_ROOT="$(qros_resolve_runtime_root "$SCRIPT_DIR" "$PYTHON_BIN" recovery)"
 
 cd "$TARGET_CWD"
-if [ "${#ARGS[@]}" -gt 0 ]; then
-  exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" --host "$HOST" "${ARGS[@]}"
+HOST_ARGS=(--host "$HOST")
+if [ "$HOST_EXPLICIT" -eq 1 ]; then
+  HOST_ARGS+=(--host-explicit)
 fi
 
-exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" --host "$HOST"
+if [ "${#ARGS[@]}" -gt 0 ]; then
+  exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" "${HOST_ARGS[@]}" "${ARGS[@]}"
+fi
+
+exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_qros_update.py" --cwd "$TARGET_CWD" "${HOST_ARGS[@]}"

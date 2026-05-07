@@ -42,15 +42,18 @@ def resolve_update_host(
     *,
     target_cwd: Path,
     environ: Mapping[str, str] | None = None,
+    legacy_default_host: bool = False,
 ) -> str:
     """解析 qros-update 的目标 host。
 
     显式 `--host` 优先；`auto` 依次读取 QROS_HOST、repo-local manifest、当前 agent 环境。
+    旧版 qros-update wrapper 会无条件传 `--host codex`，这里把它作为兼容默认值重走 auto。
     """
 
-    if requested_host in SUPPORTED_HOSTS:
+    legacy_codex_default = legacy_default_host and requested_host == "codex"
+    if requested_host in SUPPORTED_HOSTS and not legacy_codex_default:
         return str(requested_host)
-    if requested_host not in (None, "", "auto"):
+    if requested_host not in (None, "", "auto") and not legacy_codex_default:
         raise UpdateError(f"unsupported host: {requested_host}")
 
     env = os.environ if environ is None else environ
@@ -98,9 +101,14 @@ def run_qros_update(
     repo_url: str = DEFAULT_REPO_URL,
     branch: str = DEFAULT_BRANCH,
     host: str = "auto",
+    legacy_default_host: bool = False,
 ) -> UpdateResult:
     resolved_target_cwd = target_cwd.resolve()
-    resolved_host = resolve_update_host(host, target_cwd=resolved_target_cwd)
+    resolved_host = resolve_update_host(
+        host,
+        target_cwd=resolved_target_cwd,
+        legacy_default_host=legacy_default_host,
+    )
     source_repo = resolve_source_repo(
         explicit_source_repo=explicit_source_repo,
         home=home,
