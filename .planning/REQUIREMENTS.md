@@ -7,9 +7,9 @@
 
 ### Installation Provenance
 
-- [ ] **PROV-01**: Maintainer can see the source repository path, source commit, install timestamp, and Python interpreter recorded in `.qros/install-manifest.json`.
-- [ ] **PROV-02**: Installed wrappers warn or fail when the consuming research repo is bound to a different QROS source repo than the active governance repo expected by the current session.
-- [ ] **PROV-03**: Installed wrappers detect source dirty-state or commit drift and present an actionable recovery path before review/session commands rely on stale runtime code.
+- [x] **PROV-01**: Maintainer can see the source repository path, source commit, install timestamp, and Python interpreter recorded in `.qros/install-manifest.json`.
+- [x] **PROV-02**: Installed wrappers warn or fail when the consuming research repo is bound to a different QROS source repo than the active governance repo expected by the current session.
+- [x] **PROV-03**: Installed wrappers detect source dirty-state or commit drift and present an actionable recovery path before review/session commands rely on stale runtime code.
 
 ### CSF Stage Identity
 
@@ -58,9 +58,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROV-01 | Phase 1 | Pending |
-| PROV-02 | Phase 1 | Pending |
-| PROV-03 | Phase 1 | Pending |
+| PROV-01 | Phase 1 | Complete |
+| PROV-02 | Phase 1 | Complete |
+| PROV-03 | Phase 1 | Complete |
 | CSF-01 | Phase 2 | Pending |
 | CSF-02 | Phase 2 | Pending |
 | CSF-03 | Phase 2 | Pending |
