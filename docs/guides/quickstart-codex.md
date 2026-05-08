@@ -29,9 +29,11 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 | 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `qros-research-session help` |
 | 查看当前研究进度 | `qros-progress` |
-| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
+| 更新 QROS 到远程最新版本，并刷新当前 host + 当前 repo 的 `./.qros/` | `qros-update` |
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
+
+`qros-update` 同时适用于 Codex 和 Claude Code。你只需要在 active research repo 根目录输入 `qros-update`；它会自动识别当前 host，刷新全局 QROS 安装，并重建当前 repo 的 `./.qros/` runtime。
 
 > 如果你第一次看到 `research_intent`、`window_contract`、`delivery_contract` 这类 group 名，先看：
 >

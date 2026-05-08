@@ -52,6 +52,8 @@ def test_install_docs_describe_research_repo_first_fetch_flow() -> None:
     assert "qros-research-session" in combined
     assert "qros-update" in combined
     assert "current repo's `./.qros/`" in update_skill
+    assert "For ordinary users, the update command is always" in update_skill
+    assert "--host codex` and `--host claude-code` are manual recovery/debug overrides" in update_skill
 
 
 def test_install_docs_reference_stage_field_guide() -> None:
@@ -90,7 +92,8 @@ def test_claude_code_bootstrap_docs_present() -> None:
     assert "~/.claude/qros/install-manifest.json" in installation
     assert 'qros-update` 默认会自动识别当前 host' in installation
     assert 'qros-update --cwd "$PWD"' in installation
-    assert "--host claude-code --cwd" in installation
+    assert "`--host claude-code` 只作为 manual recovery/debug override" in installation
+    assert "普通路径也是在 active research repo 根目录直接输入" in installation
     assert "host = claude-code" in installation
     assert "## Claude Code" in installation
     assert ".claude-plugin/agents/qros-reviewer.md" in installation

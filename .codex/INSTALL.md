@@ -79,7 +79,7 @@ Inside Codex, the preferred path is:
 qros-update
 ```
 
-It refreshes both the global install and the current repo's `./.qros/` runtime.
+It auto-detects the active host and refreshes both the global install and the current repo's `./.qros/` runtime. For Codex this means `~/.codex/skills/`, `~/.codex/qros/`, and the active repo's `./.qros/`.
 
 Run `qros-update` from the active research repo root so the refreshed repo-local runtime is written to that repo.
 

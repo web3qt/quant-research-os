@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square&logo=python" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/tests-897-green?style=flat-square" alt="Tests 897">
-  <img src="https://img.shields.io/badge/version-0.4.9-blue?style=flat-square" alt="Version 0.4.9">
+  <img src="https://img.shields.io/badge/version-0.4.10-blue?style=flat-square" alt="Version 0.4.10">
   <img src="https://img.shields.io/badge/hosts-Codex%20%7C%20Claude%20Code-purple?style=flat-square" alt="Hosts">
   <img src="https://img.shields.io/badge/stages-20-blueviolet?style=flat-square" alt="20 Stages">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License MIT">
@@ -115,6 +115,8 @@ $qros-signal-diagnostics 看下 tss_holdout_validation 阶段有没有样本外�
 # 更新版本
 $qros-update
 ```
+
+`qros-update` 是 Codex 和 Claude Code 的统一更新入口。用户只需要在 active research repo 根目录输入 `qros-update`；它会自动识别当前 host，刷新全局 QROS 安装，并重建当前 repo 的 `./.qros/` runtime。
 
 </td>
 </tr>

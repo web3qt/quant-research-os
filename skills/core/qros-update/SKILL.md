@@ -9,6 +9,16 @@ Use this skill when the user asks to update QROS, refresh to the latest released
 
 Run this skill from the active research repo root. The current working directory determines which repo-local `./.qros/` runtime is refreshed.
 
+## User-facing command
+
+For ordinary users, the update command is always:
+
+```text
+qros-update
+```
+
+Do not ask users to choose Codex vs Claude Code for the normal path. `qros-update` auto-detects the active host and refreshes the matching global surface plus the current repo-local runtime. `--host codex` and `--host claude-code` are manual recovery/debug overrides.
+
 ## Goal
 
 Bring the user to the latest published `origin/main` version of QROS and leave the current working repo ready to use immediately.
@@ -40,17 +50,22 @@ Note: if QROS skills were installed via `/plugin install qros@quant-research-os`
   - the current repo's local runtime under `./.qros/`
 - Prefer the stable update entry instead of replaying ad hoc shell steps:
 
-Auto-detect current host:
+Normal user path:
+```text
+qros-update
+```
+
+Backend equivalent when calling the source checkout directly:
 ```bash
 <source_repo>/runtime/bin/qros-update --cwd "$PWD"
 ```
 
-Explicit Codex override:
+Explicit Codex override for manual recovery/debug:
 ```bash
 <source_repo>/runtime/bin/qros-update --host codex --cwd "$PWD"
 ```
 
-Explicit Claude Code override:
+Explicit Claude Code override for manual recovery/debug:
 ```bash
 <source_repo>/runtime/bin/qros-update --host claude-code --cwd "$PWD"
 ```

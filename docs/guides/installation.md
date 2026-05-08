@@ -88,21 +88,25 @@ Claude Code 的 global skills 存储在 `~/.claude/skills/`，global install man
 
 ### 更新
 
-Claude Code 用户更新 QROS runtime 时，`qros-update` 默认会自动识别当前 host。识别顺序是：新版 wrapper 的显式 `--host`、`QROS_HOST`、当前 agent 环境变量、当前 repo 的 `./.qros/install-manifest.json.host`，最后 fallback 到 Codex。
+Claude Code 用户更新 QROS runtime 时，普通路径也是在 active research repo 根目录直接输入：
+
+```text
+qros-update
+```
+
+`qros-update` 默认会自动识别当前 host。识别顺序是：新版 wrapper 的显式 `--host`、`QROS_HOST`、当前 agent 环境变量、当前 repo 的 `./.qros/install-manifest.json.host`，最后 fallback 到 Codex。识别为 Claude Code 时，它会刷新 `~/.claude/skills/` / `~/.claude/qros/`，并刷新当前 repo 的 `./.qros/` runtime。
+
+如果需要从 source checkout 直接调用，等价 backend 命令是：
 
 ```bash
 <source_repo>/runtime/bin/qros-update --cwd "$PWD"
 ```
 
-如果需要手动指定 Claude Code：
-
-```bash
-<source_repo>/runtime/bin/qros-update --host claude-code --cwd "$PWD"
-```
+`--host claude-code` 只作为 manual recovery/debug override；普通用户不需要记住。
 
 > 注意：如果 QROS skills 是通过 `/plugin install qros@quant-research-os` 安装的，plugin-managed skills 优先于 `~/.claude/skills/` 下的文件。需要同时运行：
 > - `/plugin update qros@quant-research-os` (刷新 plugin-managed skills)
-> - `qros-update` 或 `qros-update --host claude-code` (刷新 repo-local `./.qros/` runtime)
+> - `qros-update` (刷新 repo-local `./.qros/` runtime)
 
 > 旧版 repo-local `qros-update` wrapper 曾经默认传 `--host codex`。最新 updater 会把这种未标记的历史默认值当作 `auto` 重新解析；如果历史更新曾把 repo manifest 误写为 Codex，新版 auto 也会优先按当前 Claude Code 环境修正回 Claude Code surface。
 
@@ -177,17 +181,17 @@ Repo-local `./.qros/bin/qros-*` wrappers 会在运行 session、review、validat
 
 更新会就地刷新已克隆的 QROS 源码仓。
 
-如果你已经在 Codex 里，推荐输入：
+不管你在 Codex 还是 Claude Code 里，推荐输入：
 
 ```text
 qros-update
 ```
 
-它会同时刷新全局安装和当前 repo 的 `./.qros/` runtime。
+它会自动识别当前 host，并同时刷新匹配 host 的全局安装和当前 repo 的 `./.qros/` runtime。
 
 请从 active research repo 根目录运行 `qros-update`，这样它会刷新全局 skills，同时刷新该 repo 的 `./.qros/`。
 
-> 如果你之前装的是旧版（例如还走 `~/.agents/skills` 或保留了旧 display 相关安装产物），直接运行 `qros-update`，然后 **Restart Codex**，不要只更新源码仓。
+> 如果你之前装的是旧版（例如还走 `~/.agents/skills` 或保留了旧 display 相关安装产物），直接运行 `qros-update`，然后重启当前 host（Codex 或 Claude Code），不要只更新源码仓。
 
 ---
 
@@ -241,7 +245,7 @@ test -d ./.qros
 | 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `qros-research-session help` |
 | 查看当前研究进度 | `qros-progress` |
-| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `qros-update` |
+| 更新 QROS 到远程最新版本，并刷新当前 host + 当前 repo 的 `./.qros/` | `qros-update` |
 
 > 推荐用户路径是 skill-first。源码克隆只是 authored source；`user-global` 让 Codex 看见已安装 skills，`repo-local` 让当前 research repo 拥有自己的 runtime。
 

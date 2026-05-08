@@ -6,6 +6,23 @@
 
 <br>
 
+## 0.4.10 - 2026-05-08
+
+### 改进
+
+- 明确 `qros-update` 是 Codex 和 Claude Code 的统一用户更新入口；普通用户只需要在 active research repo 根目录输入 `qros-update`。
+- 更新 README、installation guide、quickstart、Codex / Claude Code 安装说明和 `qros-update` skill，强调 updater 会自动识别当前 host，并刷新全局 QROS 安装与当前 repo 的 `./.qros/` runtime。
+- 保留 `--host codex` / `--host claude-code` 作为高级/manual override，不再把它们写成普通用户路径。
+
+### 验证
+
+- 本版本发布前已运行 qros-update focused tests、docs/bootstrap minimum 和 smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.10`。
+
+---
+
+<br>
+
 ## 0.4.9 - 2026-05-07
 
 ### 修复
