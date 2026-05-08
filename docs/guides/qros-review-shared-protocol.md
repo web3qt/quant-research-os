@@ -35,10 +35,10 @@
 
 ## Launcher / Reviewer 职责纪律
 
-review 仍然必须由**人显式发起**，但显式动作现在是“进入对应 stage-specific `qros-*-review` skill”，不是手动再开一个 Codex review session。
+review 仍然必须由**人显式确认**。普通路径中的显式动作是由 `qros-research-session` 询问并记录 `CONFIRM_REVIEW`；stage-specific `qros-*-review` skill 只作为高级/debug/manual recovery 入口，或由 `qros-research-session` 在当前 stage 已匹配时内部复用。
 
 - author lane 只负责 freeze / build / author fix
-- review lane 由当前 stage-specific review skill 所在主线程承担 launcher 角色
+- review lane 由当前 `qros-research-session` 主线程承担 launcher 角色；高级/debug 入口下也可以由当前 stage-specific review skill 所在主线程承担
 - launcher 主线程必须通过 host 特定的 reviewer 启动机制拉起独立 reviewer 子代理（Codex 下为 `spawn_agent`，Claude Code 下通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task），不能自己冒充 reviewer judgement
 - launcher 主线程不得自己撰写 `review/result/reviewer_findings.raw.yaml`
 - 当前主线程不得自己撰写 `review/result/adversarial_review_result.yaml`

@@ -58,9 +58,20 @@ ICON_MARKERS = {
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the QROS orchestrated research session.")
+    parser.add_argument(
+        "lineage_ref",
+        nargs="?",
+        help="Optional lineage id shorthand, intended for `qros-session <lineage_id> --continue`.",
+    )
     parser.add_argument("--outputs-root", type=Path, required=True)
     parser.add_argument("--lineage-id", default=None)
     parser.add_argument("--raw-idea", default=None)
+    parser.add_argument(
+        "--continue",
+        dest="continue_mode",
+        action="store_true",
+        help="Use qros-research-session as the user-facing orchestrator for the next author/review action.",
+    )
     parser.add_argument(
         "--confirm-intake",
         action="store_true",
@@ -291,7 +302,7 @@ def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
         )
     if args.confirm_review and recorded:
         lines.append(
-            "ℹ️ Review approval no longer starts review inside the author session; open a separate review session and run ./.qros/bin/qros-start-review."
+            "ℹ️ Review approval recorded; continue qros-research-session to launch the reviewer and close review."
         )
     if args.confirm_intake:
         if recorded and status.current_stage == "mandate_confirmation_pending":
@@ -305,6 +316,11 @@ def _confirmation_feedback(args: argparse.Namespace, status) -> list[str]:
 
 def main() -> int:
     args = _parse_args()
+
+    if args.lineage_ref is not None:
+        if args.lineage_id is not None or args.raw_idea is not None:
+            raise SystemExit("Use either positional lineage_ref, --lineage-id, or --raw-idea, not multiple lineage inputs")
+        args.lineage_id = args.lineage_ref
 
     if args.lineage_id is None and args.raw_idea is None:
         raise SystemExit("Either --lineage-id or --raw-idea must be provided")
@@ -341,6 +357,7 @@ def main() -> int:
         review_decision="CONFIRM_REVIEW" if args.confirm_review else None,
         next_stage_decision="CONFIRM_NEXT_STAGE" if args.confirm_next_stage else None,
         confirm_all_freeze_groups=args.confirm_all_freeze_groups,
+        continue_mode=args.continue_mode,
     )
 
     if args.snapshot:

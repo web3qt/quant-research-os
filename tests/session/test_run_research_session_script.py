@@ -682,6 +682,34 @@ def test_run_research_session_explicit_lineage_id_resume_is_visible_in_json(tmp_
     assert "Explicit lineage_id btc_leads_alts" in payload["lineage_selection_reason"]
 
 
+def test_run_research_session_accepts_positional_lineage_continue_mode(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "btc_alt",
+            "--continue",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 2
+    payload = json.loads(result.stdout)
+    assert payload["lineage_id"] == "btc_alt"
+    assert payload["current_skill"] == "qros-research-session"
+    assert "qros-session btc_alt --continue" in payload["resume_hint"]
+
+
 def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"

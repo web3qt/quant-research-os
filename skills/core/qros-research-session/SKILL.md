@@ -58,22 +58,25 @@ description: Use when the user wants one orchestrated QROS conversation from ide
 
 ## Required Runtime
 
-用户在 Codex 里应该使用 `$qros-research-session`、`$qros-progress`、`$qros-stage-display` 或对应 `$qros-*-review` 入口，不要让用户直接执行底层脚本。
+用户在 Codex 里应该使用 `$qros-research-session` 作为普通阶段推进的唯一入口；`$qros-progress` 只做只读查询，`$qros-stage-display` 只做显式展示 guidance。stage-specific `$qros-*-author` / `$qros-*-review` 是高级/debug/manual recovery 入口，不是普通用户需要记住的阶段入口。
 
 Use the orchestrator runtime:
 
 - `./.qros/bin/qros-session --raw-idea "<idea>"`
 - `./.qros/bin/qros-session --lineage-id "<lineage_id>"`
+- `./.qros/bin/qros-session <lineage_id> --continue`
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 
-The user should not need to remember internal commands. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
+The user should not need to remember internal commands or stage-specific skill names. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
 
 QROS repo is the workflow package. The actual lineage artifacts must be written in the user's active research repo. Do not treat framework-repo placeholders, empty directories, or contract-only docs as if they were completed research outputs.
 
 ## Stage-Specific Entry Discipline
 
-- `qros-research-session` 是普通阶段推进的唯一总控入口；stage-specific author/review skill 只能在 runtime `current_stage` 已经匹配时接手
+- `qros-research-session` 是普通阶段推进的唯一总控入口；stage-specific author/review skill 默认只作为高级/debug/manual recovery 入口
+- 当 `qros-session <lineage_id> --continue` 报告当前需要 author、review、failure handling 或 next-stage confirmation 时，主会话应继续由 `qros-research-session` 执行，并在内部复用对应 stage-specific 协议
+- stage-specific author/review skill 只有在用户显式要求 debug/manual recovery，或 `qros-research-session` 内部按当前 stage 协议接手时才允许使用
 - 进入任何 stage-specific author skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`
 - 进入任何 stage-specific review skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`
 - guard 失败时，不得继续 authoring、不得起 reviewer、不得运行 `qros-review-cycle prepare`；按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state
@@ -213,9 +216,10 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 
 ## Review Discipline
 
-- author 主会话不得自动编排 reviewer；review 必须由人显式进入对应的 `qros-*-review` skill 发起
-- 当前主会话只推进到 `*_review_confirmation_pending`，并在 `review-ready` 自查通过后停住
-- 进入 stage-specific review skill 后，当前会话必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
+- review 仍然需要人显式确认；普通入口里的显式动作是确认 `CONFIRM_REVIEW`，不是要求用户手动切换到某个 `qros-*-review` skill
+- 当前主会话推进到 `*_review_confirmation_pending` 后，必须完成 `review-ready` 自查并询问是否确认进入 review
+- 用户确认后，`qros-research-session` 进入 `<stage>_review` lane，并在当前会话内部复用对应 stage-specific review 协议
+- review lane 必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
 - 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt / closer command
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
 - reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
@@ -234,7 +238,7 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
 - 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
-- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后由人显式重新进入对应 `qros-*-review` skill
+- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后通过 `qros-research-session` 重新进入 review confirmation / review lane
 - author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs
 
 ## Working Rules
@@ -267,8 +271,8 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 26. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_MANDATE` and freeze mandate artifacts
 27. Drive mandate completion with the same discipline as `qros-mandate-author`
 28. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
-29. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，不得自动进入 `mandate_review`
-30. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由人显式进入对应 `qros-*-review` skill
+29. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，先要求显式 `CONFIRM_REVIEW`，不得无确认自动进入 `mandate_review`
+30. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由 `qros-research-session` 询问用户是否确认进入 review；确认后才在内部复用 stage-specific review 协议
 31. Confirm `extraction_contract`
 32. Confirm `quality_semantics`
 33. Confirm `universe_admission`
@@ -281,8 +285,8 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 40. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
 41. Drive data_ready completion with the same discipline as `qros-data-ready-author`
 42. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
-43. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，不得自动进入 `data_ready_review`
-44. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再由人显式重新进入对应 `qros-*-review` skill
+43. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，先要求显式 `CONFIRM_REVIEW`，不得无确认自动进入 `data_ready_review`
+44. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再通过 `qros-research-session` 重新进入 review confirmation / review lane
 45. Confirm `signal_expression`
 46. Confirm `param_identity`
 47. Confirm `time_semantics`

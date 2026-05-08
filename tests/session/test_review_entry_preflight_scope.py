@@ -133,3 +133,51 @@ def test_run_research_session_keeps_post_mandate_review_entry_pending_without_pr
     assert status.stage_status == "awaiting_review_confirmation"
     assert status.blocking_reason_code == "REVIEW_CONFIRMATION_REQUIRED"
     assert "qros-data-ready-review" in (status.next_action or "")
+
+
+def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+
+    def _unexpected_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        raise AssertionError(f"unexpected preflight for {explicit_context['stage_dir']}")
+
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _unexpected_preflight)
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        continue_mode=True,
+    )
+
+    assert status.current_stage == "data_ready_review_confirmation_pending"
+    assert status.current_skill == "qros-research-session"
+    assert status.stage_status == "awaiting_review_confirmation"
+    assert status.blocking_reason == "data_ready review is waiting for explicit CONFIRM_REVIEW in qros-research-session."
+    assert "CONFIRM_REVIEW" in status.next_action
+    assert "stage-specific review protocol internally" in status.next_action
+    assert "qros-data-ready-review" not in status.next_action
+
+
+def test_confirm_review_moves_continue_mode_into_review_lane(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        review_decision="CONFIRM_REVIEW",
+        continue_mode=True,
+    )
+
+    assert status.current_stage == "data_ready_review"
+    assert status.current_skill == "qros-research-session"
+    assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
+    assert status.blocking_reason == "data_ready review lane is active and waiting for reviewer output, audit, or closure."
+    assert "review orchestration for data_ready" in status.next_action
+    assert (stage_dir / "author" / "draft" / "review_transition_approval.yaml").exists()

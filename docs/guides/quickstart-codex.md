@@ -70,7 +70,7 @@ Agent 应该做这些事：
 - 对全新的 raw idea 先停在 `idea_intake_confirmation_pending`，补齐 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria
 - intake 通过后进入 `mandate_confirmation_pending`，逐组确认 `research_intent`、`scope_contract`、`data_contract`、`execution_contract`
 - `mandate` review closure 后先进入 `mandate_next_stage_confirmation_pending`，等显式 `CONFIRM_NEXT_STAGE` 后按 `research_route` 进入 `tss_*` 或 `csf_*` 阶段
-- 每个 route-specific stage 都要先冻结 grouped contracts，再由当前 active research repo 真实生成 formal artifacts，然后进入对应 `qros-*-review`
+- 每个 route-specific stage 都要先冻结 grouped contracts，再由当前 active research repo 真实生成 formal artifacts，然后由 `qros-research-session` 显式确认并编排 review
 - 不得把空目录、placeholder 文件、contract-only markdown 或本仓库里的说明文档当成阶段完成
 - review verdict 不是正常放行时，停止普通阶段推进，转入 `qros-stage-failure-handler`
 

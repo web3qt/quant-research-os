@@ -2404,6 +2404,7 @@ def summarize_session_status(
     runtime_stage_status_override: str | None = None,
     runtime_blocking_reason_code_override: str | None = None,
     runtime_next_action_override: str | None = None,
+    continue_mode: bool = False,
 ) -> SessionContext:
     (
         stage_status,
@@ -2426,35 +2427,87 @@ def summarize_session_status(
         blocking_reason_code = runtime_blocking_reason_code_override
     if runtime_next_action_override is not None:
         runtime_next_action = runtime_next_action_override
-    resolved_current_skill = current_skill or _current_skill_for_stage(
-        current_stage=current_stage,
-        requires_failure_handling=requires_failure_handling,
-        runtime_stage_status=stage_status,
+    resolved_current_skill = current_skill or (
+        _orchestrated_current_skill_for_stage(
+            current_stage=current_stage,
+            requires_failure_handling=requires_failure_handling,
+        )
+        if continue_mode
+        else _current_skill_for_stage(
+            current_stage=current_stage,
+            requires_failure_handling=requires_failure_handling,
+            runtime_stage_status=stage_status,
+        )
     )
-    resolved_why_this_skill = why_this_skill or _why_this_skill(
-        current_stage=current_stage,
-        current_skill=resolved_current_skill,
-        review_verdict=review_verdict,
-        requires_failure_handling=requires_failure_handling,
-        runtime_stage_status=stage_status,
+    resolved_why_this_skill = why_this_skill or (
+        _orchestrated_why_this_skill(
+            current_stage=current_stage,
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+            runtime_stage_status=stage_status,
+        )
+        if continue_mode
+        else _why_this_skill(
+            current_stage=current_stage,
+            current_skill=resolved_current_skill,
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+            runtime_stage_status=stage_status,
+        )
     )
     resolved_blocking_reason = (
         blocking_reason
         if blocking_reason is not None
-        else runtime_blocking_reason
+        else (
+            _orchestrated_blocking_reason(
+                current_stage=current_stage,
+                runtime_stage_status=stage_status,
+                requires_failure_handling=requires_failure_handling,
+                review_verdict=review_verdict,
+            )
+            if continue_mode
+            else runtime_blocking_reason
+        )
     )
-    resolved_resume_hint = resume_hint or _resume_hint(
-        lineage_id=lineage_id,
-        current_stage=current_stage,
-        current_skill=resolved_current_skill,
-        requires_failure_handling=requires_failure_handling,
-        required_program_dir=required_program_dir,
-        runtime_stage_status=stage_status,
+    resolved_resume_hint = resume_hint or (
+        _orchestrated_resume_hint(
+            lineage_id=lineage_id,
+            current_stage=current_stage,
+            requires_failure_handling=requires_failure_handling,
+            required_program_dir=required_program_dir,
+            runtime_stage_status=stage_status,
+        )
+        if continue_mode
+        else _resume_hint(
+            lineage_id=lineage_id,
+            current_stage=current_stage,
+            current_skill=resolved_current_skill,
+            requires_failure_handling=requires_failure_handling,
+            required_program_dir=required_program_dir,
+            runtime_stage_status=stage_status,
+        )
     )
     review_state_snapshot = _review_state_snapshot(
         lineage_root=lineage_root,
         current_stage=current_stage,
     )
+    resolved_next_action = (
+        runtime_next_action
+        if requires_failure_handling
+        or current_stage.endswith("_author")
+        or (current_stage.endswith("_review_confirmation_pending") and stage_status == "awaiting_author_fix")
+        or current_stage.endswith("_review_complete")
+        else next_action
+    )
+    if continue_mode:
+        resolved_next_action = _orchestrated_next_action(
+            lineage_id=lineage_id,
+            current_stage=current_stage,
+            runtime_stage_status=stage_status,
+            next_action=resolved_next_action,
+            requires_failure_handling=requires_failure_handling,
+            required_program_dir=required_program_dir,
+        )
     return SessionContext(
         lineage_id=lineage_id,
         lineage_root=lineage_root,
@@ -2475,14 +2528,7 @@ def summarize_session_status(
         resume_hint=resolved_resume_hint,
         artifacts_written=artifacts_written,
         gate_status=gate_status,
-        next_action=(
-            runtime_next_action
-            if requires_failure_handling
-            or current_stage.endswith("_author")
-            or (current_stage.endswith("_review_confirmation_pending") and stage_status == "awaiting_author_fix")
-            or current_stage.endswith("_review_complete")
-            else next_action
-        ),
+        next_action=resolved_next_action,
         why_now=why_now or [],
         open_risks=open_risks or [],
         factor_role=factor_role,
@@ -2553,6 +2599,18 @@ def _current_skill_for_stage(
     return STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
 
 
+def _orchestrated_current_skill_for_stage(
+    *,
+    current_stage: SessionStage,
+    requires_failure_handling: bool,
+) -> str:
+    if requires_failure_handling:
+        return "qros-stage-failure-handler"
+    if current_stage.endswith("_review_complete"):
+        return "qros-research-session"
+    return "qros-research-session"
+
+
 def _why_this_skill(
     *,
     current_stage: SessionStage,
@@ -2589,6 +2647,60 @@ def _why_this_skill(
     return f"Current stage {current_stage} is in the authoring/freeze flow, so {current_skill} is the active author skill."
 
 
+def _orchestrated_why_this_skill(
+    *,
+    current_stage: SessionStage,
+    review_verdict: str | None,
+    requires_failure_handling: bool,
+    runtime_stage_status: str | None = None,
+) -> str:
+    if requires_failure_handling:
+        verdict = review_verdict or "a failure-class review result"
+        return (
+            f"Review verdict {verdict} blocks normal progression, so failure handling is now the active workflow."
+        )
+    stage_base = _stage_base_name(current_stage)
+    if current_stage.endswith("_review_complete"):
+        return "The covered workflow has reached a terminal review-complete state, so qros-research-session is reporting completion status."
+    if current_stage.endswith("_review_confirmation_pending"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return (
+                f"qros-research-session identified {stage_base} author outputs that must be repaired before review entry; "
+                "it should use the stage-specific author protocol internally."
+            )
+        return (
+            f"qros-research-session identified {stage_base} as review-ready and is holding the explicit review confirmation gate."
+        )
+    if current_stage.endswith("_review"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return (
+                f"qros-research-session identified fixable {stage_base} review findings and must return to author repair."
+            )
+        return (
+            f"qros-research-session identified {stage_base} as the active review lane and should run the review protocol internally."
+        )
+    if current_stage.endswith("_next_stage_confirmation_pending"):
+        return (
+            f"qros-research-session identified completed {stage_base} review and is holding the explicit next-stage gate."
+        )
+    if current_stage.endswith("_confirmation_pending"):
+        return (
+            f"qros-research-session identified {stage_base} as the active freeze-confirmation gate."
+        )
+    if current_stage.endswith("_author") or runtime_stage_status in {
+        "awaiting_stage_program",
+        "awaiting_program_validation",
+        "awaiting_program_execution",
+    }:
+        return (
+            f"qros-research-session identified {stage_base} as the active author lane; "
+            f"stage-specific skills are internal/debug protocols, not user-facing entrypoints."
+        )
+    return (
+        f"qros-research-session identified {current_stage} as the current workflow state and will route the next action."
+    )
+
+
 def _blocking_reason(
     *,
     current_stage: SessionStage,
@@ -2616,6 +2728,30 @@ def _blocking_reason(
     if current_stage.endswith("_author"):
         return f"{_stage_base_name(current_stage)} authoring outputs are still incomplete."
     return None
+
+
+def _orchestrated_blocking_reason(
+    *,
+    current_stage: SessionStage,
+    runtime_stage_status: str,
+    requires_failure_handling: bool,
+    review_verdict: str | None,
+) -> str | None:
+    if requires_failure_handling:
+        verdict = review_verdict or "a failure-class review result"
+        return f"Normal progression is blocked by review verdict {verdict}."
+    stage_base = _stage_base_name(current_stage)
+    if current_stage.endswith("_review_confirmation_pending"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return f"{stage_base} author outputs must be repaired before review can be confirmed."
+        return f"{stage_base} review is waiting for explicit CONFIRM_REVIEW in qros-research-session."
+    if current_stage.endswith("_review"):
+        return f"{stage_base} review lane is active and waiting for reviewer output, audit, or closure."
+    return _blocking_reason(
+        current_stage=current_stage,
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+    )
 
 
 def _post_mandate_program_comment_requirement(current_stage: SessionStage) -> str:
@@ -2690,6 +2826,100 @@ def _resume_hint(
         f"Continue in the same research repo and rerun qros-session --lineage-id {lineage_id} "
         "after completing the next required step."
     )
+
+
+def _orchestrated_resume_hint(
+    *,
+    lineage_id: str,
+    current_stage: SessionStage,
+    requires_failure_handling: bool,
+    required_program_dir: str | None = None,
+    runtime_stage_status: str | None = None,
+) -> str:
+    if requires_failure_handling:
+        return (
+            f"Invoke qros-stage-failure-handler for lineage {lineage_id}, then rerun "
+            f"qros-session {lineage_id} --continue."
+        )
+    stage_base = _stage_base_name(current_stage)
+    if runtime_stage_status == "awaiting_stage_program":
+        location = f" under {required_program_dir}" if required_program_dir is not None else ""
+        return (
+            f"Continue qros-research-session for {lineage_id}; it should author or refresh the {stage_base} "
+            f"lineage-local stage program{location}, then rerun qros-session {lineage_id} --continue."
+        )
+    if runtime_stage_status in {"awaiting_program_validation", "awaiting_program_execution"}:
+        return (
+            f"Continue qros-research-session for {lineage_id}; it should fix or execute the {stage_base} "
+            f"stage program, then rerun qros-session {lineage_id} --continue."
+        )
+    if current_stage.endswith("_review_confirmation_pending"):
+        if runtime_stage_status == "awaiting_author_fix":
+            return (
+                f"Continue qros-research-session for {lineage_id}; repair {stage_base} author/formal outputs "
+                f"and rerun qros-session {lineage_id} --continue before review."
+            )
+        return (
+            f"Confirm review for {stage_base}; then continue qros-research-session for {lineage_id} "
+            "to launch the reviewer and close review."
+        )
+    if current_stage.endswith("_review"):
+        return (
+            f"Continue qros-research-session for {lineage_id}; it should run the {stage_base} review lane "
+            "until reviewer output, audit, and closure are resolved."
+        )
+    if current_stage.endswith("_next_stage_confirmation_pending"):
+        return (
+            f"Confirm the next-stage handoff for {stage_base}, then rerun qros-session {lineage_id} --continue."
+        )
+    if current_stage.endswith("_review_complete"):
+        return f"Rerun qros-session {lineage_id} --continue if new downstream work is introduced."
+    return (
+        f"Continue qros-research-session in the same repo and rerun qros-session {lineage_id} --continue "
+        "after completing the prompted confirmation or author step."
+    )
+
+
+def _orchestrated_next_action(
+    *,
+    lineage_id: str,
+    current_stage: SessionStage,
+    runtime_stage_status: str,
+    next_action: str,
+    requires_failure_handling: bool,
+    required_program_dir: str | None,
+) -> str:
+    if requires_failure_handling:
+        return next_action
+    stage_base = _stage_base_name(current_stage)
+    if runtime_stage_status == "awaiting_author_fix":
+        return (
+            f"Continue qros-research-session for {stage_base}; repair author/formal outputs using the "
+            f"stage-specific author protocol internally, then rerun qros-session {lineage_id} --continue."
+        )
+    if runtime_stage_status == "awaiting_stage_program":
+        location = f" under {required_program_dir}" if required_program_dir is not None else ""
+        return (
+            f"Continue qros-research-session for {stage_base}; author or refresh the lineage-local stage program"
+            f"{location} using the stage-specific author protocol internally."
+        )
+    if runtime_stage_status in {"awaiting_program_validation", "awaiting_program_execution"}:
+        return (
+            f"Continue qros-research-session for {stage_base}; validate or execute the stage program using the "
+            "stage-specific author protocol internally."
+        )
+    if current_stage.endswith("_review_confirmation_pending"):
+        return (
+            f"Ask for explicit CONFIRM_REVIEW for {stage_base}. After approval, qros-research-session should "
+            "launch the reviewer and run qros-review-cycle prepare / qros-review using the stage-specific review protocol internally; "
+            "stage-specific review skills remain advanced/debug entrypoints."
+        )
+    if current_stage.endswith("_review"):
+        return (
+            f"Continue qros-research-session review orchestration for {stage_base}: launch or wait for the reviewer, "
+            "then run ./.qros/bin/qros-review for closure using the stage-specific review protocol internally."
+        )
+    return next_action
 
 
 def session_stage_base_name(current_stage: SessionStage | str) -> str:
@@ -3363,6 +3593,7 @@ def run_research_session(
     review_decision: ReviewTransitionDecision | None = None,
     next_stage_decision: NextStageTransitionDecision | None = None,
     confirm_all_freeze_groups: bool = False,
+    continue_mode: bool = False,
 ) -> SessionContext:
     selection = resolve_lineage_selection(outputs_root, lineage_id=lineage_id, raw_idea=raw_idea)
     lineage_root = selection.lineage_root
@@ -3682,6 +3913,7 @@ def run_research_session(
             failure_package_status.blocking_reason_code if failure_package_status else None
         ),
         runtime_next_action_override=failure_package_status.next_action if failure_package_status else None,
+        continue_mode=continue_mode,
     )
 
 
@@ -3961,6 +4193,8 @@ def _review_or_post_review_stage(
 ) -> SessionStage:
     if closure_complete:
         return _post_review_completion_stage(lineage_root, stage_base=stage_base)
+    if read_review_transition_decision(lineage_root, stage_base=stage_base) == "CONFIRM_REVIEW":
+        return f"{stage_base}_review"  # type: ignore[return-value]
     if _review_has_started(stage_dir):
         return f"{stage_base}_review"  # type: ignore[return-value]
     return f"{stage_base}_review_confirmation_pending"  # type: ignore[return-value]

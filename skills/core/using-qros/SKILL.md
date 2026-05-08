@@ -27,9 +27,9 @@ Before responding to any request, check if it matches QROS triggers:
 
 ## Activation Flow
 
-在 Codex 中，用户入口应写成 `$qros-research-session`、`$qros-progress`、`$qros-stage-display` 或对应 `$qros-*-review`。不要让用户直接执行底层脚本；底层 runtime 命令只作为 agent 的 backend mechanics、debugging 和 manual recovery。
+在 Codex 中，普通用户入口应写成 `$qros-research-session`。`$qros-progress` 是只读查询，`$qros-stage-display` 是显式展示 guidance。不要让用户直接执行底层脚本；底层 runtime 命令只作为 agent 的 backend mechanics、debugging 和 manual recovery。
 
-stage-specific `$qros-*-author` / `$qros-*-review` 不是普通阶段跳转入口。它们开始前必须先通过 repo-local `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author|review`；失败时应回到 `$qros-research-session` 恢复 runtime `current_stage`，不能直接补 artifact 或起 reviewer。
+stage-specific `$qros-*-author` / `$qros-*-review` 不是普通阶段跳转入口，也不是普通用户需要知道的入口。它们只作为高级/debug/manual recovery 协议，或由 `$qros-research-session` 在当前 stage 已匹配时内部复用。它们开始前必须先通过 repo-local `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author|review`；失败时应回到 `$qros-research-session` 恢复 runtime `current_stage`，不能直接补 artifact 或起 reviewer。
 
 ```
 User message → QROS trigger detected?
@@ -45,7 +45,7 @@ User message → QROS trigger detected?
 - **$qros-research-session** — Unified research session covering all stages from idea intake to TSS/CSF holdout validation
 - **$qros-progress** — Read-only lineage progress lookup for current stage, blocking gate, and next action
 
-### Author Skills (stage artifact creation)
+### Advanced Author Skills (debug/manual recovery)
 - **qros-idea-intake-author** — Structured idea qualification with hypothesis, counter-hypothesis, kill criteria
 - **qros-mandate-author** — Freeze research contract: scope, time split, parameter grid, execution stack
 - **qros-tss-data-ready-author** — TSS data foundation for `research_route = time_series_signal`
@@ -61,7 +61,7 @@ User message → QROS trigger detected?
 - **qros-backtest-ready-author** — Freeze execution policy, portfolio policy, risk overlay
 - **qros-holdout-validation-author** — Freeze reuse contract, drift audit, failure governance
 
-### Review Skills (stage gate verification)
+### Advanced Review Skills (debug/manual recovery)
 - **qros-mandate-review** — Verify mandate freeze completeness and downstream permissions
 - **qros-tss-data-ready-review** — Verify TSS data foundation and time-index artifacts
 - **qros-tss-signal-ready-review** — Verify TSS signal/event schema and route inheritance
