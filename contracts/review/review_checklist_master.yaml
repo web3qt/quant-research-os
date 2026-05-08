@@ -214,6 +214,11 @@ stages:
         evidence:
           - "run_manifest.json"
           - "rebuild_csf_data_ready.py"
+      - id: "CSF-DATA-006B"
+        severity: "blocking"
+        check: "run_manifest.source_data_provenance 已绑定真实输入数据；缺 provenance、demo_mode 或 synthetic panel 不得放行"
+        evidence:
+          - "run_manifest.json"
       - id: "CSF-DATA-007"
         severity: "reservation"
         check: "覆盖率波动、边缘样本或 taxonomy 版本切换均已明确记录在审查材料中"
@@ -414,6 +419,12 @@ stages:
         check: "standalone_alpha 场景下，mean_rank_ic <= 0 不得放行到下一阶段"
         evidence:
           - "rank_ic_summary.json"
+      - id: "CSF-TEST-009"
+        severity: "blocking"
+        check: "rank_ic_timeseries.parquet 必须能由 run_manifest.json.rank_ic_input_binding 指向的冻结 factor_panel.parquet 和 forward_return_panel.parquet 复算；缺 binding、demo_mode 或 synthetic Rank IC 不得放行"
+        evidence:
+          - "run_manifest.json"
+          - "rank_ic_timeseries.parquet"
 
   csf_backtest_ready:
     stage_name: "CSF Backtest Ready"

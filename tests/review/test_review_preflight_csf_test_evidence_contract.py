@@ -13,6 +13,7 @@ from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.runtime.test_csf_test_evidence_runtime import (
     _csf_test_evidence_draft,
+    _prepare_csf_rank_ic_inputs,
     _prepare_csf_train_stage,
     _write_yaml,
 )
@@ -26,6 +27,7 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, object]]) -> None:
 def _prepare_valid_csf_test_evidence_stage(tmp_path: Path) -> Path:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _prepare_csf_train_stage(lineage_root)
+    _prepare_csf_rank_ic_inputs(lineage_root)
     ensure_stage_program(lineage_root, "csf_test_evidence")
     write_fake_stage_provenance(lineage_root, "csf_test_evidence")
     stage_dir = scaffold_csf_test_evidence(lineage_root)

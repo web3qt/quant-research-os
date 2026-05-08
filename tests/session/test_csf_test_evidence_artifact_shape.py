@@ -9,6 +9,7 @@ from runtime.tools.artifact_contract_runtime import load_artifact_contract, vali
 from runtime.tools.csf_test_evidence_runtime import build_csf_test_evidence_from_train_freeze, scaffold_csf_test_evidence
 from tests.runtime.test_csf_test_evidence_runtime import (
     _csf_test_evidence_draft,
+    _prepare_csf_rank_ic_inputs,
     _prepare_csf_train_stage,
     _write_yaml,
 )
@@ -16,6 +17,7 @@ from tests.runtime.test_csf_test_evidence_runtime import (
 
 def _prepare_valid_csf_test_evidence(lineage_root: Path) -> Path:
     _prepare_csf_train_stage(lineage_root)
+    _prepare_csf_rank_ic_inputs(lineage_root)
     stage_dir = scaffold_csf_test_evidence(lineage_root)
     _write_yaml(stage_dir / "author" / "draft" / "csf_test_evidence_draft.yaml", _csf_test_evidence_draft(confirmed=True))
     build_csf_test_evidence_from_train_freeze(lineage_root)
@@ -83,4 +85,4 @@ def test_csf_test_evidence_rank_ic_timeseries_columns_are_stable(tmp_path: Path)
     table = pq.read_table(formal_dir / "rank_ic_timeseries.parquet")
 
     assert set(table.column_names) == {"date", "variant_id", "rank_ic"}
-    assert table.to_pylist() == [{"date": "2024-07-01", "variant_id": "baseline_v1", "rank_ic": 0.11}]
+    assert table.to_pylist() == [{"date": "2024-07-01", "variant_id": "baseline_v1", "rank_ic": 1.0}]

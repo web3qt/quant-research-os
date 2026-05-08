@@ -124,6 +124,7 @@ def test_csf_data_ready_contract_locks_run_manifest_fields() -> None:
         "program_artifacts",
         "replay_working_directory",
         "replay_command",
+        "source_data_provenance",
     }
 
 

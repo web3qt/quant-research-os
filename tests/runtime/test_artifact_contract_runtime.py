@@ -209,6 +209,15 @@ def _write_minimal_valid_csf_data_ready_formal(stage_dir: Path) -> None:
             "program_artifacts": ["rebuild_csf_data_ready.py"],
             "replay_working_directory": "02_csf_data_ready",
             "replay_command": "python3 rebuild_csf_data_ready.py",
+            "source_data_provenance": {
+                "execution_mode": "real_input",
+                "source_data_digest": "sha256:test-digest",
+                "rows_read": 1,
+                "min_ts": "2024-01-01",
+                "max_ts": "2024-01-01",
+                "symbol_count": 1,
+                "event_count": 1,
+            },
         },
     )
     rebuild_script = stage_dir / "rebuild_csf_data_ready.py"
@@ -575,6 +584,17 @@ def _write_minimal_valid_csf_test_evidence_formal(stage_dir: Path) -> None:
             "selected_variant_ids": ["baseline_v1"],
             "selection_rule": "baseline-only",
             "primary_evidence_contract": "rank_ic_and_bucket_spread",
+            "rank_ic_input_binding": {
+                "execution_mode": "real_input",
+                "factor_panel": "03_csf_signal_ready/author/formal/factor_panel.parquet",
+                "forward_return_panel": "02_csf_data_ready/author/formal/forward_return_panel.parquet",
+                "source_data_digest": "sha256:test-digest",
+                "rows_read": 2,
+                "min_ts": "2024-07-01",
+                "max_ts": "2024-07-01",
+                "symbol_count": 1,
+                "event_count": 1,
+            },
         },
     )
     (stage_dir / "artifact_catalog.md").write_text("# 产物清单\n", encoding="utf-8")

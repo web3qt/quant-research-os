@@ -98,6 +98,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 共享字段具备时间语义和缺失语义
 - 如允许 group_neutral，taxonomy 已冻结或显式版本化
 - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
+- run_manifest.source_data_provenance 已绑定 real_input、source_data_digest、rows_read、min_ts、max_ts、symbol_count 和 event_count
 以下任一情况都不得出现：
 - 只有资产时序表，没有显式截面面板合同
 - universe membership 无法按日期重建
@@ -106,6 +107,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - 覆盖率波动显著却没有报告
 - 分组中性化需要的 taxonomy 在下游临时补
 - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
+- source_data_provenance 缺失、为 demo_mode，或无法证明真实输入数据读取规模
 
 ## 审查清单
 
@@ -118,6 +120,7 @@ description: Codex review skill for CSF Data Ready stage verification.
 - [blocking] 若后续允许 group_neutral，group taxonomy 已冻结或版本化
 - [blocking] artifact catalog 与 field dictionary 已同步登记 CSF 数据底座
 - [blocking] run_manifest 已记录 replay_command，且 stage-local rebuild 程序已冻结
+- [blocking] run_manifest.source_data_provenance 已绑定真实输入数据；缺 provenance、demo_mode 或 synthetic panel 不得放行
 - [reservation] 覆盖率波动、边缘样本或 taxonomy 版本切换均已明确记录在审查材料中
 - [blocking] panel_primary_key、cross_section_time_key、asset_key 与 shared_feature_outputs 均已显式冻结，不能保持空缺
 - [blocking] asset_universe_membership 非空，且 eligibility_base_mask 在 (date, asset) 上唯一

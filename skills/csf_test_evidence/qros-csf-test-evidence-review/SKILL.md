@@ -97,6 +97,7 @@ description: Codex review skill for CSF Test Evidence stage verification.
 必须全部满足：
 - 只复用 csf_train_freeze 的 frozen rules
 - `standalone_alpha` 使用 Rank IC / ICIR / bucket spread / monotonicity / breadth / stability
+- Rank IC 可由 run_manifest.rank_ic_input_binding 指向的冻结 factor_panel.parquet 与 forward_return_panel.parquet 复算
 - `regime_filter / combo_filter` 使用 gated vs ungated 改善证据
 - 全量 test ledger 保留
 - selected / rejected variants 有显式记账
@@ -106,6 +107,7 @@ description: Codex review skill for CSF Test Evidence stage verification.
 - 看 backtest 后回写 selected_variants_test
 - 只保留通过者，不保留全量 ledger
 - 搜索量较大却不做 multiple testing 校正
+- 缺 rank_ic_input_binding、demo_mode 或 synthetic Rank IC / bucket returns 冒充正式证据
 
 ## 审查清单
 
@@ -118,6 +120,7 @@ description: Codex review skill for CSF Test Evidence stage verification.
 - [blocking] 若使用 filter 语义，check 结果体现条件改善而不是独立赚钱
 - [reservation] 若存在多重测试或多个候选 variant，已保留完整 ledger 而非只保留通过项
 - [blocking] standalone_alpha 场景下，mean_rank_ic <= 0 不得放行到下一阶段
+- [blocking] rank_ic_timeseries.parquet 必须能由 run_manifest.json.rank_ic_input_binding 指向的冻结 factor_panel.parquet 和 forward_return_panel.parquet 复算；缺 binding、demo_mode 或 synthetic Rank IC 不得放行
 
 ## 仅审计项
 

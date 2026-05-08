@@ -221,6 +221,9 @@ artifacts:
       - path: replay_command
         description: 记录复现命令，用于审计和重放阶段执行。
         type: string
+      - path: source_data_provenance
+        description: 绑定本阶段真实读取的数据摘要、行数、时间范围和样本规模，防止合成面板伪装成正式结果。
+        type: map
 
   rebuild_csf_data_ready.py:
     type: script

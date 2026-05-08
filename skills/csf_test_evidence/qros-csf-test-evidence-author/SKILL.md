@@ -101,6 +101,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 ### Artifact shape 由 contract 决定
 `rank_ic_summary.json`、`csf_test_gate_table.csv`、`csf_selected_variants_test.csv` 与所有 parquet columns 必须通过 `contracts/artifacts/csf_test_evidence_artifacts.yaml` 校验。agent 不得因为 skill 文本、聊天上下文或 reviewer 偏好新增 formal artifact 字段。
 
+`Rank IC` 必须由冻结的 `03_csf_signal_ready/author/formal/factor_panel.parquet` 与 `02_csf_data_ready/author/formal/forward_return_panel.parquet` 计算得到，并在 `run_manifest.json.rank_ic_input_binding` 中绑定 `execution_mode=real_input`、输入路径、`source_data_digest`、`rows_read`、`min_ts`、`max_ts`、`symbol_count` 和 `event_count`。手写 `variant_base`、固定 Rank IC、固定 bucket returns 或任何 synthetic/demo evidence 都不得 PASS。
+
 ### 不得把 test 当 backtest
 `csf_selected_variants_test.csv` 只允许冻结进入 backtest 的候选，不允许在本阶段宣布交易层胜利。
 

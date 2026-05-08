@@ -471,6 +471,7 @@ stages:
         - 共享字段具备时间语义和缺失语义
         - 如允许 group_neutral，taxonomy 已冻结或显式版本化
         - run_manifest 已记录 runtime 版本、program_artifacts 和 replay_command
+        - run_manifest.source_data_provenance 已绑定 real_input、source_data_digest、rows_read、min_ts、max_ts、symbol_count 和 event_count
       fail_any_of:
         - 只有资产时序表，没有显式截面面板合同
         - universe membership 无法按日期重建
@@ -479,6 +480,7 @@ stages:
         - 覆盖率波动显著却没有报告
         - 分组中性化需要的 taxonomy 在下游临时补
         - 只保存产物，没有 stage-local rebuild 程序或 replay 账本
+        - source_data_provenance 缺失、为 demo_mode，或无法证明真实输入数据读取规模
     audit_only:
       - 面板字段命名是否清楚
       - 共享字段说明是否便于 reviewer 追踪
@@ -993,6 +995,7 @@ stages:
       pass_all_of:
         - 只复用 csf_train_freeze 的 frozen rules
         - "`standalone_alpha` 使用 Rank IC / ICIR / bucket spread / monotonicity / breadth / stability"
+        - Rank IC 可由 run_manifest.rank_ic_input_binding 指向的冻结 factor_panel.parquet 与 forward_return_panel.parquet 复算
         - "`regime_filter / combo_filter` 使用 gated vs ungated 改善证据"
         - 全量 test ledger 保留
         - selected / rejected variants 有显式记账
@@ -1002,6 +1005,7 @@ stages:
         - 看 backtest 后回写 selected_variants_test
         - 只保留通过者，不保留全量 ledger
         - 搜索量较大却不做 multiple testing 校正
+        - 缺 rank_ic_input_binding、demo_mode 或 synthetic Rank IC / bucket returns 冒充正式证据
     audit_only:
       - 证据表述是否足以让 reviewer 读懂角色差异
       - 样本覆盖是否解释充分

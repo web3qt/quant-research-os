@@ -17,6 +17,7 @@ def validate_csf_data_ready_semantics(stage_formal_dir: Path) -> ArtifactValidat
     errors: list[str] = []
 
     panel_manifest = _load_json_mapping(stage_formal_dir / "panel_manifest.json", errors)
+    run_manifest = _load_json_mapping(stage_formal_dir / "run_manifest.json", errors)
     if panel_manifest is None:
         return ArtifactValidationResult(errors=errors)
 
@@ -35,6 +36,8 @@ def validate_csf_data_ready_semantics(stage_formal_dir: Path) -> ArtifactValidat
     errors.extend(_require_coverage_floor(coverage_rows, panel_manifest))
     errors.extend(_validate_split_sample_adequacy_report(stage_formal_dir))
     errors.extend(_validate_shared_feature_outputs(stage_formal_dir, panel_manifest))
+    if run_manifest is not None:
+        errors.extend(_validate_source_data_provenance(run_manifest))
 
     return ArtifactValidationResult(errors=errors)
 
@@ -199,4 +202,24 @@ def _validate_shared_feature_outputs(stage_formal_dir: Path, panel_manifest: dic
         artifact_name = f"shared_feature_base/{output}.parquet"
         rows = _read_parquet_rows(shared_feature_base / f"{output}.parquet", errors)
         errors.extend(_require_non_empty(artifact_name, rows))
+    return errors
+
+
+def _validate_source_data_provenance(run_manifest: dict[str, Any]) -> list[str]:
+    provenance = run_manifest.get("source_data_provenance")
+    if not isinstance(provenance, dict):
+        return ["run_manifest.json: source_data_provenance must bind real input data before review"]
+
+    errors: list[str] = []
+    if str(provenance.get("execution_mode", "")).strip() != "real_input":
+        errors.append("run_manifest.json: source_data_provenance.execution_mode must be real_input before review")
+
+    for field in ("source_data_digest", "min_ts", "max_ts"):
+        if not str(provenance.get(field, "")).strip():
+            errors.append(f"run_manifest.json: source_data_provenance.{field} must be non-empty")
+
+    for field in ("rows_read", "symbol_count", "event_count"):
+        value = provenance.get(field)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            errors.append(f"run_manifest.json: source_data_provenance.{field} must be a positive integer")
     return errors

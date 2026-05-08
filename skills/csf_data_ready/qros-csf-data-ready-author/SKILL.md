@@ -98,6 +98,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 ### Split 样本充足性必须直接门禁
 `split_sample_adequacy_report.yaml` 必须逐一写出 `split_sample_counts`、`minimum_required`、`adequacy` 和 `final_verdict`。每个 downstream split 的最低要求是 1 个 `cross_section_snapshot`；任一 split 不满足时，`final_verdict` 必须为 `FAIL`，author lane 必须停在 `csf_data_ready` 修复数据覆盖，不能推进 review。
 
+`run_manifest.json.source_data_provenance` 必须绑定真实输入数据，至少包含 `execution_mode=real_input`、`source_data_digest`、`rows_read`、`min_ts`、`max_ts`、`symbol_count` 和 `event_count`。只能生成 synthetic/demo 面板时，必须停在 `demo_mode` 或 failure handling，不得把该包提交 review 或声明 PASS。
+
 ### 分组中性化底座必须版本化
 若后续允许 `neutralization_policy = group_neutral`，`asset_taxonomy_snapshot.parquet` 中的 `group_taxonomy_reference` 必须与 mandate 冻结值一致，且可追溯。
 

@@ -50,6 +50,40 @@ def test_semantic_validator_accepts_generated_csf_data_ready(tmp_path: Path) -> 
     assert result.errors == []
 
 
+def test_semantic_validator_rejects_missing_real_source_data_provenance(tmp_path: Path) -> None:
+    formal_dir = _build_valid_formal_dir(tmp_path / "outputs" / "csf_case")
+    run_manifest_path = formal_dir / "run_manifest.json"
+    run_manifest = _load_json(run_manifest_path)
+    run_manifest.pop("source_data_provenance", None)
+    _write_json(run_manifest_path, run_manifest)
+
+    result = validate_csf_data_ready_semantics(formal_dir)
+
+    assert result.valid is False
+    assert "run_manifest.json: source_data_provenance must bind real input data before review" in result.errors
+
+
+def test_semantic_validator_rejects_demo_mode_source_data_provenance(tmp_path: Path) -> None:
+    formal_dir = _build_valid_formal_dir(tmp_path / "outputs" / "csf_case")
+    run_manifest_path = formal_dir / "run_manifest.json"
+    run_manifest = _load_json(run_manifest_path)
+    run_manifest["source_data_provenance"] = {
+        "execution_mode": "demo_mode",
+        "source_data_digest": "sha256:abc",
+        "rows_read": 8,
+        "min_ts": "2024-01-01",
+        "max_ts": "2024-01-04",
+        "symbol_count": 2,
+        "event_count": 8,
+    }
+    _write_json(run_manifest_path, run_manifest)
+
+    result = validate_csf_data_ready_semantics(formal_dir)
+
+    assert result.valid is False
+    assert "run_manifest.json: source_data_provenance.execution_mode must be real_input before review" in result.errors
+
+
 def test_semantic_validator_rejects_noncanonical_panel_primary_key(tmp_path: Path) -> None:
     formal_dir = _build_valid_formal_dir(tmp_path / "outputs" / "csf_case")
     manifest_path = formal_dir / "panel_manifest.json"

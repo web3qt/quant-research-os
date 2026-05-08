@@ -227,6 +227,9 @@ artifacts:
       - path: primary_evidence_contract
         description: 声明主证据合同，用于固定本阶段核心评估口径。
         type: string
+      - path: rank_ic_input_binding
+        description: 绑定 Rank IC 计算使用的冻结 factor panel、forward return panel 和真实输入摘要，防止合成指标通过 review。
+        type: map
 
   artifact_catalog.md:
     type: markdown

@@ -14,6 +14,7 @@ from tests.helpers.stage_fixtures import prepare_csf_data_ready
 from tests.helpers.lineage_program_support import ensure_stage_program
 from tests.runtime.test_csf_test_evidence_runtime import (
     _csf_test_evidence_draft,
+    _prepare_csf_rank_ic_inputs,
     _prepare_csf_train_stage,
 )
 
@@ -95,6 +96,7 @@ def _write_thin_wrapper_stage_program(lineage_root: Path, stage_key: str) -> Pat
 def _prepare_csf_test_evidence_outputs(stage_dir: Path) -> None:
     lineage_root = stage_dir.parent
     _prepare_csf_train_stage(lineage_root)
+    _prepare_csf_rank_ic_inputs(lineage_root)
     stage_dir.mkdir(parents=True, exist_ok=True)
     _write_yaml(
         stage_dir / "author" / "draft" / "csf_test_evidence_draft.yaml",

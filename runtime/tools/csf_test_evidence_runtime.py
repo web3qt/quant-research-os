@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +52,12 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
 
     columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
     pq.write_table(pa.table(columns), path)
+
+
+def _read_parquet_rows(path: Path) -> list[dict[str, Any]]:
+    import pyarrow.parquet as pq
+
+    return pq.read_table(path).to_pylist()
 
 
 def _blank_csf_test_evidence_draft() -> dict[str, Any]:
@@ -173,25 +181,29 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         raise ValueError("csf_test_evidence factor_role must match mandate research_route.yaml")
 
     target_strategy_reference = str(route_payload.get("target_strategy_reference", "")).strip()
-    _write_parquet_rows(
-        stage_formal_dir / "rank_ic_timeseries.parquet",
-        [
-            {"date": "2024-07-01", "variant_id": variant_id, "rank_ic": 0.11}
-            for variant_id in selected_variant_ids
-        ],
-    )
+    rank_ic_rows, rank_ic_binding = _build_rank_ic_evidence(lineage_root, selected_variant_ids)
+    _write_parquet_rows(stage_formal_dir / "rank_ic_timeseries.parquet", rank_ic_rows)
+    mean_rank_ic = sum(float(row["rank_ic"]) for row in rank_ic_rows) / len(rank_ic_rows)
+    sorted_rank_ic = sorted(float(row["rank_ic"]) for row in rank_ic_rows)
+    median_rank_ic = sorted_rank_ic[len(sorted_rank_ic) // 2]
     _write_parquet_rows(
         stage_formal_dir / "bucket_returns.parquet",
         [
-            {"date": "2024-07-01", "variant_id": variant_id, "bucket_id": bucket_id, "mean_return": mean_return}
+            {"date": row["date"], "variant_id": variant_id, "bucket_id": bucket_id, "mean_return": mean_return}
             for variant_id in selected_variant_ids
+            for row in rank_ic_rows[:1]
             for bucket_id, mean_return in [("q1", -0.01), ("q5", 0.02)]
         ],
     )
     _write_parquet_rows(
         stage_formal_dir / "breadth_coverage_report.parquet",
         [
-            {"date": "2024-07-01", "variant_id": variant_id, "coverage_ratio": 0.98, "asset_count": 120}
+            {
+                "date": str(rank_ic_binding["min_ts"]),
+                "variant_id": variant_id,
+                "coverage_ratio": 1.0,
+                "asset_count": int(rank_ic_binding["symbol_count"]),
+            }
             for variant_id in selected_variant_ids
         ],
     )
@@ -199,8 +211,8 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
         stage_formal_dir / "filter_condition_panel.parquet",
         [
             {
-                "date": "2024-07-01",
-                "asset": "SOLUSDT",
+                "date": str(rank_ic_binding["min_ts"]),
+                "asset": "input_panel",
                 "variant_id": variant_id,
                 "condition_active": True,
             }
@@ -228,9 +240,9 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
                 "factor_role": declared_factor_role,
                 "selected_variant_ids": selected_variant_ids,
                 "primary_evidence_contract": primary_evidence_contract,
-                "mean_rank_ic": 0.12,
-                "median_rank_ic": 0.10,
-                "num_dates": 29,
+                "mean_rank_ic": mean_rank_ic,
+                "median_rank_ic": median_rank_ic,
+                "num_dates": len({str(row["date"]) for row in rank_ic_rows}),
             },
             indent=2,
             ensure_ascii=False,
@@ -332,6 +344,7 @@ def build_csf_test_evidence_from_train_freeze(lineage_root: Path) -> Path:
                 "selected_variant_ids": selected_variant_ids,
                 "selection_rule": selection_rule,
                 "primary_evidence_contract": primary_evidence_contract,
+                "rank_ic_input_binding": rank_ic_binding,
             },
             indent=2,
             ensure_ascii=False,
@@ -430,3 +443,130 @@ def _string_list(values: Any) -> list[str]:
     if not isinstance(values, list):
         return []
     return [str(item).strip() for item in values if str(item).strip()]
+
+
+def _build_rank_ic_evidence(lineage_root: Path, selected_variant_ids: list[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    factor_panel_relpath = "03_csf_signal_ready/author/formal/factor_panel.parquet"
+    factor_manifest_path = lineage_root / "03_csf_signal_ready" / "author" / "formal" / "factor_manifest.yaml"
+    forward_return_relpath = "02_csf_data_ready/author/formal/forward_return_panel.parquet"
+    factor_panel_path = lineage_root / factor_panel_relpath
+    forward_return_path = lineage_root / forward_return_relpath
+    if not factor_panel_path.exists() or not factor_manifest_path.exists() or not forward_return_path.exists():
+        raise ValueError(
+            "csf_test_evidence requires frozen factor_panel.parquet and forward_return_panel.parquet; "
+            "demo_mode outputs cannot enter review"
+        )
+
+    factor_manifest = yaml.safe_load(factor_manifest_path.read_text(encoding="utf-8")) or {}
+    score_field = str(factor_manifest.get("final_score_field", "")).strip()
+    if not score_field:
+        raise ValueError("factor_manifest.yaml final_score_field is required before csf_test_evidence build")
+
+    factor_rows = _read_parquet_rows(factor_panel_path)
+    forward_rows = _read_parquet_rows(forward_return_path)
+    rank_ic_by_date = _expected_rank_ic_by_date(factor_rows, forward_rows, score_field)
+    if not rank_ic_by_date:
+        raise ValueError("csf_test_evidence could not compute Rank IC from factor_panel and forward_return_panel")
+
+    rank_ic_rows = [
+        {"date": date, "variant_id": variant_id, "rank_ic": rank_ic}
+        for date, rank_ic in sorted(rank_ic_by_date.items())
+        for variant_id in selected_variant_ids
+    ]
+    binding = _rank_ic_input_binding(
+        factor_rows=factor_rows,
+        forward_rows=forward_rows,
+        factor_panel_relpath=factor_panel_relpath,
+        forward_return_relpath=forward_return_relpath,
+    )
+    return rank_ic_rows, binding
+
+
+def _rank_ic_input_binding(
+    *,
+    factor_rows: list[dict[str, Any]],
+    forward_rows: list[dict[str, Any]],
+    factor_panel_relpath: str,
+    forward_return_relpath: str,
+) -> dict[str, Any]:
+    joined_keys = {
+        (str(row.get("date", "")).strip(), str(row.get("asset", "")).strip())
+        for row in factor_rows
+    } & {
+        (str(row.get("date", "")).strip(), str(row.get("asset", "")).strip())
+        for row in forward_rows
+    }
+    dates = sorted({date for date, _ in joined_keys if date})
+    assets = {asset for _, asset in joined_keys if asset}
+    digest_payload = json.dumps(
+        {"factor_rows": factor_rows, "forward_rows": forward_rows},
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return {
+        "execution_mode": "real_input",
+        "factor_panel": factor_panel_relpath,
+        "forward_return_panel": forward_return_relpath,
+        "source_data_digest": "sha256:" + hashlib.sha256(digest_payload.encode("utf-8")).hexdigest(),
+        "rows_read": len(factor_rows) + len(forward_rows),
+        "min_ts": dates[0],
+        "max_ts": dates[-1],
+        "symbol_count": len(assets),
+        "event_count": len(joined_keys),
+    }
+
+
+def _expected_rank_ic_by_date(
+    factor_rows: list[dict[str, Any]],
+    forward_rows: list[dict[str, Any]],
+    score_field: str,
+) -> dict[str, float]:
+    forward_lookup = {
+        (str(row.get("date", "")).strip(), str(row.get("asset", "")).strip()): row.get("forward_return")
+        for row in forward_rows
+    }
+    values_by_date: dict[str, list[tuple[float, float]]] = {}
+    for row in factor_rows:
+        date = str(row.get("date", "")).strip()
+        asset = str(row.get("asset", "")).strip()
+        score = row.get(score_field)
+        forward_return = forward_lookup.get((date, asset))
+        if isinstance(score, bool) or isinstance(forward_return, bool):
+            continue
+        if not isinstance(score, (int, float)) or not isinstance(forward_return, (int, float)):
+            continue
+        values_by_date.setdefault(date, []).append((float(score), float(forward_return)))
+    return {
+        date: _spearman_rank_correlation(values)
+        for date, values in values_by_date.items()
+        if len(values) >= 2
+    }
+
+
+def _spearman_rank_correlation(values: list[tuple[float, float]]) -> float:
+    score_ranks = _average_ranks([score for score, _ in values])
+    return_ranks = _average_ranks([forward_return for _, forward_return in values])
+    score_mean = sum(score_ranks) / len(score_ranks)
+    return_mean = sum(return_ranks) / len(return_ranks)
+    numerator = sum((x - score_mean) * (y - return_mean) for x, y in zip(score_ranks, return_ranks, strict=True))
+    score_var = sum((x - score_mean) ** 2 for x in score_ranks)
+    return_var = sum((y - return_mean) ** 2 for y in return_ranks)
+    if score_var == 0 or return_var == 0:
+        return 0.0
+    return numerator / math.sqrt(score_var * return_var)
+
+
+def _average_ranks(values: list[float]) -> list[float]:
+    sorted_values = sorted((value, index) for index, value in enumerate(values))
+    ranks = [0.0] * len(values)
+    position = 0
+    while position < len(sorted_values):
+        end = position + 1
+        while end < len(sorted_values) and sorted_values[end][0] == sorted_values[position][0]:
+            end += 1
+        average_rank = (position + 1 + end) / 2.0
+        for _, original_index in sorted_values[position:end]:
+            ranks[original_index] = average_rank
+        position = end
+    return ranks

@@ -411,8 +411,21 @@ def prepare_csf_holdout_validation(lineage_root: Path) -> Path:
 
 def _add_stage_human_artifacts(stage_dir: Path) -> None:
     formal_dir = stage_dir / "author" / "formal"
-    _write_text(formal_dir / "artifact_catalog.md")
-    _write_text(formal_dir / "field_dictionary.md")
+    if not (formal_dir / "artifact_catalog.md").exists():
+        _write_text(formal_dir / "artifact_catalog.md")
+    if not (formal_dir / "field_dictionary.md").exists():
+        _write_text(formal_dir / "field_dictionary.md")
+    stage_name = stage_dir.name.split("_", 1)[1] if stage_dir.name[:2].isdigit() else stage_dir.name
+    _write_yaml(
+        stage_dir / "review" / "closure" / "stage_completion_certificate.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage": stage_name,
+            "stage_status": "PASS",
+            "final_verdict": "PASS",
+            "reviewer_verdict": "PASS",
+        },
+    )
 
 
 def prepare_tss_mandate(lineage_root: Path) -> Path:

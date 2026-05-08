@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 import re
 import subprocess
@@ -151,6 +152,24 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
         raise ValueError(f"{path.name} requires at least one row")
     columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
     pq.write_table(pa.table(columns), path)
+
+
+def _source_data_provenance(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        raise ValueError("source_data_provenance requires at least one source row")
+    canonical_rows = sorted(rows, key=lambda row: (str(row.get("date", "")), str(row.get("asset", ""))))
+    digest_payload = json.dumps(canonical_rows, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    dates = [str(row.get("date", "")).strip() for row in canonical_rows if str(row.get("date", "")).strip()]
+    assets = {str(row.get("asset", "")).strip() for row in canonical_rows if str(row.get("asset", "")).strip()}
+    return {
+        "execution_mode": "real_input",
+        "source_data_digest": "sha256:" + hashlib.sha256(digest_payload.encode("utf-8")).hexdigest(),
+        "rows_read": len(canonical_rows),
+        "min_ts": min(dates),
+        "max_ts": max(dates),
+        "symbol_count": len(assets),
+        "event_count": len(canonical_rows),
+    }
 
 
 def _parse_coverage_floor_ratio(rule: str) -> float:
@@ -424,6 +443,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
         for date_index, panel_date in enumerate(panel_dates)
         for asset in panel_assets
     ]
+    source_data_provenance = _source_data_provenance(returns_rows)
     split_sample_report = _build_split_sample_adequacy_report(
         lineage_id=lineage_root.name,
         time_split_path=mandate_formal_dir / "time_split.json",
@@ -545,6 +565,7 @@ def build_csf_data_ready_from_mandate(lineage_root: Path) -> Path:
                 "program_artifacts": [CSF_DATA_READY_REBUILD_SCRIPT],
                 "replay_working_directory": stage_dir.name,
                 "replay_command": f"python3 {CSF_DATA_READY_REBUILD_SCRIPT}",
+                "source_data_provenance": source_data_provenance,
             },
             indent=2,
             ensure_ascii=False,
