@@ -2,11 +2,13 @@ from pathlib import Path
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.test_evidence_runtime import build_test_evidence_from_train_freeze, scaffold_test_evidence
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

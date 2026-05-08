@@ -3,6 +3,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.tss_backtest_runtime import (
     build_tss_backtest_ready_from_test_evidence,
     scaffold_tss_backtest_ready,
@@ -11,6 +12,7 @@ from runtime.tools.tss_backtest_runtime import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

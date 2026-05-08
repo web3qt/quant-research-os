@@ -9,6 +9,7 @@ import yaml
 
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
+from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 
 
@@ -413,12 +414,11 @@ def build_csf_train_freeze_from_signal_ready(lineage_root: Path) -> Path:
 
 def _require_confirmed_freeze_groups(stage_dir: Path) -> dict[str, Any]:
     draft_path = ensure_stage_author_layout(stage_dir)["author_draft_dir"] / CSF_TRAIN_FREEZE_DRAFT_FILE
-    payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
-    groups = payload.get("groups", {})
-    missing = [name for name in CSF_TRAIN_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))]
-    if missing:
-        raise ValueError(f"csf_train_freeze draft groups must be confirmed before build: {', '.join(missing)}")
-    return groups
+    return require_confirmed_freeze_groups(
+        draft_path,
+        CSF_TRAIN_FREEZE_GROUP_ORDER,
+        stage_label="csf_train_freeze",
+    )
 
 
 def _required_draft_value(draft: dict[str, Any], key: str) -> str:

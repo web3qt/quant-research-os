@@ -12,9 +12,12 @@ from typing import Any
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
+
 
 def _write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

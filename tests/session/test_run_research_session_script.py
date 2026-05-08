@@ -6,11 +6,13 @@ import os
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.helpers.repo_paths import REPO_ROOT
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -821,7 +823,156 @@ def test_run_research_session_cli_confirms_all_freeze_groups(tmp_path: Path) -> 
     assert "CONFIRM_MANDATE" in result.stdout
     draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
     assert all(group["confirmed"] for group in draft["groups"].values())
+    assert all(group.get("freeze_digest_sha256") for group in draft["groups"].values())
     assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
+
+
+def test_run_research_session_cli_rejects_empty_freeze_group_confirmation(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    draft = _freeze_draft(confirmed=False)
+    draft["groups"]["research_intent"]["draft"] = {}
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft)
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-all-freeze-groups",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "freeze draft incomplete" in result.stderr
+    draft_after = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    assert not draft_after["groups"]["research_intent"]["confirmed"]
+    assert "freeze_digest_sha256" not in draft_after["groups"]["research_intent"]
+
+
+def test_run_research_session_cli_reopens_freeze_when_confirmed_draft_changes(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+    _write_yaml(
+        intake_dir / "idea_intake_transition_approval.yaml",
+        {
+            "lineage_id": "btc_leads_alts",
+            "decision": "CONFIRM_IDEA_INTAKE",
+            "approved_by": "tester",
+            "approved_at": "2026-03-25T10:00:00Z",
+            "source_stage": "idea_intake_interview",
+        },
+    )
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "btc_leads_alts",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["qualified"],
+            "route_assessment": _route_assessment(),
+            "approved_scope": {"market": "binance perp"},
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+    confirm_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-all-freeze-groups",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    assert confirm_result.returncode == 2
+
+    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    draft["groups"]["research_intent"]["draft"]["primary_hypothesis"] = "Changed after freeze."
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft)
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-mandate",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "freeze draft changed after confirmation" in result.stderr
+    assert not (intake_dir / "mandate_transition_approval.yaml").exists()
+    assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
+
+    reconfirm_result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+            "--confirm-all-freeze-groups",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert reconfirm_result.returncode == 2
+    assert "✅ Confirmation recorded: CONFIRM_ALL_FREEZE_GROUPS" in reconfirm_result.stdout
 
 
 def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Path) -> None:

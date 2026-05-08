@@ -70,6 +70,8 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "./.qros/bin/qros-session" in content
     assert "freeze_groups" in content
     assert "--confirm-all-freeze-groups" in content
+    assert "freeze_digest_sha256" in content
+    assert "empty scaffold" in content
     assert "确认全部" in content
     assert "每组回显当前 freeze draft，并单独确认" not in content
 
@@ -100,6 +102,8 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "kill criteria" in content
     assert "--confirm-intake" in content
     assert "--confirm-all-freeze-groups" in content
+    assert "freeze_digest_sha256" in content
+    assert "missing_items" in content
     assert "确认全部" in content
     assert "不会替代最终 stage approval" in content
     assert "是否确认进入 mandate" in content

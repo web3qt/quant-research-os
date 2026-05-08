@@ -165,6 +165,12 @@ from runtime.tools.idea_runtime import (
     _require_route_assessment,
     scaffold_idea_intake,
 )
+from runtime.tools.freeze_contract_runtime import (
+    confirm_all_freeze_groups,
+    first_unconfirmed_or_invalid_group,
+    freeze_group_invalid_reason,
+    validate_confirmed_freeze_groups,
+)
 from runtime.tools.lineage_program_runtime import (
     StageProgramRuntimeError,
     StageProgramSpec,
@@ -2134,255 +2140,103 @@ def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
 
 def next_mandate_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return MANDATE_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in MANDATE_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, MANDATE_FREEZE_GROUP_ORDER)
 
 
 def next_data_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "02_data_ready" / "author" / "draft" / DATA_READY_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return DATA_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in DATA_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, DATA_READY_FREEZE_GROUP_ORDER)
 
 
 def next_csf_data_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = (
         lineage_root / "02_csf_data_ready" / "author" / "draft" / CSF_DATA_READY_FREEZE_DRAFT_FILE
     )
-    if not draft_path.exists():
-        return CSF_DATA_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_DATA_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_DATA_READY_FREEZE_GROUP_ORDER)
 
 
 def next_tss_data_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = (
         lineage_root / "02_tss_data_ready" / "author" / "draft" / TSS_DATA_READY_FREEZE_DRAFT_FILE
     )
-    if not draft_path.exists():
-        return TSS_DATA_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_DATA_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_DATA_READY_FREEZE_GROUP_ORDER)
 
 
 def next_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "03_signal_ready" / "author" / "draft" / SIGNAL_READY_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return SIGNAL_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in SIGNAL_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, SIGNAL_READY_FREEZE_GROUP_ORDER)
 
 
 def next_csf_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "03_csf_signal_ready" / "author" / "draft" / CSF_SIGNAL_READY_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return CSF_SIGNAL_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_SIGNAL_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_SIGNAL_READY_FREEZE_GROUP_ORDER)
 
 
 def next_tss_signal_ready_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "03_tss_signal_ready" / "author" / "draft" / TSS_SIGNAL_READY_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return TSS_SIGNAL_READY_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_SIGNAL_READY_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_SIGNAL_READY_FREEZE_GROUP_ORDER)
 
 
 def next_train_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "04_train_freeze" / "author" / "draft" / TRAIN_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return TRAIN_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TRAIN_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TRAIN_FREEZE_GROUP_ORDER)
 
 
 def next_csf_train_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "04_csf_train_freeze" / "author" / "draft" / CSF_TRAIN_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return CSF_TRAIN_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_TRAIN_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_TRAIN_FREEZE_GROUP_ORDER)
 
 
 def next_tss_train_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "04_tss_train_freeze" / "author" / "draft" / TSS_TRAIN_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        return TSS_TRAIN_FREEZE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_TRAIN_FREEZE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_TRAIN_FREEZE_GROUP_ORDER)
 
 
 def next_test_evidence_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "05_test_evidence" / "author" / "draft" / TEST_EVIDENCE_DRAFT_FILE
-    if not draft_path.exists():
-        return TEST_EVIDENCE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TEST_EVIDENCE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TEST_EVIDENCE_GROUP_ORDER)
 
 
 def next_csf_test_evidence_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "05_csf_test_evidence" / "author" / "draft" / CSF_TEST_EVIDENCE_DRAFT_FILE
-    if not draft_path.exists():
-        return CSF_TEST_EVIDENCE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_TEST_EVIDENCE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_TEST_EVIDENCE_GROUP_ORDER)
 
 
 def next_tss_test_evidence_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "05_tss_test_evidence" / "author" / "draft" / TSS_TEST_EVIDENCE_DRAFT_FILE
-    if not draft_path.exists():
-        return TSS_TEST_EVIDENCE_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_TEST_EVIDENCE_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_TEST_EVIDENCE_GROUP_ORDER)
 
 
 def next_backtest_ready_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "06_backtest" / "author" / "draft" / BACKTEST_READY_DRAFT_FILE
-    if not draft_path.exists():
-        return BACKTEST_READY_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in BACKTEST_READY_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, BACKTEST_READY_GROUP_ORDER)
 
 
 def next_csf_backtest_ready_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "06_csf_backtest_ready" / "author" / "draft" / CSF_BACKTEST_READY_DRAFT_FILE
-    if not draft_path.exists():
-        return CSF_BACKTEST_READY_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_BACKTEST_READY_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_BACKTEST_READY_GROUP_ORDER)
 
 
 def next_tss_backtest_ready_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "06_tss_backtest_ready" / "author" / "draft" / TSS_BACKTEST_READY_DRAFT_FILE
-    if not draft_path.exists():
-        return TSS_BACKTEST_READY_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_BACKTEST_READY_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_BACKTEST_READY_GROUP_ORDER)
 
 
 def next_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "07_holdout" / "author" / "draft" / HOLDOUT_VALIDATION_DRAFT_FILE
-    if not draft_path.exists():
-        return HOLDOUT_VALIDATION_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in HOLDOUT_VALIDATION_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, HOLDOUT_VALIDATION_GROUP_ORDER)
 
 
 def next_csf_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "07_csf_holdout_validation" / "author" / "draft" / CSF_HOLDOUT_VALIDATION_DRAFT_FILE
-    if not draft_path.exists():
-        return CSF_HOLDOUT_VALIDATION_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in CSF_HOLDOUT_VALIDATION_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, CSF_HOLDOUT_VALIDATION_GROUP_ORDER)
 
 
 def next_tss_holdout_validation_group(lineage_root: Path) -> str | None:
     draft_path = (
         lineage_root / "07_tss_holdout_validation" / "author" / "draft" / TSS_HOLDOUT_VALIDATION_DRAFT_FILE
     )
-    if not draft_path.exists():
-        return TSS_HOLDOUT_VALIDATION_GROUP_ORDER[0]
-
-    draft_payload = _read_yaml(draft_path)
-    groups = draft_payload.get("groups", {})
-    for name in TSS_HOLDOUT_VALIDATION_GROUP_ORDER:
-        if not bool(groups.get(name, {}).get("confirmed")):
-            return name
-    return None
+    return first_unconfirmed_or_invalid_group(draft_path, TSS_HOLDOUT_VALIDATION_GROUP_ORDER)
 
 
 def freeze_groups_for_stage(
@@ -2426,11 +2280,15 @@ def freeze_groups_for_stage(
 
         draft = group_payload.get("draft", {})
         missing_items = group_payload.get("missing_items", [])
+        invalid_reason = freeze_group_invalid_reason(group_payload)
+        resolved_missing_items = missing_items if isinstance(missing_items, list) else []
+        if invalid_reason is not None:
+            resolved_missing_items = [*resolved_missing_items, invalid_reason]
         statuses.append(
             {
                 "name": name,
-                "confirmed": bool(group_payload.get("confirmed")),
-                "missing_items": missing_items if isinstance(missing_items, list) else [],
+                "confirmed": bool(group_payload.get("confirmed")) and invalid_reason is None,
+                "missing_items": resolved_missing_items,
                 "draft": draft if isinstance(draft, dict) else {},
             }
         )
@@ -2450,23 +2308,24 @@ def confirm_all_freeze_groups_for_current_stage(
     if not draft_path.exists():
         return None
 
-    payload = _read_yaml(draft_path)
-    groups = payload.get("groups")
-    if not isinstance(groups, dict):
-        raise ValueError(f"{draft_path.name} must contain a groups mapping")
-
-    missing_groups = [name for name in group_order if not isinstance(groups.get(name), dict)]
-    if missing_groups:
-        raise ValueError(f"{draft_path.name} missing freeze groups: {', '.join(missing_groups)}")
-
-    for name in group_order:
-        groups[name]["confirmed"] = True
+    payload = confirm_all_freeze_groups(draft_path, group_order)
 
     draft_path.write_text(
         yaml.safe_dump(payload, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
     return str(draft_path.relative_to(lineage_root))
+
+
+def validate_freeze_groups_for_stage_transition(
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> None:
+    spec = FREEZE_DRAFT_STAGE_SPECS.get(current_stage)
+    if spec is None:
+        return
+    _, _, group_order, _ = spec
+    validate_confirmed_freeze_groups(_freeze_draft_path(lineage_root, current_stage), group_order)
 
 
 def _all_freeze_groups_next_action(stage_label: str) -> str:
@@ -3525,6 +3384,7 @@ def run_research_session(
         )
         current_stage = detect_session_stage(lineage_root)
     if failure_package_status is None and mandate_decision is not None and current_stage == "mandate_confirmation_pending":
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
         )
@@ -3534,6 +3394,7 @@ def run_research_session(
         "csf_data_ready_confirmation_pending",
         "tss_data_ready_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_data_ready_transition_decision(lineage_root, decision=data_ready_decision)
         )
@@ -3543,6 +3404,7 @@ def run_research_session(
         "csf_signal_ready_confirmation_pending",
         "tss_signal_ready_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_signal_ready_transition_decision(lineage_root, decision=signal_ready_decision)
         )
@@ -3552,6 +3414,7 @@ def run_research_session(
         "csf_train_freeze_confirmation_pending",
         "tss_train_freeze_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_train_freeze_transition_decision(lineage_root, decision=train_freeze_decision)
         )
@@ -3561,6 +3424,7 @@ def run_research_session(
         "csf_test_evidence_confirmation_pending",
         "tss_test_evidence_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_test_evidence_transition_decision(lineage_root, decision=test_evidence_decision)
         )
@@ -3570,6 +3434,7 @@ def run_research_session(
         "csf_backtest_ready_confirmation_pending",
         "tss_backtest_ready_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_backtest_ready_transition_decision(lineage_root, decision=backtest_ready_decision)
         )
@@ -3579,6 +3444,7 @@ def run_research_session(
         "csf_holdout_validation_confirmation_pending",
         "tss_holdout_validation_confirmation_pending",
     }:
+        validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_holdout_validation_transition_decision(
                 lineage_root, decision=holdout_validation_decision

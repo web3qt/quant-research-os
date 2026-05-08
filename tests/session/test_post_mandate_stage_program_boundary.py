@@ -2,12 +2,14 @@ from pathlib import Path
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.research_session import run_research_session
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

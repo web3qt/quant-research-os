@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.factor_diagnostics import FactorDiagnosticsError, diagnostics_payload, latest_lineage_id
 from runtime.scripts.run_factor_diagnostics import _render_text
 
@@ -20,6 +21,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def _write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 

@@ -4,6 +4,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_backtest_runtime import (
     build_csf_backtest_ready_from_test_evidence,
@@ -13,6 +14,7 @@ from runtime.tools.csf_backtest_runtime import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

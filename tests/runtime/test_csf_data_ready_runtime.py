@@ -5,6 +5,7 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools import csf_data_ready_runtime
 from runtime.tools.csf_data_ready_runtime import (
     build_csf_data_ready_from_mandate,
@@ -14,6 +15,7 @@ from runtime.tools.csf_data_ready_runtime import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

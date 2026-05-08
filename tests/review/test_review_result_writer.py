@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ReviewerRuntimeIdentity,
     ensure_adversarial_review_request,
@@ -15,6 +16,7 @@ from tests.session.test_research_session_runtime import _write_minimal_stage_out
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

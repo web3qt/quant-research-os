@@ -376,7 +376,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 ./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-all-freeze-groups
 ```
 
-这个命令只写当前 freeze draft 的 group confirmations，不会替代最终 stage approval。批量确认后仍然必须再得到对应的最终确认，例如 `--confirm-mandate`、`--confirm-data-ready`、`--confirm-signal-ready`。这些底层 flags 是调试入口；正常用户应通过 Codex 对话确认 route-specific 的 `tss_*` 或 `csf_*` stage。
+这个命令只写当前 freeze draft 的 group confirmations，不会替代最终 stage approval。运行前 runtime 会拒绝空 scaffold、未填完整的 group draft 或仍有 `missing_items` 的 draft；写入确认时，每个 group 会绑定 `freeze_digest_sha256`。批量确认后如果 draft 内容被改动，digest 校验会失效，stage 会回到对应的 `*_confirmation_pending`，直到用户重新确认当前 draft。批量确认后仍然必须再得到对应的最终确认，例如 `--confirm-mandate`、`--confirm-data-ready`、`--confirm-signal-ready`。这些底层 flags 是调试入口；正常用户应通过 Codex 对话确认 route-specific 的 `tss_*` 或 `csf_*` stage。
 
 如果要做调试或手动恢复，也可以通过下面的命令显式触发 mandate approval：
 

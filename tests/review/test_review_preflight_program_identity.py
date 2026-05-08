@@ -7,6 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.csf_test_evidence_runtime import build_csf_test_evidence_from_train_freeze
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
@@ -37,6 +38,7 @@ def _write_parquet(path: Path, rows: list[dict[str, object]]) -> None:
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

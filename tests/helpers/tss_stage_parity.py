@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.tss_backtest_runtime import build_tss_backtest_ready_from_test_evidence
@@ -44,6 +45,7 @@ from tests.runtime.test_tss_train_runtime import (
 
 def _write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

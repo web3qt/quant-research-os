@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 from runtime.tools.tss_signal_ready_contract_runtime import validate_tss_signal_ready_semantics
 
@@ -235,17 +236,11 @@ def build_tss_signal_ready_from_data_ready(lineage_root: Path) -> Path:
 
 def _require_confirmed_freeze_groups(stage_dir: Path) -> dict[str, Any]:
     draft_path = stage_dir / "author" / "draft" / TSS_SIGNAL_READY_FREEZE_DRAFT_FILE
-    payload = _load_yaml(draft_path)
-    groups = payload.get("groups")
-    if not isinstance(groups, dict):
-        raise ValueError(f"{draft_path.name}: groups must be a map")
-    missing = [name for name in TSS_SIGNAL_READY_FREEZE_GROUP_ORDER if name not in groups]
-    if missing:
-        raise ValueError(f"{draft_path.name}: missing freeze groups: {', '.join(missing)}")
-    unconfirmed = [name for name in TSS_SIGNAL_READY_FREEZE_GROUP_ORDER if not groups[name].get("confirmed")]
-    if unconfirmed:
-        raise ValueError(f"{draft_path.name}: freeze groups must be confirmed before build: {', '.join(unconfirmed)}")
-    return groups
+    return require_confirmed_freeze_groups(
+        draft_path,
+        TSS_SIGNAL_READY_FREEZE_GROUP_ORDER,
+        stage_label="tss_signal_ready",
+    )
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:

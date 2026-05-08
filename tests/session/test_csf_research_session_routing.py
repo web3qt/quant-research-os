@@ -1,13 +1,16 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from runtime.tools.research_session import detect_session_stage, run_research_session
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -116,10 +119,10 @@ def test_run_research_session_records_csf_transition_approval_only_after_mandate
     _write_display_decision(lineage_root / "01_mandate", stage="mandate")
     _write_next_stage_confirmation(lineage_root / "01_mandate", stage="mandate")
 
-    status = run_research_session(
-        outputs_root=tmp_path / "outputs",
-        lineage_id="csf_case",
-        data_ready_decision="CONFIRM_DATA_READY",
-    )
-    assert approval_path.exists()
-    assert status.current_stage in {"csf_data_ready_confirmation_pending", "csf_data_ready_author"}
+    with pytest.raises(ValueError, match="csf_data_ready_freeze_draft.yaml is required"):
+        run_research_session(
+            outputs_root=tmp_path / "outputs",
+            lineage_id="csf_case",
+            data_ready_decision="CONFIRM_DATA_READY",
+        )
+    assert not approval_path.exists()

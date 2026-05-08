@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 
@@ -473,19 +474,11 @@ def build_data_ready_from_mandate(lineage_root: Path) -> Path:
 
 def _require_confirmed_freeze_groups(data_ready_dir: Path) -> dict[str, Any]:
     draft_path = build_stage_context(data_ready_dir)["author_draft_dir"] / DATA_READY_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        raise ValueError(f"{DATA_READY_FREEZE_DRAFT_FILE} is required before data_ready build")
-
-    draft_payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
-    groups = draft_payload.get("groups", {})
-    missing_groups = [
-        name for name in DATA_READY_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))
-    ]
-    if missing_groups:
-        raise ValueError(
-            f"{DATA_READY_FREEZE_DRAFT_FILE} has unconfirmed groups: {', '.join(missing_groups)}"
-        )
-    return groups
+    return require_confirmed_freeze_groups(
+        draft_path,
+        DATA_READY_FREEZE_GROUP_ORDER,
+        stage_label="data_ready",
+    )
 
 
 def _required_draft_value(group_payload: dict[str, Any], key: str) -> str:

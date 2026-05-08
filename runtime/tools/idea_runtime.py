@@ -7,6 +7,7 @@ from typing import Any
 import yaml
 
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
+from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 
@@ -485,19 +486,11 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
 
 def _require_confirmed_freeze_groups(intake_dir: Path) -> dict[str, Any]:
     draft_path = intake_dir / MANDATE_FREEZE_DRAFT_FILE
-    if not draft_path.exists():
-        raise ValueError(f"{MANDATE_FREEZE_DRAFT_FILE} is required before mandate build")
-
-    draft_payload = yaml.safe_load(draft_path.read_text(encoding="utf-8")) or {}
-    groups = draft_payload.get("groups", {})
-    missing_groups = [
-        name for name in MANDATE_FREEZE_GROUP_ORDER if not bool(groups.get(name, {}).get("confirmed"))
-    ]
-    if missing_groups:
-        raise ValueError(
-            f"{MANDATE_FREEZE_DRAFT_FILE} has unconfirmed groups: {', '.join(missing_groups)}"
-        )
-    return groups
+    return require_confirmed_freeze_groups(
+        draft_path,
+        MANDATE_FREEZE_GROUP_ORDER,
+        stage_label="mandate",
+    )
 
 
 def _required_draft_value(group_payload: dict[str, Any], key: str) -> str:

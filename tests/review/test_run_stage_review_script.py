@@ -8,6 +8,7 @@ import sys
 import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.repo_paths import REPO_ROOT
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, _require_stage_config
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
@@ -18,6 +19,7 @@ from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

@@ -248,7 +248,7 @@ stateDiagram-v2
     idea_intake --> idea_intake_confirmation_pending: scaffold / draft ready
     idea_intake_confirmation_pending --> mandate_confirmation_pending: CONFIRM_IDEA_INTAKE + GO_TO_MANDATE
 
-    mandate_confirmation_pending --> mandate_author: CONFIRM_MANDATE + freeze groups complete
+    mandate_confirmation_pending --> mandate_author: CONFIRM_MANDATE + freeze groups complete + digest valid
     mandate_author --> mandate_review_confirmation_pending: required outputs + provenance ready
     mandate_review_confirmation_pending --> mandate_review: CONFIRM_REVIEW / review started
     mandate_review --> mandate_next_stage_confirmation_pending: closure PASS
@@ -280,7 +280,7 @@ stateDiagram-v2
 
 ```mermaid
 graph LR
-    A["确认待定<br/>*_confirmation_pending"] -->|"用户确认 + freeze groups complete"| B["创作阶段<br/>*_author"]
+    A["确认待定<br/>*_confirmation_pending"] -->|"用户确认 + freeze groups complete + digest valid"| B["创作阶段<br/>*_author"]
     B -->|"required outputs + provenance ready"| C["审查确认<br/>*_review_confirmation_pending"]
     C -->|"用户确认 / review started"| D["审查阶段<br/>*_review"]
     D -->|"closure PASS"| E["下一阶段确认<br/>*_next_stage_confirmation_pending"]
@@ -288,7 +288,7 @@ graph LR
     E -->|"CONFIRM_NEXT_STAGE"| A2["下一阶段入口状态"]
 ```
 
-这里的 `freeze groups complete` 可以来自逐组确认，也可以在 agent 一次展示全部 group draft 后，由用户回复 `确认全部` 并运行 `--confirm-all-freeze-groups` 批量写入。它只确认当前 freeze draft 的 groups，不等于最终的 `CONFIRM_*` stage approval。
+这里的 `freeze groups complete` 可以来自逐组确认，也可以在 agent 一次展示全部 group draft 后，由用户回复 `确认全部` 并运行 `--confirm-all-freeze-groups` 批量写入。runtime 只会确认非空、schema 已填完整、`missing_items` 已清空的 draft；确认时每个 group 会写入 `freeze_digest_sha256`。如果确认后 draft 内容被改动，digest 校验会让该 stage 自动回到 `*_confirmation_pending`。它只确认当前 freeze draft 的 groups，不等于最终的 `CONFIRM_*` stage approval。
 
 ---
 

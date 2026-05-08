@@ -7,6 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.idea_runtime import scaffold_idea_intake
 
 

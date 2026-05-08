@@ -6,6 +6,7 @@ import sys
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.idea_runtime import scaffold_idea_intake
 from tests.helpers.repo_paths import REPO_ROOT
 from tests.runtime.test_csf_data_ready_runtime import (
@@ -24,6 +25,7 @@ from tests.runtime.test_artifact_contract_runtime import (
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

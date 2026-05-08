@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
@@ -23,6 +24,7 @@ from runtime.tools.research_session import (
 
 def _write_yaml(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 

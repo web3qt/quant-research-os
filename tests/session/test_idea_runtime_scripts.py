@@ -4,10 +4,12 @@ import sys
 
 import yaml
 
+from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.lineage_program_support import ensure_stage_program
 from tests.helpers.repo_paths import REPO_ROOT
 
 def _write_yaml(path: Path, payload: dict) -> None:
+    payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
