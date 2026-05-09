@@ -9,6 +9,11 @@ from typing import Literal
 
 import yaml
 
+from runtime.tools.lineage_lock_ledger import (
+    FROZEN_ARTIFACT_MUTATED,
+    FrozenArtifactMutationError,
+    assert_lineage_locks_intact,
+)
 from runtime.tools.data_ready_runtime import (
     DATA_READY_FREEZE_DRAFT_FILE,
     DATA_READY_FREEZE_GROUP_ORDER,
@@ -726,6 +731,55 @@ class FailurePackageRuntimeStatus:
     review_verdict: str
     failure_stage: str
     failure_reason_summary: str
+
+
+def _lineage_lock_blocked_status(
+    *,
+    lineage_root: Path,
+    lineage_mode: str | None,
+    lineage_selection_reason: str | None,
+    violation: FrozenArtifactMutationError,
+) -> SessionContext:
+    current_stage = detect_session_stage(lineage_root)
+    route_contract = current_route_contract(lineage_root)
+    return SessionContext(
+        lineage_id=lineage_root.name,
+        lineage_root=lineage_root,
+        lineage_mode=lineage_mode,
+        lineage_selection_reason=lineage_selection_reason,
+        current_orchestrator="qros-research-session",
+        current_stage=current_stage,
+        current_route=current_research_route(lineage_root),
+        stage_status="blocked",
+        blocking_reason_code=FROZEN_ARTIFACT_MUTATED,
+        current_skill="qros-research-session",
+        why_this_skill="Lineage immutable ledger blocked normal QROS workflow before stage execution.",
+        required_program_dir=None,
+        required_program_entrypoint=None,
+        program_contract_status="not_checked",
+        provenance_status="not_checked",
+        blocking_reason=str(violation),
+        resume_hint=violation.next_action,
+        artifacts_written=[],
+        gate_status=FROZEN_ARTIFACT_MUTATED,
+        next_action=violation.next_action,
+        why_now=[],
+        open_risks=[],
+        factor_role=route_contract["factor_role"],
+        factor_structure=route_contract["factor_structure"],
+        portfolio_expression=route_contract["portfolio_expression"],
+        neutralization_policy=route_contract["neutralization_policy"],
+        review_verdict=None,
+        review_state=None,
+        active_review_cycle_id=None,
+        review_requested_at=None,
+        review_bound_author_digest=None,
+        closure_written_at=None,
+        requires_failure_handling=False,
+        failure_stage=None,
+        failure_reason_summary=None,
+        freeze_groups=None,
+    )
 
 
 STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
@@ -3600,6 +3654,15 @@ def run_research_session(
     if selection.resume_blocked:
         return _lineage_resume_blocked_status(selection=selection)
     lineage_root.mkdir(parents=True, exist_ok=True)
+    try:
+        assert_lineage_locks_intact(lineage_root)
+    except FrozenArtifactMutationError as exc:
+        return _lineage_lock_blocked_status(
+            lineage_root=lineage_root,
+            lineage_mode=selection.mode,
+            lineage_selection_reason=selection.reason,
+            violation=exc,
+        )
 
     artifacts_written: list[str] = []
     current_stage = detect_session_stage(lineage_root)

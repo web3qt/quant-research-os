@@ -35,6 +35,7 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
+        "program_execution_manifest.json",
         "run_config.toml",
         "artifact_catalog.md",
         "field_dictionary.md",
@@ -222,6 +223,12 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert evaluator_payload["status"] == "passed"
     assert evaluator_payload["can_progress"] is True
     assert not (stage_dir / "review" / "governance" / "governance_signal.json").exists()
+    ledger = yaml.safe_load((stage_dir.parent / "lineage_lock_ledger.yaml").read_text(encoding="utf-8"))
+    locked = ledger["locked_stages"]["mandate"]["files"]
+    locked_paths = {item["path"] for item in locked}
+    assert "mandate/author/formal/research_route.yaml" in locked_paths
+    assert "mandate/author/formal/program_execution_manifest.json" in locked_paths
+    assert "mandate/review/closure/stage_gate_review.yaml" in locked_paths
 
 
 def test_run_stage_review_script_supports_explicit_context_args(tmp_path: Path) -> None:

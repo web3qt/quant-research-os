@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
+from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
 from runtime.tools.research_session import (
     _gate_status_and_next_action,
     _latest_failure_package_runtime_status,
     _latest_review_failure_status,
+    _lineage_lock_blocked_status,
     current_research_route,
     current_route_contract,
     detect_session_stage,
@@ -38,6 +40,15 @@ def latest_lineage_id(outputs_root: Path) -> str:
 
 def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
     # qros-progress 只能读现有状态，不能走会 scaffold 或写 confirmation 的 session 入口。
+    try:
+        assert_lineage_locks_intact(lineage_root)
+    except FrozenArtifactMutationError as exc:
+        return _lineage_lock_blocked_status(
+            lineage_root=lineage_root,
+            lineage_mode=f"progress_{selection_mode}",
+            lineage_selection_reason=f"qros-progress selected {lineage_root.name} using {selection_mode} mode",
+            violation=exc,
+        )
     current_stage = detect_session_stage(lineage_root)
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (

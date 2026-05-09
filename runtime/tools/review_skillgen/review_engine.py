@@ -35,6 +35,7 @@ from runtime.tools.review_skillgen.stage_content_gate import (
     check_structural_gates,
 )
 from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
+from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -523,6 +524,7 @@ def run_stage_review(
     review_result_dir = Path(context["review_result_dir"]).resolve()
     stage = context["stage"]
     lineage_id = context["lineage_id"]
+    assert_lineage_locks_intact(lineage_root)
 
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)

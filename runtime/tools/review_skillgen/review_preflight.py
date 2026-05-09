@@ -23,6 +23,7 @@ from runtime.tools.review_skillgen.stage_content_gate import (
     check_structural_gates,
 )
 from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
+from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 from runtime.tools.lineage_program_runtime import StageProgramRuntimeError, validate_stage_program
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 
@@ -54,6 +55,7 @@ def run_review_preflight(
     lineage_root = Path(context["lineage_root"]).resolve()
     author_formal_dir = Path(context["author_formal_dir"]).resolve()
     stage = context["stage"]
+    assert_lineage_locks_intact(lineage_root)
 
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)

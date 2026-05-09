@@ -26,6 +26,7 @@ from runtime.tools.review_skillgen.review_engine import (
     ReviewRuntimeConfigurationError,
     _require_stage_config,
 )
+from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
     compute_author_materialization_digest,
@@ -155,6 +156,7 @@ def _prepare_review_cycle(
     context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
     stage_dir = Path(context["stage_dir"]).resolve()
     lineage_root = Path(context["lineage_root"]).resolve()
+    assert_lineage_locks_intact(lineage_root)
     current_stage = detect_session_stage(lineage_root)
     if not current_stage.endswith("_review_confirmation_pending") and not current_stage.endswith("_review"):
         raise ValueError(

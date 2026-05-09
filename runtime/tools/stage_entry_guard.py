@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
+from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
 from runtime.tools.progress_runtime import latest_lineage_id
 from runtime.tools.research_session import STAGE_ACTIVE_SKILLS, SessionStage, detect_session_stage
 
@@ -63,8 +64,26 @@ def check_stage_entry_for_lineage(
     current_stage: SessionStage = detect_session_stage(lineage_root)
     expected_stages = expected_stages_for_entry(stage=stage, lane=lane)
     lineage_id = lineage_root.name
-    current_active_skill = _active_skill_for_stage(current_stage)
     recovery_command = _recovery_command(lineage_id)
+    try:
+        assert_lineage_locks_intact(lineage_root)
+    except FrozenArtifactMutationError as exc:
+        result = StageEntryGuardResult(
+            allowed=False,
+            lineage_id=lineage_id,
+            current_stage=current_stage,
+            current_active_skill="qros-research-session",
+            requested_stage=stage,
+            requested_lane=lane,
+            expected_stages=expected_stages,
+            recovery_command=recovery_command,
+            message=str(exc),
+        )
+        if raise_on_block:
+            raise StageEntryGuardError(result)
+        return result
+
+    current_active_skill = _active_skill_for_stage(current_stage)
 
     if current_stage in expected_stages:
         result = StageEntryGuardResult(

@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.lineage_lock_ledger import lock_reviewed_stage
 from runtime.tools.stage_evaluator import write_stage_evaluator_artifacts
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 
@@ -99,4 +100,21 @@ def write_closure_artifacts(
     write_stage_evaluator_artifacts(
         stage_dir,
         lineage_root=lineage_root,
+    )
+    review_scope = payload.get("review_scope", {})
+    if not isinstance(review_scope, dict):
+        review_scope = {}
+    adversarial_result = payload.get("adversarial_review_result", {})
+    if not isinstance(adversarial_result, dict):
+        adversarial_result = {}
+    # closure 写完后立即锁定本 stage 的 formal/provenance/closure 事实；
+    # 已锁 digest 后续不得被下游 review 或 launcher 线程静默改写。
+    lock_reviewed_stage(
+        lineage_root=lineage_root,
+        stage_dir=stage_dir,
+        stage=payload["stage"],
+        review_cycle_id=str(adversarial_result.get("review_cycle_id", "")),
+        final_verdict=str(payload["final_verdict"]),
+        required_artifact_paths=review_scope.get("required_artifact_paths", []),
+        required_provenance_paths=review_scope.get("required_provenance_paths", []),
     )
