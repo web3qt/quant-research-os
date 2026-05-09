@@ -19,36 +19,9 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-select_python_bin() {
-  local candidates=()
-  if [ -n "${QROS_PYTHON:-}" ]; then
-    candidates+=("$QROS_PYTHON")
-  fi
-  candidates+=("python" "python3")
-
-  local candidate
-  for candidate in "${candidates[@]}"; do
-    if ! command -v "$candidate" >/dev/null 2>&1; then
-      continue
-    fi
-    if "$candidate" - <<'PY' >/dev/null 2>&1
-import sys
-
-raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
-PY
-    then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done
-
-  echo "QROS requires Python >=3.11; set QROS_PYTHON or put a compatible python/python3 on PATH" >&2
-  return 1
-}
-
-PYTHON_BIN="$(select_python_bin)"
-
 source "$SCRIPT_DIR/qros-wrapper-lib"
+PYTHON_BIN="$(qros_select_python_bin "$SCRIPT_DIR")"
+qros_verify_runtime_lock "$SCRIPT_DIR" "$PYTHON_BIN"
 RUNTIME_ROOT="$(qros_resolve_runtime_root "$SCRIPT_DIR" "$PYTHON_BIN" strict)"
 
 cd "$TARGET_CWD"

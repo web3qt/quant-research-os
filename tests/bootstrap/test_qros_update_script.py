@@ -7,8 +7,117 @@ import subprocess
 from pathlib import Path
 import sys
 
+import pytest
+
+import runtime.tools.install_runtime as install_runtime
 from tests.helpers.repo_paths import REPO_ROOT
 from runtime.tools.update_runtime import resolve_source_repo, resolve_update_host, run_qros_update
+from runtime.tools.uv_runtime_env import RuntimeEnvMetadata
+
+
+def _write_fake_uv(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fake_python = path.parent / "fake-python-3.12"
+    fake_python.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                "if [ \"${1:-}\" = \"-\" ] && [ \"$#\" -eq 1 ]; then exit 0; fi",
+                f'exec "{sys.executable}" "$@"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    path.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                "if [ \"${1:-}\" = \"python\" ] && [ \"${2:-}\" = \"find\" ]; then",
+                f'  printf "%s\\n" "{fake_python}"',
+                "  exit 0",
+                "fi",
+                "if [ \"${1:-}\" = \"python\" ] && [ \"${2:-}\" = \"install\" ]; then exit 0; fi",
+                "if [ \"${1:-}\" = \"venv\" ]; then",
+                "  if [[ \" $* \" != *\" --allow-existing \"* ]]; then",
+                "    echo \"fake uv venv requires --allow-existing\" >&2",
+                "    exit 1",
+                "  fi",
+                "  venv_path=\"${@: -1}\"",
+                "  mkdir -p \"$venv_path/bin\"",
+                "  cat > \"$venv_path/bin/python\" <<'PY'",
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                "if [ \"${1:-}\" = \"-c\" ]; then echo '3.12.9'; exit 0; fi",
+                "if [ \"${1:-}\" = \"-\" ]; then exit 0; fi",
+                f'exec "{sys.executable}" "$@"',
+                "PY",
+                "  chmod +x \"$venv_path/bin/python\"",
+                "  exit 0",
+                "fi",
+                "if [ \"${1:-}\" = \"pip\" ] && [ \"${2:-}\" = \"compile\" ]; then",
+                "  if [[ \" $* \" != *\" --no-header \"* ]]; then",
+                "    echo \"fake uv compile requires --no-header\" >&2",
+                "    exit 1",
+                "  fi",
+                "  lock_path=''",
+                "  requirements_path=\"${@: -1}\"",
+                "  while [ \"$#\" -gt 0 ]; do",
+                "    if [ \"$1\" = \"-o\" ]; then lock_path=\"$2\"; shift 2; continue; fi",
+                "    shift",
+                "  done",
+                "  if [ -z \"$lock_path\" ]; then echo 'missing -o lock path' >&2; exit 1; fi",
+                "  if grep -q 'PyYAML' \"$requirements_path\" 2>/dev/null; then",
+                "    printf '%s\\n' 'PyYAML==6.0.2' 'pyarrow==20.0.0' > \"$lock_path\"",
+                "  else",
+                "    printf '%s\\n' '# empty pinned runtime lock' > \"$lock_path\"",
+                "  fi",
+                "  exit 0",
+                "fi",
+                "if [ \"${1:-}\" = \"pip\" ] && [ \"${2:-}\" = \"sync\" ]; then exit 0; fi",
+                "echo \"unexpected fake uv args: $*\" >&2",
+                "exit 1",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    path.chmod(0o755)
+
+
+@pytest.fixture(autouse=True)
+def fake_uv_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir()
+    _write_fake_uv(fake_bin / "uv")
+    monkeypatch.setenv("PATH", f"{fake_bin}{os.pathsep}{os.environ.get('PATH', '')}")
+    monkeypatch.setenv("QROS_TEST_FAKE_UV_BIN", str(fake_bin))
+
+    def fake_runtime_env(*, runtime_root: Path, repo_root: Path) -> RuntimeEnvMetadata:
+        python_bin = runtime_root / ".venv" / "bin" / "python"
+        python_bin.parent.mkdir(parents=True, exist_ok=True)
+        python_bin.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+        lock_path = runtime_root / "uv.lock"
+        lock_text = "PyYAML==6.0.2\npyarrow==20.0.0\n"
+        lock_path.write_text(lock_text, encoding="utf-8")
+        return RuntimeEnvMetadata(
+            python_executable=str(python_bin.resolve()),
+            python_version="3.12.9",
+            lock_path=str(lock_path.resolve()),
+            lock_digest=install_runtime._file_sha256(lock_path),
+        )
+
+    monkeypatch.setattr(install_runtime, "ensure_repo_local_uv_runtime", fake_runtime_env)
+
+
+def _assert_fake_uv_first(env: dict[str, str]) -> None:
+    fake_bin = Path(env["QROS_TEST_FAKE_UV_BIN"]).resolve()
+    uv_path = shutil.which("uv", path=env["PATH"])
+    assert uv_path is not None
+    assert Path(uv_path).resolve().parent == fake_bin
 
 
 def _copy_repo_fixture(tmp_path: Path) -> Path:
@@ -263,7 +372,8 @@ def test_qros_update_wrapper_refreshes_current_repo(tmp_path: Path, monkeypatch)
     monkeypatch.setenv("HOME", str(home_root))
     env = os.environ.copy()
     env["HOME"] = str(home_root)
-    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    env["PATH"] = f"{env['PATH']}{os.pathsep}{Path(sys.executable).parent}"
+    _assert_fake_uv_first(env)
 
     completed = subprocess.run(
         [
@@ -300,7 +410,8 @@ def test_qros_update_wrapper_auto_host_respects_qros_host_env(tmp_path: Path, mo
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["QROS_HOST"] = "claude-code"
-    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    env["PATH"] = f"{env['PATH']}{os.pathsep}{Path(sys.executable).parent}"
+    _assert_fake_uv_first(env)
 
     completed = subprocess.run(
         [
@@ -338,7 +449,8 @@ def test_qros_update_wrapper_explicit_codex_host_wins_over_qros_host_env(tmp_pat
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["QROS_HOST"] = "claude-code"
-    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    env["PATH"] = f"{env['PATH']}{os.pathsep}{Path(sys.executable).parent}"
+    _assert_fake_uv_first(env)
 
     completed = subprocess.run(
         [
@@ -408,7 +520,8 @@ def test_qros_update_wrapper_legacy_codex_default_still_respects_qros_host_env(
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["QROS_HOST"] = "claude-code"
-    env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    env["PATH"] = f"{env['PATH']}{os.pathsep}{Path(sys.executable).parent}"
+    _assert_fake_uv_first(env)
 
     completed = subprocess.run(
         [

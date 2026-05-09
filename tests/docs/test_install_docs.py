@@ -56,6 +56,28 @@ def test_install_docs_describe_research_repo_first_fetch_flow() -> None:
     assert "--host codex` and `--host claude-code` are manual recovery/debug overrides" in update_skill
 
 
+def test_install_docs_describe_uv_python312_repo_local_runtime() -> None:
+    installation = Path("docs/guides/installation.md").read_text(encoding="utf-8")
+
+    assert "./.qros/.venv/bin/python" in installation
+    assert "Python 3.12" in installation
+    assert "./.qros/uv.lock" in installation
+    assert "runtime_lock_digest" in installation
+    assert "do not install dependencies as a side effect" in installation
+    assert "QROS_PYTHON" in installation
+    assert "uv python find 3.12" in installation
+
+
+def test_codex_readme_describes_python312_wrapper_runtime() -> None:
+    codex_guide = Path("docs/README.codex.md").read_text(encoding="utf-8")
+
+    assert "QROS repo-local commands require Python 3.12" in codex_guide
+    assert "`qros-update`" in codex_guide
+    assert "`uv` 创建或刷新 `./.qros/.venv`" in codex_guide
+    assert "不要为了绕过 Python 版本问题而跳过 `./.qros/bin/qros-*` wrapper" in codex_guide
+    assert "直接调用 `runtime/scripts/*`" in codex_guide
+
+
 def test_install_docs_reference_stage_field_guide() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     quickstart = Path("docs/guides/quickstart-codex.md").read_text(encoding="utf-8")

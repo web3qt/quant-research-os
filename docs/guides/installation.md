@@ -141,12 +141,19 @@ test -d ./.qros
 - Claude Code: `.claude-plugin/skills/qros-*/`（repo-local plugin skills），`~/.claude/qros/install-manifest.json`
 - `<research-repo>/.qros/`
 
-当前 `<research-repo>/.qros/` 默认只保留：
+当前 `<research-repo>/.qros/` 默认保留 repo-local runtime：
 
 - `bin/`
+- `.venv/`
+- `.venv/bin/python`
+- `uv.lock`
 - `install-manifest.json`
 
-> 它是项目本地 wrapper 层，不再复制整套 runtime 源码镜像。
+> 它是项目本地 wrapper + Python runtime 层，不再复制整套 runtime 源码镜像。
+
+`./.qros/` 拥有一套由 `uv` 管理的 Python runtime。`./.qros/.venv/bin/python` 必须是 Python 3.12；`./.qros/uv.lock` 是该 runtime 的 pinned dependency lock。`qros-update` / bootstrap 会使用 `uv` 创建或刷新这套 runtime。
+
+普通命令不会偷偷安装依赖：`qros-session`、`qros-review`、`qros-progress`、diagnostics、preflight 和 validators do not install dependencies as a side effect。它们只选择已有 Python、验证 runtime lock，并在环境不满足要求时 fail closed。
 
 `install-manifest.json` 是 repo-local runtime 的来源证明。关键字段包括：
 
@@ -158,8 +165,23 @@ test -d ./.qros
 | `source_git_status_short` | 安装时 `git status --short` 的逐行快照 |
 | `python_executable` | 安装时运行 setup 的 Python interpreter 绝对路径 |
 | `python_version` | 安装时运行 setup 的 Python 版本 |
+| `runtime_python_executable` | repo-local runtime 的 Python executable，通常是 `./.qros/.venv/bin/python` |
+| `runtime_python_version` | repo-local runtime 的 Python 版本，必须是 Python 3.12 |
+| `runtime_lock_path` | repo-local pinned lock 路径，通常是 `./.qros/uv.lock` |
+| `runtime_lock_digest` | `./.qros/uv.lock` 的 digest，用于检测 lock drift |
 
-当前阶段里，`python_executable` 和 `python_version` 只作为审计 provenance 记录；wrapper 优先使用安装时 interpreter 的执行策略由后续 Python wrapper 阶段处理。
+`python_executable` 和 `python_version` 只记录安装/更新入口本身的审计 provenance；普通 wrapper 运行 QROS runtime 时使用 `runtime_python_executable` 对应的 Python 3.12 环境。
+
+### Python 选择顺序
+
+Repo-local `./.qros/bin/qros-*` wrappers 按固定顺序选择 Python：
+
+1. `QROS_PYTHON`
+2. `./.qros/.venv/bin/python`
+3. `uv python find 3.12`
+4. `python3.12`
+
+被选中的 interpreter 必须报告 Python 3.12。如果以上候选都不存在或不是 Python 3.12，wrapper 会 fail closed，并提示用户从 active research repo 运行 `qros-update` 来刷新 `./.qros/.venv` 和 `./.qros/uv.lock`。
 
 ### wrapper provenance guard
 

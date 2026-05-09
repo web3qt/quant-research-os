@@ -1,5 +1,102 @@
 #!/usr/bin/env bash
 
+qros_select_python_bin() {
+  local script_dir="$1"
+  local qros_root
+  qros_root="$(cd "$script_dir/.." && pwd)"
+
+  local candidates=()
+  if [ -n "${QROS_PYTHON:-}" ]; then
+    candidates+=("$QROS_PYTHON")
+  fi
+  candidates+=("$qros_root/.venv/bin/python")
+
+  local uv_python=""
+  if command -v uv >/dev/null 2>&1; then
+    uv_python="$(uv python find 3.12 2>/dev/null || true)"
+    if [ -n "$uv_python" ]; then
+      candidates+=("$uv_python")
+    fi
+  fi
+
+  candidates+=("python3.12")
+
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if [ -z "$candidate" ]; then
+      continue
+    fi
+    if [[ "$candidate" != */* ]] && ! command -v "$candidate" >/dev/null 2>&1; then
+      continue
+    fi
+    if [[ "$candidate" == */* ]] && [ ! -x "$candidate" ]; then
+      continue
+    fi
+    if "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 1)
+PY
+    then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  {
+    echo "QROS requires Python 3.12 for repo-local runtime wrappers."
+    echo "Recovery: run qros-update from the active research repo, or install uv and rerun bootstrap."
+    echo "Checked: QROS_PYTHON, .qros/.venv/bin/python, uv python find 3.12, python3.12"
+  } >&2
+  return 1
+}
+
+qros_verify_runtime_lock() {
+  local script_dir="$1"
+  local python_bin="$2"
+  local mode="${3:-strict}"
+  local manifest_path="$script_dir/../install-manifest.json"
+  local lock_path="$script_dir/../uv.lock"
+
+  "$python_bin" - "$manifest_path" "$lock_path" "$mode" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+manifest_path = Path(sys.argv[1])
+lock_path = Path(sys.argv[2])
+mode = sys.argv[3]
+
+if not manifest_path.exists():
+    raise SystemExit(0)
+
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+expected = str(manifest.get("runtime_lock_digest", "")).strip()
+recorded_path = str(manifest.get("runtime_lock_path", "")).strip()
+
+if not expected and not recorded_path:
+    raise SystemExit(0)
+
+if not lock_path.exists():
+    print("QROS runtime lock missing: .qros/uv.lock", file=sys.stderr)
+    print("Recovery: run qros-update from the active research repo", file=sys.stderr)
+    if mode == "recovery":
+        raise SystemExit(0)
+    raise SystemExit(1)
+
+actual = hashlib.sha256(lock_path.read_bytes()).hexdigest()
+if expected and actual != expected:
+    print("QROS runtime lock drift detected:", file=sys.stderr)
+    print(f"manifest: {manifest_path}", file=sys.stderr)
+    print(f"expected runtime_lock_digest: {expected}", file=sys.stderr)
+    print(f"current runtime_lock_digest: {actual}", file=sys.stderr)
+    print("Recovery: run qros-update from the active research repo", file=sys.stderr)
+    if mode == "recovery":
+        raise SystemExit(0)
+    raise SystemExit(1)
+PY
+}
+
 qros_resolve_runtime_root() {
   local script_dir="$1"
   local python_bin="$2"

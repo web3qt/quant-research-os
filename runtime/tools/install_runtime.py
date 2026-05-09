@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
+
+from runtime.tools.uv_runtime_env import RuntimeEnvMetadata, UvRuntimeError, ensure_repo_local_uv_runtime
 
 
 InstallMode = Literal["repo-local", "user-global", "auto"]
@@ -141,10 +145,11 @@ def build_manifest(
     target: InstallTarget,
     installed_skills: list[str],
     installed_runtime_files: list[str],
+    runtime_env: RuntimeEnvMetadata | None = None,
     host: str = "codex",
 ) -> dict[str, object]:
     git_status_short = _git_status_short(repo_root)
-    return {
+    manifest: dict[str, object] = {
         "project_name": repo_root.name,
         "host": host,
         "install_mode": target.mode,
@@ -161,6 +166,16 @@ def build_manifest(
         "installed_runtime_files": installed_runtime_files,
         "version_marker": _git_commit(repo_root) or "unknown",
     }
+    if runtime_env is not None:
+        manifest.update(
+            {
+                "runtime_python_executable": runtime_env.python_executable,
+                "runtime_python_version": runtime_env.python_version,
+                "runtime_lock_path": runtime_env.lock_path,
+                "runtime_lock_digest": runtime_env.lock_digest,
+            }
+        )
+    return manifest
 
 
 def install_qros(
@@ -177,9 +192,6 @@ def install_qros(
     runtime_assets = list_runtime_assets(repo_root) if target.mode == "repo-local" else []
 
     target.skills_root.mkdir(parents=True, exist_ok=True)
-    if target.mode == "repo-local" and target.runtime_root.exists():
-        shutil.rmtree(target.runtime_root)
-    target.runtime_root.mkdir(parents=True, exist_ok=True)
 
     skills_written: list[str] = []
     for skill_dir in skill_dirs:
@@ -188,18 +200,31 @@ def install_qros(
             _copy_asset(skill_dir, destination)
         skills_written.append(skill_dir.name)
 
-    runtime_written: list[str] = []
-    for asset in runtime_assets:
-        source = repo_root / asset.source_rel
-        destination = target.runtime_root / asset.dest_rel
-        _copy_asset(source, destination)
-        runtime_written.extend(_collect_files(destination, root=target.runtime_root))
+    if target.mode == "repo-local":
+        runtime_written = _install_repo_local_runtime(
+            repo_root=repo_root,
+            target=target,
+            runtime_assets=runtime_assets,
+            installed_skills=skills_written,
+            host=host,
+        )
+        return InstallResult(
+            mode=target.mode,
+            skills_written=skills_written,
+            runtime_written=runtime_written,
+            manifest_path=target.manifest_path,
+        )
 
+    target.runtime_root.mkdir(parents=True, exist_ok=True)
+    runtime_written: list[str] = []
+
+    runtime_env: RuntimeEnvMetadata | None = None
     manifest = build_manifest(
         repo_root=repo_root,
         target=target,
         installed_skills=skills_written,
         installed_runtime_files=sorted(runtime_written),
+        runtime_env=runtime_env,
         host=host,
     )
     target.manifest_path.write_text(
@@ -213,6 +238,112 @@ def install_qros(
         runtime_written=sorted(runtime_written),
         manifest_path=target.manifest_path,
     )
+
+
+def _install_repo_local_runtime(
+    *,
+    repo_root: Path,
+    target: InstallTarget,
+    runtime_assets: list[RuntimeAsset],
+    installed_skills: list[str],
+    host: str,
+) -> list[str]:
+    target.runtime_root.parent.mkdir(parents=True, exist_ok=True)
+    staging_root = Path(
+        tempfile.mkdtemp(
+            prefix=f"{target.runtime_root.name}.tmp-",
+            dir=target.runtime_root.parent,
+        )
+    ).resolve()
+    staging_target = InstallTarget(
+        mode=target.mode,
+        skills_root=target.skills_root,
+        runtime_root=staging_root,
+        manifest_path=staging_root / target.manifest_path.name,
+    )
+
+    try:
+        runtime_written: list[str] = []
+        for asset in runtime_assets:
+            source = repo_root / asset.source_rel
+            destination = staging_target.runtime_root / asset.dest_rel
+            _copy_asset(source, destination)
+            runtime_written.extend(_collect_files(destination, root=staging_target.runtime_root))
+
+        try:
+            staging_runtime_env = ensure_repo_local_uv_runtime(runtime_root=staging_target.runtime_root, repo_root=repo_root)
+        except UvRuntimeError as exc:
+            raise InstallError(str(exc)) from exc
+
+        runtime_env = _relocate_runtime_env_metadata(
+            staging_runtime_env,
+            from_root=staging_target.runtime_root,
+            to_root=target.runtime_root,
+        )
+        manifest = build_manifest(
+            repo_root=repo_root,
+            target=target,
+            installed_skills=installed_skills,
+            installed_runtime_files=sorted(runtime_written),
+            runtime_env=runtime_env,
+            host=host,
+        )
+        staging_target.manifest_path.write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+        _replace_runtime_root(staging_root=staging_target.runtime_root, final_root=target.runtime_root)
+        return sorted(runtime_written)
+    finally:
+        if staging_root.exists():
+            shutil.rmtree(staging_root)
+
+
+def _relocate_runtime_env_metadata(
+    metadata: RuntimeEnvMetadata,
+    *,
+    from_root: Path,
+    to_root: Path,
+) -> RuntimeEnvMetadata:
+    return RuntimeEnvMetadata(
+        python_executable=str(_relocate_path(Path(metadata.python_executable), from_root=from_root, to_root=to_root)),
+        python_version=metadata.python_version,
+        lock_path=str(_relocate_path(Path(metadata.lock_path), from_root=from_root, to_root=to_root)),
+        lock_digest=metadata.lock_digest,
+    )
+
+
+def _relocate_path(path: Path, *, from_root: Path, to_root: Path) -> Path:
+    try:
+        return to_root / path.resolve().relative_to(from_root.resolve())
+    except ValueError:
+        return path
+
+
+def _replace_runtime_root(*, staging_root: Path, final_root: Path) -> None:
+    backup_root: Path | None = None
+    if final_root.exists():
+        backup_root = _unique_backup_path(final_root)
+        final_root.rename(backup_root)
+
+    try:
+        staging_root.rename(final_root)
+    except Exception:
+        if backup_root is not None and backup_root.exists() and not final_root.exists():
+            backup_root.rename(final_root)
+        raise
+
+    if backup_root is not None and backup_root.exists():
+        shutil.rmtree(backup_root)
+
+
+def _unique_backup_path(final_root: Path) -> Path:
+    for index in range(1000):
+        candidate = final_root.with_name(f"{final_root.name}.bak-{index}")
+        if not candidate.exists():
+            return candidate
+    raise InstallError(f"unable to allocate backup path for {final_root}")
 
 
 def check_install(
@@ -261,6 +392,16 @@ def check_install(
     ):
         if key not in manifest:
             messages.append(f"manifest missing field: {key}")
+
+    if target.mode == "repo-local":
+        for key in (
+            "runtime_python_executable",
+            "runtime_python_version",
+            "runtime_lock_path",
+            "runtime_lock_digest",
+        ):
+            if key not in manifest:
+                messages.append(f"manifest missing field: {key}")
 
     if manifest.get("host") != host:
         messages.append(f"manifest host mismatch: expected {host}, found {manifest.get('host')}")
@@ -318,6 +459,35 @@ def check_install(
             )
         )
 
+    if target.mode == "repo-local":
+        runtime_lock_path = target.runtime_root / "uv.lock"
+        if not runtime_lock_path.exists():
+            messages.append(
+                "\n".join(
+                    [
+                        "missing runtime lock:",
+                        str(runtime_lock_path),
+                        "fix: run qros-update from the active research repo",
+                    ]
+                )
+            )
+        else:
+            installed_runtime_lock_digest = manifest.get("runtime_lock_digest")
+            if isinstance(installed_runtime_lock_digest, str) and installed_runtime_lock_digest.strip():
+                current_runtime_lock_digest = _file_sha256(runtime_lock_path)
+                if installed_runtime_lock_digest.strip() != current_runtime_lock_digest:
+                    messages.append(
+                        "\n".join(
+                            [
+                                "QROS runtime lock drift detected:",
+                                f"manifest: {target.manifest_path}",
+                                f"installed runtime_lock_digest: {installed_runtime_lock_digest.strip()}",
+                                f"current runtime_lock_digest: {current_runtime_lock_digest}",
+                                "fix: run qros-update from the active research repo",
+                            ]
+                        )
+                    )
+
     return not messages, messages
 
 
@@ -338,6 +508,10 @@ def _collect_files(path: Path, *, root: Path) -> list[str]:
     if path.is_file():
         return [str(path.relative_to(root))]
     return sorted(str(file.relative_to(root)) for file in path.rglob("*") if file.is_file())
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _git_commit(repo_root: Path) -> str:
@@ -363,7 +537,19 @@ def _git_status_short(repo_root: Path) -> str:
         )
     except (OSError, subprocess.CalledProcessError):
         return ""
-    return result.stdout
+    lines = [
+        line
+        for line in result.stdout.splitlines()
+        if not _is_qros_staging_status_line(line)
+    ]
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def _is_qros_staging_status_line(line: str) -> bool:
+    if not line.startswith("?? "):
+        return False
+    path = line[3:] if len(line) > 3 else ""
+    return path.startswith(".qros.tmp-") or "/.qros.tmp-" in path
 
 
 def _python_version() -> str:

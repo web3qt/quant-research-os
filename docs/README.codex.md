@@ -64,6 +64,10 @@ $qros-signal-diagnostics mean_rank_ic 小于 0 说明什么，按高信号做多
 $qros-signal-diagnostics 不要只给数字，用中文解释这些指标说明什么
 ```
 
+## Runtime 规则
+
+QROS repo-local commands require Python 3.12。请从 active research repo 根目录运行 `qros-update`，让它通过 `uv` 创建或刷新 `./.qros/.venv`。不要为了绕过 Python 版本问题而跳过 `./.qros/bin/qros-*` wrapper、直接调用 `runtime/scripts/*`。
+
 只有在需要 deterministic runtime 调试或手工恢复时，才使用项目本地 wrapper：
 
 ```bash

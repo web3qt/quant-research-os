@@ -6,6 +6,31 @@
 
 <br>
 
+## 0.4.11 - 2026-05-09
+
+### 新增
+
+- 新增 repo-local Python 3.12 runtime 管理：`qros-update` / bootstrap 会通过 `uv` 创建 `./.qros/.venv`，并生成 pinned `./.qros/uv.lock`。
+- `install-manifest.json` 新增 `runtime_python_executable`、`runtime_python_version`、`runtime_lock_path` 和 `runtime_lock_digest`，用于记录当前 repo-local runtime 和 lock provenance。
+- 新增 shared wrapper selector，所有 repo-local `./.qros/bin/qros-*` wrapper 统一按 `QROS_PYTHON`、`./.qros/.venv/bin/python`、`uv python find 3.12`、`python3.12` 顺序选择 Python，并强制要求 Python 3.12。
+
+### 改进
+
+- 普通 wrapper 不再隐式安装依赖，只选择已有 Python、验证 runtime lock，并在环境不满足时 fail closed；`qros-update` 使用 recovery mode，避免 lock 缺失或 drift 时无法自修复。
+- repo-local `.qros` 更新改为 staging + replace，`uv` provisioning 失败时保留旧 runtime，避免把 active research repo 留在半安装状态。
+- `uv.lock` 由 `uv pip compile --no-header` 生成，并用 `uv pip sync` 应用，避免仅记录 requirements hash 而未锁定解析结果。
+- 更新 installation guide 和 Codex README，明确不要为了绕过 Python 版本问题而跳过 `./.qros/bin/qros-*` wrapper 直接调用 `runtime/scripts/*`。
+- 已纳入本地未发布的 lineage immutable lock ledger 与 CSF backtest proxy PnL blocking 改动。
+
+### 验证
+
+- 本版本发布前已运行 Python 3.12 runtime focused tests、qros-update/bootstrap tests、docs/bootstrap tests 和 smoke。
+- `pyproject.toml`、`uv.lock` 与 README version badge 同步到 `0.4.11`。
+
+---
+
+<br>
+
 ## 0.4.10 - 2026-05-08
 
 ### 改进

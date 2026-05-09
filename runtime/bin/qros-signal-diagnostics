@@ -25,26 +25,9 @@ done
 
 PROJECT_ROOT="$(cd "$TARGET_CWD" && pwd)"
 
-PYTHON_BIN=""
-for CANDIDATE in python python3; do
-  if command -v "$CANDIDATE" >/dev/null 2>&1 && "$CANDIDATE" - <<'PY' >/dev/null 2>&1
-import sys
-import tomllib
-
-raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
-PY
-  then
-    PYTHON_BIN="$CANDIDATE"
-    break
-  fi
-done
-
-if [ -z "$PYTHON_BIN" ]; then
-  echo "qros-signal-diagnostics requires Python 3.11+ with tomllib support" >&2
-  exit 1
-fi
-
 source "$SCRIPT_DIR/qros-wrapper-lib"
+PYTHON_BIN="$(qros_select_python_bin "$SCRIPT_DIR")"
+qros_verify_runtime_lock "$SCRIPT_DIR" "$PYTHON_BIN"
 RUNTIME_ROOT="$(qros_resolve_runtime_root "$SCRIPT_DIR" "$PYTHON_BIN" strict)"
 
 cd "$PROJECT_ROOT"
