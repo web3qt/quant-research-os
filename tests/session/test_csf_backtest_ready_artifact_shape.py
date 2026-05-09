@@ -84,6 +84,47 @@ def test_csf_backtest_ready_portfolio_contract_key_shape_is_stable(tmp_path: Pat
     assert payload["delivery_contract"]["consumer_stage"] == "csf_holdout_validation"
 
 
+def test_csf_backtest_ready_return_accounting_provenance_shape_is_stable(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    stage_dir = _prepare_valid_csf_backtest_ready(lineage_root)
+    formal_dir = stage_dir / "author" / "formal"
+    payload = yaml.safe_load((formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8"))
+
+    assert set(payload) == {
+        "stage",
+        "lineage_id",
+        "return_source",
+        "accounting",
+        "formal_outputs",
+    }
+    assert set(payload["return_source"]) == {
+        "source_type",
+        "input_paths",
+        "price_field",
+        "return_field",
+        "source_stage",
+        "is_signal_derived",
+    }
+    assert set(payload["accounting"]) == {
+        "rebalance_timing",
+        "holding_period",
+        "fee_model",
+        "slippage_model",
+        "funding_model",
+        "missing_price_policy",
+        "gross_return_formula",
+        "net_return_formula",
+    }
+    assert payload["return_source"]["input_paths"] == [
+        "../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet"
+    ]
+    assert payload["return_source"]["price_field"] == ""
+    assert payload["return_source"]["return_field"] == "return_1d"
+    assert payload["return_source"]["is_signal_derived"] is False
+    assert payload["accounting"]["gross_return_formula"] == "sum(weight * return_1d)"
+    assert payload["accounting"]["net_return_formula"] == "gross_return - fees - slippage - funding"
+
+
 def test_csf_backtest_ready_weight_panel_columns_are_stable(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     stage_dir = _prepare_valid_csf_backtest_ready(lineage_root)

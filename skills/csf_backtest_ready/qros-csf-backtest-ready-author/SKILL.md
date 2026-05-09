@@ -42,6 +42,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - `drawdown_report.json`
 - `target_strategy_compare.parquet`
 - `csf_backtest_gate_table.csv`
+- `return_accounting_provenance.yaml`
 - `csf_backtest_contract.md`
 - `csf_backtest_gate_decision.md`
 - `run_manifest.json`
@@ -103,6 +104,14 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ### 容量与成本必须可追溯
 `turnover_capacity_report.parquet` 与 `cost_assumption_report.md` 中的成本假设、流动性代理和参与率边界必须可追溯至上游冻结口径。
+
+### Formal Return Accounting 必须可追溯
+必须产出 `return_accounting_provenance.yaml`，并让 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 可追溯到该 provenance。
+
+- Formal PnL 必须来自 `csf_data_ready` 的 tradable return / market price source，或来自明确 execution ledger。
+- 不得使用 mom_ret 作为 formal PnL，也不得把 factor score、rank score、neutralized factor 或 signal/factor panel proxy return 写进 formal gate metrics。
+- signal/factor panel proxy return 只能作为 diagnostic，不得进入 `portfolio_summary.parquet`、`csf_backtest_gate_table.csv` 或 review pass 口径。
+- 缺少 tradable return source 时不得伪造 backtest；应停止普通推进并写出 blocking handoff，说明缺少真实可交易收益来源。
 
 ## Working Rules
 

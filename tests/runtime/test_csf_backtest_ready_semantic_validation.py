@@ -121,3 +121,123 @@ def test_csf_backtest_ready_semantics_rejects_run_manifest_missing_test_binding(
         "run_manifest.json: input_roots must bind to ../05_csf_test_evidence/author/formal/csf_selected_variants_test.csv"
         in result.errors
     )
+
+
+def test_csf_backtest_ready_semantics_rejects_run_manifest_missing_return_accounting_output(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    payload = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    payload["stage_outputs"] = [
+        output for output in payload["stage_outputs"] if output != "return_accounting_provenance.yaml"
+    ]
+    (formal_dir / "run_manifest.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert (
+        "run_manifest.json: stage_outputs missing required outputs ['return_accounting_provenance.yaml']"
+        in result.errors
+    )
+
+
+def test_csf_backtest_ready_semantics_rejects_missing_return_accounting_provenance(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    (formal_dir / "return_accounting_provenance.yaml").unlink()
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert "return_accounting_provenance.yaml: missing required return accounting provenance" in result.errors
+
+
+def test_csf_backtest_ready_semantics_rejects_signal_panel_return_source(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    payload = yaml.safe_load((formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8"))
+    payload["return_source"]["source_type"] = "signal_panel"
+    _write_yaml(formal_dir / "return_accounting_provenance.yaml", payload)
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert (
+        "return_accounting_provenance.yaml: return_source.source_type signal_panel is forbidden for formal backtest PnL"
+        in result.errors
+    )
+
+
+def test_csf_backtest_ready_semantics_rejects_mom_ret_as_formal_return_field(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    payload = yaml.safe_load((formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8"))
+    payload["return_source"]["return_field"] = "mom_ret"
+    payload["accounting"]["gross_return_formula"] = "sum(weight * mom_ret)"
+    _write_yaml(formal_dir / "return_accounting_provenance.yaml", payload)
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert (
+        "return_accounting_provenance.yaml: formal return field/formula must not use proxy token mom_ret"
+        in result.errors
+    )
+
+
+def test_csf_backtest_ready_semantics_rejects_signal_ready_only_return_paths(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    payload = yaml.safe_load((formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8"))
+    payload["return_source"]["input_paths"] = [
+        "../03_csf_signal_ready/author/formal/factor_panel.parquet",
+    ]
+    _write_yaml(formal_dir / "return_accounting_provenance.yaml", payload)
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert (
+        "return_accounting_provenance.yaml: formal return input_paths must include an independent market/execution source, not only signal/train factor outputs"
+        in result.errors
+    )
+
+
+def test_csf_backtest_ready_semantics_rejects_stage_program_weight_times_mom_ret(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    program_path = lineage_root / "program" / "cross_sectional_factor" / "backtest_ready" / "run_stage.py"
+    program_path.parent.mkdir(parents=True)
+    program_path.write_text(
+        "gross_ret = (merged['weight'] * merged['mom_ret']).sum()\n",
+        encoding="utf-8",
+    )
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert (
+        "run_stage.py: formal backtest program appears to compute PnL from weight * mom_ret proxy returns"
+        in result.errors
+    )

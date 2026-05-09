@@ -680,6 +680,35 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
         "baseline_v1,long_short_market_neutral,0.012,net-of-cost,concentration-ok\n",
         encoding="utf-8",
     )
+    _write_yaml(
+        stage_dir / "return_accounting_provenance.yaml",
+        {
+            "stage": "csf_backtest_ready",
+            "lineage_id": "btc_alt_transmission_v1",
+            "return_source": {
+                "source_type": "tradable_return_panel",
+                "input_paths": ["../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet"],
+                "price_field": "",
+                "return_field": "return_1d",
+                "source_stage": "csf_data_ready",
+                "is_signal_derived": False,
+            },
+            "accounting": {
+                "rebalance_timing": "1 bar",
+                "holding_period": "1d",
+                "fee_model": "Frozen fee plus slippage schedule.",
+                "slippage_model": "Frozen fee plus slippage schedule.",
+                "funding_model": "zero_or_external_to_fixture",
+                "missing_price_policy": "fail_closed",
+                "gross_return_formula": "sum(weight * return_1d)",
+                "net_return_formula": "gross_return - fees - slippage - funding",
+            },
+            "formal_outputs": {
+                "portfolio_summary": "portfolio_summary.parquet",
+                "gate_table": "csf_backtest_gate_table.csv",
+            },
+        },
+    )
     (stage_dir / "csf_backtest_contract.md").write_text("# CSF Backtest Contract\n", encoding="utf-8")
     (stage_dir / "csf_backtest_gate_decision.md").write_text(
         "# CSF Backtest Gate Decision\n",
@@ -694,6 +723,7 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
             "input_roots": [
                 "../05_csf_test_evidence/author/formal/csf_selected_variants_test.csv",
                 "../05_csf_test_evidence/author/formal/csf_test_gate_table.csv",
+                "../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet",
             ],
             "stage_outputs": [
                 "portfolio_contract.yaml",
@@ -706,6 +736,7 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
                 "drawdown_report.json",
                 "target_strategy_compare.parquet",
                 "csf_backtest_gate_table.csv",
+                "return_accounting_provenance.yaml",
                 "csf_backtest_contract.md",
                 "csf_backtest_gate_decision.md",
                 "run_manifest.json",

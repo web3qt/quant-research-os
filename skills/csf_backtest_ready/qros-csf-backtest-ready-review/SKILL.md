@@ -82,6 +82,7 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - drawdown_report.json
 - target_strategy_compare.parquet
 - csf_backtest_gate_table.csv
+- return_accounting_provenance.yaml
 - csf_backtest_contract.md
 - csf_backtest_gate_decision.md
 - run_manifest.json
@@ -119,6 +120,13 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - [blocking] 若为 regime_filter / combo_filter，target strategy compare 与 gated / ungated summary 已一并冻结
 - [reservation] name-level concentration、target strategy compare 和异常收益 sanity check 已保留
 - [blocking] mean_net_return <= 0 时不得将 csf_backtest_ready 判为通过
+
+## Formal Return Accounting Blocking Rules
+
+- 必须检查 `return_accounting_provenance.yaml` 是否存在，并确认 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 的 formal metrics 受该 provenance 支撑。
+- 如果 formal return field、formula 或 stage-local program 使用 `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL，必须判为 blocking。
+- proxy PnL 只能作为 diagnostic evidence；一旦进入 formal gate metrics，不得进入 csf_holdout_validation。
+- 如果缺少 tradable return source，应要求修复当前 `csf_backtest_ready` stage 或进入 failure handling；除非需要改变 mandate 路线或已有下游 freeze 依赖，否则不要默认开 child lineage。
 
 ## 仅审计项
 

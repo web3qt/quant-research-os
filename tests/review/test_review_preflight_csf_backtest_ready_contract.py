@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import yaml
 
 from runtime.tools.csf_backtest_runtime import (
     build_csf_backtest_ready_from_test_evidence,
@@ -104,3 +105,27 @@ def test_review_preflight_blocks_csf_backtest_ready_variant_drift(tmp_path: Path
 
     assert payload["status"] == "FAIL"
     assert any("CSF-BACKTEST-SEMANTIC-001" in item for item in payload["content_findings"])
+
+
+def test_review_preflight_blocks_csf_backtest_ready_missing_return_provenance(tmp_path: Path) -> None:
+    stage_dir = _prepare_valid_csf_backtest_ready_stage(tmp_path)
+    (stage_dir / "author" / "formal" / "return_accounting_provenance.yaml").unlink()
+
+    payload = _run_csf_backtest_ready_preflight(stage_dir)
+
+    assert payload["status"] == "FAIL"
+    assert any("return_accounting_provenance.yaml" in item for item in payload["content_findings"])
+
+
+def test_review_preflight_blocks_csf_backtest_ready_mom_ret_return_provenance(tmp_path: Path) -> None:
+    stage_dir = _prepare_valid_csf_backtest_ready_stage(tmp_path)
+    provenance_path = stage_dir / "author" / "formal" / "return_accounting_provenance.yaml"
+    payload = yaml.safe_load(provenance_path.read_text(encoding="utf-8"))
+    payload["return_source"]["return_field"] = "mom_ret"
+    payload["accounting"]["gross_return_formula"] = "sum(weight * mom_ret)"
+    provenance_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    result = _run_csf_backtest_ready_preflight(stage_dir)
+
+    assert result["status"] == "FAIL"
+    assert any("CSF-BACKTEST-SEMANTIC-001" in item and "mom_ret" in item for item in result["content_findings"])

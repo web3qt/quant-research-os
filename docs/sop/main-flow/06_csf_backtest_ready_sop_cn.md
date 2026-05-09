@@ -63,6 +63,7 @@
 - `drawdown_report.json`
 - `target_strategy_compare.parquet`
 - `csf_backtest_gate_table.csv`
+- `return_accounting_provenance.yaml`
 - `csf_backtest_contract.md`
 - `csf_backtest_gate_decision.md`
 - `run_manifest.json`
@@ -85,6 +86,7 @@
 - 换手、容量、参与率分析完整
 - 组合结果不是极少数 name 或日期单独支撑
 - 组合表达与 `mandate` 冻结一致
+- `return_accounting_provenance.yaml` 已证明 formal PnL 来自 `csf_data_ready` 的 tradable return / market price source 或 execution ledger
 
 必须失败任一：
 
@@ -94,6 +96,7 @@
 - 没有 name-level concentration 诊断
 - 容量分析缺失
 - 结果只靠单一极端窗口或单一资产支撑
+- `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL 进入 `portfolio_summary.parquet`、`csf_backtest_gate_table.csv` 或 review pass
 
 ---
 
@@ -103,3 +106,4 @@
 - 不得把组合表达当作 signal_ready 的一部分
 - 不得在这里解释机制，只能验证组合可行性
 - 不得把未冻结的组合规则带入净值计算
+- proxy PnL 只能放在 diagnostic 中，不能作为 formal backtest metrics

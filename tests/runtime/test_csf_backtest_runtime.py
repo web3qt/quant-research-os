@@ -155,6 +155,7 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert (formal_dir / "drawdown_report.json").exists()
     assert (formal_dir / "target_strategy_compare.parquet").exists()
     assert (formal_dir / "csf_backtest_gate_table.csv").exists()
+    assert (formal_dir / "return_accounting_provenance.yaml").exists()
     assert (formal_dir / "csf_backtest_contract.md").exists()
     assert (formal_dir / "csf_backtest_gate_decision.md").exists()
     assert (formal_dir / "run_manifest.json").exists()
@@ -164,9 +165,52 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert pq.read_table(formal_dir / "portfolio_weight_panel.parquet").num_rows > 0
     assert pq.read_table(formal_dir / "portfolio_summary.parquet").num_rows > 0
 
+    return_accounting_provenance = yaml.safe_load(
+        (formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8")
+    )
+    assert return_accounting_provenance["stage"] == "csf_backtest_ready"
+    assert return_accounting_provenance["lineage_id"] == lineage_root.name
+    assert return_accounting_provenance["return_source"]["source_type"] == "tradable_return_panel"
+    assert return_accounting_provenance["return_source"]["input_paths"] == [
+        "../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet"
+    ]
+    assert return_accounting_provenance["return_source"]["price_field"] == ""
+    assert return_accounting_provenance["return_source"]["return_field"] == "return_1d"
+    assert return_accounting_provenance["return_source"]["source_stage"] == "csf_data_ready"
+    assert return_accounting_provenance["return_source"]["is_signal_derived"] is False
+    assert return_accounting_provenance["accounting"] == {
+        "rebalance_timing": "1 bar",
+        "holding_period": "1d",
+        "fee_model": "Frozen fee plus slippage schedule.",
+        "slippage_model": "Frozen fee plus slippage schedule.",
+        "funding_model": "zero_or_external_to_fixture",
+        "missing_price_policy": "fail_closed",
+        "gross_return_formula": "sum(weight * return_1d)",
+        "net_return_formula": "gross_return - fees - slippage - funding",
+    }
+    assert return_accounting_provenance["formal_outputs"] == {
+        "portfolio_summary": "portfolio_summary.parquet",
+        "gate_table": "csf_backtest_gate_table.csv",
+    }
+    assert "return_accounting_provenance.yaml" in (formal_dir / "artifact_catalog.md").read_text(encoding="utf-8")
+    field_dictionary = (formal_dir / "field_dictionary.md").read_text(encoding="utf-8")
+    for expected_fragment in [
+        "return_accounting_provenance.yaml",
+        "formal backtest metrics",
+        "真实收益来源",
+        "accounting",
+        "输出绑定",
+    ]:
+        assert expected_fragment in field_dictionary
+
     run_manifest = json.loads((formal_dir / "run_manifest.json").read_text(encoding="utf-8"))
     assert run_manifest["stage"] == "csf_backtest_ready"
+    assert (
+        "../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet"
+        in run_manifest["input_roots"]
+    )
     assert "portfolio_contract.yaml" in run_manifest["stage_outputs"]
+    assert "return_accounting_provenance.yaml" in run_manifest["stage_outputs"]
     assert "csf_backtest_gate_decision.md" in run_manifest["stage_outputs"]
     assert "run_manifest.json" in run_manifest["stage_outputs"]
 

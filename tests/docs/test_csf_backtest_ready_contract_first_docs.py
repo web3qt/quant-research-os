@@ -35,3 +35,18 @@ def test_csf_backtest_ready_sop_uses_contract_facing_artifacts() -> None:
     assert "csf_backtest_gate_decision.md" in content
     assert "run_manifest.json" in content
     assert "engine_compare.csv" not in content
+
+
+def test_csf_backtest_ready_docs_explain_return_accounting_provenance() -> None:
+    paths = [
+        Path("docs/guides/qros-research-session-usage.md"),
+        Path("docs/guides/qros-review-shared-protocol.md"),
+        Path("docs/guides/stage-freeze-group-field-guide.md"),
+        Path("docs/sop/main-flow/06_csf_backtest_ready_sop_cn.md"),
+    ]
+
+    for path in paths:
+        content = path.read_text(encoding="utf-8")
+        assert "return_accounting_provenance.yaml" in content, path
+        assert "mom_ret" in content, path
+        assert "formal" in content, path

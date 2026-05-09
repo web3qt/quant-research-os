@@ -32,6 +32,7 @@ CSF_BACKTEST_READY_STAGE_OUTPUTS = [
     "drawdown_report.json",
     "target_strategy_compare.parquet",
     "csf_backtest_gate_table.csv",
+    "return_accounting_provenance.yaml",
     "csf_backtest_contract.md",
     "csf_backtest_gate_decision.md",
     "run_manifest.json",
@@ -287,6 +288,35 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
         writer.writerow(["variant_id", "portfolio_expression", "mean_net_return", "after_cost_rule", "name_level_rule"])
         for variant_id in selected_variant_ids:
             writer.writerow([variant_id, portfolio_expression, "0.012", after_cost_rule, name_level_rule])
+    _dump_yaml(
+        stage_formal_dir / "return_accounting_provenance.yaml",
+        {
+            "stage": "csf_backtest_ready",
+            "lineage_id": lineage_root.name,
+            "return_source": {
+                "source_type": "tradable_return_panel",
+                "input_paths": ["../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet"],
+                "price_field": "",
+                "return_field": "return_1d",
+                "source_stage": "csf_data_ready",
+                "is_signal_derived": False,
+            },
+            "accounting": {
+                "rebalance_timing": rebalance_execution_lag,
+                "holding_period": "1d",
+                "fee_model": cost_model,
+                "slippage_model": cost_model,
+                "funding_model": "zero_or_external_to_fixture",
+                "missing_price_policy": "fail_closed",
+                "gross_return_formula": "sum(weight * return_1d)",
+                "net_return_formula": "gross_return - fees - slippage - funding",
+            },
+            "formal_outputs": {
+                "portfolio_summary": "portfolio_summary.parquet",
+                "gate_table": "csf_backtest_gate_table.csv",
+            },
+        },
+    )
     (stage_formal_dir / "csf_backtest_contract.md").write_text(
         "\n".join(
             [
@@ -338,6 +368,7 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
                     "../05_csf_test_evidence/author/formal/csf_selected_variants_test.csv",
                     "../05_csf_test_evidence/author/formal/csf_test_gate_table.csv",
                     "../05_csf_test_evidence/author/formal/csf_test_contract.md",
+                    "../02_csf_data_ready/author/formal/shared_feature_base/returns_panel.parquet",
                     "author/draft/csf_backtest_ready_draft.yaml",
                 ],
                 "stage_outputs": CSF_BACKTEST_READY_STAGE_OUTPUTS,
@@ -369,6 +400,7 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
                 "- drawdown_report.json",
                 "- target_strategy_compare.parquet",
                 "- csf_backtest_gate_table.csv",
+                "- return_accounting_provenance.yaml",
                 "- csf_backtest_contract.md",
                 "- csf_backtest_gate_decision.md",
                 "- run_manifest.json",
@@ -386,6 +418,7 @@ def build_csf_backtest_ready_from_test_evidence(lineage_root: Path) -> Path:
                 f"- `portfolio_expression`: 组合表达，当前为 {portfolio_expression}。",
                 f"- `required_diagnostics`: 必需诊断项集合，当前为 {required_diagnostics}。",
                 f"- `machine_artifacts`: 本阶段机器产物集合，当前为 {machine_artifacts}。",
+                "- `return_accounting_provenance.yaml`: 解释 formal backtest metrics 的真实收益来源、收益字段、accounting 公式和输出绑定，防止把信号派生值误作可交易收益。",
             ]
         )
         + "\n",

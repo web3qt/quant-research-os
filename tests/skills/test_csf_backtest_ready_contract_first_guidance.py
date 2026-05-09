@@ -29,6 +29,7 @@ def test_csf_backtest_ready_author_skill_uses_runtime_facing_output_names() -> N
         "drawdown_report.json",
         "target_strategy_compare.parquet",
         "csf_backtest_gate_table.csv",
+        "return_accounting_provenance.yaml",
         "csf_backtest_gate_decision.md",
         "run_manifest.json",
     ):
@@ -45,3 +46,21 @@ def test_csf_backtest_ready_review_skill_mentions_deterministic_contract_preflig
     assert "ARTIFACT-CONTRACT-001" in content
     assert "CSF-BACKTEST-SEMANTIC-001" in content
     assert "qros-validate-stage --stage csf_backtest_ready" in content
+
+
+def test_csf_backtest_ready_author_skill_requires_return_accounting_provenance() -> None:
+    content = AUTHOR_SKILL.read_text(encoding="utf-8")
+
+    assert "return_accounting_provenance.yaml" in content
+    assert "不得使用 mom_ret 作为 formal PnL" in content
+    assert "signal/factor panel proxy return 只能作为 diagnostic" in content
+    assert "缺少 tradable return source 时不得伪造 backtest" in content
+
+
+def test_csf_backtest_ready_review_skill_blocks_proxy_pnl() -> None:
+    content = REVIEW_SKILL.read_text(encoding="utf-8")
+
+    assert "return_accounting_provenance.yaml" in content
+    assert "mom_ret" in content
+    assert "proxy PnL" in content
+    assert "不得进入 csf_holdout_validation" in content

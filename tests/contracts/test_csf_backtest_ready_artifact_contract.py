@@ -45,6 +45,7 @@ def test_csf_backtest_ready_artifact_contract_declares_all_formal_outputs() -> N
         "drawdown_report.json",
         "target_strategy_compare.parquet",
         "csf_backtest_gate_table.csv",
+        "return_accounting_provenance.yaml",
         "csf_backtest_contract.md",
         "csf_backtest_gate_decision.md",
         "run_manifest.json",
@@ -89,6 +90,82 @@ def test_csf_backtest_ready_contract_locks_portfolio_contract_fields() -> None:
     )
     assert consumer_stage["type"] == "enum"
     assert consumer_stage["values"] == ["csf_holdout_validation"]
+
+
+def test_csf_backtest_ready_contract_locks_return_accounting_provenance_fields() -> None:
+    contract = _load_contract()
+    artifact = _artifact(contract, "return_accounting_provenance.yaml")
+
+    assert artifact["type"] == "yaml"
+    assert artifact["unknown_top_level_fields"] == "forbid"
+    assert _field_paths(artifact) == {
+        "stage",
+        "lineage_id",
+        "return_source.source_type",
+        "return_source.input_paths",
+        "return_source.price_field",
+        "return_source.return_field",
+        "return_source.source_stage",
+        "return_source.is_signal_derived",
+        "accounting.rebalance_timing",
+        "accounting.holding_period",
+        "accounting.fee_model",
+        "accounting.slippage_model",
+        "accounting.funding_model",
+        "accounting.missing_price_policy",
+        "accounting.gross_return_formula",
+        "accounting.net_return_formula",
+        "formal_outputs.portfolio_summary",
+        "formal_outputs.gate_table",
+    }
+
+    stage = next(field for field in artifact["fields"] if field["path"] == "stage")
+    assert stage["type"] == "enum"
+    assert stage["values"] == ["csf_backtest_ready"]
+
+    lineage_id = next(field for field in artifact["fields"] if field["path"] == "lineage_id")
+    assert lineage_id["type"] == "string"
+
+    source_type = next(field for field in artifact["fields"] if field["path"] == "return_source.source_type")
+    assert source_type["type"] == "enum"
+    assert source_type["values"] == [
+        "market_price",
+        "execution_ledger",
+        "mark_price",
+        "ohlcv",
+        "funding_adjusted_price",
+        "tradable_return_panel",
+    ]
+
+    input_paths = next(field for field in artifact["fields"] if field["path"] == "return_source.input_paths")
+    assert input_paths["type"] == "list[string]"
+
+    source_stage = next(field for field in artifact["fields"] if field["path"] == "return_source.source_stage")
+    assert source_stage["type"] == "enum"
+    assert source_stage["values"] == ["csf_data_ready", "execution"]
+
+    is_signal_derived = next(
+        field for field in artifact["fields"] if field["path"] == "return_source.is_signal_derived"
+    )
+    assert is_signal_derived["type"] == "boolean"
+
+    gross_return_formula = next(
+        field for field in artifact["fields"] if field["path"] == "accounting.gross_return_formula"
+    )
+    assert gross_return_formula["type"] == "string"
+
+    net_return_formula = next(
+        field for field in artifact["fields"] if field["path"] == "accounting.net_return_formula"
+    )
+    assert net_return_formula["type"] == "string"
+
+    portfolio_summary = next(
+        field for field in artifact["fields"] if field["path"] == "formal_outputs.portfolio_summary"
+    )
+    assert portfolio_summary["type"] == "string"
+
+    gate_table = next(field for field in artifact["fields"] if field["path"] == "formal_outputs.gate_table")
+    assert gate_table["type"] == "string"
 
 
 def test_csf_backtest_ready_contract_locks_machine_artifact_shapes() -> None:

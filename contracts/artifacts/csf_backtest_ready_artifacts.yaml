@@ -162,6 +162,77 @@ artifacts:
       - name_level_rule
     non_empty: true
 
+  return_accounting_provenance.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: stage
+        description: 标识该 artifact 所属的 QROS 阶段，用于阻止跨阶段收益口径混用。
+        type: enum
+        values:
+          - csf_backtest_ready
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把收益核算来源绑定到唯一研究线。
+        type: string
+      - path: return_source.source_type
+        description: 声明回测收益来源类型，用于区分价格、成交账本、资金费调整价格或可交易收益面板。
+        type: enum
+        values:
+          - market_price
+          - execution_ledger
+          - mark_price
+          - ohlcv
+          - funding_adjusted_price
+          - tradable_return_panel
+      - path: return_source.input_paths
+        description: 列出收益核算读取的输入路径，用于复现收益来源和检查跨阶段引用。
+        type: list[string]
+      - path: return_source.price_field
+        description: 记录用于计算收益的价格字段；若直接读取收益字段，应说明为空值或不适用口径。
+        type: string
+      - path: return_source.return_field
+        description: 记录直接读取的收益字段；若由价格字段计算，应说明为空值或不适用口径。
+        type: string
+      - path: return_source.source_stage
+        description: 声明收益来源所属阶段，用于区分 csf_data_ready 冻结数据和 execution 层账本。
+        type: enum
+        values:
+          - csf_data_ready
+          - execution
+      - path: return_source.is_signal_derived
+        description: 声明收益来源是否由信号派生，用于阻止把信号输出误当作外生收益序列。
+        type: boolean
+      - path: accounting.rebalance_timing
+        description: 声明再平衡收益记账时点，用于固定信号、持仓和收益窗口的时间对齐。
+        type: string
+      - path: accounting.holding_period
+        description: 声明持有期定义，用于复现每次再平衡后收益累积窗口。
+        type: string
+      - path: accounting.fee_model
+        description: 声明手续费模型，用于解释净收益扣费口径。
+        type: string
+      - path: accounting.slippage_model
+        description: 声明滑点模型，用于解释成交价格偏移和净收益调整。
+        type: string
+      - path: accounting.funding_model
+        description: 声明资金费模型，用于解释永续合约资金费对收益的影响。
+        type: string
+      - path: accounting.missing_price_policy
+        description: 声明缺失价格处理策略，用于审计停牌、缺币或数据缺口下的收益计算。
+        type: string
+      - path: accounting.gross_return_formula
+        description: 声明毛收益公式，用于复现未扣成本前的组合收益口径。
+        type: string
+      - path: accounting.net_return_formula
+        description: 声明净收益公式，用于复现扣除成本、滑点和资金费后的组合收益口径。
+        type: string
+      - path: formal_outputs.portfolio_summary
+        description: 记录该收益核算口径产出的 portfolio_summary 正式产物路径。
+        type: string
+      - path: formal_outputs.gate_table
+        description: 记录该收益核算口径产出的 csf_backtest_gate_table 正式产物路径。
+        type: string
+
   csf_backtest_contract.md:
     type: markdown
     required_sections:
