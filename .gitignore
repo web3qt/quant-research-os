@@ -14,4 +14,3 @@ governance/*
 .pytest_cache/
 .qros/
 .codex/*
-docs/superpowers/*
