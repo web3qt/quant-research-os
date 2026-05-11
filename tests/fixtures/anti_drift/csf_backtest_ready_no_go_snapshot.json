@@ -20,6 +20,7 @@
     "drawdown_report.json",
     "target_strategy_compare.parquet",
     "csf_backtest_gate_table.csv",
+    "return_accounting_provenance.yaml",
     "csf_backtest_contract.md",
     "csf_backtest_gate_decision.md",
     "run_manifest.json",
