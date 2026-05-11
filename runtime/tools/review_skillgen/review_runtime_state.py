@@ -223,6 +223,27 @@ def compute_author_materialization_digest(
     return materialization_digest
 
 
+def compute_author_materialization_digest_fresh(
+    *,
+    artifact_root: Path,
+    required_outputs: Sequence[str],
+    required_provenance_paths: Sequence[str] = ("program_execution_manifest.json",),
+) -> str:
+    artifact_root = artifact_root.resolve()
+    parts: list[bytes] = []
+    for name in list(required_outputs) + list(required_provenance_paths):
+        target = artifact_root / name
+        parts.extend(
+            [
+                name.encode("utf-8"),
+                b"\0",
+                _path_digest(target, root=artifact_root, ledger=None).encode("utf-8"),
+                b"\0",
+            ]
+        )
+    return _digest_bytes(parts)
+
+
 def archive_active_review_cycle(
     stage_dir: Path,
     *,
