@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
 from runtime.tools.lineage_lock_ledger import FROZEN_ARTIFACT_MUTATED, lock_reviewed_stage
 from runtime.tools.progress_runtime import progress_status_payload
@@ -55,6 +56,38 @@ def _locked_mutated_lineage(tmp_path: Path) -> Path:
     return lineage_root
 
 
+def _build_review_pending_lineage(tmp_path: Path) -> tuple[Path, Path, Path]:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_alt"
+    stage_dir = lineage_root / "01_mandate"
+    formal_dir = stage_dir / "author" / "formal"
+    for name in (
+        "mandate.md",
+        "research_scope.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ):
+        _write(formal_dir / name, "ok\n")
+    _write(
+        formal_dir / "research_route.yaml",
+        "\n".join(
+            [
+                "research_route: cross_sectional_factor",
+                "factor_role: standalone_alpha",
+                "factor_structure: single_factor",
+                "portfolio_expression: long_short_rank_based",
+                "neutralization_policy: market_beta_neutral",
+                "",
+            ]
+        ),
+    )
+    _write(formal_dir / "time_split.json", "{}\n")
+    _write(formal_dir / "parameter_grid.yaml", "parameters: []\n")
+    _write(formal_dir / "run_config.toml", "version = 1\n")
+    _write(formal_dir / "program_execution_manifest.json", "{}\n")
+    return outputs_root, lineage_root, stage_dir
+
+
 def test_progress_status_surfaces_frozen_artifact_mutation(tmp_path: Path) -> None:
     lineage_root = _locked_mutated_lineage(tmp_path)
 
@@ -90,3 +123,79 @@ def test_stage_entry_guard_blocks_frozen_artifact_mutation(tmp_path: Path) -> No
     assert result.current_active_skill == "qros-research-session"
     assert FROZEN_ARTIFACT_MUTATED in result.message
     assert "Restore 01_mandate/author/formal/research_route.yaml" in result.message
+
+
+def test_progress_surfaces_protected_review_state_drift(tmp_path: Path) -> None:
+    outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
+    _write(
+        stage_dir / "review" / "state" / "review_runtime_state.yaml",
+        yaml.safe_dump(
+            {
+                "review_state": "review_closed_pass",
+                "active_review_cycle_id": "manual-cycle",
+                "review_bound_author_digest": "0" * 64,
+                "last_review_verdict": "PASS",
+                "closure_written_at": "2026-05-11T00:00:00Z",
+                "updated_at": "2026-05-11T00:00:00Z",
+            },
+            sort_keys=False,
+        ),
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert payload["stage_status"] == "blocked"
+    assert payload["gate_status"] == "PROTECTED_STATE_DRIFT"
+    assert payload["blocking_reason_code"] == "REVIEW_STATE_PROJECTION_DRIFT"
+    assert "qros-review-cycle reset --archive-stale-cycle" in payload["next_action"]
+
+
+def test_research_session_surfaces_protected_review_state_drift_before_writes(tmp_path: Path) -> None:
+    _outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
+    _write(
+        stage_dir / "review" / "state" / "review_runtime_state.yaml",
+        yaml.safe_dump(
+            {
+                "review_state": "review_closed_pass",
+                "active_review_cycle_id": "manual-cycle",
+                "review_bound_author_digest": "0" * 64,
+                "last_review_verdict": "PASS",
+                "closure_written_at": "2026-05-11T00:00:00Z",
+                "updated_at": "2026-05-11T00:00:00Z",
+            },
+            sort_keys=False,
+        ),
+    )
+
+    status = run_research_session(outputs_root=lineage_root.parent, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "blocked"
+    assert status.gate_status == "PROTECTED_STATE_DRIFT"
+    assert status.blocking_reason_code == "REVIEW_STATE_PROJECTION_DRIFT"
+    assert status.artifacts_written == []
+
+
+def test_stage_entry_guard_blocks_protected_review_state_drift(tmp_path: Path) -> None:
+    _outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
+    _write(
+        stage_dir / "review" / "state" / "review_runtime_state.yaml",
+        yaml.safe_dump(
+            {
+                "review_state": "review_closed_pass",
+                "active_review_cycle_id": "manual-cycle",
+                "review_bound_author_digest": "0" * 64,
+                "last_review_verdict": "PASS",
+                "closure_written_at": "2026-05-11T00:00:00Z",
+                "updated_at": "2026-05-11T00:00:00Z",
+            },
+            sort_keys=False,
+        ),
+    )
+
+    with pytest.raises(StageEntryGuardError) as exc_info:
+        check_stage_entry_for_lineage(lineage_root, stage="mandate", lane="review")
+
+    result = exc_info.value.result
+    assert result.allowed is False
+    assert result.current_active_skill == "qros-research-session"
+    assert "REVIEW_STATE_PROJECTION_DRIFT" in result.message

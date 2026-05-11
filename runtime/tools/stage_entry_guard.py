@@ -6,7 +6,13 @@ from typing import Literal
 
 from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
 from runtime.tools.progress_runtime import latest_lineage_id
-from runtime.tools.research_session import STAGE_ACTIVE_SKILLS, SessionStage, detect_session_stage
+from runtime.tools.research_session import (
+    STAGE_ACTIVE_SKILLS,
+    SessionStage,
+    assert_current_protected_review_state_intact,
+    detect_session_stage,
+)
+from runtime.tools.review_skillgen.protected_state_guard import ProtectedStateError
 
 
 StageEntryLane = Literal["author", "review"]
@@ -77,6 +83,26 @@ def check_stage_entry_for_lineage(
             requested_lane=lane,
             expected_stages=expected_stages,
             recovery_command=recovery_command,
+            message=str(exc),
+        )
+        if raise_on_block:
+            raise StageEntryGuardError(result)
+        return result
+    try:
+        assert_current_protected_review_state_intact(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+        )
+    except ProtectedStateError as exc:
+        result = StageEntryGuardResult(
+            allowed=False,
+            lineage_id=lineage_id,
+            current_stage=current_stage,
+            current_active_skill="qros-research-session",
+            requested_stage=stage,
+            requested_lane=lane,
+            expected_stages=expected_stages,
+            recovery_command=exc.next_action,
             message=str(exc),
         )
         if raise_on_block:

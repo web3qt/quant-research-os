@@ -5,16 +5,19 @@ from pathlib import Path
 
 from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
 from runtime.tools.research_session import (
+    assert_current_protected_review_state_intact,
     _gate_status_and_next_action,
     _latest_failure_package_runtime_status,
     _latest_review_failure_status,
     _lineage_lock_blocked_status,
+    _protected_state_blocked_status,
     current_research_route,
     current_route_contract,
     detect_session_stage,
     session_transition_summary,
     summarize_session_status,
 )
+from runtime.tools.review_skillgen.protected_state_guard import ProtectedStateError
 
 
 class ProgressError(RuntimeError):
@@ -50,6 +53,18 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
             violation=exc,
         )
     current_stage = detect_session_stage(lineage_root)
+    try:
+        assert_current_protected_review_state_intact(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+        )
+    except ProtectedStateError as exc:
+        return _protected_state_blocked_status(
+            lineage_root=lineage_root,
+            lineage_mode=f"progress_{selection_mode}",
+            lineage_selection_reason=f"qros-progress selected {lineage_root.name} using {selection_mode} mode",
+            violation=exc,
+        )
     gate_status, next_action = _gate_status_and_next_action(lineage_root, current_stage)
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)

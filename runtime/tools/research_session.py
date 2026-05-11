@@ -199,6 +199,11 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
+from runtime.tools.review_skillgen.protected_state_guard import (
+    PROTECTED_STATE_DRIFT,
+    ProtectedStateError,
+    assert_protected_review_state_intact,
+)
 from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     load_review_runtime_state,
@@ -765,6 +770,73 @@ def _lineage_lock_blocked_status(
         next_action=violation.next_action,
         why_now=[],
         open_risks=[],
+        factor_role=route_contract["factor_role"],
+        factor_structure=route_contract["factor_structure"],
+        portfolio_expression=route_contract["portfolio_expression"],
+        neutralization_policy=route_contract["neutralization_policy"],
+        review_verdict=None,
+        review_state=None,
+        active_review_cycle_id=None,
+        review_requested_at=None,
+        review_bound_author_digest=None,
+        closure_written_at=None,
+        requires_failure_handling=False,
+        failure_stage=None,
+        failure_reason_summary=None,
+        freeze_groups=None,
+    )
+
+
+def assert_current_protected_review_state_intact(
+    *,
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> None:
+    spec = _program_spec_for_session_stage(current_stage)
+    if spec is None or _stage_base_name(current_stage) not in REVIEWABLE_STAGE_BASES:
+        return
+    stage_dir = lineage_root / spec.stage_dir_name
+    assert_protected_review_state_intact(
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+        required_outputs=spec.required_outputs,
+        required_provenance_paths=("program_execution_manifest.json",),
+        allow_missing_state=True,
+    )
+
+
+def _protected_state_blocked_status(
+    *,
+    lineage_root: Path,
+    lineage_mode: str | None,
+    lineage_selection_reason: str | None,
+    violation: ProtectedStateError,
+) -> SessionContext:
+    current_stage = detect_session_stage(lineage_root)
+    route_contract = current_route_contract(lineage_root)
+    return SessionContext(
+        lineage_id=lineage_root.name,
+        lineage_root=lineage_root,
+        lineage_mode=lineage_mode,
+        lineage_selection_reason=lineage_selection_reason,
+        current_orchestrator="qros-research-session",
+        current_stage=current_stage,
+        current_route=current_research_route(lineage_root),
+        stage_status="blocked",
+        blocking_reason_code=violation.reason_code,
+        current_skill="qros-research-session",
+        why_this_skill="Protected review state drift blocked normal QROS workflow before stage execution.",
+        required_program_dir=None,
+        required_program_entrypoint=None,
+        program_contract_status="not_checked",
+        provenance_status="not_checked",
+        blocking_reason=str(violation),
+        resume_hint=violation.next_action,
+        artifacts_written=[],
+        gate_status=PROTECTED_STATE_DRIFT,
+        next_action=violation.next_action,
+        why_now=["Protected review state drift must be repaired before normal QROS workflow can continue."],
+        open_risks=[str(violation)],
         factor_role=route_contract["factor_role"],
         factor_structure=route_contract["factor_structure"],
         portfolio_expression=route_contract["portfolio_expression"],
@@ -3666,6 +3738,18 @@ def run_research_session(
 
     artifacts_written: list[str] = []
     current_stage = detect_session_stage(lineage_root)
+    try:
+        assert_current_protected_review_state_intact(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+        )
+    except ProtectedStateError as exc:
+        return _protected_state_blocked_status(
+            lineage_root=lineage_root,
+            lineage_mode=selection.mode,
+            lineage_selection_reason=selection.reason,
+            violation=exc,
+        )
     failure_package_status = _latest_failure_package_runtime_status(lineage_root)
 
     # 只有当前真正停在对应 confirmation gate，才允许把确认决策正式写盘。
