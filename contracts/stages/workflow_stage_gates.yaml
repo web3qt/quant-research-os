@@ -1082,6 +1082,7 @@ stages:
       - drawdown_report.json
       - target_strategy_compare.parquet
       - csf_backtest_gate_table.csv
+      - return_accounting_provenance.yaml
       - csf_backtest_contract.md
       - csf_backtest_gate_decision.md
       - run_manifest.json
@@ -1093,6 +1094,7 @@ stages:
       - rebalance_ledger.csv
       - turnover_capacity_report.parquet
       - target_strategy_compare.parquet
+      - return_accounting_provenance.yaml
       - run_manifest.json
     human_artifacts:
       - cost_assumption_report.md
@@ -1100,6 +1102,7 @@ stages:
       - name_level_metrics.parquet
       - drawdown_report.json
       - csf_backtest_gate_table.csv
+      - return_accounting_provenance.yaml
       - csf_backtest_contract.md
       - csf_backtest_gate_decision.md
       - artifact_catalog.md
@@ -1119,6 +1122,7 @@ stages:
         - 没有 name-level concentration 诊断
         - 容量分析缺失
         - 结果只靠单一极端窗口或单一资产支撑
+        - formal PnL 使用 mom_ret、factor score、rank score、neutralized factor 或 signal/factor panel proxy return
     audit_only:
       - 组合表达是否足够清晰
       - 成本假设是否解释充分

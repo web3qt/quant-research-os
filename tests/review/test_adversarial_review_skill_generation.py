@@ -82,6 +82,9 @@ def test_generated_review_skill_template_references_shared_protocol(tmp_path: Pa
     assert "review-ready" in skill_text
     assert "review_findings.yaml" in skill_text
     assert "launcher_review_ready_status" in skill_text
+    assert "review_cycle_id: copy the literal review cycle value printed in the reviewer handoff" in skill_text
+    assert "reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff" in skill_text
+    assert "review_loop_outcome: one of FIX_REQUIRED" in skill_text
     assert "## 强制对抗审查 Reviewer 合同" not in skill_text
 
 
@@ -101,6 +104,8 @@ def test_shared_review_protocol_doc_exists_and_covers_adversarial_contract() -> 
     assert "launcher_checked_artifact_paths" in content
     assert "launcher_handoff_context_paths" in content
     assert "reviewer_agent_id" in content
+    assert "Raw Reviewer Findings Binding" in content
+    assert "QROS rejects raw findings" in content
     assert "FIX_REQUIRED" in content
     assert "closure-ready adverse verdict" in content
     assert "review-ready" in content

@@ -29,6 +29,16 @@ description: Use when a QROS time_series_signal lineage is ready for explicit ts
 - reviewer 子代理不得修改 author/formal。
 - reviewer 完成后，主线程必须运行 `./.qros/bin/qros-review` 完成 closure。
 
+reviewer 写出的 `reviewer_findings.raw.yaml` 必须包含以下顶层字段：
+
+- `review_cycle_id: copy the literal review cycle value printed in the reviewer handoff`
+- `reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff`
+- `review_loop_outcome: one of FIX_REQUIRED, CLOSURE_READY_PASS, CLOSURE_READY_CONDITIONAL_PASS, CLOSURE_READY_PASS_FOR_RETRY, CLOSURE_READY_RETRY, CLOSURE_READY_NO_GO, CLOSURE_READY_CHILD_LINEAGE`
+- `blocking_findings: []`
+- `reservation_findings: []`
+- `info_findings: []`
+- `residual_risks: []`
+
 ## 共用输入
 
 - `contracts/stages/workflow_stage_gates.yaml`

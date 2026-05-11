@@ -133,12 +133,21 @@ def _render_deterministic_preflight(stage_key: str) -> str:
             "若 preflight 有 blocking finding，必须先修 author outputs。"
         )
     artifact_contract = artifact_contracts[stage_key]
+    stage_specific: list[str] = []
+    if stage_key == "csf_backtest_ready":
+        stage_specific = [
+            "- 必须检查 `return_accounting_provenance.yaml` 是否存在，并确认 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 的 formal metrics 受该 provenance 支撑",
+            "- 如果 formal return field、formula 或 stage-local program 使用 `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL，必须判为 blocking",
+            "- proxy PnL 只能作为 diagnostic evidence；一旦进入 formal gate metrics，不得进入 csf_holdout_validation",
+            "- 如果缺少 tradable return source，应要求修复当前 `csf_backtest_ready` stage 或进入 failure handling；除非需要改变 mandate 路线或已有下游 freeze 依赖，否则不要默认开 child lineage",
+        ]
     return "\n".join(
         [
             f"- reviewer 不替 runtime 重定义字段；artifact shape 以 `{artifact_contract}` 与 deterministic preflight 为准",
             f"- 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage {stage_key}`，并通过 deterministic preflight",
             f"- preflight 中的 `ARTIFACT-CONTRACT-001` 与 `{semantic_code}` 都是 review 前阻断项",
             "- preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险",
+            *stage_specific,
         ]
     )
 

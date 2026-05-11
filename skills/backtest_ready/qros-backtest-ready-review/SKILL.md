@@ -41,6 +41,16 @@ description: Codex review skill for Backtest Ready stage verification.
 - reviewer 子代理不得修改 `author/formal/*`
 - reviewer 子代理完成后，主线程必须运行 `./.qros/bin/qros-review`；它负责 canonical result、audit 与 closure
 
+reviewer 写出的 `reviewer_findings.raw.yaml` 必须包含以下顶层字段：
+
+- `review_cycle_id: copy the literal review cycle value printed in the reviewer handoff`
+- `reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff`
+- `review_loop_outcome: one of FIX_REQUIRED, CLOSURE_READY_PASS, CLOSURE_READY_CONDITIONAL_PASS, CLOSURE_READY_PASS_FOR_RETRY, CLOSURE_READY_RETRY, CLOSURE_READY_NO_GO, CLOSURE_READY_CHILD_LINEAGE`
+- `blocking_findings: []`
+- `reservation_findings: []`
+- `info_findings: []`
+- `residual_risks: []`
+
 ## 主线程交接前提
 
 - 主线程在发起 review 之前必须先完成 `review-ready` 自查，不要把 reviewer 当成第一轮 artifact completeness checker

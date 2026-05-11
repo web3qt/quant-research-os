@@ -82,6 +82,9 @@ def test_tss_review_skills_separate_review_from_authoring() -> None:
         assert f"qros-validate-stage --stage {stage}" in content
         assert "不得修改 author/formal" in content
         assert "reviewer_findings.raw.yaml" in content
+        assert "review_cycle_id: copy the literal review cycle value printed in the reviewer handoff" in content
+        assert "reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff" in content
+        assert "review_loop_outcome: one of FIX_REQUIRED" in content
         assert "qros-review-cycle prepare" in content
         assert "qros-review" in content
 

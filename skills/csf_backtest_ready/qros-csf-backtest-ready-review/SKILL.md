@@ -41,6 +41,16 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - reviewer 子代理不得修改 `author/formal/*`
 - reviewer 子代理完成后，主线程必须运行 `./.qros/bin/qros-review`；它负责 canonical result、audit 与 closure
 
+reviewer 写出的 `reviewer_findings.raw.yaml` 必须包含以下顶层字段：
+
+- `review_cycle_id: copy the literal review cycle value printed in the reviewer handoff`
+- `reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff`
+- `review_loop_outcome: one of FIX_REQUIRED, CLOSURE_READY_PASS, CLOSURE_READY_CONDITIONAL_PASS, CLOSURE_READY_PASS_FOR_RETRY, CLOSURE_READY_RETRY, CLOSURE_READY_NO_GO, CLOSURE_READY_CHILD_LINEAGE`
+- `blocking_findings: []`
+- `reservation_findings: []`
+- `info_findings: []`
+- `residual_risks: []`
+
 ## 主线程交接前提
 
 - 主线程在发起 review 之前必须先完成 `review-ready` 自查，不要把 reviewer 当成第一轮 artifact completeness checker
@@ -53,6 +63,10 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage csf_backtest_ready`，并通过 deterministic preflight
 - preflight 中的 `ARTIFACT-CONTRACT-001` 与 `CSF-BACKTEST-SEMANTIC-001` 都是 review 前阻断项
 - preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险
+- 必须检查 `return_accounting_provenance.yaml` 是否存在，并确认 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 的 formal metrics 受该 provenance 支撑
+- 如果 formal return field、formula 或 stage-local program 使用 `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL，必须判为 blocking
+- proxy PnL 只能作为 diagnostic evidence；一旦进入 formal gate metrics，不得进入 csf_holdout_validation
+- 如果缺少 tradable return source，应要求修复当前 `csf_backtest_ready` stage 或进入 failure handling；除非需要改变 mandate 路线或已有下游 freeze 依赖，否则不要默认开 child lineage
 
 ## 共用输入
 
@@ -108,6 +122,7 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - 没有 name-level concentration 诊断
 - 容量分析缺失
 - 结果只靠单一极端窗口或单一资产支撑
+- formal PnL 使用 mom_ret、factor score、rank score、neutralized factor 或 signal/factor panel proxy return
 
 ## 审查清单
 
@@ -120,13 +135,6 @@ description: Codex review skill for CSF Backtest Ready stage verification.
 - [blocking] 若为 regime_filter / combo_filter，target strategy compare 与 gated / ungated summary 已一并冻结
 - [reservation] name-level concentration、target strategy compare 和异常收益 sanity check 已保留
 - [blocking] mean_net_return <= 0 时不得将 csf_backtest_ready 判为通过
-
-## Formal Return Accounting Blocking Rules
-
-- 必须检查 `return_accounting_provenance.yaml` 是否存在，并确认 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 的 formal metrics 受该 provenance 支撑。
-- 如果 formal return field、formula 或 stage-local program 使用 `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL，必须判为 blocking。
-- proxy PnL 只能作为 diagnostic evidence；一旦进入 formal gate metrics，不得进入 csf_holdout_validation。
-- 如果缺少 tradable return source，应要求修复当前 `csf_backtest_ready` stage 或进入 failure handling；除非需要改变 mandate 路线或已有下游 freeze 依赖，否则不要默认开 child lineage。
 
 ## 仅审计项
 
