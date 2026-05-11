@@ -717,9 +717,11 @@ def test_run_research_session_invalidates_stale_review_cycle_after_author_output
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_stale_review_cycle")
 
     assert status.current_stage == "test_evidence_review"
-    assert status.stage_status == "awaiting_adversarial_review"
-    assert status.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
-    assert "stale" in (status.blocking_reason or "").lower()
+    assert status.stage_status == "blocked"
+    assert status.gate_status == "PROTECTED_STATE_DRIFT"
+    assert status.blocking_reason_code == "REVIEW_STATE_PROJECTION_DRIFT"
+    assert "review_bound_author_digest" in (status.blocking_reason or "")
+    assert "qros-review-cycle reset --archive-stale-cycle" in status.next_action
 
 
 def test_run_stage_review_rejects_missing_reviewer_receipt(tmp_path: Path) -> None:

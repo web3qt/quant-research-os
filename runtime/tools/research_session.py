@@ -796,11 +796,22 @@ def assert_current_protected_review_state_intact(
     if spec is None or _stage_base_name(current_stage) not in REVIEWABLE_STAGE_BASES:
         return
     stage_dir = lineage_root / spec.stage_dir_name
+    required_outputs = spec.required_outputs
+    required_provenance_paths: tuple[str, ...] | list[str] = ("program_execution_manifest.json",)
+    request_path = _review_request_path(stage_dir)
+    if request_path.exists():
+        try:
+            request_payload = load_adversarial_review_request(request_path)
+            required_outputs = request_payload["required_artifact_paths"]
+            required_provenance_paths = request_payload["required_provenance_paths"]
+        except Exception:
+            # request 结构错误由 review runtime 状态机报告；protected guard 只负责校验可解析 cycle 的绑定。
+            pass
     assert_protected_review_state_intact(
         stage_dir=stage_dir,
         lineage_root=lineage_root,
-        required_outputs=spec.required_outputs,
-        required_provenance_paths=("program_execution_manifest.json",),
+        required_outputs=required_outputs,
+        required_provenance_paths=required_provenance_paths,
         allow_missing_state=True,
     )
 
