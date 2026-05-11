@@ -291,6 +291,8 @@ def _reviewer_handoff_prompt(
         f"- {result_path}",
         "",
         "Write reviewer_findings.raw.yaml with top-level fields:",
+        f"review_cycle_id: {payload['review_cycle_id']}",
+        f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
         "review_loop_outcome",
         "blocking_findings",
         "reservation_findings",

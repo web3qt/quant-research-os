@@ -39,6 +39,13 @@ def _require_raw_string_list(payload: dict[str, Any], key: str, *, path: Path) -
     return [item for item in value]
 
 
+def _require_raw_string(payload: dict[str, Any], key: str, *, path: Path) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{path}: {key} must be a non-empty string")
+    return value.strip()
+
+
 def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(payload, dict):
@@ -53,6 +60,8 @@ def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
             f"allowed values: {_allowed_review_loop_outcomes_message()}"
         )
     return {
+        "review_cycle_id": _require_raw_string(payload, "review_cycle_id", path=path),
+        "reviewer_agent_id": _require_raw_string(payload, "reviewer_agent_id", path=path),
         "review_loop_outcome": outcome,
         "blocking_findings": _require_raw_string_list(payload, "blocking_findings", path=path),
         "reservation_findings": _require_raw_string_list(payload, "reservation_findings", path=path),
@@ -96,6 +105,10 @@ def ensure_runtime_review_result(
     raw_path = review_result_dir / RAW_REVIEWER_FINDINGS_FILENAME
     if raw_path.exists():
         raw_payload = _load_raw_reviewer_findings(raw_path)
+        if raw_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
+            raise ValueError(f"{raw_path}: review_cycle_id does not match adversarial_review_request.yaml")
+        if raw_payload["reviewer_agent_id"] != receipt_payload["reviewer_agent_id"]:
+            raise ValueError(f"{raw_path}: reviewer_agent_id does not match reviewer_receipt.yaml")
         result_payload: dict[str, Any] = {
             "review_cycle_id": request_payload["review_cycle_id"],
             "reviewer_identity": runtime_identity.reviewer_identity,
