@@ -15,7 +15,14 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 )
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest,
+    write_review_runtime_state,
+)
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    write_reviewer_write_scope_baseline,
+)
 from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
 from tests.runtime.test_tss_test_evidence_runtime import (
     _prepare_tss_train_freeze_stage,
@@ -121,13 +128,34 @@ def _write_reviewer_receipt(
     reviewer_session_id: str = "reviewer-session",
     reviewer_agent_id: str = "reviewer-child-agent",
 ) -> None:
-    issue_reviewer_receipt(
+    receipt = issue_reviewer_receipt(
         stage_dir,
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id="launcher-session",
         launcher_thread_id="leader-thread",
         reviewer_agent_id=reviewer_agent_id,
+    )
+    request_payload = _review_request_payload(stage_dir)
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    write_review_runtime_state(
+        stage_dir,
+        review_state="review_in_progress",
+        active_review_cycle_id=request_payload["review_cycle_id"],
+        review_requested_at=receipt["receipt_written_at"],
+        review_bound_author_digest=author_digest,
+        reviewer_identity=reviewer_identity,
+        reviewer_session_id=reviewer_session_id,
+    )
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id=receipt["review_cycle_id"],
+        launcher_thread_id=receipt["launcher_thread_id"],
+        reviewer_agent_id=receipt["reviewer_agent_id"],
     )
 
 

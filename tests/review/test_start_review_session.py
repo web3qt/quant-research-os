@@ -80,7 +80,7 @@ def test_start_review_cycle_registers_spawned_agent_receipt(tmp_path: Path) -> N
 
 def test_start_review_session_rejects_second_active_cycle_without_author_changes(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    start_review_session(
+    payload = start_review_session(
         explicit_context={
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
@@ -210,7 +210,7 @@ def test_start_review_cycle_script_emits_spawned_agent_receipt(tmp_path: Path) -
 
 def test_qros_review_script_can_infer_identity_from_review_session_receipt(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    start_review_session(
+    payload = start_review_session(
         explicit_context={
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
@@ -225,6 +225,8 @@ def test_qros_review_script_can_infer_identity_from_review_session_receipt(tmp_p
     raw_path.write_text(
         yaml.safe_dump(
             {
+                "review_cycle_id": payload["review_cycle_id"],
+                "reviewer_agent_id": payload["receipt_payload"]["reviewer_agent_id"],
                 "review_loop_outcome": "CLOSURE_READY_PASS",
                 "blocking_findings": [],
                 "reservation_findings": [],

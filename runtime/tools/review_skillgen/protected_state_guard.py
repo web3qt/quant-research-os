@@ -32,7 +32,7 @@ _CLOSURE_FILES = (
 )
 
 
-@dataclass(frozen=True)
+@dataclass
 class ProtectedStateError(RuntimeError):
     reason_code: str
     protected_path: str

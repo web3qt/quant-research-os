@@ -14,6 +14,7 @@ from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_f
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.artifact_realism import check_machine_artifact_realism
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_skillgen.protected_state_guard import assert_protected_review_state_intact
 from runtime.tools.review_skillgen.review_engine import _split_review_checks, _split_structural_checks
 from runtime.tools.review_skillgen.stage_content_gate import (
     check_global_evidence,
@@ -60,6 +61,13 @@ def run_review_preflight(
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)
     stage_contract = gates["stages"][stage]
+    assert_protected_review_state_intact(
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+        required_outputs=stage_contract.get("required_outputs", []),
+        required_provenance_paths=["program_execution_manifest.json"],
+        allow_missing_state=True,
+    )
     stage_checks = checklist.get("stages", {}).get(stage, {"checks": []})
     stage_content_checks, upstream_binding_checks = _split_structural_checks(
         stage_contract.get("structural_gate_checks", [])

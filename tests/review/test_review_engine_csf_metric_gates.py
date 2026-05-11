@@ -11,6 +11,10 @@ import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest,
+    write_review_runtime_state,
+)
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
@@ -145,6 +149,20 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
     }
     _write_yaml(stage_dir / "review" / "request" / "adversarial_review_request.yaml", request_payload)
     _write_yaml(stage_dir / "review" / "request" / "reviewer_receipt.yaml", receipt_payload)
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_artifact_paths,
+        required_provenance_paths=required_provenance_paths,
+    )
+    write_review_runtime_state(
+        stage_dir,
+        review_state="review_in_progress",
+        active_review_cycle_id=request_payload["review_cycle_id"],
+        review_requested_at=receipt_payload["receipt_written_at"],
+        review_bound_author_digest=author_digest,
+        reviewer_identity=receipt_payload["requested_reviewer_identity"],
+        reviewer_session_id=receipt_payload["requested_reviewer_session_id"],
+    )
     write_reviewer_write_scope_baseline(
         stage_dir,
         review_cycle_id=receipt_payload["review_cycle_id"],

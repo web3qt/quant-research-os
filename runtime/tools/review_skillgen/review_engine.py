@@ -23,8 +23,9 @@ from runtime.tools.review_skillgen.context_inference import build_stage_context,
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
 from runtime.tools.review_skillgen.protocol_validator import load_and_validate_protocol
+from runtime.tools.review_skillgen.protected_state_guard import assert_protected_review_state_intact
 from runtime.tools.review_skillgen.review_runtime_state import write_review_runtime_state
-from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest
+from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest_fresh
 from runtime.tools.review_skillgen.review_scope_builder import (
     stage_content_artifact_paths_from_request,
     stage_content_provenance_paths_from_request,
@@ -563,8 +564,15 @@ def run_stage_review(
     receipt_payload = protocol_payload["receipt_payload"]
     review_result = protocol_payload["review_result"]
     audit_payload = protocol_payload["audit_payload"]
+    assert_protected_review_state_intact(
+        stage_dir=stage_dir,
+        lineage_root=lineage_root,
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+        allow_missing_state=False,
+    )
     reviewer_findings = load_review_findings_if_present(review_result_dir / "review_findings.yaml")
-    author_digest = compute_author_materialization_digest(
+    author_digest = compute_author_materialization_digest_fresh(
         artifact_root=author_formal_dir,
         required_outputs=request_payload["required_artifact_paths"],
         required_provenance_paths=request_payload["required_provenance_paths"],

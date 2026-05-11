@@ -180,7 +180,16 @@ def _prepare_review_cycle(
     if not isinstance(author_session_id, str) or not author_session_id.strip():
         raise ValueError(f"{stage_dir}: authoring_session_id is missing from provenance")
 
-    current_digest = _current_author_digest(stage_dir, spec)
+    existing_request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    if existing_request_path.exists():
+        existing_request_payload = load_adversarial_review_request(existing_request_path)
+        current_digest = compute_author_materialization_digest(
+            artifact_root=_author_formal_dir(stage_dir),
+            required_outputs=existing_request_payload["required_artifact_paths"],
+            required_provenance_paths=existing_request_payload["required_provenance_paths"],
+        )
+    else:
+        current_digest = _current_author_digest(stage_dir, spec)
     archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=current_digest)
 
     request_payload = ensure_adversarial_review_request(
@@ -195,6 +204,11 @@ def _prepare_review_cycle(
         required_provenance_paths=["program_execution_manifest.json"],
         program_hash=provenance.get("program_hash") if isinstance(provenance.get("program_hash"), str) else None,
         stage_invoked_at=provenance.get("invoked_at") if isinstance(provenance.get("invoked_at"), str) else None,
+    )
+    current_digest = compute_author_materialization_digest(
+        artifact_root=_author_formal_dir(stage_dir),
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
     )
     state_payload = write_review_runtime_state(
         stage_dir,

@@ -11,6 +11,10 @@ import yaml
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.repo_paths import REPO_ROOT
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, _require_stage_config
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest,
+    write_review_runtime_state,
+)
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
@@ -146,6 +150,20 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "requested_reviewer_session_id": "review-session",
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
+    )
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_artifact_paths,
+        required_provenance_paths=required_provenance_paths,
+    )
+    write_review_runtime_state(
+        stage_dir,
+        review_state="review_in_progress",
+        active_review_cycle_id="cycle-1",
+        review_requested_at="2026-04-17T03:00:00Z",
+        review_bound_author_digest=author_digest,
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
     )
     write_reviewer_write_scope_baseline(
         stage_dir,

@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import pytest
+import yaml
+
+from runtime.tools.review_skillgen.protected_state_guard import ProtectedStateError
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
+from tests.review.test_start_review_session import _prepare_mandate_stage
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.session.test_research_session_runtime import _write_minimal_stage_outputs
 
@@ -53,3 +58,26 @@ def test_run_review_preflight_reports_upstream_binding_failure_for_signal_ready(
 
     assert payload["status"] == "FAIL"
     assert any("CSF-SIGNAL-BIND-001" in item for item in payload["upstream_binding_findings"])
+
+
+def test_run_review_preflight_rejects_stale_review_runtime_state(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    state_path = stage_dir / "review" / "state" / "review_runtime_state.yaml"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        yaml.safe_dump(
+            {
+                "review_state": "review_closed_pass",
+                "active_review_cycle_id": "manual-cycle",
+                "review_bound_author_digest": "0" * 64,
+                "last_review_verdict": "PASS",
+                "closure_written_at": "2026-05-11T00:00:00Z",
+                "updated_at": "2026-05-11T00:00:00Z",
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ProtectedStateError, match="REVIEW_STATE_PROJECTION_DRIFT"):
+        run_review_preflight(explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root})
