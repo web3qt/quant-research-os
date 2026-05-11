@@ -9,7 +9,7 @@ import yaml
 from tests.helpers.repo_paths import REPO_ROOT
 from tests.review.test_start_review_session import _prepare_mandate_stage
 from runtime.tools import review_session_runtime
-from runtime.tools.review_session_runtime import start_review_cycle
+from runtime.tools.review_session_runtime import reset_review_cycle, start_review_cycle
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError
 
 
@@ -89,3 +89,92 @@ def test_review_cycle_prepare_preflights_runtime_config_before_writing_request(
 
 def test_qros_review_cycle_wrapper_exists() -> None:
     assert Path("runtime/bin/qros-review-cycle").exists()
+
+
+def test_review_cycle_reset_archives_stale_cycle(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    payload = start_review_cycle(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="reviewer",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-agent",
+    )
+    assert (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+
+    reset_payload = reset_review_cycle(
+        stage_dir=stage_dir,
+        review_cycle_id=payload["review_cycle_id"],
+        reason="stale",
+    )
+
+    assert reset_payload["archived_paths"]
+    assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+    assert reset_payload["next_action"] == "run qros-review-cycle prepare and request a fresh reviewer run"
+
+
+def test_review_cycle_reset_script_archives_stale_cycle(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    start_review_cycle(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="reviewer",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-agent",
+    )
+    script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "reset",
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(lineage_root),
+            "--archive-stale-cycle",
+            "--json",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["archived_paths"]
+    assert payload["next_action"] == "run qros-review-cycle prepare and request a fresh reviewer run"
+    assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+
+
+def test_review_cycle_validate_script_reports_preflight_status(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    (stage_dir / "author" / "formal" / "run_config.toml").write_text("version = 1\n", encoding="utf-8")
+    script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "validate",
+            "--stage-dir",
+            str(stage_dir),
+            "--lineage-root",
+            str(lineage_root),
+            "--json",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["stage"] == "mandate"
+    assert payload["lineage_id"] == lineage_root.name
+    assert payload["status"] == "PASS"

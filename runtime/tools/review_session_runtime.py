@@ -439,3 +439,34 @@ def start_review_session(
         prepared=prepared,
         receipt_payload=receipt_payload,
     )
+
+
+def reset_review_cycle(
+    *,
+    stage_dir: Path,
+    review_cycle_id: str | None = None,
+    reason: str = "stale",
+) -> dict[str, Any]:
+    stage_dir = stage_dir.resolve()
+    if review_cycle_id is None:
+        request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+        if not request_path.exists():
+            return {
+                "stage_dir": str(stage_dir),
+                "archived_paths": [],
+                "next_action": "run qros-review-cycle prepare and request a fresh reviewer run",
+            }
+        request_payload = load_adversarial_review_request(request_path)
+        review_cycle_id = request_payload["review_cycle_id"]
+
+    archived_paths = archive_active_review_cycle(
+        stage_dir,
+        review_cycle_id=review_cycle_id,
+        reason=reason,
+    )
+    return {
+        "stage_dir": str(stage_dir),
+        "review_cycle_id": review_cycle_id,
+        "archived_paths": archived_paths,
+        "next_action": "run qros-review-cycle prepare and request a fresh reviewer run",
+    }

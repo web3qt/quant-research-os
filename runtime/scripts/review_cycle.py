@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.tools.review_session_runtime import prepare_review_cycle_for_handoff  # noqa: E402
+from runtime.tools.review_session_runtime import prepare_review_cycle_for_handoff, reset_review_cycle  # noqa: E402
+from runtime.tools.review_skillgen.review_preflight import run_review_preflight  # noqa: E402
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError  # noqa: E402
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError  # noqa: E402
 
@@ -47,6 +48,17 @@ def _parse_args() -> argparse.Namespace:
     prepare.add_argument("--launcher-thread-id", default=os.environ.get("QROS_LAUNCHER_THREAD_ID", "local-launcher-thread"))
     prepare.add_argument("--reviewer-agent-id", required=True)
     prepare.add_argument("--json", action="store_true")
+
+    validate = subparsers.add_parser("validate", help="Validate protected review state without writing changes.")
+    validate.add_argument("--stage-dir", type=Path, required=True)
+    validate.add_argument("--lineage-root", type=Path, required=True)
+    validate.add_argument("--json", action="store_true")
+
+    reset = subparsers.add_parser("reset", help="Archive stale active review cycle.")
+    reset.add_argument("--stage-dir", type=Path, required=True)
+    reset.add_argument("--lineage-root", type=Path, required=True)
+    reset.add_argument("--archive-stale-cycle", action="store_true", required=True)
+    reset.add_argument("--json", action="store_true")
     return parser.parse_args()
 
 
@@ -73,9 +85,38 @@ def _json_safe(payload: dict[str, object]) -> dict[str, object]:
 
 def main() -> int:
     args = _parse_args()
+    cwd = Path.cwd()
+    if args.command == "validate":
+        payload = run_review_preflight(
+            cwd=cwd,
+            explicit_context={
+                "stage_dir": args.stage_dir.resolve(),
+                "lineage_root": args.lineage_root.resolve(),
+            },
+        )
+        if args.json:
+            print(json.dumps(_json_safe(payload), ensure_ascii=False, indent=2))
+        else:
+            print(f"Stage: {payload['stage']}")
+            print(f"Lineage: {payload['lineage_id']}")
+            print(f"Status: {payload['status']}")
+        return 0 if payload["status"] == "PASS" else 1
+
+    if args.command == "reset":
+        payload = reset_review_cycle(stage_dir=args.stage_dir, reason="stale")
+        if args.json:
+            print(json.dumps(_json_safe(payload), ensure_ascii=False, indent=2))
+        else:
+            print(f"Stage dir: {payload['stage_dir']}")
+            print(f"Review cycle: {payload.get('review_cycle_id', 'none')}")
+            print("Archived paths:")
+            for item in payload["archived_paths"]:
+                print(f"- {item}")
+            print(f"Next action: {payload['next_action']}")
+        return 0
+
     if args.command != "prepare":
         raise SystemExit(f"unsupported command: {args.command}")
-    cwd = Path.cwd()
     host = args.host or _resolve_host_from_manifest(cwd)
     try:
         payload = prepare_review_cycle_for_handoff(
