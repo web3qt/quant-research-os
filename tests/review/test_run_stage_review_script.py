@@ -292,6 +292,8 @@ def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_pa
     _write_yaml(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
+            "review_cycle_id": "cycle-1",
+            "reviewer_agent_id": "reviewer-child-agent",
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "blocking_findings": [],
             "reservation_findings": [],
