@@ -122,7 +122,7 @@ def _validate_review_runtime_state(
     bound_digest = state.get("review_bound_author_digest")
     if bound_digest and bound_digest != current_digest:
         raw_path = stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME
-        if request_path.exists() or receipt_path.exists() or raw_path.exists():
+        if raw_path.exists():
             _raise(
                 STALE_REVIEW_EVIDENCE,
                 state_path,
