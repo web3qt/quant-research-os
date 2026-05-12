@@ -164,7 +164,7 @@ graph LR
 
 这里的退出码是 Python 入口 `run_research_session.py` 的语义退出码：
 
-- `exit 2` 不只表示 `FREEZE_APPROVAL_MISSING`，也覆盖 `NEXT_STAGE_CONFIRMATION_REQUIRED`、`LINEAGE_RESUME_BLOCKED` 和若干 display / resume 类阻塞
+- `exit 2` 不只表示 `FREEZE_APPROVAL_MISSING`，也覆盖 `NEXT_STAGE_CONFIRMATION_REQUIRED`、`LINEAGE_RESUME_BLOCKED` 和若干确认 / resume 类阻塞
 - `exit 7` 不只表示 `REVIEW_PENDING`，也覆盖 `REVIEW_CONFIRMATION_REQUIRED`、`ADVERSARIAL_REVIEW_PENDING`、`AUTHOR_FIX_REQUIRED`、`REVIEW_CLOSURE_PENDING`
 
 Shell 包装器 `qros-session` 会将退出码 `2-8` 映射为 `exit 0`（非致命阻塞），只有真正的系统错误才传递非零退出码。Agent 不会因为阻塞而报错，而是读到状态面板后知道该做什么。

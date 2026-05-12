@@ -1,9 +1,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square&logo=python" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-897-green?style=flat-square" alt="Tests 897">
+  <img src="https://img.shields.io/badge/tests-999-green?style=flat-square" alt="Tests 999">
   <img src="https://img.shields.io/badge/version-0.4.11-blue?style=flat-square" alt="Version 0.4.11">
   <img src="https://img.shields.io/badge/hosts-Codex%20%7C%20Claude%20Code-purple?style=flat-square" alt="Hosts">
-  <img src="https://img.shields.io/badge/stages-20-blueviolet?style=flat-square" alt="20 Stages">
+  <img src="https://img.shields.io/badge/stage%20keys-20-blueviolet?style=flat-square" alt="20 Stage Keys">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License MIT">
 </p>
 
@@ -55,7 +55,7 @@ QROS 的核心设计不是“多写几份报告”，而是把量化研究中最
 <tr><td><b>Review before advance</b></td><td>author lane 只能产出；review lane 独立检查 artifact、provenance、stage program 和 closure，PASS 前不能进入下一阶段。</td></tr>
 <tr><td><b>Failure is a route</b></td><td>review 非正常放行不是继续普通推进，而是进入 failure handling，明确 retry、rollback、NO-GO 或 child lineage。</td></tr>
 <tr><td><b>Lineage-local execution</b></td><td>真实阶段程序属于研究仓的 `outputs/<lineage_id>/program/`，每个可执行阶段必须有 `stage_program.yaml`、entrypoint、README 和 `program_execution_manifest.json`；QROS 只校验、调用和记账，不把共享 builder 当完成路径。</td></tr>
-<tr><td><b>Host/runtime split</b></td><td>Codex / Claude Code 负责理解、对话和工具调度；QROS Python runtime 负责确定性状态机、合同校验、review / display / next-stage orchestration。</td></tr>
+<tr><td><b>Host/runtime split</b></td><td>Codex / Claude Code 负责理解、对话和工具调度；QROS Python runtime 负责确定性状态机、合同校验、review / next-stage orchestration 和状态面板。</td></tr>
 </table>
 </p>
 
@@ -162,17 +162,17 @@ $qros-update
            │             │
            ▼             ▼
      tests/          docs/
-   (897 tests)    (SOP/guides/visuals)
+   (999 tests)    (SOP/guides/visuals)
 ```
 
 <p align="center">
 <table>
 <tr><td width="25%"><b>contracts/</b></td><td>机器真值层 — gate 定义、checklist、artifact schema</td></tr>
-<tr><td><b>skills/</b></td><td>Agent 行为层 — 20 阶段 author/review/failure skills</td></tr>
+<tr><td><b>skills/</b></td><td>Agent 行为层 — 56 个 public skill bundles，覆盖 core、author、review、failure 和 diagnostics</td></tr>
 <tr><td><b>runtime/</b></td><td>运行时层 — bin 入口 + scripts wrapper + tools 引擎</td></tr>
 <tr><td><b>templates/</b></td><td>生成模板层 — host-agnostic review skill 模板</td></tr>
 <tr><td><b>docs/</b></td><td>解释层 — 安装、SOP、使用指南</td></tr>
-<tr><td><b>tests/</b></td><td>验证层 — 897 条测试覆盖全流程</td></tr>
+<tr><td><b>tests/</b></td><td>验证层 — 999 条 pytest collected tests 覆盖全流程</td></tr>
 </table>
 </p>
 
@@ -196,6 +196,13 @@ $qros-update
 <br>
 
 ## 🖥️ 支持的宿主
+
+当前 README 校验环境：
+
+| 宿主 | 当前版本 |
+|------|------|
+| Codex CLI | `codex-cli 0.130.0` |
+| Claude Code | `2.1.128 (Claude Code)` |
 
 <table>
 <tr>
@@ -249,7 +256,7 @@ spawn_agent (fork_context=false)
 <td width="33%" align="center"><b>📊 Verification</b></td>
 </tr>
 <tr>
-<td>897 条测试<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
+<td>999 条 pytest collected tests<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
 <td>CI 自动回归检测<br>metamorphic testing<br>snapshot baseline<br>drift coverage matrix</td>
 <td>smoke / full-smoke 分层<br>contract validation<br>semantic validation<br>upstream binding check</td>
 </tr>
@@ -276,5 +283,5 @@ spawn_agent (fork_context=false)
 ---
 
 <p align="center">
-  <sub>QROS · 治理框架 · 20 阶段 · 双宿主 · 897 测试 · contract-first</sub>
+  <sub>QROS · 治理框架 · 20 stage keys · 双宿主 · 999 测试 · contract-first</sub>
 </p>
