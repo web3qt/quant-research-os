@@ -14,12 +14,14 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     FIX_REQUIRED_OUTCOME,
     REVIEWER_RECEIPT_FILENAME,
     load_adversarial_review_result,
+    load_reviewer_receipt,
 )
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
     load_reviewer_write_scope_audit,
+    validate_reviewer_write_scope_audit,
 )
 
 
@@ -644,6 +646,16 @@ def _review_summary(stage_dir: Path, *, reviewable: bool) -> dict[str, Any]:
     closure_complete = _closure_complete(stage_dir)
     review_result = load_adversarial_review_result(result_path) if result_present else {}
     audit_payload = load_reviewer_write_scope_audit(audit_path) if audit_present else {}
+    audit_error: str | None = None
+    if receipt_present and audit_present:
+        try:
+            validate_reviewer_write_scope_audit(
+                receipt_payload=load_reviewer_receipt(_review_receipt_path(stage_dir)),
+                audit_payload=audit_payload,
+                stage_dir=stage_dir,
+            )
+        except Exception as exc:
+            audit_error = str(exc)
     certificate_payload = _read_yaml_if_present(_stage_completion_certificate_path(stage_dir))
     stage_gate_review = _read_yaml_if_present(_stage_gate_review_path(stage_dir))
 
@@ -655,6 +667,7 @@ def _review_summary(stage_dir: Path, *, reviewable: bool) -> dict[str, Any]:
         "review_result_present": result_present,
         "review_audit_present": audit_present,
         "audit_status": audit_payload.get("audit_status"),
+        "audit_error": audit_error,
         "closure_complete": closure_complete,
         "review_loop_outcome": review_result.get("review_loop_outcome"),
         "final_verdict": certificate_payload.get("final_verdict")
@@ -750,6 +763,7 @@ def _evaluate_idea_intake(stage_dir: Path, lineage_root: Path, spec: StageEvalua
             "review_result_present": False,
             "review_audit_present": False,
             "audit_status": None,
+            "audit_error": None,
             "closure_complete": confirmation_present,
             "review_loop_outcome": None,
             "final_verdict": gate_verdict if isinstance(gate_verdict, str) else None,
@@ -812,6 +826,11 @@ def _evaluate_reviewable_stage(stage_dir: Path, lineage_root: Path, spec: StageE
     elif not review_summary["review_audit_present"]:
         status = "review_audit_pending"
         reason = "review result exists, but reviewer write-scope audit is still missing"
+        passed = False
+        can_progress = False
+    elif review_summary["audit_error"] is not None:
+        status = "review_audit_failed"
+        reason = str(review_summary["audit_error"])
         passed = False
         can_progress = False
     elif review_summary["audit_status"] != "PASS":

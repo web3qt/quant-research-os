@@ -179,6 +179,37 @@ def test_stage_evaluator_matches_runtime_for_review_audit_pending_state(tmp_path
     assert session.current_stage == "mandate_review"
 
 
+def test_stage_evaluator_rejects_result_file_added_after_pass_audit(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "topic_a"
+    stage_dir = lineage_root / "01_mandate"
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    write_fake_stage_provenance(lineage_root, "mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    _write_adversarial_review_result(
+        stage_dir,
+        stage="mandate",
+        program_dir="program/mandate",
+        outcome="CLOSURE_READY_PASS",
+    )
+    _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
+    sidecar_path = stage_dir / "review" / "result" / "sidecar" / "launcher_notes.yaml"
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text("notes:\n  - launcher-authored nested result drift\n", encoding="utf-8")
+
+    evaluator = evaluate_stage(stage_dir, lineage_root=lineage_root)
+    session = run_research_session(outputs_root=outputs_root, lineage_id="topic_a")
+
+    assert evaluator["status"] == "review_audit_failed"
+    assert evaluator["pass"] is False
+    assert evaluator["can_progress"] is False
+    assert "REVIEWER_WRITE_SCOPE_VIOLATION" in evaluator["reason"]
+    assert session.current_stage == "mandate_review"
+    assert session.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (session.blocking_reason or "")
+
+
 def test_stage_evaluator_invalidates_stale_review_cycle_after_author_output_changes(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "topic_a"
