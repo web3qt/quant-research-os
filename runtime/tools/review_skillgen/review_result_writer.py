@@ -10,7 +10,6 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ALLOWED_REVIEW_LOOP_OUTCOMES,
     FIX_REQUIRED_OUTCOME,
     ReviewerRuntimeIdentity,
-    canonicalize_runtime_review_result,
     load_adversarial_review_result,
     resolve_closure_verdict,
 )
@@ -21,6 +20,7 @@ from runtime.tools.review_skillgen.review_scope_builder import (
 
 
 RAW_REVIEWER_FINDINGS_FILENAME = "reviewer_findings.raw.yaml"
+PROTECTED_STATE_DRIFT = "PROTECTED_STATE_DRIFT"
 
 
 def _allowed_review_loop_outcomes_message() -> str:
@@ -159,11 +159,10 @@ def ensure_runtime_review_result(
         return load_adversarial_review_result(result_path)
 
     if result_path.exists():
-        existing = load_adversarial_review_result(result_path)
-        return canonicalize_runtime_review_result(
-            result_path,
-            request_payload=request_payload,
-            result_payload=existing,
+        raise ValueError(
+            f"{PROTECTED_STATE_DRIFT}: {result_path}: {RAW_REVIEWER_FINDINGS_FILENAME} is required "
+            "for active-cycle review closure; remove stale canonical review/result projections and rerun "
+            "with a fresh reviewer."
         )
 
     raise ValueError(f"{result_path}: adversarial_review_result.yaml is missing")

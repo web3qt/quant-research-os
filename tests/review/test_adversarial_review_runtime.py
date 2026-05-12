@@ -200,6 +200,35 @@ def _write_adversarial_review_result(
         run_reviewer_write_scope_audit(stage_dir)
 
 
+def _write_raw_reviewer_findings(
+    stage_dir: Path,
+    *,
+    review_loop_outcome: str,
+    reviewer_agent_id: str = "reviewer-child-agent",
+    blocking_findings: list[str] | None = None,
+    reservation_findings: list[str] | None = None,
+    info_findings: list[str] | None = None,
+    residual_risks: list[str] | None = None,
+    allowed_modifications: list[str] | None = None,
+    downstream_permissions: list[str] | None = None,
+    rollback_stage: str | None = None,
+) -> None:
+    payload = {
+        "review_cycle_id": _request_review_cycle_id(stage_dir),
+        "reviewer_agent_id": reviewer_agent_id,
+        "review_loop_outcome": review_loop_outcome,
+        "blocking_findings": blocking_findings or [],
+        "reservation_findings": reservation_findings or [],
+        "info_findings": info_findings or [],
+        "residual_risks": residual_risks or [],
+        "allowed_modifications": allowed_modifications or [],
+        "downstream_permissions": downstream_permissions or [],
+    }
+    if rollback_stage:
+        payload["rollback_stage"] = rollback_stage
+    _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", payload)
+
+
 def _prepare_review_runtime_case(
     tmp_path: Path,
     *,
@@ -237,18 +266,9 @@ def test_run_stage_review_rejects_self_review_from_runtime_contract(tmp_path: Pa
         author_identity="author-agent",
     )
     _write_reviewer_receipt(stage_dir, reviewer_identity="author-agent")
-    _write_adversarial_review_result(
+    _write_raw_reviewer_findings(
         stage_dir,
-        stage_key="mandate",
-        reviewer_identity="author-agent",
         review_loop_outcome="CLOSURE_READY_PASS",
-    )
-    _write_yaml(
-        stage_dir / "review" / "result" / "review_findings.yaml",
-        {
-            "reviewer_identity": "author-agent",
-            "recommended_verdict": "PASS",
-        },
     )
 
     with pytest.raises(ValueError, match="self-review|reviewer.*author"):
@@ -269,21 +289,12 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
         author_identity="author-agent",
     )
     _write_reviewer_receipt(stage_dir)
-    _write_adversarial_review_result(
+    _write_raw_reviewer_findings(
         stage_dir,
-        stage_key="mandate",
-        reviewer_identity="reviewer-agent",
         review_loop_outcome="FIX_REQUIRED",
-    )
-    _write_yaml(
-        stage_dir / "review" / "result" / "review_findings.yaml",
-        {
-            "reviewer_identity": "reviewer-agent",
-            "recommended_verdict": "RETRY",
-            "blocking_findings": ["Need stronger provenance linkage."],
-            "rollback_stage": "mandate",
-            "allowed_modifications": ["artifact corrections only"],
-        },
+        blocking_findings=["Need stronger provenance linkage."],
+        rollback_stage="mandate",
+        allowed_modifications=["artifact corrections only"],
     )
 
     payload = run_stage_review(
@@ -408,41 +419,10 @@ def test_run_stage_review_rewrites_scope_to_match_runtime_request(tmp_path: Path
         author_identity="author-agent",
     )
     _write_reviewer_receipt(stage_dir)
-    _write_adversarial_review_result(
+    _write_raw_reviewer_findings(
         stage_dir,
-        stage_key="mandate",
-        reviewer_identity="reviewer-agent",
         review_loop_outcome="CLOSURE_READY_PASS",
-        write_audit=False,
     )
-    _write_yaml(
-        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
-        {
-            "review_cycle_id": _request_review_cycle_id(stage_dir),
-            "reviewer_identity": "reviewer-agent",
-            "reviewer_role": "adversarial-reviewer",
-            "reviewer_session_id": "reviewer-session",
-            "reviewer_mode": "adversarial",
-            "reviewer_agent_id": "reviewer-child-agent",
-            "reviewer_execution_mode": "spawned_agent",
-            "reviewer_context_source": "explicit_handoff_only",
-            "reviewer_history_inheritance": "none",
-            "handoff_manifest_digest": _review_request_payload(stage_dir)["handoff_manifest_digest"],
-            "reviewed_program_dir": "program/unapproved_scope",
-            "reviewed_program_entrypoint": "alternate.py",
-            "reviewed_artifact_paths": ["mandate.md", "research_scope.md"],
-            "reviewed_provenance_paths": ["program_execution_manifest.json"],
-            "review_loop_outcome": "CLOSURE_READY_PASS",
-        },
-    )
-    _write_yaml(
-        stage_dir / "review" / "result" / "review_findings.yaml",
-        {
-            "reviewer_identity": "reviewer-agent",
-            "recommended_verdict": "PASS",
-        },
-    )
-    run_reviewer_write_scope_audit(stage_dir)
 
     payload = run_stage_review(
         cwd=stage_dir,
@@ -817,13 +797,11 @@ def test_run_stage_review_recreates_missing_reviewer_write_scope_audit(tmp_path:
     _, stage_dir = _prepare_mandate_stage(tmp_path)
     _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
     _write_reviewer_receipt(stage_dir)
-    _write_adversarial_review_result(
+    _write_raw_reviewer_findings(
         stage_dir,
-        stage_key="mandate",
-        reviewer_identity="reviewer-agent",
         review_loop_outcome="CLOSURE_READY_PASS",
     )
-    (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").unlink()
+    (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").unlink(missing_ok=True)
 
     payload = run_stage_review(
         cwd=stage_dir,
