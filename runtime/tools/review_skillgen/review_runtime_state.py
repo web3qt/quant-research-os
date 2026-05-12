@@ -127,6 +127,37 @@ def _file_digest(path: Path) -> str:
     return _digest_bytes([path.read_bytes()])
 
 
+def _archive_file_tree(
+    stage_dir: Path,
+    src_root: Path,
+    dst_root: Path,
+    *,
+    review_cycle_id: str,
+    reason: str,
+    timestamp: str,
+) -> list[str]:
+    written: list[str] = []
+    if not src_root.exists():
+        return written
+
+    for src in sorted(path for path in src_root.rglob("*") if path.is_file()):
+        rel = src.relative_to(src_root)
+        stem = src.stem
+        suffix = "".join(src.suffixes)
+        dst = dst_root / rel.parent / f"{stem}.{review_cycle_id}.{reason}.{timestamp}{suffix}"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        src.rename(dst)
+        written.append(str(dst.relative_to(stage_dir)))
+
+    for directory in sorted((path for path in src_root.rglob("*") if path.is_dir()), reverse=True):
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+
+    return written
+
+
 def _load_materialization_digest_ledger(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"files": {}}
@@ -256,7 +287,6 @@ def archive_active_review_cycle(
 
     for subdir_name, filenames in (
         ("request", _ACTIVE_REQUEST_FILES),
-        ("result", _ACTIVE_RESULT_FILES),
         ("closure", _ACTIVE_CLOSURE_FILES),
     ):
         src_root = stage_dir / "review" / subdir_name
@@ -271,6 +301,20 @@ def archive_active_review_cycle(
             dst = dst_root / f"{stem}.{review_cycle_id}.{reason}.{timestamp}{suffix}"
             src.rename(dst)
             written.append(str(dst.relative_to(stage_dir)))
+
+    result_src_root = stage_dir / "review" / "result"
+    result_dst_root = archive_root / "result"
+    result_dst_root.mkdir(parents=True, exist_ok=True)
+    written.extend(
+        _archive_file_tree(
+            stage_dir,
+            result_src_root,
+            result_dst_root,
+            review_cycle_id=review_cycle_id,
+            reason=reason,
+            timestamp=timestamp,
+        )
+    )
 
     state_path = review_runtime_state_path(stage_dir)
     if state_path.exists():

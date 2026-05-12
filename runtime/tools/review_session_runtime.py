@@ -80,10 +80,9 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
         )
 
     reason = "stale" if bound_digest != current_digest or proof_chain_error is not None else "superseded"
-    return archive_active_review_cycle(
-        stage_dir,
-        review_cycle_id=request_payload["review_cycle_id"],
-        reason=reason,
+    raise ValueError(
+        f"review cycle {request_payload['review_cycle_id']} is {reason}; "
+        "run qros-review-cycle reset --archive-stale-cycle first, then prepare a fresh reviewer run"
     )
 
 

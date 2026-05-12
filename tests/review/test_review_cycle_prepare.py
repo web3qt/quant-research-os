@@ -11,6 +11,7 @@ from tests.review.test_start_review_session import _prepare_mandate_stage
 from runtime.tools import review_session_runtime
 from runtime.tools.review_session_runtime import reset_review_cycle, start_review_cycle
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import current_unexpected_result_files
 
 
 def test_review_cycle_prepare_script_emits_handoff_prompt_and_closer_command(tmp_path: Path) -> None:
@@ -101,6 +102,9 @@ def test_review_cycle_reset_archives_stale_cycle(tmp_path: Path) -> None:
         launcher_thread_id="launcher-thread",
         reviewer_agent_id="reviewer-agent",
     )
+    nested_result_path = stage_dir / "review" / "result" / "sidecar" / "launcher_notes.yaml"
+    nested_result_path.parent.mkdir(parents=True, exist_ok=True)
+    nested_result_path.write_text("notes: stale\n", encoding="utf-8")
     assert (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
 
     reset_payload = reset_review_cycle(
@@ -111,6 +115,14 @@ def test_review_cycle_reset_archives_stale_cycle(tmp_path: Path) -> None:
 
     assert reset_payload["archived_paths"]
     assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+    assert not nested_result_path.exists()
+    assert current_unexpected_result_files(stage_dir) == []
+    assert any(
+        "review/archive/result/sidecar/launcher_notes." in path
+        and ".stale." in path
+        and path.endswith(".yaml")
+        for path in reset_payload["archived_paths"]
+    )
     assert reset_payload["next_action"] == "run qros-review-cycle prepare and request a fresh reviewer run"
 
 

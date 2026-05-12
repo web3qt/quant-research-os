@@ -46,6 +46,7 @@ review 仍然必须由**人显式确认**。普通路径中的显式动作是由
 - launcher 主线程不得直接写 closure artifacts
 - launcher 在 reviewer 子代理创建后，优先运行 `./.qros/bin/qros-review-cycle prepare`
 - `qros-review-cycle prepare` 负责注册 active review cycle，写出 `review/request/*` 与 `reviewer_receipt.yaml`，并输出 reviewer handoff prompt 与 closer command
+- 如果同一 stage 里已有 stale / closed review cycle，`prepare` 不会自动归档旧 cycle；必须先运行 `./.qros/bin/qros-review-cycle reset --archive-stale-cycle`，再重新 prepare
 - `./.qros/bin/qros-start-review` 保留为底层恢复入口
 - reviewer 子代理不得修改 `author/formal/*`
 - reviewer 子代理正常只写 `review/result/reviewer_findings.raw.yaml`

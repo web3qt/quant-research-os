@@ -3,6 +3,7 @@ from pathlib import Path
 from subprocess import run
 import sys
 
+import pytest
 import yaml
 
 from tests.helpers.repo_paths import REPO_ROOT
@@ -108,9 +109,9 @@ def test_start_review_session_rejects_second_active_cycle_without_author_changes
         raise AssertionError("expected active review cycle rejection")
 
 
-def test_start_review_session_archives_stale_cycle_after_author_changes(tmp_path: Path) -> None:
+def test_start_review_session_requires_reset_before_stale_cycle_restart(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    first = start_review_session(
+    start_review_session(
         explicit_context={
             "stage_dir": stage_dir,
             "lineage_root": lineage_root,
@@ -122,21 +123,17 @@ def test_start_review_session_archives_stale_cycle_after_author_changes(tmp_path
     )
     (stage_dir / "author" / "formal" / "mandate.md").write_text("changed after review start\n", encoding="utf-8")
 
-    second = start_review_session(
-        explicit_context={
-            "stage_dir": stage_dir,
-            "lineage_root": lineage_root,
-        },
-        reviewer_identity="codex-mandate-reviewer",
-        reviewer_session_id="review-session-2",
-        launcher_session_id="review-session-2",
-        launcher_thread_id="review-thread-2",
-    )
-
-    assert first["review_cycle_id"] == second["review_cycle_id"]
-    archived = second["archived_paths"]
-    assert any("review/archive/request" in item for item in archived)
-    assert any("review/archive/state" in item for item in archived)
+    with pytest.raises(ValueError, match="run qros-review-cycle reset --archive-stale-cycle first"):
+        start_review_session(
+            explicit_context={
+                "stage_dir": stage_dir,
+                "lineage_root": lineage_root,
+            },
+            reviewer_identity="codex-mandate-reviewer",
+            reviewer_session_id="review-session-2",
+            launcher_session_id="review-session-2",
+            launcher_thread_id="review-thread-2",
+        )
 
 
 def test_start_review_session_script_emits_registered_cycle(tmp_path: Path) -> None:
