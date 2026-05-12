@@ -37,7 +37,6 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     for name in [
         "mandate.md",
         "research_scope.md",
-        "research_route.yaml",
         "time_split.json",
         "parameter_grid.yaml",
         "program_execution_manifest.json",
@@ -60,6 +59,16 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         )
         + "\n",
         encoding="utf-8",
+    )
+    _write_yaml(
+        stage_dir / "author" / "formal" / "research_route.yaml",
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_rank_based",
+            "neutralization_policy": "market_beta_neutral",
+        },
     )
     _write_yaml(
         stage_dir / "author" / "formal" / "parameter_grid.yaml",
@@ -241,7 +250,9 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
     assert "Run /clear in Codex or Claude Code before continuing." in result.stdout
-    assert "Recommended resume command: ./.qros/bin/qros-resume --lineage-id topic_a" in result.stdout
+    assert "Recommended next skill: qros-csf-data-ready-author" in result.stdout
+    assert "Recommended resume command" not in result.stdout
+    assert "qros-resume --lineage-id" not in result.stdout
     assert (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
     evaluator_current = stage_dir / "evaluation" / "stage_evaluator.json"
     evaluator_ledger = stage_dir / "evaluation" / "stage_evaluator_results.jsonl"

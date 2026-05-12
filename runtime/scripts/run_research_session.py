@@ -241,7 +241,8 @@ def _panel_lines(status) -> list[str]:
     if clear_resume["clear_required"]:
         lines.append("🧹 Clear required: True")
         lines.append(f"🧹 Clear instruction: {clear_resume['clear_instruction']}")
-        lines.append(f"🧹 Recommended command: {clear_resume['recommended_command']}")
+        if clear_resume["recommended_skill"]:
+            lines.append(f"🧹 Recommended next skill: {clear_resume['recommended_skill']}")
     if status.why_now:
         lines.append(f"{ICON_MARKERS['why_now']} Why now:")
         lines.extend(f"- {item}" for item in status.why_now)
@@ -432,7 +433,8 @@ def main() -> int:
     if clear_resume["clear_required"]:
         print("🧹 Clear required: True")
         print(f"🧹 Clear instruction: {clear_resume['clear_instruction']}")
-        print(f"🧹 Recommended command: {clear_resume['recommended_command']}")
+        if clear_resume["recommended_skill"]:
+            print(f"🧹 Recommended next skill: {clear_resume['recommended_skill']}")
     if status.why_now:
         print("🧠 Why now:")
         for item in status.why_now:

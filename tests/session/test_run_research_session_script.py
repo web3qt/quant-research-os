@@ -1365,6 +1365,16 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
         "stage_completion_certificate.yaml",
     ]:
         (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_rank_based",
+            "neutralization_policy": "market_beta_neutral",
+        },
+    )
     _write_stage_completion_certificate(mandate_dir / "stage_completion_certificate.yaml", stage_status="PASS")
     write_fake_stage_provenance(lineage_root, "mandate")
 
@@ -1386,7 +1396,8 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
     assert result.returncode == 2
     assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
     assert "🧹 Clear instruction: Run /clear in Codex or Claude Code before continuing." in result.stdout
-    assert "🧹 Recommended command: ./.qros/bin/qros-resume --lineage-id btc_leads_alts" in result.stdout
+    assert "🧹 Recommended next skill: qros-csf-data-ready-author" in result.stdout
+    assert "qros-resume --lineage-id" not in result.stdout
 
 
 def test_run_research_session_reports_data_ready_next_group_after_mandate_review_complete(

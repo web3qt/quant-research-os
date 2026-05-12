@@ -48,9 +48,10 @@ def _render_text(payload: dict[str, object]) -> str:
             [
                 "Clear required: True",
                 f"Clear instruction: {payload['clear_instruction']}",
-                f"Recommended command: {payload['recommended_command']}",
             ]
         )
+        if payload.get("recommended_skill"):
+            lines.append(f"Recommended next skill: {payload['recommended_skill']}")
     return "\n".join(lines)
 
 

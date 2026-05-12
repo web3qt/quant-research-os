@@ -15,6 +15,18 @@ from runtime.tools.review_resume_protocol import build_review_clear_resume_notic
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError
 
 
+def _current_route_from_stage_dir(stage_dir: Path) -> str | None:
+    route_path = stage_dir / "author" / "formal" / "research_route.yaml"
+    if not route_path.exists():
+        return None
+    for line in route_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip().startswith("research_route:"):
+            continue
+        value = line.split(":", 1)[1].strip().strip("'\"")
+        return value or None
+    return None
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the first-wave stage review engine.")
     parser.add_argument("--stage-dir", type=Path, default=None)
@@ -56,10 +68,13 @@ def main() -> int:
     clear_notice = build_review_clear_resume_notice(
         lineage_id=payload["lineage_id"],
         final_verdict=payload["final_verdict"],
+        stage=payload["stage"],
+        current_route=_current_route_from_stage_dir((args.stage_dir or Path.cwd()).resolve()),
     )
     if clear_notice["clear_required"]:
         print(clear_notice["clear_instruction"])
-        print(f"Recommended resume command: {clear_notice['recommended_command']}")
+        if clear_notice["recommended_skill"]:
+            print(f"Recommended next skill: {clear_notice['recommended_skill']}")
     return 0
 
 
