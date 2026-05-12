@@ -1,6 +1,145 @@
 from pathlib import Path
 
+import pytest
+import yaml
+
+from runtime.tools.review_skillgen.adversarial_review_contract import (
+    ensure_adversarial_review_request,
+    issue_reviewer_receipt,
+)
+from runtime.tools.review_skillgen.protected_state_guard import (
+    REVIEWER_FINDINGS_UNBOUND,
+    STALE_REVIEW_EVIDENCE,
+    ProtectedStateError,
+    assert_protected_review_state_intact,
+)
 from runtime.tools.review_skillgen import review_runtime_state
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest,
+    write_review_runtime_state,
+)
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
+
+
+def _write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def _prepare_raw_findings_case(tmp_path: Path) -> tuple[Path, Path, list[str], list[str]]:
+    lineage_root = tmp_path / "outputs" / "raw_binding_case"
+    stage_dir = lineage_root / "01_mandate"
+    required_outputs = ["mandate.md", "run_manifest.json"]
+    required_provenance = ["program_execution_manifest.json"]
+    for name in required_outputs:
+        _write_text(stage_dir / "author" / "formal" / name, f"{name}: ok\n")
+    _write_text(stage_dir / "author" / "formal" / "program_execution_manifest.json", "{}\n")
+    request = ensure_adversarial_review_request(
+        stage_dir,
+        lineage_id=lineage_root.name,
+        stage="mandate",
+        author_identity="author-agent",
+        author_session_id="author-session",
+        required_program_dir="program/mandate",
+        required_program_entrypoint="run_stage.py",
+        required_artifact_paths=required_outputs,
+        required_provenance_paths=required_provenance,
+        program_hash="hash-1",
+        stage_invoked_at="2026-05-12T00:00:00+00:00",
+    )
+    receipt = issue_reviewer_receipt(
+        stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child",
+    )
+    digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_outputs,
+        required_provenance_paths=required_provenance,
+    )
+    write_review_runtime_state(
+        stage_dir,
+        review_state="review_in_progress",
+        active_review_cycle_id=request["review_cycle_id"],
+        review_requested_at=receipt["receipt_written_at"],
+        review_bound_author_digest=digest,
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+    )
+    write_reviewer_write_scope_baseline(
+        stage_dir,
+        review_cycle_id=receipt["review_cycle_id"],
+        launcher_thread_id=receipt["launcher_thread_id"],
+        reviewer_agent_id=receipt["reviewer_agent_id"],
+    )
+    return lineage_root, stage_dir, required_outputs, required_provenance
+
+
+def test_protected_guard_rejects_raw_findings_with_wrong_reviewer_agent(tmp_path: Path) -> None:
+    lineage_root, stage_dir, required_outputs, required_provenance = _prepare_raw_findings_case(tmp_path)
+    request = yaml.safe_load((stage_dir / "review/request/adversarial_review_request.yaml").read_text())
+    _write_text(
+        stage_dir / "review/result/reviewer_findings.raw.yaml",
+        yaml.safe_dump(
+            {
+                "review_cycle_id": request["review_cycle_id"],
+                "reviewer_agent_id": "launcher-main-thread",
+                "review_loop_outcome": "CLOSURE_READY_PASS",
+                "blocking_findings": [],
+                "reservation_findings": [],
+                "info_findings": [],
+                "residual_risks": [],
+            },
+            sort_keys=False,
+        ),
+    )
+
+    with pytest.raises(ProtectedStateError) as exc_info:
+        assert_protected_review_state_intact(
+            stage_dir=stage_dir,
+            lineage_root=lineage_root,
+            required_outputs=required_outputs,
+            required_provenance_paths=required_provenance,
+            allow_missing_state=False,
+        )
+
+    assert exc_info.value.reason_code == REVIEWER_FINDINGS_UNBOUND
+
+
+def test_protected_guard_rejects_raw_findings_after_author_outputs_change(tmp_path: Path) -> None:
+    lineage_root, stage_dir, required_outputs, required_provenance = _prepare_raw_findings_case(tmp_path)
+    request = yaml.safe_load((stage_dir / "review/request/adversarial_review_request.yaml").read_text())
+    receipt = yaml.safe_load((stage_dir / "review/request/reviewer_receipt.yaml").read_text())
+    _write_text(
+        stage_dir / "review/result/reviewer_findings.raw.yaml",
+        yaml.safe_dump(
+            {
+                "review_cycle_id": request["review_cycle_id"],
+                "reviewer_agent_id": receipt["reviewer_agent_id"],
+                "review_loop_outcome": "CLOSURE_READY_PASS",
+                "blocking_findings": [],
+                "reservation_findings": [],
+                "info_findings": [],
+                "residual_risks": [],
+            },
+            sort_keys=False,
+        ),
+    )
+    _write_text(stage_dir / "author" / "formal" / "mandate.md", "changed after reviewer receipt\n")
+
+    with pytest.raises(ProtectedStateError) as exc_info:
+        assert_protected_review_state_intact(
+            stage_dir=stage_dir,
+            lineage_root=lineage_root,
+            required_outputs=required_outputs,
+            required_provenance_paths=required_provenance,
+            allow_missing_state=False,
+        )
+
+    assert exc_info.value.reason_code == STALE_REVIEW_EVIDENCE
 
 
 def test_compute_author_materialization_digest_reuses_unchanged_file_digest_cache(

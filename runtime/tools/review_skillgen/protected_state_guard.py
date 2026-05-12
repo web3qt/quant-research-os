@@ -24,6 +24,9 @@ PROTECTED_STATE_DRIFT = "PROTECTED_STATE_DRIFT"
 REVIEW_STATE_PROJECTION_DRIFT = "REVIEW_STATE_PROJECTION_DRIFT"
 REVIEWER_FINDINGS_UNBOUND = "REVIEWER_FINDINGS_UNBOUND"
 MATERIALIZATION_CACHE_UNTRUSTED = "MATERIALIZATION_CACHE_UNTRUSTED"
+STALE_REVIEW_EVIDENCE = "STALE_REVIEW_EVIDENCE"
+CLOSURE_PROJECTION_DRIFT = "CLOSURE_PROJECTION_DRIFT"
+REVIEWER_WRITE_SCOPE_VIOLATION = "REVIEWER_WRITE_SCOPE_VIOLATION"
 
 _CLOSURE_FILES = (
     "latest_review_pack.yaml",
@@ -118,6 +121,13 @@ def _validate_review_runtime_state(
     )
     bound_digest = state.get("review_bound_author_digest")
     if bound_digest and bound_digest != current_digest:
+        raw_path = stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME
+        if request_path.exists() or receipt_path.exists() or raw_path.exists():
+            _raise(
+                STALE_REVIEW_EVIDENCE,
+                state_path,
+                "current author/formal digest no longer matches the active review-bound author digest",
+            )
         _raise(
             REVIEW_STATE_PROJECTION_DRIFT,
             state_path,
@@ -145,6 +155,11 @@ def _validate_raw_findings(stage_dir: Path) -> None:
     raw_path = stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME
     if not raw_path.exists():
         return
+
+    state_path = review_runtime_state_path(stage_dir)
+    state = load_review_runtime_state(state_path) if state_path.exists() else {}
+    if state.get("review_state", "").startswith("review_closed"):
+        _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings cannot exist after review closure")
 
     request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
     receipt_path = stage_dir / "review" / "request" / REVIEWER_RECEIPT_FILENAME
