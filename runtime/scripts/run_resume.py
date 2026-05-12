@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 from pathlib import Path
 import sys
 
@@ -11,23 +12,25 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.tools.progress_runtime import ProgressError, progress_status_payload  # noqa: E402
+from runtime.tools.progress_runtime import progress_status_payload  # noqa: E402
+from runtime.tools.research_session import run_research_session  # noqa: E402
+from runtime.tools.review_resume_protocol import build_clear_resume_capsule  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Show read-only QROS research progress.")
+    parser = argparse.ArgumentParser(description="Resume a QROS lineage after clearing the conversation.")
     parser.add_argument("--outputs-root", type=Path, required=True)
-    parser.add_argument("--lineage-id", default=None)
+    parser.add_argument("--lineage-id", required=True)
+    parser.add_argument("--continue", dest="continue_mode", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
 
 
 def _render_text(payload: dict[str, object]) -> str:
     lines = [
-        "QROS Progress",
-        f"Lineage: {payload['lineage_id']} ({payload['selection_mode']})",
+        "QROS Resume",
+        f"Lineage: {payload['lineage_id']}",
         f"Current stage: {payload['current_stage']}",
-        f"Current active skill: {payload['current_skill']}",
         f"Stage status: {payload['stage_status']}",
         f"Gate status: {payload['gate_status']}",
         f"Blocking reason code: {payload['blocking_reason_code']}",
@@ -48,28 +51,34 @@ def _render_text(payload: dict[str, object]) -> str:
                 f"Recommended command: {payload['recommended_command']}",
             ]
         )
-    open_risks = payload.get("open_risks")
-    if isinstance(open_risks, list) and open_risks:
-        lines.append("Open risks:")
-        lines.extend(f"- {item}" for item in open_risks)
     return "\n".join(lines)
+
+
+def _payload_from_session(status, *, continue_mode: bool) -> dict[str, object]:
+    payload = asdict(status)
+    payload["lineage_root"] = str(status.lineage_root)
+    payload.update(build_clear_resume_capsule(status, continue_mode=continue_mode))
+    payload["selection_mode"] = "explicit"
+    return payload
 
 
 def main() -> int:
     args = _parse_args()
-    try:
-        payload = progress_status_payload(
+    if args.continue_mode:
+        status = run_research_session(
             outputs_root=args.outputs_root.resolve(),
             lineage_id=args.lineage_id,
+            continue_mode=True,
         )
-    except ProgressError as exc:
-        print(f"qros-progress: {exc}", file=sys.stderr)
-        return 2
+        payload = _payload_from_session(status, continue_mode=True)
+    else:
+        payload = progress_status_payload(outputs_root=args.outputs_root.resolve(), lineage_id=args.lineage_id)
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
-    else:
-        print(_render_text(payload))
+        return 0
+
+    print(_render_text(payload))
     return 0
 
 

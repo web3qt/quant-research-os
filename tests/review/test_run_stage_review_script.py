@@ -240,6 +240,8 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert result.returncode == 0
     assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
+    assert "Run /clear in Codex or Claude Code before continuing." in result.stdout
+    assert "Recommended resume command: ./.qros/bin/qros-resume --lineage-id topic_a" in result.stdout
     assert (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
     evaluator_current = stage_dir / "evaluation" / "stage_evaluator.json"
     evaluator_ledger = stage_dir / "evaluation" / "stage_evaluator_results.jsonl"

@@ -63,6 +63,7 @@ description: Use when the user asks for latest QROS research progress, current l
 
 如果输出显示：
 
+- `clear_required = true`，必须提醒用户先在 Codex 或 Claude Code 执行 `/clear`，再运行输出里的 `recommended_command`，通常是 `./.qros/bin/qros-resume --lineage-id <lineage_id>`。
 - `current_skill = qros-stage-failure-handler`，应进入 failure handling，而不是继续普通 stage 推进。
 - `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`，应在 latest failure package 写出 `failure_disposition.yaml`，只能选择 `NO_GO` 或 `CHILD_LINEAGE`。
 - `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`，原 lineage 仍不得重新进入普通 review / next-stage，应走 `qros-lineage-change-control` 或 child lineage。

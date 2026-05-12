@@ -59,6 +59,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert (install_root / ".qros").exists()
     assert (home_root / ".codex" / "skills").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
+    assert (install_root / ".qros" / "bin" / "qros-resume").exists()
     assert (install_root / ".qros" / ".venv" / "bin" / "python").exists()
     assert (install_root / ".qros" / "uv.lock").exists()
     assert not (install_root / ".qros" / "tools").exists()
@@ -108,6 +109,7 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
         "bin/qros-check-stage-entry",
         "bin/qros-factor-diagnostics",
         "bin/qros-progress",
+        "bin/qros-resume",
         "bin/qros-review",
         "bin/qros-review-cycle",
         "bin/qros-review-preflight",
@@ -425,6 +427,7 @@ def test_repo_local_install_flattens_grouped_skill_bundles(tmp_path: Path, monke
     assert not (home_root / ".codex" / "skills" / "mandate").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
     assert (install_root / ".qros" / "bin" / "qros-progress").exists()
+    assert (install_root / ".qros" / "bin" / "qros-resume").exists()
     assert not (install_root / ".qros" / "tools").exists()
 
 

@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 from runtime.tools.research_session import run_research_session  # noqa: E402
 from runtime.tools.research_session_reflection import build_data_ready_reflection, render_reflection_lines  # noqa: E402
 from runtime.tools.anti_drift import canonical_snapshot_from_session_context  # noqa: E402
+from runtime.tools.review_resume_protocol import build_clear_resume_capsule  # noqa: E402
 
 EXIT_CODES = {
     "NONE": 0,
@@ -145,6 +146,7 @@ def _parse_args() -> argparse.Namespace:
 def _status_payload(status) -> dict[str, object]:
     payload = asdict(status)
     payload["lineage_root"] = str(status.lineage_root)
+    payload.update(build_clear_resume_capsule(status))
     return payload
 
 
@@ -166,6 +168,7 @@ def _icon_line(icon: str, label: str, value: object) -> str:
 
 
 def _panel_lines(status) -> list[str]:
+    clear_resume = build_clear_resume_capsule(status)
     lines = [
         f"Lineage: {status.lineage_id}",
         _icon_line(ICON_MARKERS["orchestrator"], "Current orchestrator", status.current_orchestrator),
@@ -231,10 +234,14 @@ def _panel_lines(status) -> list[str]:
         lines.append(_icon_line(ICON_MARKERS["blocking"], "Blocking reason", status.blocking_reason))
     lines.extend(
         [
-            _icon_line(ICON_MARKERS["next_action"], "Next action", status.next_action),
-            _icon_line(ICON_MARKERS["resume_hint"], "Resume hint", status.resume_hint),
+            _icon_line(ICON_MARKERS["next_action"], "Next action", clear_resume["next_action"]),
+            _icon_line(ICON_MARKERS["resume_hint"], "Resume hint", clear_resume["resume_hint"]),
         ]
     )
+    if clear_resume["clear_required"]:
+        lines.append("🧹 Clear required: True")
+        lines.append(f"🧹 Clear instruction: {clear_resume['clear_instruction']}")
+        lines.append(f"🧹 Recommended command: {clear_resume['recommended_command']}")
     if status.why_now:
         lines.append(f"{ICON_MARKERS['why_now']} Why now:")
         lines.extend(f"- {item}" for item in status.why_now)
@@ -368,6 +375,8 @@ def main() -> int:
         print(json.dumps(_status_payload(status), ensure_ascii=False, indent=2))
         return _exit_code(status)
 
+    clear_resume = build_clear_resume_capsule(status)
+
     for line in _confirmation_feedback(args, status):
         print(line)
     print(f"Lineage: {status.lineage_id}")
@@ -418,8 +427,12 @@ def main() -> int:
         print(f"📉 Failure reason: {status.failure_reason_summary}")
     if status.blocking_reason is not None:
         print(f"⛔ Blocking reason: {status.blocking_reason}")
-    print(f"▶ Next action: {status.next_action}")
-    print(f"🔁 Resume hint: {status.resume_hint}")
+    print(f"▶ Next action: {clear_resume['next_action']}")
+    print(f"🔁 Resume hint: {clear_resume['resume_hint']}")
+    if clear_resume["clear_required"]:
+        print("🧹 Clear required: True")
+        print(f"🧹 Clear instruction: {clear_resume['clear_instruction']}")
+        print(f"🧹 Recommended command: {clear_resume['recommended_command']}")
     if status.why_now:
         print("🧠 Why now:")
         for item in status.why_now:

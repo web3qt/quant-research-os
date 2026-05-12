@@ -214,6 +214,24 @@ def test_progress_blocks_raw_findings_after_closed_review_state(tmp_path: Path) 
     assert payload["blocking_reason_code"] == REVIEWER_FINDINGS_UNBOUND
 
 
+def test_progress_payload_exposes_clear_required_for_review_complete(tmp_path: Path) -> None:
+    outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
+    for name in (
+        "latest_review_pack.yaml",
+        "stage_completion_certificate.yaml",
+        "stage_gate_review.yaml",
+    ):
+        _write(stage_dir / "review" / "closure" / name, "final_verdict: PASS\nstage_status: PASS\n")
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert payload["current_stage"] == "mandate_next_stage_confirmation_pending"
+    assert payload["clear_required"] is True
+    assert payload["clear_instruction"] == "Run /clear in Codex or Claude Code before continuing."
+    assert payload["recommended_command"] == f"./.qros/bin/qros-resume --lineage-id {lineage_root.name}"
+    assert "Run /clear" in payload["next_action"]
+
+
 def test_research_session_surfaces_protected_review_state_drift_before_writes(tmp_path: Path) -> None:
     _outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
     _write(

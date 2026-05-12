@@ -10,6 +10,7 @@ def test_public_skills_reference_repo_local_wrappers() -> None:
     diagnostics_skill = skill_text("qros-factor-diagnostics")
 
     assert "./.qros/bin/qros-session" in session_skill
+    assert "./.qros/bin/qros-resume" in session_skill
     assert "./.qros/bin/qros-review" in review_skill
     assert "./.qros/bin/qros-progress" in progress_skill
     assert "./.qros/bin/qros-factor-diagnostics" in diagnostics_skill
@@ -22,6 +23,7 @@ def test_public_skills_reference_repo_local_wrappers() -> None:
 def test_repo_local_wrappers_exist() -> None:
     assert Path("runtime/bin/qros-session").exists()
     assert Path("runtime/bin/qros-progress").exists()
+    assert Path("runtime/bin/qros-resume").exists()
     assert Path("runtime/bin/qros-factor-diagnostics").exists()
     assert Path("runtime/bin/qros-audit-reviewer").exists()
     assert Path("runtime/bin/qros-check-stage-entry").exists()

@@ -65,6 +65,7 @@ Use the orchestrator runtime:
 - `./.qros/bin/qros-session --raw-idea "<idea>"`
 - `./.qros/bin/qros-session --lineage-id "<lineage_id>"`
 - `./.qros/bin/qros-session <lineage_id> --continue`
+- `./.qros/bin/qros-resume --lineage-id "<lineage_id>"` after a required `/clear`
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 
@@ -209,6 +210,19 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - not continue ordinary authoring for the same stage
 - reuse runtime failure-routing status instead of ad hoc judgment
 - follow `qros-stage-failure-handler` before any further stage edits
+
+## Clear / Resume Boundary
+
+PASS-like review closure is a mandatory context boundary.
+
+When `qros-review`, `qros-session`, or `qros-progress` reports `clear_required = true`, the current agent must:
+
+- tell the user to run `/clear` in Codex or Claude Code
+- stop trying to start the next stage in the same long conversation
+- after `/clear`, use the printed `recommended_command`, normally `./.qros/bin/qros-resume --lineage-id <lineage_id>`
+- only use `./.qros/bin/qros-resume --lineage-id <lineage_id> --continue` after the new session has recovered state from disk
+
+This boundary exists because long contexts can produce self-deception around review results. Resume state must come from disk artifacts and runtime gates, not chat memory.
 
 ## Language Discipline
 

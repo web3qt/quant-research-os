@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, run_stage_review
+from runtime.tools.review_resume_protocol import build_review_clear_resume_notice
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError
 
 
@@ -52,6 +53,13 @@ def main() -> int:
     print(f"Final verdict: {payload['final_verdict']}")
     print(f"Stage: {payload['stage']}")
     print(f"Lineage: {payload['lineage_id']}")
+    clear_notice = build_review_clear_resume_notice(
+        lineage_id=payload["lineage_id"],
+        final_verdict=payload["final_verdict"],
+    )
+    if clear_notice["clear_required"]:
+        print(clear_notice["clear_instruction"])
+        print(f"Recommended resume command: {clear_notice['recommended_command']}")
     return 0
 
 

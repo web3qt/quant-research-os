@@ -99,6 +99,7 @@ def test_claude_code_repo_local_install_writes_runtime_locally_and_global_skills
     assert (install_root / ".qros").exists()
     assert (install_root / ".qros" / "bin" / "qros-session").exists()
     assert (install_root / ".qros" / "bin" / "qros-progress").exists()
+    assert (install_root / ".qros" / "bin" / "qros-resume").exists()
     assert not (install_root / ".qros" / "tools").exists()
 
     assert (home_root / ".claude" / "skills").exists()

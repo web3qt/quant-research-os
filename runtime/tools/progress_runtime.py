@@ -18,6 +18,7 @@ from runtime.tools.research_session import (
     summarize_session_status,
 )
 from runtime.tools.review_skillgen.protected_state_guard import ProtectedStateError
+from runtime.tools.review_resume_protocol import build_clear_resume_capsule
 
 
 class ProgressError(RuntimeError):
@@ -126,4 +127,5 @@ def progress_status_payload(*, outputs_root: Path, lineage_id: str | None = None
     payload = asdict(status)
     payload["lineage_root"] = str(status.lineage_root)
     payload["selection_mode"] = selection_mode
+    payload.update(build_clear_resume_capsule(status))
     return payload
