@@ -118,6 +118,20 @@ def load_reviewer_write_scope_audit(path: str | Path) -> dict[str, Any]:
     return payload
 
 
+def current_unexpected_result_files(stage_dir: Path) -> list[str]:
+    result_dir = stage_dir / REVIEW_RESULT_ROOT
+    if not result_dir.exists():
+        return []
+    unexpected: list[str] = []
+    for path in sorted(result_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(result_dir)
+        if len(rel.parts) != 1 or rel.name not in ALLOWED_RESULT_FILENAMES:
+            unexpected.append(rel.as_posix())
+    return unexpected
+
+
 def run_reviewer_write_scope_audit(stage_dir: Path) -> dict[str, Any]:
     stage_dir = stage_dir.resolve()
     receipt = load_reviewer_receipt(stage_dir / "review" / "request" / REVIEWER_RECEIPT_FILENAME)
@@ -130,10 +144,7 @@ def run_reviewer_write_scope_audit(stage_dir: Path) -> dict[str, Any]:
     added = sorted(path for path in after if path not in before)
     changed = sorted(path for path in before if path in after and before[path] != after[path])
 
-    result_dir = stage_dir / REVIEW_RESULT_ROOT
-    unexpected_result_files = sorted(
-        rel.name for rel in result_dir.glob("*") if rel.is_file() and rel.name not in ALLOWED_RESULT_FILENAMES
-    )
+    unexpected_result_files = current_unexpected_result_files(stage_dir)
 
     audit_status = "PASS" if not removed and not added and not changed and not unexpected_result_files else "FAIL"
     payload = {
@@ -171,6 +182,7 @@ def validate_reviewer_write_scope_audit(
     *,
     receipt_payload: dict[str, Any],
     audit_payload: dict[str, Any],
+    stage_dir: Path | None = None,
 ) -> None:
     if audit_payload["review_cycle_id"] != receipt_payload["review_cycle_id"]:
         raise ValueError("reviewer_write_scope_audit.yaml review_cycle_id does not match reviewer_receipt.yaml")
@@ -183,3 +195,10 @@ def validate_reviewer_write_scope_audit(
             "REVIEWER_WRITE_SCOPE_VIOLATION: reviewer_write_scope_audit.yaml audit_status must be PASS before "
             "closure"
         )
+    if stage_dir is not None:
+        unexpected_result_files = current_unexpected_result_files(stage_dir)
+        if unexpected_result_files:
+            raise ValueError(
+                "REVIEWER_WRITE_SCOPE_VIOLATION: review/result contains unexpected files: "
+                + ", ".join(unexpected_result_files)
+            )

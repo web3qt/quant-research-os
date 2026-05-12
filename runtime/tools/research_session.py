@@ -3309,6 +3309,7 @@ def _review_write_scope_audit_error(stage_dir: Path) -> str | None:
         validate_reviewer_write_scope_audit(
             receipt_payload=receipt_payload,
             audit_payload=audit_payload,
+            stage_dir=stage_dir,
         )
     except Exception as exc:
         return str(exc)

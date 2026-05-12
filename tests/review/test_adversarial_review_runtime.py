@@ -473,6 +473,35 @@ def test_run_stage_review_rejects_unexpected_result_file(tmp_path: Path) -> None
         )
 
 
+def test_run_stage_review_rejects_unexpected_nested_result_file(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
+    _write_reviewer_receipt(stage_dir)
+    _write_raw_reviewer_findings(
+        stage_dir,
+        review_loop_outcome="CLOSURE_READY_PASS",
+    )
+    _write_yaml(
+        stage_dir / "review" / "result" / "sidecar" / "launcher_notes.yaml",
+        {
+            "notes": ["launcher-authored nested result drift"],
+        },
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_WRITE_SCOPE_VIOLATION"):
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="adversarial-reviewer",
+            reviewer_session_id="reviewer-session",
+            reviewer_mode="adversarial",
+        )
+
+
 @pytest.mark.parametrize(
     ("lineage_id", "stage_key", "stage_dir_name", "expected_stage", "expected_skill"),
     [
@@ -614,6 +643,37 @@ def test_run_research_session_waits_for_reviewer_write_scope_audit_before_closur
     assert status.blocking_reason_code == "REVIEW_AUDIT_PENDING"
     assert "reviewer_write_scope_audit.yaml" in (status.blocking_reason or "")
     assert "./.qros/bin/qros-review" in status.next_action
+
+
+def test_run_research_session_rejects_result_file_added_after_pass_audit(tmp_path: Path) -> None:
+    outputs_root, stage_dir = _prepare_review_runtime_case(
+        tmp_path,
+        lineage_id="btc_review_stale_pass_audit",
+        stage_key="test_evidence",
+        stage_dir_name="05_test_evidence",
+    )
+    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_reviewer_receipt(stage_dir)
+    _write_adversarial_review_result(
+        stage_dir,
+        stage_key="test_evidence",
+        reviewer_identity="reviewer-agent",
+        review_loop_outcome="CLOSURE_READY_PASS",
+    )
+    run_reviewer_write_scope_audit(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "result" / "sidecar" / "launcher_notes.yaml",
+        {
+            "notes": ["launcher-authored nested result drift after audit"],
+        },
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_review_stale_pass_audit")
+
+    assert status.current_stage == "test_evidence_review"
+    assert status.stage_status == "awaiting_reviewer_write_scope_audit"
+    assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (status.blocking_reason or "")
 
 
 def test_run_research_session_keeps_review_pending_when_result_exists_without_receipt(tmp_path: Path) -> None:

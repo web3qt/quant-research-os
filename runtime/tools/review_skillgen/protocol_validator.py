@@ -65,6 +65,7 @@ def load_and_validate_protocol(
     validate_reviewer_write_scope_audit(
         receipt_payload=receipt_payload,
         audit_payload=audit_payload,
+        stage_dir=stage_dir,
     )
 
     return {
