@@ -73,4 +73,6 @@ def test_run_resume_script_reports_clear_handoff_from_disk_state(tmp_path: Path)
     assert payload["current_stage"] == "mandate_next_stage_confirmation_pending"
     assert payload["clear_required"] is True
     assert payload["clear_instruction"] == "Run /clear in Codex or Claude Code before continuing."
-    assert payload["recommended_command"] == "./.qros/bin/qros-resume --lineage-id topic_a"
+    assert payload["recommended_skill"] == "qros-csf-data-ready-author"
+    assert payload["backend_resume_command"] == "./.qros/bin/qros-resume --lineage-id topic_a"
+    assert "qros-csf-data-ready-author" in payload["next_action"]

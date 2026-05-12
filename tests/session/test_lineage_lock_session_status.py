@@ -228,8 +228,14 @@ def test_progress_payload_exposes_clear_required_for_review_complete(tmp_path: P
     assert payload["current_stage"] == "mandate_next_stage_confirmation_pending"
     assert payload["clear_required"] is True
     assert payload["clear_instruction"] == "Run /clear in Codex or Claude Code before continuing."
-    assert payload["recommended_command"] == f"./.qros/bin/qros-resume --lineage-id {lineage_root.name}"
+    assert payload["recommended_skill"] == "qros-csf-data-ready-author"
+    assert payload["recommended_skill_reason"] == (
+        "mandate PASS allows csf_data_ready authoring after next-stage handoff."
+    )
+    assert payload["backend_resume_command"] == f"./.qros/bin/qros-resume --lineage-id {lineage_root.name}"
     assert "Run /clear" in payload["next_action"]
+    assert "qros-csf-data-ready-author" in payload["next_action"]
+    assert "qros-resume" not in payload["next_action"]
 
 
 def test_research_session_surfaces_protected_review_state_drift_before_writes(tmp_path: Path) -> None:
