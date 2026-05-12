@@ -8,6 +8,12 @@ import yaml
 from runtime.tools.lineage_lock_ledger import FROZEN_ARTIFACT_MUTATED, lock_reviewed_stage
 from runtime.tools.progress_runtime import progress_status_payload
 from runtime.tools.research_session import run_research_session
+from runtime.tools.review_skillgen.protected_state_guard import REVIEWER_FINDINGS_UNBOUND
+from runtime.tools.review_skillgen.review_result_writer import RAW_REVIEWER_FINDINGS_FILENAME
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest,
+    write_review_runtime_state,
+)
 from runtime.tools.stage_entry_guard import StageEntryGuardError, check_stage_entry_for_lineage
 
 
@@ -148,6 +154,64 @@ def test_progress_surfaces_protected_review_state_drift(tmp_path: Path) -> None:
     assert payload["gate_status"] == "PROTECTED_STATE_DRIFT"
     assert payload["blocking_reason_code"] == "REVIEW_STATE_PROJECTION_DRIFT"
     assert "qros-review-cycle reset --archive-stale-cycle" in payload["next_action"]
+
+
+def test_progress_blocks_raw_findings_after_closed_review_state(tmp_path: Path) -> None:
+    outputs_root, lineage_root, stage_dir = _build_review_pending_lineage(tmp_path)
+    required_outputs = [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+        "program_execution_manifest.json",
+    ]
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_outputs,
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    write_review_runtime_state(
+        stage_dir,
+        review_state="review_closed_pass",
+        active_review_cycle_id="manual-cycle",
+        review_requested_at="2026-05-11T00:00:00Z",
+        review_bound_author_digest=author_digest,
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="reviewer-session",
+        last_review_verdict="PASS",
+        closure_written_at="2026-05-11T00:00:00Z",
+    )
+    for name in (
+        "latest_review_pack.yaml",
+        "stage_completion_certificate.yaml",
+        "stage_gate_review.yaml",
+    ):
+        _write(stage_dir / "review" / "closure" / name, "final_verdict: PASS\n")
+    _write(
+        stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME,
+        yaml.safe_dump(
+            {
+                "review_cycle_id": "manual-cycle",
+                "reviewer_agent_id": "reviewer-child-agent",
+                "review_loop_outcome": "CLOSURE_READY_PASS",
+                "blocking_findings": [],
+                "reservation_findings": [],
+                "info_findings": [],
+                "residual_risks": [],
+            },
+            sort_keys=False,
+        ),
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert payload["stage_status"] == "blocked"
+    assert payload["gate_status"] == "PROTECTED_STATE_DRIFT"
+    assert payload["blocking_reason_code"] == REVIEWER_FINDINGS_UNBOUND
 
 
 def test_research_session_surfaces_protected_review_state_drift_before_writes(tmp_path: Path) -> None:

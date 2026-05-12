@@ -444,6 +444,35 @@ def test_run_stage_review_rewrites_scope_to_match_runtime_request(tmp_path: Path
     assert sorted(result_payload["reviewed_artifact_paths"]) == sorted(request_payload["required_artifact_paths"])
 
 
+def test_run_stage_review_rejects_unexpected_result_file(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="mandate",
+        author_identity="author-agent",
+    )
+    _write_reviewer_receipt(stage_dir)
+    _write_raw_reviewer_findings(
+        stage_dir,
+        review_loop_outcome="CLOSURE_READY_PASS",
+    )
+    _write_yaml(
+        stage_dir / "review" / "result" / "launcher_notes.yaml",
+        {
+            "notes": ["launcher-authored result drift"],
+        },
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_WRITE_SCOPE_VIOLATION"):
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="adversarial-reviewer",
+            reviewer_session_id="reviewer-session",
+            reviewer_mode="adversarial",
+        )
+
+
 @pytest.mark.parametrize(
     ("lineage_id", "stage_key", "stage_dir_name", "expected_stage", "expected_skill"),
     [

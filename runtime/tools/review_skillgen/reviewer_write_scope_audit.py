@@ -17,6 +17,7 @@ from runtime.tools.review_skillgen.review_cycle_trace import (
     REVIEW_CYCLE_TRACE_FILENAME,
     append_review_cycle_event,
 )
+from runtime.tools.review_skillgen.review_result_writer import RAW_REVIEWER_FINDINGS_FILENAME
 
 
 REVIEWER_WRITE_SCOPE_BASELINE_FILENAME = "reviewer_write_scope_baseline.yaml"
@@ -24,6 +25,7 @@ REVIEWER_WRITE_SCOPE_AUDIT_FILENAME = "reviewer_write_scope_audit.yaml"
 REVIEW_RESULT_ROOT = Path("review/result")
 ALLOWED_RESULT_FILENAMES = {
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    RAW_REVIEWER_FINDINGS_FILENAME,
     "review_findings.yaml",
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
 }
@@ -177,4 +179,7 @@ def validate_reviewer_write_scope_audit(
     if audit_payload["reviewer_agent_id"] != receipt_payload["reviewer_agent_id"]:
         raise ValueError("reviewer_write_scope_audit.yaml reviewer_agent_id does not match reviewer_receipt.yaml")
     if audit_payload["audit_status"] != "PASS":
-        raise ValueError("reviewer_write_scope_audit.yaml audit_status must be PASS before closure")
+        raise ValueError(
+            "REVIEWER_WRITE_SCOPE_VIOLATION: reviewer_write_scope_audit.yaml audit_status must be PASS before "
+            "closure"
+        )

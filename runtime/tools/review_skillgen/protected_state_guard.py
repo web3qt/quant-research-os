@@ -114,6 +114,11 @@ def _validate_review_runtime_state(
             f"active_review_cycle_id {active_cycle} does not match request {request_cycle}",
         )
 
+    review_state = state["review_state"]
+    raw_path = stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME
+    if review_state.startswith("review_closed") and raw_path.exists():
+        _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings cannot exist after review closure")
+
     current_digest = _current_author_digest(
         stage_dir=stage_dir,
         required_outputs=required_outputs,
@@ -121,7 +126,6 @@ def _validate_review_runtime_state(
     )
     bound_digest = state.get("review_bound_author_digest")
     if bound_digest and bound_digest != current_digest:
-        raw_path = stage_dir / "review" / "result" / RAW_REVIEWER_FINDINGS_FILENAME
         if raw_path.exists():
             _raise(
                 STALE_REVIEW_EVIDENCE,
@@ -134,7 +138,6 @@ def _validate_review_runtime_state(
             "review_bound_author_digest does not match current author/formal digest",
         )
 
-    review_state = state["review_state"]
     if review_state == "review_in_progress" and (not request_path.exists() or not receipt_path.exists()):
         _raise(
             REVIEW_STATE_PROJECTION_DRIFT,
