@@ -26,6 +26,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "更新 QROS 到远程最新版本" in combined
     assert "./.qros/bin/qros-progress" in combined
     assert "./.qros/bin/qros-resume" in combined
+    assert "qros-resume` is a backend/debug recovery command" in combined
     assert "qros-update" in combined
     assert "./.qros/bin/qros-session" in combined
     assert "./.qros/bin/qros-review-cycle" in combined

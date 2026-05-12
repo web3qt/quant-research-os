@@ -65,7 +65,6 @@ Use the orchestrator runtime:
 - `./.qros/bin/qros-session --raw-idea "<idea>"`
 - `./.qros/bin/qros-session --lineage-id "<lineage_id>"`
 - `./.qros/bin/qros-session <lineage_id> --continue`
-- `./.qros/bin/qros-resume --lineage-id "<lineage_id>"` after a required `/clear`
 
 Reuse the deterministic runtime rather than improvising directory state in chat.
 
@@ -219,8 +218,9 @@ When `qros-review`, `qros-session`, or `qros-progress` reports `clear_required =
 
 - tell the user to run `/clear` in Codex or Claude Code
 - stop trying to start the next stage in the same long conversation
-- after `/clear`, use the printed `recommended_command`, normally `./.qros/bin/qros-resume --lineage-id <lineage_id>`
-- only use `./.qros/bin/qros-resume --lineage-id <lineage_id> --continue` after the new session has recovered state from disk
+- after `/clear`, tell the user to enter the printed `recommended_skill`, for example `qros-csf-data-ready-author`
+- treat `backend_resume_command` / `qros-resume` as backend/debug recovery, not the ordinary user-facing next step
+- ensure the post-clear author skill revalidates disk state before writing artifacts
 
 This boundary exists because long contexts can produce self-deception around review results. Resume state must come from disk artifacts and runtime gates, not chat memory.
 

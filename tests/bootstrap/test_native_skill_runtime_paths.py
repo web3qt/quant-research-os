@@ -10,7 +10,8 @@ def test_public_skills_reference_repo_local_wrappers() -> None:
     diagnostics_skill = skill_text("qros-factor-diagnostics")
 
     assert "./.qros/bin/qros-session" in session_skill
-    assert "./.qros/bin/qros-resume" in session_skill
+    assert "qros-csf-data-ready-author" in session_skill
+    assert "backend/debug recovery" in session_skill
     assert "./.qros/bin/qros-review" in review_skill
     assert "./.qros/bin/qros-progress" in progress_skill
     assert "./.qros/bin/qros-factor-diagnostics" in diagnostics_skill
