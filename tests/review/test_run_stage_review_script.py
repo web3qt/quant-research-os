@@ -10,13 +10,14 @@ import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.repo_paths import REPO_ROOT
+from runtime.tools.review_skillgen.adversarial_review_contract import ReviewerRuntimeIdentity
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, _require_stage_config
+from runtime.tools.review_skillgen.review_result_writer import ensure_runtime_review_result
 from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
 )
 
@@ -172,23 +173,11 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         reviewer_agent_id="reviewer-child-agent",
     )
     _write_yaml(
-        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "cycle-1",
-            "reviewer_identity": "reviewer-agent",
-            "reviewer_role": "reviewer",
-            "reviewer_session_id": "review-session",
-            "reviewer_mode": "adversarial",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewer_execution_mode": "spawned_agent",
-            "reviewer_context_source": "explicit_handoff_only",
-            "reviewer_history_inheritance": "none",
-            "handoff_manifest_digest": handoff_manifest_digest,
             "review_loop_outcome": "CLOSURE_READY_PASS",
-            "reviewed_program_dir": "program/mandate",
-            "reviewed_program_entrypoint": "run_stage.py",
-            "reviewed_artifact_paths": required_artifact_paths,
-            "reviewed_provenance_paths": required_provenance_paths,
             "blocking_findings": [],
             "reservation_findings": [],
             "info_findings": [],
@@ -197,7 +186,6 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "downstream_permissions": [],
         },
     )
-    run_reviewer_write_scope_audit(stage_dir)
     return stage_dir
 
 
@@ -207,6 +195,26 @@ def _handoff_manifest_digest(stage_dir: Path) -> str:
         .read_text(encoding="utf-8")
         .encode("utf-8")
     ).hexdigest()
+
+
+def _canonicalize_raw_review_findings(stage_dir: Path) -> None:
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    receipt_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
+    )
+    ensure_runtime_review_result(
+        review_result_dir=stage_dir / "review" / "result",
+        request_payload=request_payload,
+        receipt_payload=receipt_payload,
+        runtime_identity=ReviewerRuntimeIdentity(
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        ),
+    )
 
 
 def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> None:
@@ -305,8 +313,6 @@ def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_pa
     repo_root = REPO_ROOT
     stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
-    (stage_dir / "review" / "result" / "adversarial_review_result.yaml").unlink()
-    (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").unlink()
     _write_yaml(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
@@ -396,7 +402,7 @@ def test_audit_reviewer_write_scope_script_writes_pass_artifact(tmp_path: Path) 
     stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = repo_root / "runtime" / "scripts" / "audit_reviewer_write_scope.py"
     audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
-    audit_path.unlink()
+    _canonicalize_raw_review_findings(stage_dir)
 
     result = run(
         [
@@ -423,6 +429,7 @@ def test_audit_reviewer_write_scope_script_fails_on_protected_author_change(tmp_
     repo_root = REPO_ROOT
     stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = repo_root / "runtime" / "scripts" / "audit_reviewer_write_scope.py"
+    _canonicalize_raw_review_findings(stage_dir)
     (stage_dir / "author" / "formal" / "mandate.md").write_text("tampered\n", encoding="utf-8")
 
     result = run(
@@ -444,11 +451,12 @@ def test_audit_reviewer_write_scope_script_fails_on_protected_author_change(tmp_
     assert "Audit status: FAIL" in result.stdout
 
 
-def test_run_stage_review_script_rewrites_stale_result_to_match_active_request(tmp_path: Path) -> None:
+def test_run_stage_review_script_rejects_stale_canonical_result_projection(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
 
+    (stage_dir / "review" / "result" / "reviewer_findings.raw.yaml").unlink()
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
@@ -499,25 +507,9 @@ def test_run_stage_review_script_rewrites_stale_result_to_match_active_request(t
         text=True,
     )
 
-    assert result.returncode == 0
-    result_payload = yaml.safe_load(
-        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
-    )
-    assert result_payload["review_cycle_id"] == "cycle-1"
-    assert result_payload["reviewed_program_dir"] == "program/mandate"
-    assert result_payload["reviewed_program_entrypoint"] == "run_stage.py"
-    assert sorted(result_payload["reviewed_artifact_paths"]) == sorted(
-        [
-            "mandate.md",
-            "research_scope.md",
-            "research_route.yaml",
-            "time_split.json",
-            "parameter_grid.yaml",
-            "run_config.toml",
-            "artifact_catalog.md",
-            "field_dictionary.md",
-        ]
-    )
+    assert result.returncode != 0
+    assert "PROTECTED_STATE_DRIFT" in result.stderr
+    assert "reviewer_findings.raw.yaml is required" in result.stderr
 
 
 def test_run_stage_review_script_rejects_review_cycle_mismatch(tmp_path: Path) -> None:
@@ -526,31 +518,11 @@ def test_run_stage_review_script_rejects_review_cycle_mismatch(tmp_path: Path) -
     script_path = repo_root / "runtime" / "scripts" / "run_stage_review.py"
 
     _write_yaml(
-        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "stale-cycle",
-            "reviewer_identity": "reviewer-agent",
-            "reviewer_role": "reviewer",
-            "reviewer_session_id": "review-session",
-            "reviewer_mode": "adversarial",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewer_execution_mode": "spawned_agent",
-            "reviewer_context_source": "explicit_handoff_only",
-            "reviewer_history_inheritance": "none",
-            "handoff_manifest_digest": _handoff_manifest_digest(stage_dir),
             "review_loop_outcome": "CLOSURE_READY_PASS",
-            "reviewed_program_dir": "program/mandate",
-            "reviewed_program_entrypoint": "run_stage.py",
-            "reviewed_artifact_paths": [
-                "mandate.md",
-                "research_scope.md",
-                "time_split.json",
-                "parameter_grid.yaml",
-                "run_config.toml",
-                "artifact_catalog.md",
-                "field_dictionary.md",
-            ],
-            "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
             "reservation_findings": [],
             "info_findings": [],
