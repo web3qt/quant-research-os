@@ -691,6 +691,7 @@ def issue_reviewer_receipt(
         else:
             if existing["review_cycle_id"] != payload["review_cycle_id"]:
                 raise ValueError("existing reviewer_receipt.yaml review_cycle_id does not match the active request")
+            validate_receipt_contract(request_payload=request_payload, receipt_payload=existing)
             if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
                 write_reviewer_write_scope_baseline(
                     stage_dir,
