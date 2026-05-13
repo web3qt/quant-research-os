@@ -42,6 +42,7 @@ from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 ROOT = Path(__file__).resolve().parents[3]
 GATES_PATH = ROOT / "contracts" / "stages" / "workflow_stage_gates.yaml"
 CHECKLIST_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
+HARD_GATE_DOWNGRADED = "HARD_GATE_DOWNGRADED"
 
 
 class ReviewRuntimeConfigurationError(RuntimeError):
@@ -438,6 +439,61 @@ def _resolve_verdict(
     return final_verdict or "PASS", review_loop_outcome
 
 
+def _detect_hard_gate_downgrade(
+    *,
+    deterministic_gate_findings: list[str],
+    review_result: dict[str, Any],
+    reviewer_findings: dict[str, Any],
+    final_verdict: str | None,
+) -> bool:
+    if final_verdict not in {"RETRY", "NO-GO", "CHILD LINEAGE"}:
+        return False
+    if not deterministic_gate_findings:
+        return False
+    raw_pass_like = review_result["review_loop_outcome"] in {
+        "CLOSURE_READY_PASS",
+        "CLOSURE_READY_CONDITIONAL_PASS",
+    }
+    recommended_pass_like = reviewer_findings.get("recommended_verdict") in {"PASS", "CONDITIONAL PASS"}
+    reviewer_text = "\n".join(
+        list(review_result.get("reservation_findings", []))
+        + list(review_result.get("info_findings", []))
+        + list(reviewer_findings.get("reservation_findings", []))
+        + list(reviewer_findings.get("info_findings", []))
+    )
+    mentions_gate = any(item.split(":", 1)[0] in reviewer_text for item in deterministic_gate_findings)
+    return bool((raw_pass_like or recommended_pass_like) and mentions_gate)
+
+
+def _write_canonical_review_result(
+    *,
+    review_result_dir: Path,
+    review_result: dict[str, Any],
+    final_verdict: str | None,
+    review_loop_outcome: str,
+    blocking_findings: list[str],
+    reservation_findings: list[str],
+    info_findings: list[str],
+    residual_risks: list[str],
+    hard_gate_downgrade_detected: bool,
+) -> dict[str, Any]:
+    canonical = dict(review_result)
+    canonical["final_verdict"] = final_verdict
+    canonical["review_loop_outcome"] = review_loop_outcome
+    canonical["blocking_findings"] = list(blocking_findings)
+    canonical["reservation_findings"] = list(reservation_findings)
+    canonical["info_findings"] = list(info_findings)
+    canonical["residual_risks"] = list(residual_risks)
+    canonical["hard_gate_downgrade_detected"] = hard_gate_downgrade_detected
+    if hard_gate_downgrade_detected:
+        canonical["hard_gate_downgrade_code"] = HARD_GATE_DOWNGRADED
+    (review_result_dir / "adversarial_review_result.yaml").write_text(
+        yaml.safe_dump(canonical, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    return canonical
+
+
 def _runtime_identity(
     *,
     reviewer_identity: str | None,
@@ -592,14 +648,13 @@ def run_stage_review(
     blocking_findings.extend(auto_stage_blocking)
     # Stage content gate 只处理当前阶段自身内容；上游绑定验证单独走 deterministic validator。
     blocking_findings.extend(check_structural_gates(author_formal_dir, stage_content_checks))
-    # 先把合同里写明的关键数值门禁落成真实 blocking findings，避免“有产物但坏结果也放行”。
-    blocking_findings.extend(
-        _check_metric_gates(
-            lineage_root=lineage_root,
-            author_formal_dir=author_formal_dir,
-            stage_contract=stage_contract,
-        )
+    deterministic_gate_findings = _check_metric_gates(
+        lineage_root=lineage_root,
+        author_formal_dir=author_formal_dir,
+        stage_contract=stage_contract,
     )
+    # 先把合同里写明的关键数值门禁落成真实 blocking findings，避免“有产物但坏结果也放行”。
+    blocking_findings.extend(deterministic_gate_findings)
     upstream_binding_findings = validate_upstream_bindings(
         stage=stage,
         lineage_root=lineage_root,
@@ -626,6 +681,12 @@ def run_stage_review(
         blocking_findings,
         reservation_findings,
     )
+    hard_gate_downgrade_detected = _detect_hard_gate_downgrade(
+        deterministic_gate_findings=deterministic_gate_findings,
+        review_result=review_result,
+        reviewer_findings=reviewer_findings,
+        final_verdict=final_verdict,
+    )
     rollback_stage = review_result.get("rollback_stage") or reviewer_findings.get("rollback_stage") or stage_contract.get("rollback_rules", {}).get(
         "default_rollback_stage"
     )
@@ -646,6 +707,7 @@ def run_stage_review(
         "reservation_findings": reservation_findings,
         "info_findings": info_findings,
         "residual_risks": residual_risks,
+        "hard_gate_downgrade_detected": hard_gate_downgrade_detected,
         "review_timestamp_utc": review_timestamp_utc,
         "reviewer_identity": review_result["reviewer_identity"],
         "reviewer_role": review_result["reviewer_role"],
@@ -715,6 +777,7 @@ def run_stage_review(
                 "reservation_findings_count": len(reservation_findings),
                 "info_findings_count": len(info_findings),
                 "residual_risks_count": len(residual_risks),
+                "hard_gate_downgrade_detected": hard_gate_downgrade_detected,
                 "closure_written": False,
             },
         )
@@ -723,6 +786,17 @@ def run_stage_review(
             "final_verdict": None,
         }
 
+    canonical_review_result = _write_canonical_review_result(
+        review_result_dir=review_result_dir,
+        review_result=review_result,
+        final_verdict=final_verdict,
+        review_loop_outcome=review_loop_outcome,
+        blocking_findings=blocking_findings,
+        reservation_findings=reservation_findings,
+        info_findings=info_findings,
+        residual_risks=residual_risks,
+        hard_gate_downgrade_detected=hard_gate_downgrade_detected,
+    )
     payload = build_review_payload(
         lineage_id=lineage_id,
         stage=stage,
@@ -747,7 +821,7 @@ def run_stage_review(
         adversarial_review_request=request_payload,
         reviewer_receipt=receipt_payload,
         reviewer_write_scope_audit=audit_payload,
-        adversarial_review_result=review_result,
+        adversarial_review_result=canonical_review_result,
         contract_source=common_payload["contract_source"],
         checklist_source=common_payload["checklist_source"],
         required_outputs_checked=common_payload["required_outputs_checked"],
@@ -790,6 +864,7 @@ def run_stage_review(
             "reservation_findings_count": len(reservation_findings),
             "info_findings_count": len(info_findings),
             "residual_risks_count": len(residual_risks),
+            "hard_gate_downgrade_detected": hard_gate_downgrade_detected,
             "closure_written": True,
         },
     )

@@ -15,10 +15,7 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    run_reviewer_write_scope_audit,
-    write_reviewer_write_scope_baseline,
-)
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.session.test_research_session_runtime import _write_minimal_stage_outputs
 
@@ -64,6 +61,12 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
     required_artifact_paths: list[str] = []
     required_provenance_paths = ["program_execution_manifest.json"]
     launcher_handoff_context_paths: list[str] = []
+    project_root = str(stage_dir.parent.parent.parent.resolve())
+    lineage_root = str(stage_dir.parent.resolve())
+    resolved_stage_dir = str(stage_dir.resolve())
+    author_formal_dir = str((stage_dir / "author" / "formal").resolve())
+    review_request_dir = str((stage_dir / "review" / "request").resolve())
+    review_result_dir = str((stage_dir / "review" / "result").resolve())
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
     _write_yaml(
         handoff_manifest_path,
@@ -71,10 +74,20 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
             "review_cycle_id": f"{stage}-cycle-1",
             "lineage_id": stage_dir.parent.name,
             "stage": stage,
+            "project_root": project_root,
+            "lineage_root": lineage_root,
+            "stage_dir": resolved_stage_dir,
+            "author_formal_dir": author_formal_dir,
+            "review_request_dir": review_request_dir,
+            "review_result_dir": review_result_dir,
             "required_program_dir": f"program/cross_sectional_factor/{stage}",
             "required_program_entrypoint": "run_stage.py",
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
+            "stage_content_artifact_paths": required_artifact_paths,
+            "stage_content_provenance_paths": required_provenance_paths,
+            "upstream_binding_artifact_paths": [],
+            "upstream_binding_provenance_paths": [],
             "permitted_input_roots": ["review/request", "author/formal"],
             "permitted_output_roots": ["review/result"],
             "required_result_write_root": "review/result",
@@ -91,12 +104,22 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         "review_cycle_id": f"{stage}-cycle-1",
         "lineage_id": stage_dir.parent.name,
         "stage": stage,
+        "project_root": project_root,
+        "lineage_root": lineage_root,
+        "stage_dir": resolved_stage_dir,
+        "author_formal_dir": author_formal_dir,
+        "review_request_dir": review_request_dir,
+        "review_result_dir": review_result_dir,
         "author_identity": "author-agent",
         "author_session_id": "author-session",
         "required_program_dir": f"program/cross_sectional_factor/{stage}",
         "required_program_entrypoint": "run_stage.py",
         "required_artifact_paths": required_artifact_paths,
         "required_provenance_paths": required_provenance_paths,
+        "stage_content_artifact_paths": required_artifact_paths,
+        "stage_content_provenance_paths": required_provenance_paths,
+        "upstream_binding_artifact_paths": [],
+        "upstream_binding_provenance_paths": [],
         "required_reviewer_mode": "adversarial",
         "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
         "handoff_manifest_digest": handoff_manifest_digest,
@@ -108,15 +131,18 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
     }
     receipt_payload = {
         "review_cycle_id": f"{stage}-cycle-1",
+        "project_root": project_root,
+        "lineage_root": lineage_root,
+        "stage_dir": resolved_stage_dir,
         "launcher_owner": "qros-runtime-launcher",
         "launcher_session_id": "launcher-session",
         "launcher_thread_id": "leader-thread",
         "execution_mode": "spawned_agent",
         "reviewer_agent_id": "reviewer-child-agent",
         "host": "codex",
-            "reviewer_invocation_kind": "codex_spawn_agent",
-            "context_isolation_policy": "fork_context_false",
-            "handoff_delivery_method": "send_input",
+        "reviewer_invocation_kind": "codex_spawn_agent",
+        "context_isolation_policy": "fork_context_false",
+        "handoff_delivery_method": "send_input",
         "write_root": "review/result",
         "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
         "handoff_manifest_digest": handoff_manifest_digest,
@@ -124,22 +150,15 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         "requested_reviewer_session_id": "review-session",
         "receipt_written_at": "2026-04-17T03:00:00Z",
     }
-    result_payload = {
+    raw_findings_payload = {
         "review_cycle_id": f"{stage}-cycle-1",
-        "reviewer_identity": "reviewer-agent",
-        "reviewer_role": "reviewer",
         "reviewer_session_id": "review-session",
-        "reviewer_mode": "adversarial",
         "reviewer_agent_id": "reviewer-child-agent",
-        "reviewer_execution_mode": "spawned_agent",
-        "reviewer_context_source": "explicit_handoff_only",
-        "reviewer_history_inheritance": "none",
-        "handoff_manifest_digest": handoff_manifest_digest,
+        "reviewed_project_root": project_root,
+        "reviewed_lineage_root": lineage_root,
+        "reviewed_stage_dir": resolved_stage_dir,
+        "hard_gate_findings_acknowledged": True,
         "review_loop_outcome": "CLOSURE_READY_PASS",
-        "reviewed_program_dir": f"program/cross_sectional_factor/{stage}",
-        "reviewed_program_entrypoint": "run_stage.py",
-        "reviewed_artifact_paths": required_artifact_paths,
-        "reviewed_provenance_paths": required_provenance_paths,
         "blocking_findings": [],
         "reservation_findings": [],
         "info_findings": [],
@@ -169,8 +188,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         launcher_thread_id=receipt_payload["launcher_thread_id"],
         reviewer_agent_id=receipt_payload["reviewer_agent_id"],
     )
-    _write_yaml(stage_dir / "review" / "result" / "adversarial_review_result.yaml", result_payload)
-    run_reviewer_write_scope_audit(stage_dir)
+    _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", raw_findings_payload)
 
 
 def test_run_stage_review_blocks_csf_test_evidence_when_rank_ic_is_non_positive(tmp_path: Path) -> None:
@@ -203,6 +221,64 @@ def test_run_stage_review_blocks_csf_test_evidence_when_rank_ic_is_non_positive(
 
     assert payload["final_verdict"] == "RETRY"
     assert any("mean_rank_ic" in item for item in payload["blocking_findings"])
+    result_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
+    )
+    state_payload = yaml.safe_load(
+        (stage_dir / "review" / "state" / "review_runtime_state.yaml").read_text(encoding="utf-8")
+    )
+    closure_payload = yaml.safe_load(
+        (stage_dir / "review" / "closure" / "stage_gate_review.yaml").read_text(encoding="utf-8")
+    )
+    assert result_payload["review_loop_outcome"] == "CLOSURE_READY_RETRY"
+    assert result_payload["final_verdict"] == "RETRY"
+    assert any("mean_rank_ic" in item for item in result_payload["blocking_findings"])
+    assert state_payload["last_review_verdict"] == "RETRY"
+    assert closure_payload["final_verdict"] == "RETRY"
+
+
+def test_run_stage_review_marks_hard_gate_downgrade_when_reviewer_puts_gate_in_reservation(tmp_path: Path) -> None:
+    stage_dir = _prepare_csf_stage(
+        tmp_path,
+        stage_key="csf_test_evidence",
+        stage_dir_name="05_csf_test_evidence",
+    )
+    formal_dir = stage_dir / "author" / "formal"
+    _write_json(
+        formal_dir / "rank_ic_summary.json",
+        {
+            "variant_id": "mom_20d",
+            "factor_role": "standalone_alpha",
+            "mean_rank_ic": -0.031225,
+            "median_rank_ic": -0.02,
+            "num_dates": 140,
+        },
+    )
+    (formal_dir / "run_manifest.json").write_text("{}\n", encoding="utf-8")
+    (formal_dir / "csf_test_gate_decision.md").write_text("metric gate snapshot\n", encoding="utf-8")
+    _write_review_request_and_result(stage_dir, stage="csf_test_evidence")
+    raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
+    raw_payload = yaml.safe_load(raw_path.read_text(encoding="utf-8"))
+    raw_payload["reservation_findings"] = ["CSF-TEST-METRIC-001 mean_rank_ic is negative but documented"]
+    raw_payload["review_loop_outcome"] = "CLOSURE_READY_PASS"
+    raw_path.write_text(yaml.safe_dump(raw_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
+    )
+    assert payload["final_verdict"] == "RETRY"
+    assert result_payload["final_verdict"] == "RETRY"
+    assert result_payload["hard_gate_downgrade_detected"] is True
+    assert result_payload["hard_gate_downgrade_code"] == "HARD_GATE_DOWNGRADED"
+    assert any("CSF-TEST-METRIC-001" in item for item in result_payload["blocking_findings"])
 
 
 def test_run_stage_review_blocks_csf_backtest_ready_when_net_return_is_non_positive(tmp_path: Path) -> None:

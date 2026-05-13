@@ -41,6 +41,13 @@ def load_and_validate_protocol(
         runtime_identity=runtime_identity,
     )
 
+    raw_path = review_result_dir / "reviewer_findings.raw.yaml"
+    if result_path.exists() and not raw_path.exists():
+        raise ValueError(
+            "REVIEW_RESULT_PROJECTION_DRIFT: PROTECTED_STATE_DRIFT: "
+            "reviewer_findings.raw.yaml is required for active-cycle review closure"
+        )
+
     review_result = ensure_runtime_review_result(
         review_result_dir=review_result_dir,
         request_payload=request_payload,

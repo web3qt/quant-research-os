@@ -840,6 +840,15 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
     summary = payload.get("review_summary")
     if isinstance(summary, str) and summary.strip():
         data["review_summary"] = summary.strip()
+    final_verdict = payload.get("final_verdict")
+    if isinstance(final_verdict, str) and final_verdict.strip():
+        data["final_verdict"] = final_verdict.strip()
+    hard_gate_downgrade_detected = payload.get("hard_gate_downgrade_detected")
+    if isinstance(hard_gate_downgrade_detected, bool):
+        data["hard_gate_downgrade_detected"] = hard_gate_downgrade_detected
+    hard_gate_downgrade_code = payload.get("hard_gate_downgrade_code")
+    if isinstance(hard_gate_downgrade_code, str) and hard_gate_downgrade_code.strip():
+        data["hard_gate_downgrade_code"] = hard_gate_downgrade_code.strip()
     for timestamp_key in ("review_started_at", "review_completed_at"):
         value = payload.get(timestamp_key)
         if isinstance(value, str) and value.strip():

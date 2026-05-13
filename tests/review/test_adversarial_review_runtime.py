@@ -804,21 +804,10 @@ def test_run_stage_review_rejects_non_adversarial_reviewer_mode(tmp_path: Path) 
         author_identity="author-agent",
     )
     _write_reviewer_receipt(stage_dir)
-    _write_adversarial_review_result(
+    _write_raw_reviewer_findings(
         stage_dir,
-        stage_key="mandate",
-        reviewer_identity="reviewer-agent",
         review_loop_outcome="CLOSURE_READY_PASS",
-        reviewer_mode="observer",
     )
-    _write_yaml(
-        stage_dir / "review" / "result" / "review_findings.yaml",
-        {
-            "reviewer_identity": "reviewer-agent",
-            "recommended_verdict": "PASS",
-        },
-    )
-    run_reviewer_write_scope_audit(stage_dir)
 
     with pytest.raises(ValueError, match="adversarial"):
         run_stage_review(
