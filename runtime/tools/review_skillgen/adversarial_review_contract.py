@@ -695,6 +695,14 @@ def issue_reviewer_receipt(
                     raise
             if not missing_context_fields:
                 raise
+            candidate = dict(raw_existing)
+            for key in missing_context_fields:
+                candidate[key] = payload[key]
+            receipt_written_at = candidate.get("receipt_written_at")
+            if not isinstance(receipt_written_at, str) or not receipt_written_at.strip():
+                raise
+            if {**payload, "receipt_written_at": receipt_written_at} != candidate:
+                raise
             # 旧 receipt 缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
         else:
             if existing["review_cycle_id"] != payload["review_cycle_id"]:
