@@ -77,6 +77,15 @@ CLOSURE_READY_OUTCOMES = {
 ALLOWED_REVIEW_LOOP_OUTCOMES = {FIX_REQUIRED_OUTCOME, *CLOSURE_READY_OUTCOMES}
 REQUIRED_HANDOFF_INPUT_ROOTS = ("review/request", "author/formal")
 REQUIRED_HANDOFF_CONTEXT_PATHS = ("artifact_catalog.md", "field_dictionary.md", "run_manifest.json")
+CANONICAL_REVIEW_CONTEXT_FIELDS = (
+    "project_root",
+    "lineage_root",
+    "stage_dir",
+    "author_formal_dir",
+    "review_request_dir",
+    "review_result_dir",
+)
+RECEIPT_CANONICAL_CONTEXT_FIELDS = ("project_root", "lineage_root", "stage_dir")
 
 
 @dataclass(frozen=True)
@@ -127,6 +136,37 @@ def _digest_text(text: str) -> str:
 
 def _stage_dir_from_request_path(request_path: Path) -> Path:
     return request_path.parents[2]
+
+
+def _canonical_review_context(stage_dir: Path) -> dict[str, str]:
+    resolved_stage_dir = stage_dir.resolve()
+    lineage_root = resolved_stage_dir.parent
+    project_root = lineage_root.parent.parent
+    return {
+        "project_root": str(project_root),
+        "lineage_root": str(lineage_root),
+        "stage_dir": str(resolved_stage_dir),
+        "author_formal_dir": str((resolved_stage_dir / "author" / "formal").resolve()),
+        "review_request_dir": str((resolved_stage_dir / "review" / "request").resolve()),
+        "review_result_dir": str((resolved_stage_dir / "review" / "result").resolve()),
+    }
+
+
+def _validated_canonical_review_context(
+    payload: dict[str, Any],
+    *,
+    stage_dir: Path,
+    path: Path,
+) -> dict[str, str]:
+    expected_context = _canonical_review_context(stage_dir)
+    observed_context = {
+        key: _require_string(payload, key, path=path)
+        for key in CANONICAL_REVIEW_CONTEXT_FIELDS
+    }
+    for key, expected_value in expected_context.items():
+        if observed_context[key] != expected_value:
+            raise ValueError(f"{path}: {key} must match the canonical review context")
+    return observed_context
 
 
 def _handoff_manifest_path_for_stage(stage_dir: Path) -> Path:
@@ -206,6 +246,7 @@ def build_review_cycle_id(
 
 def _build_handoff_manifest_payload(
     *,
+    stage_dir: Path,
     review_cycle_id: str,
     lineage_id: str,
     stage: str,
@@ -235,6 +276,7 @@ def _build_handoff_manifest_payload(
         "permitted_output_roots": [REQUIRED_RESULT_WRITE_ROOT],
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
+    payload.update(_canonical_review_context(stage_dir))
     payload.update(
         _build_launcher_review_ready_payload(
             required_artifact_paths=required_artifact_paths,
@@ -258,6 +300,7 @@ def _write_handoff_manifest(
     manifest_path = _handoff_manifest_path_for_stage(stage_dir)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     payload = _build_handoff_manifest_payload(
+        stage_dir=stage_dir,
         review_cycle_id=review_cycle_id,
         lineage_id=lineage_id,
         stage=stage,
@@ -340,6 +383,7 @@ def ensure_adversarial_review_request(
         "handoff_manifest_digest": handoff_manifest_digest,
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
+    payload.update(_canonical_review_context(stage_dir))
     payload.update(
         _build_launcher_review_ready_payload(
             required_artifact_paths=required_artifact_paths,
@@ -395,6 +439,7 @@ def ensure_adversarial_review_request(
 def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
     request_path = Path(path)
     payload = _require_mapping(request_path)
+    stage_dir = _stage_dir_from_request_path(request_path)
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=request_path),
         "lineage_id": _require_string(payload, "lineage_id", path=request_path),
@@ -438,6 +483,7 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
             payload, "launcher_handoff_context_paths", path=request_path
         ),
     }
+    data.update(_validated_canonical_review_context(payload, stage_dir=stage_dir, path=request_path))
     if data["required_reviewer_mode"] != REQUIRED_REVIEWER_MODE:
         raise ValueError(f"{request_path}: required_reviewer_mode must be {REQUIRED_REVIEWER_MODE!r}")
     if data["required_result_write_root"] != REQUIRED_RESULT_WRITE_ROOT:
@@ -476,7 +522,6 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         if isinstance(value, str) and value.strip():
             data[optional_key] = value.strip()
 
-    stage_dir = _stage_dir_from_request_path(request_path)
     manifest_path = stage_dir / data["handoff_manifest_path"]
     if not manifest_path.exists():
         raise ValueError(f"{request_path}: handoff manifest {data['handoff_manifest_path']!r} is missing")
@@ -501,6 +546,7 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         "launcher_checked_artifact_paths",
         "launcher_checked_provenance_paths",
         "launcher_handoff_context_paths",
+        *CANONICAL_REVIEW_CONTEXT_FIELDS,
     ):
         if manifest_payload[key] != data[key]:
             raise ValueError(f"{request_path}: handoff manifest field {key} does not match the active request")
@@ -510,6 +556,7 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
 def load_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
     manifest_path = Path(path)
     payload = _require_mapping(manifest_path)
+    stage_dir = _stage_dir_from_request_path(manifest_path)
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=manifest_path),
         "lineage_id": _require_string(payload, "lineage_id", path=manifest_path),
@@ -552,6 +599,7 @@ def load_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
             payload, "launcher_handoff_context_paths", path=manifest_path
         ),
     }
+    data.update(_validated_canonical_review_context(payload, stage_dir=stage_dir, path=manifest_path))
     if tuple(data["permitted_input_roots"]) != REQUIRED_HANDOFF_INPUT_ROOTS:
         raise ValueError(f"{manifest_path}: permitted_input_roots must be {list(REQUIRED_HANDOFF_INPUT_ROOTS)!r}")
     if data["permitted_output_roots"] != [REQUIRED_RESULT_WRITE_ROOT]:
@@ -610,6 +658,9 @@ def issue_reviewer_receipt(
     receipt_path = _receipt_path_for_stage(stage_dir)
     payload = {
         "review_cycle_id": request_payload["review_cycle_id"],
+        "project_root": request_payload["project_root"],
+        "lineage_root": request_payload["lineage_root"],
+        "stage_dir": request_payload["stage_dir"],
         "host": host,
         "launcher_owner": launcher_owner,
         "launcher_session_id": launcher_session_id,
@@ -670,6 +721,9 @@ def load_reviewer_receipt(path: str | Path) -> dict[str, Any]:
     payload = _require_mapping(receipt_path)
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=receipt_path),
+        "project_root": _require_string(payload, "project_root", path=receipt_path),
+        "lineage_root": _require_string(payload, "lineage_root", path=receipt_path),
+        "stage_dir": _require_string(payload, "stage_dir", path=receipt_path),
         "host": _require_string(payload, "host", path=receipt_path),
         "launcher_owner": _require_string(payload, "launcher_owner", path=receipt_path),
         "launcher_session_id": _require_string(payload, "launcher_session_id", path=receipt_path),
@@ -826,6 +880,9 @@ def validate_receipt_contract(
 ) -> None:
     if receipt_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
         raise ValueError("reviewer_receipt.yaml review_cycle_id does not match the active request")
+    for key in RECEIPT_CANONICAL_CONTEXT_FIELDS:
+        if receipt_payload[key] != request_payload[key]:
+            raise ValueError(f"reviewer_receipt.yaml {key} does not match the active request")
     if receipt_payload["launcher_owner"] != RUNTIME_LAUNCHER_OWNER:
         raise ValueError("reviewer_receipt.yaml launcher_owner is not the fixed runtime launcher")
     if receipt_payload["host"] not in ALLOWED_HOSTS:

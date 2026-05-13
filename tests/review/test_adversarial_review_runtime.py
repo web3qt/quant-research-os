@@ -12,7 +12,11 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
+    load_reviewer_handoff_manifest,
+    load_reviewer_receipt,
+    validate_receipt_contract,
 )
+from runtime.tools.review_session_runtime import prepare_review_cycle_for_handoff
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
 from runtime.tools.review_skillgen.review_runtime_state import (
@@ -119,6 +123,15 @@ def _review_request_payload(stage_dir: Path) -> dict:
 
 def _request_review_cycle_id(stage_dir: Path) -> str:
     return _review_request_payload(stage_dir)["review_cycle_id"]
+
+
+def _receipt_canonical_context(stage_dir: Path) -> dict[str, str]:
+    request_payload = _review_request_payload(stage_dir)
+    return {
+        "project_root": request_payload["project_root"],
+        "lineage_root": request_payload["lineage_root"],
+        "stage_dir": request_payload["stage_dir"],
+    }
 
 
 def _write_reviewer_receipt(
@@ -329,6 +342,59 @@ def test_ensure_adversarial_review_request_freezes_launcher_review_ready_metadat
     assert request_payload["upstream_binding_artifact_paths"] == []
     assert trace_events[0]["event_type"] == "request_issued"
     assert trace_events[0]["author_identity"] == "author-agent"
+
+
+def test_review_cycle_binds_request_receipt_and_handoff_to_canonical_context(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    payload = prepare_review_cycle_for_handoff(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="reviewer-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+    )
+
+    request_payload = load_adversarial_review_request(
+        stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    )
+    manifest_payload = load_reviewer_handoff_manifest(
+        stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
+    )
+    receipt_payload = load_reviewer_receipt(stage_dir / "review" / "request" / "reviewer_receipt.yaml")
+    expected_context = {
+        "project_root": str(tmp_path.resolve()),
+        "lineage_root": str(lineage_root.resolve()),
+        "stage_dir": str(stage_dir.resolve()),
+        "author_formal_dir": str((stage_dir / "author" / "formal").resolve()),
+        "review_request_dir": str((stage_dir / "review" / "request").resolve()),
+        "review_result_dir": str((stage_dir / "review" / "result").resolve()),
+    }
+
+    for key, expected_value in expected_context.items():
+        assert request_payload[key] == expected_value
+        assert manifest_payload[key] == expected_value
+    for key in ("project_root", "lineage_root", "stage_dir"):
+        assert receipt_payload[key] == request_payload[key]
+
+    handoff_prompt = payload["reviewer_handoff_prompt"]
+    assert "Launcher boundary:" in handoff_prompt
+    assert "The current/main conversation is the launcher, not the reviewer." in handoff_prompt
+    assert "Do not write reviewer_findings.raw.yaml from the launcher conversation." in handoff_prompt
+    assert "Send this handoff to an independent reviewer/subagent." in handoff_prompt
+    assert f"Active research repo root: {expected_context['project_root']}" in handoff_prompt
+    assert f"Lineage root: {expected_context['lineage_root']}" in handoff_prompt
+    assert f"Stage dir: {expected_context['stage_dir']}" in handoff_prompt
+    assert (
+        "The QROS governance repo is not the active research repo unless the canonical paths above point there."
+        in handoff_prompt
+    )
+
+    mismatched_receipt = dict(receipt_payload)
+    mismatched_receipt["stage_dir"] = str((tmp_path / "outputs" / "other_lineage" / "01_mandate").resolve())
+    with pytest.raises(ValueError, match="stage_dir"):
+        validate_receipt_contract(request_payload=request_payload, receipt_payload=mismatched_receipt)
 
 
 def test_ensure_adversarial_review_request_splits_signal_ready_stage_content_and_binding_scope(tmp_path: Path) -> None:
@@ -714,6 +780,7 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
             "review_cycle_id": "bad-mismatched-cycle-id",
+            **_receipt_canonical_context(stage_dir),
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",
@@ -848,6 +915,7 @@ def test_run_stage_review_rejects_missing_reviewer_agent_id(tmp_path: Path) -> N
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
             "review_cycle_id": _request_review_cycle_id(stage_dir),
+            **_receipt_canonical_context(stage_dir),
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",

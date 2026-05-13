@@ -281,8 +281,18 @@ def _reviewer_handoff_prompt(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         display_root=display_root,
     )
+    request_payload = payload["request_payload"]
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
+        "",
+        "Launcher boundary:",
+        "- The current/main conversation is the launcher, not the reviewer.",
+        "- Do not write reviewer_findings.raw.yaml from the launcher conversation.",
+        "- Send this handoff to an independent reviewer/subagent.",
+        f"- Active research repo root: {request_payload['project_root']}",
+        f"- Lineage root: {request_payload['lineage_root']}",
+        f"- Stage dir: {request_payload['stage_dir']}",
+        "- The QROS governance repo is not the active research repo unless the canonical paths above point there.",
         "",
         f"Lineage: {payload['lineage_id']}",
         f"Stage: {payload['stage']}",
