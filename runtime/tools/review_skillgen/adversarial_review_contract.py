@@ -689,6 +689,8 @@ def issue_reviewer_receipt(
                 raise
             # 旧 receipt 可能缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
         else:
+            if existing["review_cycle_id"] != payload["review_cycle_id"]:
+                raise ValueError("existing reviewer_receipt.yaml review_cycle_id does not match the active request")
             if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
                 write_reviewer_write_scope_baseline(
                     stage_dir,
