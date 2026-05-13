@@ -214,7 +214,12 @@ not bind to the active receipt or that target stale author outputs.
 最小 raw schema：
 
 - `review_cycle_id: copy the literal review cycle value printed in the reviewer handoff`
+- `reviewer_session_id: copy the literal reviewer session id from reviewer_receipt.yaml`
 - `reviewer_agent_id: copy the literal reviewer agent id printed in the reviewer handoff`
+- `reviewed_project_root: copy the canonical active research repo root from adversarial_review_request.yaml`
+- `reviewed_lineage_root: copy the canonical lineage root from adversarial_review_request.yaml`
+- `reviewed_stage_dir: copy the canonical stage dir from adversarial_review_request.yaml`
+- `hard_gate_findings_acknowledged: true`
 - `review_loop_outcome: one of FIX_REQUIRED, CLOSURE_READY_PASS, CLOSURE_READY_CONDITIONAL_PASS, CLOSURE_READY_PASS_FOR_RETRY, CLOSURE_READY_RETRY, CLOSURE_READY_NO_GO, CLOSURE_READY_CHILD_LINEAGE`
 - `blocking_findings: []`
 - `reservation_findings: []`
@@ -297,6 +302,17 @@ reviewer 与真正提交 result 的 reviewer 不一致，`qros-review` 必须直
 
 如果 request / handoff manifest 的 `review-ready` 字段不完整，或者 launcher
 声称检查过的 paths 与 active request scope 不一致，`qros-review` 也必须直接失败。
+
+### Fail-closed review boundary
+
+`qros-review` 必须把 launcher、reviewer 和 closer 分成三个不可互相替代的角色。
+
+- `REVIEWER_IDENTITY_COLLISION`：raw findings 的 `reviewer_session_id` 缺失、等于 `launcher_session_id`，或与 `reviewer_receipt.yaml` 不一致时，拒绝 closure。
+- `REVIEW_CONTEXT_ROOT_MISMATCH`：raw findings 声明的 `reviewed_project_root`、`reviewed_lineage_root` 或 `reviewed_stage_dir` 与 active request 的 canonical path 不一致时，拒绝 closure。
+- `HARD_GATE_DOWNGRADED`：deterministic hard gate 失败但 reviewer 把它写成 reservation/info 且给出 pass-like outcome 时，最终 canonical result 必须是 non-advancing verdict，不能 PASS。
+- `REVIEW_RESULT_PROJECTION_DRIFT`：active cycle 中存在 stale `adversarial_review_result.yaml` 但没有 fresh `reviewer_findings.raw.yaml` 时，拒绝继续关闭。
+
+`adversarial_review_result.yaml` 是 closer 合并 reviewer findings 与 deterministic gates 后的 canonical result。它必须与 stdout、`review_runtime_state.yaml` 和 `review/closure/*` 的最终 verdict 一致。
 
 在真正拉起 reviewer 子代理之前，必须先运行：
 

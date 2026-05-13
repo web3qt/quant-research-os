@@ -124,3 +124,24 @@ def test_claude_code_bootstrap_docs_present() -> None:
     # Codex paths still present
     assert "~/.codex/skills" in installation
     assert "Restart Codex" in installation
+
+
+def test_review_protocol_documents_fail_closed_boundaries() -> None:
+    protocol = Path("docs/guides/qros-review-shared-protocol.md").read_text(encoding="utf-8")
+    csf_review_skill = Path("skills/csf_test_evidence/qros-csf-test-evidence-review/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    combined = protocol + "\n" + csf_review_skill
+
+    assert "REVIEWER_IDENTITY_COLLISION" in protocol
+    assert "REVIEW_CONTEXT_ROOT_MISMATCH" in protocol
+    assert "HARD_GATE_DOWNGRADED" in protocol
+    assert "REVIEW_RESULT_PROJECTION_DRIFT" in protocol
+    assert "reviewer_findings.raw.yaml" in combined
+    assert "reviewer_session_id" in combined
+    assert "reviewed_project_root" in combined
+    assert "reviewed_lineage_root" in combined
+    assert "reviewed_stage_dir" in combined
+    assert "hard_gate_findings_acknowledged" in combined
+    assert "mean_rank_ic <= 0" in csf_review_skill
+    assert "不得降级为 reservation" in csf_review_skill
