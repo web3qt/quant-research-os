@@ -678,15 +678,25 @@ def issue_reviewer_receipt(
         "receipt_written_at": datetime.now(timezone.utc).isoformat(),
     }
     if receipt_path.exists():
-        existing = load_reviewer_receipt(receipt_path)
-        if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
-            write_reviewer_write_scope_baseline(
-                stage_dir,
-                review_cycle_id=existing["review_cycle_id"],
-                launcher_thread_id=existing["launcher_thread_id"],
-                reviewer_agent_id=existing["reviewer_agent_id"],
-            )
-            return existing
+        try:
+            existing = load_reviewer_receipt(receipt_path)
+        except ValueError:
+            raw_existing = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
+            if not isinstance(raw_existing, dict):
+                raise
+            existing_review_cycle_id = raw_existing.get("review_cycle_id")
+            if existing_review_cycle_id is not None and existing_review_cycle_id != payload["review_cycle_id"]:
+                raise
+            # 旧 receipt 可能缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
+        else:
+            if {**payload, "receipt_written_at": existing["receipt_written_at"]} == existing:
+                write_reviewer_write_scope_baseline(
+                    stage_dir,
+                    review_cycle_id=existing["review_cycle_id"],
+                    launcher_thread_id=existing["launcher_thread_id"],
+                    reviewer_agent_id=existing["reviewer_agent_id"],
+                )
+                return existing
     receipt_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     write_reviewer_write_scope_baseline(
         stage_dir,

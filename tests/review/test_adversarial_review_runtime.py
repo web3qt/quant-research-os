@@ -397,6 +397,73 @@ def test_review_cycle_binds_request_receipt_and_handoff_to_canonical_context(tmp
         validate_receipt_contract(request_payload=request_payload, receipt_payload=mismatched_receipt)
 
 
+def test_issue_reviewer_receipt_refreshes_legacy_receipt_with_canonical_context(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    request_payload = _review_request_payload(stage_dir)
+    receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
+    legacy_receipt = {
+        "review_cycle_id": request_payload["review_cycle_id"],
+        "host": "codex",
+        "launcher_owner": "qros-runtime-launcher",
+        "launcher_session_id": "launcher-session",
+        "launcher_thread_id": "launcher-thread",
+        "execution_mode": "spawned_agent",
+        "reviewer_invocation_kind": "codex_spawn_agent",
+        "context_isolation_policy": "fork_context_false",
+        "handoff_delivery_method": "send_input",
+        "reviewer_agent_id": "reviewer-child-agent",
+        "write_root": "review/result",
+        "handoff_manifest_path": request_payload["handoff_manifest_path"],
+        "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
+        "requested_reviewer_identity": "reviewer-agent",
+        "requested_reviewer_session_id": "reviewer-session",
+        "receipt_written_at": "2026-04-17T03:00:00Z",
+    }
+    receipt_path.write_text(yaml.safe_dump(legacy_receipt, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    returned_payload = issue_reviewer_receipt(
+        stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="reviewer-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+    )
+    file_payload = load_reviewer_receipt(receipt_path)
+
+    for key in ("project_root", "lineage_root", "stage_dir"):
+        assert returned_payload[key] == request_payload[key]
+        assert file_payload[key] == request_payload[key]
+
+
+def test_issue_reviewer_receipt_rejects_invalid_receipt_from_different_cycle(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
+    receipt_path.write_text(
+        yaml.safe_dump(
+            {
+                "review_cycle_id": "different-review-cycle",
+                "requested_reviewer_identity": "reviewer-agent",
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError):
+        issue_reviewer_receipt(
+            stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_session_id="reviewer-session",
+            launcher_session_id="launcher-session",
+            launcher_thread_id="launcher-thread",
+            reviewer_agent_id="reviewer-child-agent",
+        )
+
+
 def test_ensure_adversarial_review_request_splits_signal_ready_stage_content_and_binding_scope(tmp_path: Path) -> None:
     _, stage_dir = _prepare_review_runtime_case(
         tmp_path,
