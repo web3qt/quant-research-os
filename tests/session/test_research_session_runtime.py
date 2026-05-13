@@ -200,6 +200,14 @@ def _write_adversarial_review_result(
     outcome: str,
 ) -> None:
     request_payload = _review_request_payload(stage_dir)
+    final_verdict_by_outcome = {
+        "CLOSURE_READY_PASS": "PASS",
+        "CLOSURE_READY_CONDITIONAL_PASS": "CONDITIONAL PASS",
+        "CLOSURE_READY_PASS_FOR_RETRY": "PASS FOR RETRY",
+        "CLOSURE_READY_RETRY": "RETRY",
+        "CLOSURE_READY_NO_GO": "NO-GO",
+        "CLOSURE_READY_CHILD_LINEAGE": "CHILD LINEAGE",
+    }
     _write_yaml(
         stage_dir / "review" / "result" / "adversarial_review_result.yaml",
         {
@@ -214,14 +222,24 @@ def _write_adversarial_review_result(
             "reviewer_history_inheritance": "none",
             "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
             "review_loop_outcome": outcome,
+            **(
+                {"final_verdict": final_verdict_by_outcome[outcome]}
+                if outcome in final_verdict_by_outcome
+                else {}
+            ),
             "reviewed_program_dir": program_dir,
             "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_project_root": request_payload["project_root"],
+            "reviewed_lineage_root": request_payload["lineage_root"],
+            "reviewed_stage_dir": request_payload["stage_dir"],
+            "hard_gate_findings_acknowledged": True,
             "reviewed_artifact_paths": [],
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
             "reservation_findings": [],
             "info_findings": [],
             "residual_risks": [],
+            "hard_gate_downgrade_detected": False,
             "allowed_modifications": [],
             "downstream_permissions": [],
         },
