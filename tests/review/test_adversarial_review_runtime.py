@@ -198,6 +198,10 @@ def _write_adversarial_review_result(
             "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
             "reviewed_program_dir": str(spec["program_dir"]),
             "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_project_root": request_payload["project_root"],
+            "reviewed_lineage_root": request_payload["lineage_root"],
+            "reviewed_stage_dir": request_payload["stage_dir"],
+            "hard_gate_findings_acknowledged": True,
             "reviewed_artifact_paths": [Path(path).name for path in spec["outputs"][:2]],
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "review_loop_outcome": review_loop_outcome,
@@ -217,7 +221,12 @@ def _write_raw_reviewer_findings(
     stage_dir: Path,
     *,
     review_loop_outcome: str,
+    reviewer_session_id: str = "reviewer-session",
     reviewer_agent_id: str = "reviewer-child-agent",
+    reviewed_project_root: str | None = None,
+    reviewed_lineage_root: str | None = None,
+    reviewed_stage_dir: str | None = None,
+    hard_gate_findings_acknowledged: bool = True,
     blocking_findings: list[str] | None = None,
     reservation_findings: list[str] | None = None,
     info_findings: list[str] | None = None,
@@ -226,9 +235,15 @@ def _write_raw_reviewer_findings(
     downstream_permissions: list[str] | None = None,
     rollback_stage: str | None = None,
 ) -> None:
+    request_payload = _review_request_payload(stage_dir)
     payload = {
-        "review_cycle_id": _request_review_cycle_id(stage_dir),
+        "review_cycle_id": request_payload["review_cycle_id"],
+        "reviewer_session_id": reviewer_session_id,
         "reviewer_agent_id": reviewer_agent_id,
+        "reviewed_project_root": reviewed_project_root or request_payload["project_root"],
+        "reviewed_lineage_root": reviewed_lineage_root or request_payload["lineage_root"],
+        "reviewed_stage_dir": reviewed_stage_dir or request_payload["stage_dir"],
+        "hard_gate_findings_acknowledged": hard_gate_findings_acknowledged,
         "review_loop_outcome": review_loop_outcome,
         "blocking_findings": blocking_findings or [],
         "reservation_findings": reservation_findings or [],
@@ -322,6 +337,66 @@ def test_run_stage_review_fix_required_does_not_write_closure_artifacts(tmp_path
     assert not (stage_dir / "review" / "closure" / "latest_review_pack.yaml").exists()
     assert not (stage_dir / "review" / "closure" / "stage_gate_review.yaml").exists()
     assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
+
+
+def test_run_stage_review_rejects_raw_reviewer_findings_from_launcher_session(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_reviewer_receipt(stage_dir)
+    _write_raw_reviewer_findings(
+        stage_dir,
+        review_loop_outcome="CLOSURE_READY_PASS",
+        reviewer_session_id="launcher-session",
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_IDENTITY_COLLISION"):
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="adversarial-reviewer",
+            reviewer_session_id="reviewer-session",
+            reviewer_mode="adversarial",
+        )
+
+
+def test_run_stage_review_rejects_raw_reviewer_findings_session_mismatch(tmp_path: Path) -> None:
+    _, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_reviewer_receipt(stage_dir)
+    _write_raw_reviewer_findings(
+        stage_dir,
+        review_loop_outcome="CLOSURE_READY_PASS",
+        reviewer_session_id="other-reviewer-session",
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_IDENTITY_COLLISION"):
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="adversarial-reviewer",
+            reviewer_session_id="reviewer-session",
+            reviewer_mode="adversarial",
+        )
+
+
+def test_run_stage_review_rejects_raw_reviewer_findings_lineage_root_mismatch(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_adversarial_review_request(stage_dir, stage_key="mandate", author_identity="author-agent")
+    _write_reviewer_receipt(stage_dir)
+    _write_raw_reviewer_findings(
+        stage_dir,
+        review_loop_outcome="CLOSURE_READY_PASS",
+        reviewed_lineage_root=str((lineage_root.parent / "other_lineage").resolve()),
+    )
+
+    with pytest.raises(ValueError, match="REVIEW_CONTEXT_ROOT_MISMATCH"):
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="adversarial-reviewer",
+            reviewer_session_id="reviewer-session",
+            reviewer_mode="adversarial",
+        )
 
 
 def test_ensure_adversarial_review_request_freezes_launcher_review_ready_metadata(tmp_path: Path) -> None:
@@ -785,6 +860,10 @@ def test_run_stage_review_rewrites_scope_to_match_runtime_request(tmp_path: Path
     assert payload["final_verdict"] == "PASS"
     assert result_payload["reviewed_program_dir"] == "program/mandate"
     assert result_payload["reviewed_program_entrypoint"] == "run_stage.py"
+    assert result_payload["reviewed_project_root"] == request_payload["project_root"]
+    assert result_payload["reviewed_lineage_root"] == request_payload["lineage_root"]
+    assert result_payload["reviewed_stage_dir"] == request_payload["stage_dir"]
+    assert result_payload["hard_gate_findings_acknowledged"] is True
     assert sorted(result_payload["reviewed_artifact_paths"]) == sorted(request_payload["required_artifact_paths"])
 
 

@@ -21,6 +21,8 @@ from runtime.tools.review_skillgen.review_scope_builder import (
 
 RAW_REVIEWER_FINDINGS_FILENAME = "reviewer_findings.raw.yaml"
 PROTECTED_STATE_DRIFT = "PROTECTED_STATE_DRIFT"
+REVIEWER_IDENTITY_COLLISION = "REVIEWER_IDENTITY_COLLISION"
+REVIEW_CONTEXT_ROOT_MISMATCH = "REVIEW_CONTEXT_ROOT_MISMATCH"
 
 
 def _allowed_review_loop_outcomes_message() -> str:
@@ -46,6 +48,13 @@ def _require_raw_string(payload: dict[str, Any], key: str, *, path: Path) -> str
     return value.strip()
 
 
+def _require_raw_true(payload: dict[str, Any], key: str, *, path: Path) -> bool:
+    value = payload.get(key)
+    if value is not True:
+        raise ValueError(f"{path}: {key} must be boolean true")
+    return True
+
+
 def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(payload, dict):
@@ -61,7 +70,16 @@ def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
         )
     return {
         "review_cycle_id": _require_raw_string(payload, "review_cycle_id", path=path),
+        "reviewer_session_id": _require_raw_string(payload, "reviewer_session_id", path=path),
         "reviewer_agent_id": _require_raw_string(payload, "reviewer_agent_id", path=path),
+        "reviewed_project_root": _require_raw_string(payload, "reviewed_project_root", path=path),
+        "reviewed_lineage_root": _require_raw_string(payload, "reviewed_lineage_root", path=path),
+        "reviewed_stage_dir": _require_raw_string(payload, "reviewed_stage_dir", path=path),
+        "hard_gate_findings_acknowledged": _require_raw_true(
+            payload,
+            "hard_gate_findings_acknowledged",
+            path=path,
+        ),
         "review_loop_outcome": outcome,
         "blocking_findings": _require_raw_string_list(payload, "blocking_findings", path=path),
         "reservation_findings": _require_raw_string_list(payload, "reservation_findings", path=path),
@@ -107,13 +125,32 @@ def ensure_runtime_review_result(
         raw_payload = _load_raw_reviewer_findings(raw_path)
         if raw_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
             raise ValueError(f"{raw_path}: review_cycle_id does not match adversarial_review_request.yaml")
+        if raw_payload["reviewer_session_id"] != receipt_payload["requested_reviewer_session_id"]:
+            raise ValueError(
+                f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_session_id does not match reviewer_receipt.yaml"
+            )
+        if raw_payload["reviewer_session_id"] == receipt_payload["launcher_session_id"]:
+            raise ValueError(
+                f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_session_id must differ from launcher_session_id"
+            )
         if raw_payload["reviewer_agent_id"] != receipt_payload["reviewer_agent_id"]:
-            raise ValueError(f"{raw_path}: reviewer_agent_id does not match reviewer_receipt.yaml")
+            raise ValueError(
+                f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_agent_id does not match reviewer_receipt.yaml"
+            )
+        for raw_key, request_key in (
+            ("reviewed_project_root", "project_root"),
+            ("reviewed_lineage_root", "lineage_root"),
+            ("reviewed_stage_dir", "stage_dir"),
+        ):
+            if raw_payload[raw_key] != request_payload[request_key]:
+                raise ValueError(
+                    f"{REVIEW_CONTEXT_ROOT_MISMATCH}: {raw_path}: {raw_key} does not match adversarial_review_request.yaml"
+                )
         result_payload: dict[str, Any] = {
             "review_cycle_id": request_payload["review_cycle_id"],
             "reviewer_identity": runtime_identity.reviewer_identity,
             "reviewer_role": runtime_identity.reviewer_role,
-            "reviewer_session_id": runtime_identity.reviewer_session_id,
+            "reviewer_session_id": raw_payload["reviewer_session_id"],
             "reviewer_mode": runtime_identity.reviewer_mode,
             "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
             "reviewer_execution_mode": receipt_payload["execution_mode"],
@@ -123,6 +160,10 @@ def ensure_runtime_review_result(
             "review_loop_outcome": raw_payload["review_loop_outcome"],
             "reviewed_program_dir": request_payload["required_program_dir"],
             "reviewed_program_entrypoint": request_payload["required_program_entrypoint"],
+            "reviewed_project_root": raw_payload["reviewed_project_root"],
+            "reviewed_lineage_root": raw_payload["reviewed_lineage_root"],
+            "reviewed_stage_dir": raw_payload["reviewed_stage_dir"],
+            "hard_gate_findings_acknowledged": raw_payload["hard_gate_findings_acknowledged"],
             "reviewed_artifact_paths": stage_content_artifact_paths_from_request(request_payload),
             "reviewed_provenance_paths": stage_content_provenance_paths_from_request(request_payload),
             "blocking_findings": list(raw_payload["blocking_findings"]),

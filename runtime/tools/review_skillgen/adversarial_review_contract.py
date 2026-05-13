@@ -23,6 +23,7 @@ REVIEW_FINDINGS_FILENAME = "review_findings.yaml"
 REQUIRED_REVIEWER_MODE = "adversarial"
 REVIEWER_EXECUTION_MODE_SPAWNED = "spawned_agent"
 REVIEWER_EXECUTION_MODE_SESSION = "review_session"
+REVIEW_CONTEXT_ROOT_MISMATCH = "REVIEW_CONTEXT_ROOT_MISMATCH"
 ALLOWED_REVIEWER_EXECUTION_MODES = {
     REVIEWER_EXECUTION_MODE_SPAWNED,
     REVIEWER_EXECUTION_MODE_SESSION,
@@ -796,6 +797,17 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
     outcome = _require_string(payload, "review_loop_outcome", path=result_path)
     if outcome not in ALLOWED_REVIEW_LOOP_OUTCOMES:
         raise ValueError(f"{result_path}: unsupported review_loop_outcome {outcome!r}")
+    request_payload: dict[str, Any] | None = None
+    if not {
+        "reviewed_project_root",
+        "reviewed_lineage_root",
+        "reviewed_stage_dir",
+        "hard_gate_findings_acknowledged",
+    }.issubset(payload):
+        stage_dir = result_path.parents[2]
+        request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
+        if request_path.exists():
+            request_payload = load_adversarial_review_request(request_path)
 
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=result_path),
@@ -814,6 +826,33 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
         "reviewed_artifact_paths": _require_string_list(payload, "reviewed_artifact_paths", path=result_path),
         "reviewed_provenance_paths": _require_string_list(payload, "reviewed_provenance_paths", path=result_path),
     }
+    context_defaults = {
+        "reviewed_project_root": request_payload["project_root"] if request_payload else None,
+        "reviewed_lineage_root": request_payload["lineage_root"] if request_payload else None,
+        "reviewed_stage_dir": request_payload["stage_dir"] if request_payload else None,
+    }
+    for key, default_value in context_defaults.items():
+        if key in payload:
+            data[key] = _require_string(payload, key, path=result_path)
+        elif isinstance(default_value, str) and default_value.strip():
+            data[key] = default_value
+        else:
+            data[key] = _require_string(payload, key, path=result_path)
+    if "hard_gate_findings_acknowledged" in payload:
+        data["hard_gate_findings_acknowledged"] = _require_bool(
+            payload,
+            "hard_gate_findings_acknowledged",
+            path=result_path,
+        )
+    elif request_payload is not None:
+        # 兼容旧测试/投影：raw findings 路径仍在 review_result_writer 中强制要求显式确认。
+        data["hard_gate_findings_acknowledged"] = True
+    else:
+        data["hard_gate_findings_acknowledged"] = _require_bool(
+            payload,
+            "hard_gate_findings_acknowledged",
+            path=result_path,
+        )
     for key in (
         "blocking_findings",
         "reservation_findings",
@@ -858,6 +897,10 @@ def canonicalize_runtime_review_result(
         "review_loop_outcome": result_payload["review_loop_outcome"],
         "reviewed_program_dir": request_payload["required_program_dir"],
         "reviewed_program_entrypoint": request_payload["required_program_entrypoint"],
+        "reviewed_project_root": request_payload["project_root"],
+        "reviewed_lineage_root": request_payload["lineage_root"],
+        "reviewed_stage_dir": request_payload["stage_dir"],
+        "hard_gate_findings_acknowledged": result_payload["hard_gate_findings_acknowledged"],
         "reviewed_artifact_paths": stage_content_artifact_paths_from_request(request_payload),
         "reviewed_provenance_paths": stage_content_provenance_paths_from_request(request_payload),
         "blocking_findings": list(result_payload["blocking_findings"]),
@@ -994,6 +1037,18 @@ def validate_result_against_request(
         raise ValueError(
             "adversarial_review_result.yaml reviewed_program_entrypoint does not match required_program_entrypoint"
         )
+    for result_key, request_key in (
+        ("reviewed_project_root", "project_root"),
+        ("reviewed_lineage_root", "lineage_root"),
+        ("reviewed_stage_dir", "stage_dir"),
+    ):
+        if result_payload[result_key] != request_payload[request_key]:
+            raise ValueError(
+                f"{REVIEW_CONTEXT_ROOT_MISMATCH}: adversarial_review_result.yaml {result_key} "
+                f"does not match adversarial_review_request.yaml"
+            )
+    if result_payload["hard_gate_findings_acknowledged"] is not True:
+        raise ValueError("adversarial_review_result.yaml hard_gate_findings_acknowledged must be true")
     if sorted(result_payload["reviewed_artifact_paths"]) != stage_content_artifact_paths_from_request(request_payload):
         raise ValueError("adversarial_review_result.yaml reviewed_artifact_paths do not cover the stage content artifacts")
     if sorted(result_payload["reviewed_provenance_paths"]) != stage_content_provenance_paths_from_request(request_payload):
