@@ -797,17 +797,6 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
     outcome = _require_string(payload, "review_loop_outcome", path=result_path)
     if outcome not in ALLOWED_REVIEW_LOOP_OUTCOMES:
         raise ValueError(f"{result_path}: unsupported review_loop_outcome {outcome!r}")
-    request_payload: dict[str, Any] | None = None
-    if not {
-        "reviewed_project_root",
-        "reviewed_lineage_root",
-        "reviewed_stage_dir",
-        "hard_gate_findings_acknowledged",
-    }.issubset(payload):
-        stage_dir = result_path.parents[2]
-        request_path = stage_dir / "review" / "request" / ADVERSARIAL_REVIEW_REQUEST_FILENAME
-        if request_path.exists():
-            request_payload = load_adversarial_review_request(request_path)
 
     data = {
         "review_cycle_id": _require_string(payload, "review_cycle_id", path=result_path),
@@ -825,34 +814,15 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
         "reviewed_program_entrypoint": _require_string(payload, "reviewed_program_entrypoint", path=result_path),
         "reviewed_artifact_paths": _require_string_list(payload, "reviewed_artifact_paths", path=result_path),
         "reviewed_provenance_paths": _require_string_list(payload, "reviewed_provenance_paths", path=result_path),
-    }
-    context_defaults = {
-        "reviewed_project_root": request_payload["project_root"] if request_payload else None,
-        "reviewed_lineage_root": request_payload["lineage_root"] if request_payload else None,
-        "reviewed_stage_dir": request_payload["stage_dir"] if request_payload else None,
-    }
-    for key, default_value in context_defaults.items():
-        if key in payload:
-            data[key] = _require_string(payload, key, path=result_path)
-        elif isinstance(default_value, str) and default_value.strip():
-            data[key] = default_value
-        else:
-            data[key] = _require_string(payload, key, path=result_path)
-    if "hard_gate_findings_acknowledged" in payload:
-        data["hard_gate_findings_acknowledged"] = _require_bool(
+        "reviewed_project_root": _require_string(payload, "reviewed_project_root", path=result_path),
+        "reviewed_lineage_root": _require_string(payload, "reviewed_lineage_root", path=result_path),
+        "reviewed_stage_dir": _require_string(payload, "reviewed_stage_dir", path=result_path),
+        "hard_gate_findings_acknowledged": _require_bool(
             payload,
             "hard_gate_findings_acknowledged",
             path=result_path,
-        )
-    elif request_payload is not None:
-        # 兼容旧测试/投影：raw findings 路径仍在 review_result_writer 中强制要求显式确认。
-        data["hard_gate_findings_acknowledged"] = True
-    else:
-        data["hard_gate_findings_acknowledged"] = _require_bool(
-            payload,
-            "hard_gate_findings_acknowledged",
-            path=result_path,
-        )
+        ),
+    }
     for key in (
         "blocking_findings",
         "reservation_findings",

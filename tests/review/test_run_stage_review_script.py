@@ -94,6 +94,12 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
     ]
     required_provenance_paths = ["program_execution_manifest.json"]
     launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
+    project_root = str(stage_dir.parent.parent.parent.resolve())
+    lineage_root = str(stage_dir.parent.resolve())
+    resolved_stage_dir = str(stage_dir.resolve())
+    author_formal_dir = str((stage_dir / "author" / "formal").resolve())
+    review_request_dir = str((stage_dir / "review" / "request").resolve())
+    review_result_dir = str((stage_dir / "review" / "result").resolve())
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
     _write_yaml(
         handoff_manifest_path,
@@ -101,10 +107,20 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "review_cycle_id": "cycle-1",
             "lineage_id": "topic_a",
             "stage": "mandate",
+            "project_root": project_root,
+            "lineage_root": lineage_root,
+            "stage_dir": resolved_stage_dir,
+            "author_formal_dir": author_formal_dir,
+            "review_request_dir": review_request_dir,
+            "review_result_dir": review_result_dir,
             "required_program_dir": "program/mandate",
             "required_program_entrypoint": "run_stage.py",
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
+            "stage_content_artifact_paths": required_artifact_paths,
+            "stage_content_provenance_paths": required_provenance_paths,
+            "upstream_binding_artifact_paths": [],
+            "upstream_binding_provenance_paths": [],
             "permitted_input_roots": ["review/request", "author/formal"],
             "permitted_output_roots": ["review/result"],
             "required_result_write_root": "review/result",
@@ -124,12 +140,22 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "review_cycle_id": "cycle-1",
             "lineage_id": "topic_a",
             "stage": "mandate",
+            "project_root": project_root,
+            "lineage_root": lineage_root,
+            "stage_dir": resolved_stage_dir,
+            "author_formal_dir": author_formal_dir,
+            "review_request_dir": review_request_dir,
+            "review_result_dir": review_result_dir,
             "author_identity": "author-agent",
             "author_session_id": "author-session",
             "required_program_dir": "program/mandate",
             "required_program_entrypoint": "run_stage.py",
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
+            "stage_content_artifact_paths": required_artifact_paths,
+            "stage_content_provenance_paths": required_provenance_paths,
+            "upstream_binding_artifact_paths": [],
+            "upstream_binding_provenance_paths": [],
             "required_reviewer_mode": "adversarial",
             "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
@@ -144,6 +170,9 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
         {
             "review_cycle_id": "cycle-1",
+            "project_root": project_root,
+            "lineage_root": lineage_root,
+            "stage_dir": resolved_stage_dir,
             "launcher_owner": "qros-runtime-launcher",
             "launcher_session_id": "launcher-session",
             "launcher_thread_id": "leader-thread",
@@ -185,7 +214,12 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "cycle-1",
+            "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_project_root": project_root,
+            "reviewed_lineage_root": lineage_root,
+            "reviewed_stage_dir": resolved_stage_dir,
+            "hard_gate_findings_acknowledged": True,
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "blocking_findings": [],
             "reservation_findings": [],
@@ -330,7 +364,12 @@ def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_pa
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "cycle-1",
+            "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
+            "reviewed_lineage_root": str(stage_dir.parent.resolve()),
+            "reviewed_stage_dir": str(stage_dir.resolve()),
+            "hard_gate_findings_acknowledged": True,
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "blocking_findings": [],
             "reservation_findings": [],
@@ -486,6 +525,10 @@ def test_run_stage_review_script_rejects_stale_canonical_result_projection(tmp_p
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "reviewed_program_dir": "program/unapproved_scope",
             "reviewed_program_entrypoint": "alternate.py",
+            "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
+            "reviewed_lineage_root": str(stage_dir.parent.resolve()),
+            "reviewed_stage_dir": str(stage_dir.resolve()),
+            "hard_gate_findings_acknowledged": True,
             "reviewed_artifact_paths": ["mandate.md", "review_notes.md"],
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
@@ -534,7 +577,12 @@ def test_run_stage_review_script_rejects_review_cycle_mismatch(tmp_path: Path) -
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "stale-cycle",
+            "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
+            "reviewed_lineage_root": str(stage_dir.parent.resolve()),
+            "reviewed_stage_dir": str(stage_dir.resolve()),
+            "hard_gate_findings_acknowledged": True,
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "blocking_findings": [],
             "reservation_findings": [],

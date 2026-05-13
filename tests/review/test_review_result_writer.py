@@ -8,6 +8,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ReviewerRuntimeIdentity,
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
+    load_adversarial_review_result,
 )
 from runtime.tools.review_skillgen.review_result_writer import ensure_runtime_review_result
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
@@ -61,6 +62,32 @@ def _prepare_mandate_review_case(tmp_path: Path) -> Path:
     return stage_dir
 
 
+def _raw_findings_payload(
+    *,
+    request_payload: dict,
+    receipt_payload: dict,
+    **overrides: object,
+) -> dict:
+    payload = {
+        "review_cycle_id": receipt_payload["review_cycle_id"],
+        "reviewer_session_id": receipt_payload["requested_reviewer_session_id"],
+        "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
+        "reviewed_project_root": request_payload["project_root"],
+        "reviewed_lineage_root": request_payload["lineage_root"],
+        "reviewed_stage_dir": request_payload["stage_dir"],
+        "hard_gate_findings_acknowledged": True,
+        "review_loop_outcome": "CLOSURE_READY_PASS",
+        "blocking_findings": [],
+        "reservation_findings": [],
+        "info_findings": [],
+        "residual_risks": [],
+        "allowed_modifications": [],
+        "downstream_permissions": [],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_ensure_runtime_review_result_materializes_canonical_result_from_raw_findings(tmp_path: Path) -> None:
     stage_dir = _prepare_mandate_review_case(tmp_path)
     request_payload = yaml.safe_load(
@@ -71,18 +98,15 @@ def test_ensure_runtime_review_result_materializes_canonical_result_from_raw_fin
     )
     _write_yaml(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
-        {
-            "review_cycle_id": receipt_payload["review_cycle_id"],
-            "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
-            "review_loop_outcome": "CLOSURE_READY_PASS",
-            "blocking_findings": [],
-            "reservation_findings": ["Document the remaining manual replay caveat."],
-            "info_findings": ["Reviewer focused on stage-local mandate content only."],
-            "residual_risks": ["Replay root still depends on local data availability."],
-            "allowed_modifications": [],
-            "downstream_permissions": ["mandate_next_stage_confirmation_pending"],
-            "review_summary": "Stage-local content review passed after deterministic protocol checks.",
-        },
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            reservation_findings=["Document the remaining manual replay caveat."],
+            info_findings=["Reviewer focused on stage-local mandate content only."],
+            residual_risks=["Replay root still depends on local data availability."],
+            downstream_permissions=["mandate_next_stage_confirmation_pending"],
+            review_summary="Stage-local content review passed after deterministic protocol checks.",
+        ),
     )
 
     payload = ensure_runtime_review_result(
@@ -129,6 +153,10 @@ def test_ensure_runtime_review_result_prefers_fresh_raw_findings_over_existing_c
             "review_loop_outcome": "CLOSURE_READY_RETRY",
             "reviewed_program_dir": "program/mandate",
             "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_project_root": request_payload["project_root"],
+            "reviewed_lineage_root": request_payload["lineage_root"],
+            "reviewed_stage_dir": request_payload["stage_dir"],
+            "hard_gate_findings_acknowledged": True,
             "reviewed_artifact_paths": sorted(request_payload["stage_content_artifact_paths"]),
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": ["old blocking finding"],
@@ -141,17 +169,12 @@ def test_ensure_runtime_review_result_prefers_fresh_raw_findings_over_existing_c
     )
     _write_yaml(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
-        {
-            "review_cycle_id": receipt_payload["review_cycle_id"],
-            "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
-            "review_loop_outcome": "CLOSURE_READY_PASS",
-            "blocking_findings": [],
-            "reservation_findings": [],
-            "info_findings": ["fresh reviewer run"],
-            "residual_risks": [],
-            "allowed_modifications": [],
-            "downstream_permissions": ["mandate_next_stage_confirmation_pending"],
-        },
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            info_findings=["fresh reviewer run"],
+            downstream_permissions=["mandate_next_stage_confirmation_pending"],
+        ),
     )
 
     payload = ensure_runtime_review_result(
@@ -196,6 +219,10 @@ def test_ensure_runtime_review_result_rejects_stale_canonical_result_without_raw
             "review_loop_outcome": "CLOSURE_READY_PASS",
             "reviewed_program_dir": "program/mandate",
             "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_project_root": request_payload["project_root"],
+            "reviewed_lineage_root": request_payload["lineage_root"],
+            "reviewed_stage_dir": request_payload["stage_dir"],
+            "hard_gate_findings_acknowledged": True,
             "reviewed_artifact_paths": sorted(request_payload["stage_content_artifact_paths"]),
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
@@ -224,6 +251,43 @@ def test_ensure_runtime_review_result_rejects_stale_canonical_result_without_raw
     assert "reviewer_findings.raw.yaml is required" in str(exc_info.value)
 
 
+def test_load_adversarial_review_result_requires_explicit_attestation_fields(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_review_case(tmp_path)
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    result_path = stage_dir / "review" / "result" / "adversarial_review_result.yaml"
+    _write_yaml(
+        result_path,
+        {
+            "review_cycle_id": request_payload["review_cycle_id"],
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_role": "reviewer",
+            "reviewer_session_id": "review-session",
+            "reviewer_mode": "adversarial",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewer_execution_mode": "spawned_agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
+            "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
+            "review_loop_outcome": "CLOSURE_READY_PASS",
+            "reviewed_program_dir": "program/mandate",
+            "reviewed_program_entrypoint": "run_stage.py",
+            "reviewed_artifact_paths": sorted(request_payload["stage_content_artifact_paths"]),
+            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "downstream_permissions": [],
+        },
+    )
+
+    with pytest.raises(ValueError, match="reviewed_project_root"):
+        load_adversarial_review_result(result_path)
+
+
 def test_ensure_runtime_review_result_rejects_unsupported_raw_outcome_before_writing_result(
     tmp_path: Path,
 ) -> None:
@@ -237,17 +301,12 @@ def test_ensure_runtime_review_result_rejects_unsupported_raw_outcome_before_wri
     raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
     _write_yaml(
         raw_path,
-        {
-            "review_cycle_id": receipt_payload["review_cycle_id"],
-            "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
-            "review_loop_outcome": "BLOCKING_FINDINGS",
-            "blocking_findings": ["Reviewer found a blocker."],
-            "reservation_findings": [],
-            "info_findings": [],
-            "residual_risks": [],
-            "allowed_modifications": [],
-            "downstream_permissions": [],
-        },
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            review_loop_outcome="BLOCKING_FINDINGS",
+            blocking_findings=["Reviewer found a blocker."],
+        ),
     )
 
     with pytest.raises(ValueError) as exc_info:
@@ -285,17 +344,12 @@ def test_ensure_runtime_review_result_rejects_non_list_raw_finding_fields_before
     raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
     _write_yaml(
         raw_path,
-        {
-            "review_cycle_id": receipt_payload["review_cycle_id"],
-            "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
-            "review_loop_outcome": "FIX_REQUIRED",
-            "blocking_findings": "Reviewer found a blocker.",
-            "reservation_findings": [],
-            "info_findings": [],
-            "residual_risks": [],
-            "allowed_modifications": [],
-            "downstream_permissions": [],
-        },
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            review_loop_outcome="FIX_REQUIRED",
+            blocking_findings="Reviewer found a blocker.",
+        ),
     )
 
     with pytest.raises(ValueError) as exc_info:
@@ -331,17 +385,11 @@ def test_ensure_runtime_review_result_rejects_raw_findings_with_mismatched_cycle
     raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
     _write_yaml(
         raw_path,
-        {
-            "review_cycle_id": "wrong-cycle",
-            "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
-            "review_loop_outcome": "CLOSURE_READY_PASS",
-            "blocking_findings": [],
-            "reservation_findings": [],
-            "info_findings": [],
-            "residual_risks": [],
-            "allowed_modifications": [],
-            "downstream_permissions": [],
-        },
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            review_cycle_id="wrong-cycle",
+        ),
     )
 
     with pytest.raises(ValueError) as exc_info:
