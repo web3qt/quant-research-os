@@ -687,7 +687,15 @@ def issue_reviewer_receipt(
             existing_review_cycle_id = raw_existing.get("review_cycle_id")
             if existing_review_cycle_id is not None and existing_review_cycle_id != payload["review_cycle_id"]:
                 raise
-            # 旧 receipt 可能缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
+            missing_context_fields = [
+                key for key in RECEIPT_CANONICAL_CONTEXT_FIELDS if key not in raw_existing
+            ]
+            for key in RECEIPT_CANONICAL_CONTEXT_FIELDS:
+                if key in raw_existing and raw_existing[key] != payload[key]:
+                    raise
+            if not missing_context_fields:
+                raise
+            # 旧 receipt 缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
         else:
             if existing["review_cycle_id"] != payload["review_cycle_id"]:
                 raise ValueError("existing reviewer_receipt.yaml review_cycle_id does not match the active request")
