@@ -19,7 +19,8 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 `./.qros/bin/qros-check-stage-entry --stage csf_data_ready --lane author`
 
-若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
+若命令失败，必须停止；不得继续 authoring，不得补 artifact，不得绕过 `qros-research-session` 的 `current_stage`。应按输出中的 stage 状态回到 `qros-research-session`，重新读取 runtime state 后再重进本 skill。
+若当前仍停在 `mandate_next_stage_confirmation_pending`，应回到 `qros-research-session` 完成 next-stage confirmation；只有 runtime 进入 `csf_data_ready_confirmation_pending` 或 `csf_data_ready_author` 后，本 skill 才能继续。
 
 ## Artifact Contract Truth
 

@@ -48,7 +48,7 @@ def _prepare_passed_mandate(outputs_root: Path, lineage_id: str) -> None:
         _write(stage_dir / "review" / "closure" / name, "final_verdict: PASS\nstage_status: PASS\n")
 
 
-def test_run_resume_script_reports_clear_handoff_from_disk_state(tmp_path: Path) -> None:
+def test_run_resume_script_reports_direct_handoff_from_disk_state(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     _prepare_passed_mandate(outputs_root, "topic_a")
 
@@ -71,8 +71,8 @@ def test_run_resume_script_reports_clear_handoff_from_disk_state(tmp_path: Path)
     assert result.returncode == 0
     payload = json.loads(result.stdout)
     assert payload["current_stage"] == "mandate_next_stage_confirmation_pending"
-    assert payload["clear_required"] is True
-    assert payload["clear_instruction"] == "Run /clear in Codex or Claude Code before continuing."
-    assert payload["recommended_skill"] == "qros-csf-data-ready-author"
-    assert payload["backend_resume_command"] == "./.qros/bin/qros-resume --lineage-id topic_a"
-    assert "qros-csf-data-ready-author" in payload["next_action"]
+    assert payload["recommended_skill"] == "qros-research-session"
+    assert payload["handoff_hint"] == "Continue with qros-research-session."
+    assert payload["next_action"] == "Continue with qros-research-session."
+    assert "clear_required" not in payload
+    assert "clear_instruction" not in payload

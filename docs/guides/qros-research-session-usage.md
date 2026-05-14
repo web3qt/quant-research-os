@@ -71,9 +71,9 @@
 
 `qros-progress` 是只读进度查询入口，不是推进入口。它默认读取当前 repo 的 `outputs/` 并选择最近修改的 lineage，返回 `current_stage`、`current_skill`、`gate_status`、`blocking_reason`、`next_action` 和 `open_risks`。它不写 artifact、不 scaffold、不确认 transition，也不会替代 `qros-research-session`、stage author skill、review skill 或 failure handling skill。
 
-`qros-resume` is a backend/debug recovery command，不是普通用户在 PASS boundary 后的主入口。正常 review 放行后，Codex 或 Claude Code 应先执行 `/clear`，然后在新会话中进入 runtime 推荐的下一阶段 author skill，例如 `qros-csf-data-ready-author` 或 `qros-tss-data-ready-author`。新会话里的 agent 再从磁盘状态重验 lineage、review closure、next-stage handoff 和 stage-entry guard。
+normal review 放行后，Codex 或 Claude Code 应直接进入 runtime 推荐的下一步 skill。对于 `mandate` 之后的下一阶段确认边界，这个 skill 是 `qros-research-session`；后续 stage 已经进入各自的 `*_confirmation_pending` 时，再进入对应的 stage-specific author skill。当前或新会话里的 agent 都仍然要从磁盘状态重验 lineage、review closure、next-stage handoff 和 stage-entry guard。
 
-stage-specific author / review skill 也不是自由跳转入口。它们只能在 runtime 当前阶段已经匹配时执行：author skill 必须先通过 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`，review skill 必须先通过 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`。如果该 guard 报告 `current_stage` 不匹配，正确动作是按输出里的 `qros-research-session --lineage-id <lineage_id>` 恢复统一会话状态，而不是让 stage skill 直接补 artifact、起 reviewer 或绕过 next-stage confirmation。
+stage-specific author / review skill 也不是自由跳转入口。它们只能在 runtime 当前阶段已经匹配时执行：author skill 必须先通过 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`，review skill 必须先通过 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`。如果该 guard 报告 `current_stage` 不匹配，正确动作是回到 `qros-research-session`，重新读取统一会话状态，而不是让 stage skill 直接补 artifact、起 reviewer 或绕过 next-stage confirmation。
 
 `qros-factor-diagnostics` 是可选 diagnostics 入口，不是 review，不是 gate。它读取 CSF formal artifacts，汇总数据质量、因子质量、回测结果和 holdout 稳定性；它不写 review closure、不修改 gate decision，也不替代 `qros-review`。
 
@@ -272,7 +272,7 @@ Lineage: btc_leads_alts
 
 如果某个非终态阶段已经 review closure 完成，session 会进入 `*_next_stage_confirmation_pending`，等待用户是否进入下一阶段。对最终的 route-specific holdout 阶段，最后一次 `CONFIRM_NEXT_STAGE` 会把 session 标成对应的 `*_holdout_validation_review_complete`，例如 `tss_holdout_validation_review_complete` 或 `csf_holdout_validation_review_complete`。展示/总结不是 formal workflow gate；如果用户想看阶段总结，应直接在对话里提出。
 
-每个正常放行的 review boundary 都是 clear/resume 边界。`qros-review` closer、`qros-session` 和 `qros-progress` 会重复输出 `clear_required`、`clear_instruction` 与 `recommended_skill`。看到这些字段时，agent 不应在同一个长上下文里直接开始下一阶段；正确顺序是执行 `/clear`，再让新会话进入推荐的下一阶段 author skill，并从磁盘真值重验状态。
+每个正常放行的 review boundary 都会回到 direct skill handoff。`qros-review` closer、`qros-session` 和 `qros-progress` 会输出当前 runtime 推荐的下一步 skill。看到 `*_next_stage_confirmation_pending` 时，agent 应先继续 `qros-research-session` 完成 next-stage confirmation；只有状态真正进入下游 `*_confirmation_pending` 或 `*_author` 后，才进入对应的 stage-specific author skill。
 
 如果你要让脚本输出机读状态而不是文本面板，可以加 `--json`：
 

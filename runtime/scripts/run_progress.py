@@ -37,18 +37,11 @@ def _render_text(payload: dict[str, object]) -> str:
     lines.extend(
         [
             f"Next action: {payload['next_action']}",
-            f"Resume hint: {payload['resume_hint']}",
+            f"Handoff hint: {payload['handoff_hint']}",
         ]
     )
-    if payload.get("clear_required"):
-        lines.extend(
-            [
-                "Clear required: True",
-                f"Clear instruction: {payload['clear_instruction']}",
-            ]
-        )
-        if payload.get("recommended_skill"):
-            lines.append(f"Recommended next skill: {payload['recommended_skill']}")
+    if payload.get("recommended_skill"):
+        lines.append(f"Recommended next skill: {payload['recommended_skill']}")
     open_risks = payload.get("open_risks")
     if isinstance(open_risks, list) and open_risks:
         lines.append("Open risks:")

@@ -271,7 +271,7 @@ not bind to the active receipt or that target stale author outputs.
 
 `closure-ready adverse verdict` 路径包括 `CLOSURE_READY_NO_GO`、`CLOSURE_READY_CHILD_LINEAGE`，以及其它等价的 closure-ready terminal failure outcome。
 
-`CLOSURE_READY_PASS` 和 `CLOSURE_READY_CONDITIONAL_PASS` 关闭后会形成 clear/resume boundary。`./.qros/bin/qros-review` closer 必须提醒 Codex 或 Claude Code 先执行 `/clear`，再在新会话中进入 runtime 推荐的下一阶段 author skill，例如 `qros-csf-data-ready-author`。`qros-resume` 只保留为 backend/debug recovery 命令，不作为普通用户下一步。后续 `qros-session` / `qros-progress` 查询同一 PASS-like boundary 时也会重复这个提醒。`FIX_REQUIRED` 和 failure-class closure 不触发普通下一阶段的 `/clear` 推进提醒，而是继续走 author fix 或 failure handling。
+`CLOSURE_READY_PASS` 和 `CLOSURE_READY_CONDITIONAL_PASS` 关闭后会形成 direct skill handoff。`./.qros/bin/qros-review` closer 必须输出 runtime 推荐的下一步 skill；在 `*_next_stage_confirmation_pending` 边界上，这个 skill 是 `qros-research-session`，由它完成 next-stage confirmation。后续 `qros-session` / `qros-progress` 查询同一 PASS-like boundary 时也会重复这个 skill handoff。`FIX_REQUIRED` 和 failure-class closure 不触发普通下一阶段推进，而是继续走 author fix 或 failure handling。
 
 ## 可选的人类可读 Findings
 

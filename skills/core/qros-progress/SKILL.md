@@ -63,12 +63,12 @@ description: Use when the user asks for latest QROS research progress, current l
 
 如果输出显示：
 
-- `clear_required = true`，必须提醒用户先在 Codex 或 Claude Code 执行 `/clear`，再进入输出里的 `recommended_skill`；`backend_resume_command` 只作为 agent/debug recovery，不作为普通用户下一步。
+- `recommended_skill` 有值，应继续进入该 skill；不要把 shell 命令当作普通用户下一步。
 - `current_skill = qros-stage-failure-handler`，应进入 failure handling，而不是继续普通 stage 推进。
 - `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`，应在 latest failure package 写出 `failure_disposition.yaml`，只能选择 `NO_GO` 或 `CHILD_LINEAGE`。
 - `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`，原 lineage 仍不得重新进入普通 review / next-stage，应走 `qros-lineage-change-control` 或 child lineage。
 - `blocking_reason_code = STAGE_PROGRAM_MISSING`，应让 author lane 显式补 lineage-local stage program。
 - `blocking_reason_code = REVIEW_CONFIRMATION_REQUIRED`，应进入对应 review skill 的显式 review 流程。
-- `current_stage` 以 `_next_stage_confirmation_pending` 结尾，应先让用户确认是否进入下一阶段。
+- `current_stage` 以 `_next_stage_confirmation_pending` 结尾，应继续 `qros-research-session` 完成下一阶段确认。
 
 不要根据聊天记忆覆盖磁盘状态；磁盘和 runtime 输出是进度查询的事实来源。

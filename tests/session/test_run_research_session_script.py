@@ -1395,9 +1395,10 @@ def test_run_research_session_reports_mandate_review_complete_when_closure_exist
 
     assert result.returncode == 2
     assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
-    assert "🧹 Clear instruction: Run /clear in Codex or Claude Code before continuing." in result.stdout
-    assert "🧹 Recommended next skill: qros-csf-data-ready-author" in result.stdout
-    assert "qros-resume --lineage-id" not in result.stdout
+    assert "🔁 Handoff hint: Continue with qros-research-session." in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
+    assert "Run /clear" not in result.stdout
+    assert "Clear instruction" not in result.stdout
 
 
 def test_run_research_session_reports_data_ready_next_group_after_mandate_review_complete(
@@ -1442,7 +1443,7 @@ def test_run_research_session_reports_data_ready_next_group_after_mandate_review
     assert "🧭 Current orchestrator: qros-research-session" in result.stdout
     assert "📍 Current stage: mandate_next_stage_confirmation_pending" in result.stdout
     assert "🔨 Current active skill: qros-research-session" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
     assert "Data Ready Reflection:" not in result.stdout
 
 
@@ -1663,7 +1664,7 @@ def test_run_research_session_reports_signal_ready_next_group_after_data_ready_r
 
     assert result.returncode == 2
     assert "📍 Current stage: data_ready_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
     assert "Data Ready Reflection:" in result.stdout
 
 
@@ -1804,7 +1805,7 @@ def test_run_research_session_reports_train_freeze_next_group_after_signal_ready
 
     assert result.returncode == 2
     assert "📍 Current stage: signal_ready_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
 
 
 def test_run_research_session_builds_train_freeze_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -1939,7 +1940,7 @@ def test_run_research_session_reports_test_evidence_next_group_after_train_revie
 
     assert result.returncode == 2
     assert "📍 Current stage: train_freeze_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
 
 
 def test_run_research_session_builds_test_evidence_only_after_explicit_confirmation(tmp_path: Path) -> None:
@@ -2098,7 +2099,7 @@ def test_run_research_session_reports_backtest_ready_next_group_after_test_revie
 
     assert result.returncode == 2
     assert "📍 Current stage: test_evidence_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
 
 
 def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp_path: Path) -> None:
@@ -2375,7 +2376,7 @@ def test_run_research_session_reports_holdout_validation_next_group_after_backte
 
     assert result.returncode == 2
     assert "📍 Current stage: backtest_ready_next_stage_confirmation_pending" in result.stdout
-    assert "CONFIRM_NEXT_STAGE" in result.stdout
+    assert "➡ Recommended next skill: qros-research-session" in result.stdout
 
 
 def test_run_research_session_builds_holdout_validation_only_after_explicit_confirmation(

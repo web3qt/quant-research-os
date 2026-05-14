@@ -14,11 +14,11 @@ if str(ROOT) not in sys.path:
 
 from runtime.tools.progress_runtime import progress_status_payload  # noqa: E402
 from runtime.tools.research_session import run_research_session  # noqa: E402
-from runtime.tools.review_resume_protocol import build_clear_resume_capsule  # noqa: E402
+from runtime.tools.review_resume_protocol import build_direct_handoff_capsule  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Resume a QROS lineage after clearing the conversation.")
+    parser = argparse.ArgumentParser(description="Inspect the current QROS handoff state.")
     parser.add_argument("--outputs-root", type=Path, required=True)
     parser.add_argument("--lineage-id", required=True)
     parser.add_argument("--continue", dest="continue_mode", action="store_true")
@@ -40,25 +40,18 @@ def _render_text(payload: dict[str, object]) -> str:
     lines.extend(
         [
             f"Next action: {payload['next_action']}",
-            f"Resume hint: {payload['resume_hint']}",
+            f"Handoff hint: {payload['handoff_hint']}",
         ]
     )
-    if payload.get("clear_required"):
-        lines.extend(
-            [
-                "Clear required: True",
-                f"Clear instruction: {payload['clear_instruction']}",
-            ]
-        )
-        if payload.get("recommended_skill"):
-            lines.append(f"Recommended next skill: {payload['recommended_skill']}")
+    if payload.get("recommended_skill"):
+        lines.append(f"Recommended next skill: {payload['recommended_skill']}")
     return "\n".join(lines)
 
 
-def _payload_from_session(status, *, continue_mode: bool) -> dict[str, object]:
+def _payload_from_session(status) -> dict[str, object]:
     payload = asdict(status)
     payload["lineage_root"] = str(status.lineage_root)
-    payload.update(build_clear_resume_capsule(status, continue_mode=continue_mode))
+    payload.update(build_direct_handoff_capsule(status))
     payload["selection_mode"] = "explicit"
     return payload
 
@@ -71,7 +64,7 @@ def main() -> int:
             lineage_id=args.lineage_id,
             continue_mode=True,
         )
-        payload = _payload_from_session(status, continue_mode=True)
+        payload = _payload_from_session(status)
     else:
         payload = progress_status_payload(outputs_root=args.outputs_root.resolve(), lineage_id=args.lineage_id)
 

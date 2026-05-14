@@ -20,13 +20,13 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "qros-research-session" in combined
     assert "qros-research-session help" in combined
     assert "qros-progress" in combined
+    assert "direct skill handoff" in combined
     assert "开始或继续一条研究线" in combined
     assert "查看当前研究进度" in combined
     assert "查看 QROS 使用帮助" in combined
     assert "更新 QROS 到远程最新版本" in combined
     assert "./.qros/bin/qros-progress" in combined
     assert "./.qros/bin/qros-resume" in combined
-    assert "qros-resume` is a backend/debug recovery command" in combined
     assert "qros-update" in combined
     assert "./.qros/bin/qros-session" in combined
     assert "./.qros/bin/qros-review-cycle" in combined

@@ -11,20 +11,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError, run_stage_review
-from runtime.tools.review_resume_protocol import build_review_clear_resume_notice
+from runtime.tools.review_resume_protocol import build_review_handoff_notice
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError
-
-
-def _current_route_from_stage_dir(stage_dir: Path) -> str | None:
-    route_path = stage_dir / "author" / "formal" / "research_route.yaml"
-    if not route_path.exists():
-        return None
-    for line in route_path.read_text(encoding="utf-8").splitlines():
-        if not line.strip().startswith("research_route:"):
-            continue
-        value = line.split(":", 1)[1].strip().strip("'\"")
-        return value or None
-    return None
 
 
 def _parse_args() -> argparse.Namespace:
@@ -65,16 +53,12 @@ def main() -> int:
     print(f"Final verdict: {payload['final_verdict']}")
     print(f"Stage: {payload['stage']}")
     print(f"Lineage: {payload['lineage_id']}")
-    clear_notice = build_review_clear_resume_notice(
-        lineage_id=payload["lineage_id"],
+    handoff_notice = build_review_handoff_notice(
         final_verdict=payload["final_verdict"],
         stage=payload["stage"],
-        current_route=_current_route_from_stage_dir((args.stage_dir or Path.cwd()).resolve()),
     )
-    if clear_notice["clear_required"]:
-        print(clear_notice["clear_instruction"])
-        if clear_notice["recommended_skill"]:
-            print(f"Recommended next skill: {clear_notice['recommended_skill']}")
+    if handoff_notice["recommended_skill"]:
+        print(f"Recommended next skill: {handoff_notice['recommended_skill']}")
     return 0
 
 

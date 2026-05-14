@@ -210,19 +210,18 @@ When any of those verdicts appear for the current reviewed stage, the agent must
 - reuse runtime failure-routing status instead of ad hoc judgment
 - follow `qros-stage-failure-handler` before any further stage edits
 
-## Clear / Resume Boundary
+## Direct Skill Handoff
 
-PASS-like review closure is a mandatory context boundary.
+PASS-like review closure returns control to the runtime-recommended next skill.
 
-When `qros-review`, `qros-session`, or `qros-progress` reports `clear_required = true`, the current agent must:
+When `qros-review`, `qros-session`, or `qros-progress` reports a `recommended_skill`, the current agent must:
 
-- tell the user to run `/clear` in Codex or Claude Code
-- stop trying to start the next stage in the same long conversation
-- after `/clear`, tell the user to enter the printed `recommended_skill`, for example `qros-csf-data-ready-author`
-- treat `backend_resume_command` / `qros-resume` as backend/debug recovery, not the ordinary user-facing next step
-- ensure the post-clear author skill revalidates disk state before writing artifacts
+- continue through that skill instead of inventing a shell command
+- keep `qros-research-session` as the active skill for `*_next_stage_confirmation_pending`
+- enter stage-specific author skills only after runtime state has reached the matching `*_confirmation_pending` or `*_author`
+- revalidate disk state before writing artifacts
 
-This boundary exists because long contexts can produce self-deception around review results. Resume state must come from disk artifacts and runtime gates, not chat memory.
+Disk artifacts and runtime gates remain the source of truth; chat memory is never sufficient proof of stage eligibility.
 
 ## Language Discipline
 
