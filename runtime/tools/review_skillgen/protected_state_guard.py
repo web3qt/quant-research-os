@@ -8,6 +8,7 @@ import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    REVIEWER_EXECUTION_MODE_SPAWNED,
     REVIEWER_RECEIPT_FILENAME,
     load_adversarial_review_request,
     load_reviewer_receipt,
@@ -174,8 +175,30 @@ def _validate_raw_findings(stage_dir: Path) -> None:
     receipt = load_reviewer_receipt(receipt_path)
     if raw.get("review_cycle_id") != request.get("review_cycle_id"):
         _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings review_cycle_id does not match active request")
+    if raw.get("reviewer_session_id") != receipt.get("requested_reviewer_session_id"):
+        _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings reviewer_session_id does not match receipt")
+    if (
+        receipt.get("execution_mode") == REVIEWER_EXECUTION_MODE_SPAWNED
+        and raw.get("reviewer_session_id") == receipt.get("launcher_session_id")
+    ):
+        _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings reviewer_session_id collides with launcher session")
     if raw.get("reviewer_agent_id") != receipt.get("reviewer_agent_id"):
         _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings reviewer_agent_id does not match receipt")
+    if raw.get("reviewer_context_source") != receipt.get("reviewer_context_source"):
+        _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, "raw findings reviewer_context_source does not match receipt")
+    if raw.get("reviewer_history_inheritance") != receipt.get("reviewer_history_inheritance"):
+        _raise(
+            REVIEWER_FINDINGS_UNBOUND,
+            raw_path,
+            "raw findings reviewer_history_inheritance does not match receipt",
+        )
+    for raw_key, request_key in (
+        ("reviewed_project_root", "project_root"),
+        ("reviewed_lineage_root", "lineage_root"),
+        ("reviewed_stage_dir", "stage_dir"),
+    ):
+        if raw.get(raw_key) != request.get(request_key):
+            _raise(REVIEWER_FINDINGS_UNBOUND, raw_path, f"raw findings {raw_key} does not match active request")
 
 
 def assert_protected_review_state_intact(

@@ -187,6 +187,8 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "handoff_manifest_digest": handoff_manifest_digest,
             "requested_reviewer_identity": "reviewer-agent",
             "requested_reviewer_session_id": "review-session",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
             "receipt_written_at": "2026-04-17T03:00:00Z",
         },
     )
@@ -216,6 +218,8 @@ def _prepare_mandate_stage(tmp_path: Path) -> Path:
             "review_cycle_id": "cycle-1",
             "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
             "reviewed_project_root": project_root,
             "reviewed_lineage_root": lineage_root,
             "reviewed_stage_dir": resolved_stage_dir,
@@ -284,6 +288,7 @@ def test_run_stage_review_script_creates_closure_artifacts(tmp_path: Path) -> No
     assert "Review loop outcome: CLOSURE_READY_PASS" in result.stdout
     assert "Final verdict: PASS" in result.stdout
     assert "Recommended next skill: qros-research-session" in result.stdout
+    assert "qros-session --continue" not in result.stdout
     assert "Run /clear" not in result.stdout
     assert "Clear instruction" not in result.stdout
     assert "qros-resume --lineage-id" not in result.stdout
@@ -366,6 +371,8 @@ def test_run_stage_review_script_auto_materializes_raw_findings_and_audit(tmp_pa
             "review_cycle_id": "cycle-1",
             "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
             "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
             "reviewed_lineage_root": str(stage_dir.parent.resolve()),
             "reviewed_stage_dir": str(stage_dir.resolve()),
@@ -579,6 +586,8 @@ def test_run_stage_review_script_rejects_review_cycle_mismatch(tmp_path: Path) -
             "review_cycle_id": "stale-cycle",
             "reviewer_session_id": "review-session",
             "reviewer_agent_id": "reviewer-child-agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
             "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
             "reviewed_lineage_root": str(stage_dir.parent.resolve()),
             "reviewed_stage_dir": str(stage_dir.resolve()),

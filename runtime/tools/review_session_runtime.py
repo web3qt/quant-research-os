@@ -251,6 +251,11 @@ def _build_review_cycle_payload(
         "receipt_path": str((stage_dir / "review" / "request" / "reviewer_receipt.yaml").relative_to(lineage_root)),
         "archived_paths": prepared["archived_paths"],
         "review_runtime_state": prepared["state_payload"],
+        "reviewer_context_source": receipt_payload["reviewer_context_source"],
+        "reviewer_history_inheritance": receipt_payload["reviewer_history_inheritance"],
+        "reviewer_execution_mode": receipt_payload["execution_mode"],
+        "launcher_session_id": receipt_payload["launcher_session_id"],
+        "launcher_thread_id": receipt_payload["launcher_thread_id"],
         "request_payload": request_payload,
         "receipt_payload": receipt_payload,
     }
@@ -277,11 +282,13 @@ def _reviewer_handoff_prompt(
     stage_dir = Path(payload["stage_dir"]).resolve()
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
     author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
+    result_root = _display_path(stage_dir / "review" / "result", display_root=display_root)
     result_path = _display_path(
         stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         display_root=display_root,
     )
     request_payload = payload["request_payload"]
+    receipt_payload = payload["receipt_payload"]
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
         "",
@@ -289,10 +296,30 @@ def _reviewer_handoff_prompt(
         "- The current/main conversation is the launcher, not the reviewer.",
         "- Do not write reviewer_findings.raw.yaml from the launcher conversation.",
         "- Send this handoff to an independent reviewer/subagent.",
+        f"- launcher_session_id: {receipt_payload['launcher_session_id']}",
+        f"- launcher_thread_id: {receipt_payload['launcher_thread_id']}",
+        f"- reviewer_agent_id: {receipt_payload['reviewer_agent_id']}",
+        "- The QROS governance repo is not the active research repo unless the canonical paths below point there.",
+        "- The QROS governance repo is not the active research repo unless the canonical paths above point there.",
+        "",
+        "Isolation contract:",
+        f"- reviewer_context_source: {receipt_payload['reviewer_context_source']}",
+        f"- reviewer_history_inheritance: {receipt_payload['reviewer_history_inheritance']}",
+        f"- reviewer_execution_mode: {receipt_payload['execution_mode']}",
+        f"- reviewer_invocation_kind: {receipt_payload['reviewer_invocation_kind']}",
+        f"- context_isolation_policy: {receipt_payload['context_isolation_policy']}",
+        f"- handoff_delivery_method: {receipt_payload['handoff_delivery_method']}",
+        "",
+        "Canonical review context:",
         f"- Active research repo root: {request_payload['project_root']}",
         f"- Lineage root: {request_payload['lineage_root']}",
         f"- Stage dir: {request_payload['stage_dir']}",
-        "- The QROS governance repo is not the active research repo unless the canonical paths above point there.",
+        f"- project_root: {request_payload['project_root']}",
+        f"- lineage_root: {request_payload['lineage_root']}",
+        f"- stage_dir: {request_payload['stage_dir']}",
+        f"- author_formal_dir: {author_root}",
+        f"- review_request_dir: {request_root}",
+        f"- review_result_dir: {result_root}",
         "",
         f"Lineage: {payload['lineage_id']}",
         f"Stage: {payload['stage']}",
@@ -315,7 +342,13 @@ def _reviewer_handoff_prompt(
         "",
         "Write reviewer_findings.raw.yaml with top-level fields:",
         f"review_cycle_id: {payload['review_cycle_id']}",
+        f"reviewer_session_id: {reviewer_session_id}",
         f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
+        f"reviewer_context_source: {payload['receipt_payload']['reviewer_context_source']}",
+        f"reviewer_history_inheritance: {payload['receipt_payload']['reviewer_history_inheritance']}",
+        f"reviewed_project_root: {request_payload['project_root']}",
+        f"reviewed_lineage_root: {request_payload['lineage_root']}",
+        f"reviewed_stage_dir: {request_payload['stage_dir']}",
         "review_loop_outcome",
         "blocking_findings",
         "reservation_findings",

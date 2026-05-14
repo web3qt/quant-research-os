@@ -9,6 +9,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     ALLOWED_REVIEW_LOOP_OUTCOMES,
     FIX_REQUIRED_OUTCOME,
+    REVIEWER_EXECUTION_MODE_SPAWNED,
     ReviewerRuntimeIdentity,
     load_adversarial_review_result,
     resolve_closure_verdict,
@@ -72,6 +73,8 @@ def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
         "review_cycle_id": _require_raw_string(payload, "review_cycle_id", path=path),
         "reviewer_session_id": _require_raw_string(payload, "reviewer_session_id", path=path),
         "reviewer_agent_id": _require_raw_string(payload, "reviewer_agent_id", path=path),
+        "reviewer_context_source": _require_raw_string(payload, "reviewer_context_source", path=path),
+        "reviewer_history_inheritance": _require_raw_string(payload, "reviewer_history_inheritance", path=path),
         "reviewed_project_root": _require_raw_string(payload, "reviewed_project_root", path=path),
         "reviewed_lineage_root": _require_raw_string(payload, "reviewed_lineage_root", path=path),
         "reviewed_stage_dir": _require_raw_string(payload, "reviewed_stage_dir", path=path),
@@ -129,13 +132,24 @@ def ensure_runtime_review_result(
             raise ValueError(
                 f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_session_id does not match reviewer_receipt.yaml"
             )
-        if raw_payload["reviewer_session_id"] == receipt_payload["launcher_session_id"]:
+        if (
+            receipt_payload["execution_mode"] == REVIEWER_EXECUTION_MODE_SPAWNED
+            and raw_payload["reviewer_session_id"] == receipt_payload["launcher_session_id"]
+        ):
             raise ValueError(
                 f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_session_id must differ from launcher_session_id"
             )
         if raw_payload["reviewer_agent_id"] != receipt_payload["reviewer_agent_id"]:
             raise ValueError(
                 f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_agent_id does not match reviewer_receipt.yaml"
+            )
+        if raw_payload["reviewer_context_source"] != receipt_payload["reviewer_context_source"]:
+            raise ValueError(
+                f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_context_source does not match reviewer_receipt.yaml"
+            )
+        if raw_payload["reviewer_history_inheritance"] != receipt_payload["reviewer_history_inheritance"]:
+            raise ValueError(
+                f"{REVIEWER_IDENTITY_COLLISION}: {raw_path}: reviewer_history_inheritance does not match reviewer_receipt.yaml"
             )
         for raw_key, request_key in (
             ("reviewed_project_root", "project_root"),
@@ -154,8 +168,8 @@ def ensure_runtime_review_result(
             "reviewer_mode": runtime_identity.reviewer_mode,
             "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
             "reviewer_execution_mode": receipt_payload["execution_mode"],
-            "reviewer_context_source": "explicit_handoff_only",
-            "reviewer_history_inheritance": "none",
+            "reviewer_context_source": raw_payload["reviewer_context_source"],
+            "reviewer_history_inheritance": raw_payload["reviewer_history_inheritance"],
             "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
             "review_loop_outcome": raw_payload["review_loop_outcome"],
             "reviewed_program_dir": request_payload["required_program_dir"],

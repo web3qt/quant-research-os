@@ -27,8 +27,18 @@ description: Use when qros stage review verdicts are PASS FOR RETRY, RETRY, NO-G
 - `test_evidence` → `qros-test-evidence-failure`
 - `backtest_ready` → `qros-backtest-failure`
 - `holdout_validation` → `qros-holdout-failure`
+- `csf_data_ready` → `qros-data-ready-failure`
+- `csf_signal_ready` → `qros-signal-ready-failure`
+- `csf_train_freeze` → `qros-train-freeze-failure`
+- `csf_test_evidence` → `qros-test-evidence-failure`
+- `csf_backtest_ready` → `qros-backtest-failure`
+- `csf_holdout_validation` → `qros-holdout-failure`
+- `tss_data_ready` → `qros-data-ready-failure`
+- `tss_signal_ready` → `qros-signal-ready-failure`
 - `tss_train_freeze` → `qros-tss-train-freeze-failure`
 - `tss_test_evidence` → `qros-tss-test-evidence-failure`
+- `tss_backtest_ready` → `qros-backtest-failure`
+- `tss_holdout_validation` → `qros-holdout-failure`
 
 不覆盖：`idea_intake`、`mandate`
 
@@ -114,8 +124,18 @@ code_version: <commit>
 | `test_evidence` | `qros-test-evidence-failure` |
 | `backtest_ready` | `qros-backtest-failure` |
 | `holdout_validation` | `qros-holdout-failure` |
+| `csf_data_ready` | `qros-data-ready-failure` |
+| `csf_signal_ready` | `qros-signal-ready-failure` |
+| `csf_train_freeze` | `qros-train-freeze-failure` |
+| `csf_test_evidence` | `qros-test-evidence-failure` |
+| `csf_backtest_ready` | `qros-backtest-failure` |
+| `csf_holdout_validation` | `qros-holdout-failure` |
+| `tss_data_ready` | `qros-data-ready-failure` |
+| `tss_signal_ready` | `qros-signal-ready-failure` |
 | `tss_train_freeze` | `qros-tss-train-freeze-failure` |
 | `tss_test_evidence` | `qros-tss-test-evidence-failure` |
+| `tss_backtest_ready` | `qros-backtest-failure` |
+| `tss_holdout_validation` | `qros-holdout-failure` |
 
 每个 stage-specific skill 完成 failure classification 后，必须将结论传入 `qros-lineage-change-control` 进行 change control 判定。
 

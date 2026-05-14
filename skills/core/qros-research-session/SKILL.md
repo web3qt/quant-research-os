@@ -60,13 +60,12 @@ description: Use when the user wants one orchestrated QROS conversation from ide
 
 用户在 Codex 里应该使用 `$qros-research-session` 作为普通阶段推进的唯一入口；`$qros-progress` 只做只读查询，`$qros-stage-display` 只做显式展示 guidance。stage-specific `$qros-*-author` / `$qros-*-review` 是高级/debug/manual recovery 入口，不是普通用户需要记住的阶段入口。
 
-Use the orchestrator runtime:
+Internal orchestrator runtime examples (do not present these as ordinary user actions):
 
 - `./.qros/bin/qros-session --raw-idea "<idea>"`
 - `./.qros/bin/qros-session --lineage-id "<lineage_id>"`
-- `./.qros/bin/qros-session <lineage_id> --continue`
 
-Reuse the deterministic runtime rather than improvising directory state in chat.
+Reuse the deterministic runtime internally rather than improvising directory state in chat.
 
 The user should not need to remember internal commands or stage-specific skill names. Runtime commands are backend mechanics for the agent, debugging, and manual recovery.
 
@@ -75,11 +74,11 @@ QROS repo is the workflow package. The actual lineage artifacts must be written 
 ## Stage-Specific Entry Discipline
 
 - `qros-research-session` 是普通阶段推进的唯一总控入口；stage-specific author/review skill 默认只作为高级/debug/manual recovery 入口
-- 当 `qros-session <lineage_id> --continue` 报告当前需要 author、review、failure handling 或 next-stage confirmation 时，主会话应继续由 `qros-research-session` 执行，并在内部复用对应 stage-specific 协议
+- 当 runtime status 报告当前需要 author、review、failure handling 或 next-stage confirmation 时，主会话应继续由 `qros-research-session` 执行，并在内部复用对应 stage-specific 协议
 - stage-specific author/review skill 只有在用户显式要求 debug/manual recovery，或 `qros-research-session` 内部按当前 stage 协议接手时才允许使用
 - 进入任何 stage-specific author skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane author`
 - 进入任何 stage-specific review skill 前，必须先运行 `./.qros/bin/qros-check-stage-entry --stage <stage_id> --lane review`
-- guard 失败时，不得继续 authoring、不得起 reviewer、不得运行 `qros-review-cycle prepare`；按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state
+- guard 失败时，不得继续 authoring、不得起 reviewer、不得运行 `qros-review-cycle prepare`；继续通过 `qros-research-session` 重新读取 runtime state
 - 这层 guard 专门防止 `current_stage` 仍停在上游 handoff、review confirmation 或 next-stage confirmation 时，agent 直接跳到下游 stage-specific skill
 
 ## TSS Route Branch
@@ -394,7 +393,7 @@ Ask the user only when:
 
 If runtime status reports `requires_failure_handling = true`, do not keep following the normal authoring or review path in this skill. Switch to `qros-stage-failure-handler` immediately.
 
-For any `*_confirmation_pending` freeze gate, runtime status may expose `freeze_groups` for every group in the current draft. The agent may show all groups in one response. If the user replies `确认全部`, run `./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-all-freeze-groups`; this only marks the current draft groups confirmed and never replaces the final stage approval such as `--confirm-mandate`, `--confirm-data-ready`, or `--confirm-signal-ready`. Runtime rejects empty scaffold drafts, incomplete group drafts, and unresolved `missing_items`; successful confirmation binds each group to `freeze_digest_sha256`. If a confirmed draft changes, runtime treats that group as pending and the stage returns to `*_confirmation_pending` until the user reconfirms the changed draft. Do not bulk-confirm unless the current turn or the immediately preceding user-visible summary showed every group draft being confirmed.
+For any `*_confirmation_pending` freeze gate, runtime status may expose `freeze_groups` for every group in the current draft. The agent may show all groups in one response. If the user replies `确认全部`, the agent may internally call the runtime equivalent of `--confirm-all-freeze-groups`; this only marks the current draft groups confirmed and never replaces the final stage approval such as `CONFIRM_MANDATE`, `CONFIRM_DATA_READY`, or `CONFIRM_SIGNAL_READY`. Runtime rejects empty scaffold drafts, incomplete group drafts, and unresolved `missing_items`; successful confirmation binds each group to `freeze_digest_sha256`. If a confirmed draft changes, runtime treats that group as pending and the stage returns to `*_confirmation_pending` until the user reconfirms the changed draft. Do not bulk-confirm unless the current turn or the immediately preceding user-visible summary showed every group draft being confirmed.
 
 When `research_route = time_series_signal` and the stage is `tss_data_ready_confirmation_pending`, the agent must ask explicitly:
 

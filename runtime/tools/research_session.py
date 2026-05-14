@@ -2467,9 +2467,19 @@ def validate_freeze_groups_for_stage_transition(
 
 def _all_freeze_groups_next_action(stage_label: str) -> str:
     return (
-        f"Review all {stage_label} freeze groups, then run with --confirm-all-freeze-groups "
-        "or reply 确认全部 to mark them confirmed."
+        f"Review all {stage_label} freeze groups in qros-research-session, then reply 确认全部 "
+        "to mark the displayed groups confirmed."
     )
+
+
+def _confirmation_next_action(confirm_value: str) -> str:
+    return f"Reply {confirm_value} <lineage_id> in qros-research-session after reviewing the displayed contract."
+
+
+def _next_stage_confirmation_next_action(next_stage_base: str | None) -> str:
+    if next_stage_base is None:
+        return "Reply CONFIRM_NEXT_STAGE <lineage_id> in qros-research-session to mark the session complete."
+    return f"Reply CONFIRM_NEXT_STAGE <lineage_id> in qros-research-session to enter {next_stage_base}."
 
 
 def ensure_freeze_draft_for_stage(lineage_root: Path, current_stage: SessionStage) -> list[str]:
@@ -2564,6 +2574,8 @@ def summarize_session_status(
         blocking_reason_code = runtime_blocking_reason_code_override
     if runtime_next_action_override is not None:
         runtime_next_action = runtime_next_action_override
+    elif requires_failure_handling and failure_stage is not None:
+        runtime_next_action = f"Enter failure handling for {_stage_base_name(failure_stage)} via qros-stage-failure-handler"
     resolved_current_skill = current_skill or (
         _orchestrated_current_skill_for_stage(
             current_stage=current_stage,
@@ -2699,7 +2711,7 @@ def _lineage_resume_blocked_status(*, selection: LineageSelection) -> SessionCon
         current_skill="qros-research-session",
         why_this_skill=(
             "Current run started from raw_idea, but that slug already exists as an older lineage, "
-            "so qros-session blocked implicit resume."
+            "so qros-research-session blocked implicit resume."
         ),
         required_program_dir=None,
         required_program_entrypoint=None,
@@ -2709,12 +2721,12 @@ def _lineage_resume_blocked_status(*, selection: LineageSelection) -> SessionCon
             f"Implicit resume of existing lineage {selection.lineage_id} is blocked until you explicitly choose to continue it."
         ),
         resume_hint=(
-            f"Rerun with --lineage-id {selection.lineage_id} to continue that lineage, or change the raw idea text to start a different branch."
+            f"Continue qros-research-session with explicit lineage {selection.lineage_id}, or change the raw idea text to start a different branch."
         ),
         artifacts_written=[],
         gate_status="LINEAGE_RESUME_BLOCKED",
         next_action=(
-            f"Resume blocked for existing lineage {selection.lineage_id}. Use --lineage-id {selection.lineage_id} to continue it explicitly."
+            f"Resume blocked for existing lineage {selection.lineage_id}. Continue through qros-research-session with that explicit lineage to resume it."
         ),
         why_now=[],
         open_risks=[],
@@ -2906,63 +2918,31 @@ def _resume_hint(
     required_program_dir: str | None = None,
     runtime_stage_status: str | None = None,
 ) -> str:
+    stage_base = _stage_base_name(current_stage)
     if requires_failure_handling:
-        return (
-            f"Invoke {current_skill} for lineage {lineage_id} in the same research repo, "
-            f"then rerun qros-session --lineage-id {lineage_id}."
-        )
+        return f"Continue with {current_skill} for lineage {lineage_id}; failure handling is the next step."
     if runtime_stage_status == "awaiting_stage_program":
-        if _stage_base_name(current_stage) == "mandate":
+        if stage_base == "mandate":
             if required_program_dir is not None:
-                return (
-                    f"Run {current_skill} to author the lineage-local stage program under "
-                    f"{required_program_dir}, then rerun qros-session --lineage-id {lineage_id}."
-                )
-            return (
-                f"Run {current_skill} to author the lineage-local stage program, "
-                f"then rerun qros-session --lineage-id {lineage_id}."
-            )
+                return f"Continue with {current_skill} for lineage {lineage_id}; author the lineage-local stage program under {required_program_dir}."
+            return f"Continue with {current_skill} for lineage {lineage_id}; author the lineage-local stage program."
         comment_requirement = _post_mandate_program_comment_requirement(current_stage)
         if required_program_dir is not None:
-            return (
-                f"Run {current_skill}; Codex must explicitly author the lineage-local stage program under "
-                f"{required_program_dir}{comment_requirement}, then rerun qros-session --lineage-id {lineage_id}."
-            )
-        return (
-            f"Run {current_skill}; Codex must explicitly author the lineage-local stage program"
-            f"{comment_requirement}, then rerun qros-session --lineage-id {lineage_id}."
-        )
+            return f"Continue with {current_skill} for lineage {lineage_id}; author the lineage-local stage program under {required_program_dir}{comment_requirement}."
+        return f"Continue with {current_skill} for lineage {lineage_id}; author the lineage-local stage program{comment_requirement}."
     if current_stage.endswith("_review_confirmation_pending"):
         if runtime_stage_status == "awaiting_author_fix":
-            return (
-                f"Run {current_skill} to repair author/formal outputs so review preflight passes, "
-                f"then rerun qros-session --lineage-id {lineage_id}."
-            )
-        return (
-            f"Enter {current_skill}, launch a reviewer and run ./.qros/bin/qros-review-cycle prepare for {_stage_base_name(current_stage)}, "
-            f"then rerun qros-session --lineage-id {lineage_id}."
-        )
+            return f"Continue with {current_skill} for lineage {lineage_id}; repair author/formal outputs so review preflight passes."
+        return f"Continue with {current_skill} for lineage {lineage_id}; launch a reviewer and prepare {stage_base} for review."
     if current_stage.endswith("_review"):
         if runtime_stage_status == "awaiting_author_fix":
-            return (
-                f"Run {current_skill} to address review/result/review_findings.yaml in the author lane, "
-                f"refresh author/formal outputs, then rerun the review workflow and qros-session --lineage-id {lineage_id}."
-            )
-        return (
-            f"Run {current_skill} in the same research repo, or rerun qros-session --lineage-id {lineage_id} "
-            "to inspect updated status."
-        )
+            return f"Continue with {current_skill} for lineage {lineage_id}; repair review/result/review_findings.yaml and refresh author/formal outputs."
+        return f"Continue with {current_skill} for lineage {lineage_id}; review the updated status in the same research repo."
     if current_stage.endswith("_next_stage_confirmation_pending"):
-        return (
-            f"Confirm the next-stage handoff for {_stage_base_name(current_stage)}, then rerun "
-            f"qros-session --lineage-id {lineage_id}."
-        )
+        return f"Continue with {current_skill} for lineage {lineage_id}; confirm the next-stage handoff for {stage_base}."
     if current_stage.endswith("_review_complete"):
-        return f"Rerun qros-session --lineage-id {lineage_id} if new downstream work is introduced."
-    return (
-        f"Continue in the same research repo and rerun qros-session --lineage-id {lineage_id} "
-        "after completing the next required step."
-    )
+        return f"Continue with {current_skill} for lineage {lineage_id} if new downstream work is introduced."
+    return f"Continue with {current_skill} for lineage {lineage_id}; complete the next required step in the same research repo."
 
 
 def _orchestrated_resume_hint(
@@ -2973,48 +2953,25 @@ def _orchestrated_resume_hint(
     required_program_dir: str | None = None,
     runtime_stage_status: str | None = None,
 ) -> str:
-    if requires_failure_handling:
-        return (
-            f"Invoke qros-stage-failure-handler for lineage {lineage_id}, then rerun "
-            f"qros-session {lineage_id} --continue."
-        )
     stage_base = _stage_base_name(current_stage)
+    if requires_failure_handling:
+        return f"Continue qros-research-session for {lineage_id}; failure handling is the next step."
     if runtime_stage_status == "awaiting_stage_program":
         location = f" under {required_program_dir}" if required_program_dir is not None else ""
-        return (
-            f"Continue qros-research-session for {lineage_id}; it should author or refresh the {stage_base} "
-            f"lineage-local stage program{location}, then rerun qros-session {lineage_id} --continue."
-        )
+        return f"Continue qros-research-session for {lineage_id}; author or refresh the {stage_base} lineage-local stage program{location}."
     if runtime_stage_status in {"awaiting_program_validation", "awaiting_program_execution"}:
-        return (
-            f"Continue qros-research-session for {lineage_id}; it should fix or execute the {stage_base} "
-            f"stage program, then rerun qros-session {lineage_id} --continue."
-        )
+        return f"Continue qros-research-session for {lineage_id}; fix or execute the {stage_base} stage program."
     if current_stage.endswith("_review_confirmation_pending"):
         if runtime_stage_status == "awaiting_author_fix":
-            return (
-                f"Continue qros-research-session for {lineage_id}; repair {stage_base} author/formal outputs "
-                f"and rerun qros-session {lineage_id} --continue before review."
-            )
-        return (
-            f"Confirm review for {stage_base}; then continue qros-research-session for {lineage_id} "
-            "to launch the reviewer and close review."
-        )
+            return f"Continue qros-research-session for {lineage_id}; repair {stage_base} author/formal outputs before review."
+        return f"Continue qros-research-session for {lineage_id}; confirm review for {stage_base} and launch the reviewer."
     if current_stage.endswith("_review"):
-        return (
-            f"Continue qros-research-session for {lineage_id}; it should run the {stage_base} review lane "
-            "until reviewer output, audit, and closure are resolved."
-        )
+        return f"Continue qros-research-session for {lineage_id}; run the {stage_base} review lane until reviewer output, audit, and closure are resolved."
     if current_stage.endswith("_next_stage_confirmation_pending"):
-        return (
-            f"Confirm the next-stage handoff for {stage_base}, then rerun qros-session {lineage_id} --continue."
-        )
+        return f"Continue qros-research-session for {lineage_id}; confirm the next-stage handoff for {stage_base}."
     if current_stage.endswith("_review_complete"):
-        return f"Rerun qros-session {lineage_id} --continue if new downstream work is introduced."
-    return (
-        f"Continue qros-research-session in the same repo and rerun qros-session {lineage_id} --continue "
-        "after completing the prompted confirmation or author step."
-    )
+        return f"Continue qros-research-session for {lineage_id} if new downstream work is introduced."
+    return f"Continue qros-research-session in the same repo for {lineage_id} after completing the prompted confirmation or author step."
 
 
 def _orchestrated_next_action(
@@ -3030,32 +2987,16 @@ def _orchestrated_next_action(
         return next_action
     stage_base = _stage_base_name(current_stage)
     if runtime_stage_status == "awaiting_author_fix":
-        return (
-            f"Continue qros-research-session for {stage_base}; repair author/formal outputs using the "
-            f"stage-specific author protocol internally, then rerun qros-session {lineage_id} --continue."
-        )
+        return f"Continue qros-research-session for {lineage_id}; repair author/formal outputs for {stage_base} using the stage-specific author protocol internally."
     if runtime_stage_status == "awaiting_stage_program":
         location = f" under {required_program_dir}" if required_program_dir is not None else ""
-        return (
-            f"Continue qros-research-session for {stage_base}; author or refresh the lineage-local stage program"
-            f"{location} using the stage-specific author protocol internally."
-        )
+        return f"Continue qros-research-session for {lineage_id}; author or refresh the lineage-local stage program{location} using the stage-specific author protocol internally."
     if runtime_stage_status in {"awaiting_program_validation", "awaiting_program_execution"}:
-        return (
-            f"Continue qros-research-session for {stage_base}; validate or execute the stage program using the "
-            "stage-specific author protocol internally."
-        )
+        return f"Continue qros-research-session for {lineage_id}; validate or execute the {stage_base} stage program using the stage-specific author protocol internally."
     if current_stage.endswith("_review_confirmation_pending"):
-        return (
-            f"Ask for explicit CONFIRM_REVIEW for {stage_base}. After approval, qros-research-session should "
-            "launch the reviewer and run qros-review-cycle prepare / qros-review using the stage-specific review protocol internally; "
-            "stage-specific review skills remain advanced/debug entrypoints."
-        )
+        return f"Ask for explicit CONFIRM_REVIEW for {stage_base}. After approval, qros-research-session should launch the reviewer and run qros-review-cycle prepare / qros-review using the stage-specific review protocol internally; stage-specific review skills remain advanced/debug entrypoints."
     if current_stage.endswith("_review"):
-        return (
-            f"Continue qros-research-session review orchestration for {stage_base}: launch or wait for the reviewer, "
-            "then run ./.qros/bin/qros-review for closure using the stage-specific review protocol internally."
-        )
+        return f"Continue qros-research-session review orchestration for {stage_base}: launch or wait for the reviewer, then run ./.qros/bin/qros-review for closure using the stage-specific review protocol internally."
     return next_action
 
 
@@ -3663,9 +3604,9 @@ def _program_runtime_status(
                 f"under {inspection.required_program_dir}{comment_requirement} before this stage can run."
             ),
             (
-                f"Run {STAGE_ACTIVE_SKILLS.get(current_stage, 'qros-research-session')}; Codex must explicitly author "
-                f"the lineage-local stage program under {inspection.required_program_dir}{comment_requirement}, then rerun qros-session "
-                f"--lineage-id {lineage_root.name}."
+                f"Continue qros-research-session for {lineage_root.name}; Codex must explicitly author "
+                f"the lineage-local stage program under {inspection.required_program_dir}{comment_requirement}, "
+                "then re-read runtime state before advancing."
             ),
         )
     if inspection.error_code is not None:
@@ -4247,9 +4188,8 @@ def _latest_failure_package_runtime_status(lineage_root: Path) -> FailurePackage
             blocking_reason=blocking_reason,
             next_action=next_action,
             resume_hint=(
-                f"Use qros-stage-failure-handler for lineage {lineage_root.name} and record "
-                f"{failure_package_dir.relative_to(lineage_root)}/failure_disposition.yaml, then rerun "
-                f"qros-session --lineage-id {lineage_root.name}."
+                f"Continue with qros-stage-failure-handler for lineage {lineage_root.name}; record "
+                f"{failure_package_dir.relative_to(lineage_root)}/failure_disposition.yaml before ordinary progression can resume."
             ),
             review_verdict="FAILURE_DISPOSITION_REQUIRED",
             failure_stage=failed_stage,
@@ -4650,14 +4590,9 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
 def _next_stage_gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     stage_base = _stage_base_name(current_stage)
     next_stage_base = _display_next_stage_base(lineage_root, stage_base)
-    if next_stage_base is None:
-        return (
-            "NEXT_STAGE_CONFIRMATION_PENDING",
-            "Run with --confirm-next-stage to mark the session complete.",
-        )
     return (
         "NEXT_STAGE_CONFIRMATION_PENDING",
-        f"Run with --confirm-next-stage or reply CONFIRM_NEXT_STAGE <lineage_id> to enter {next_stage_base}.",
+        _next_stage_confirmation_next_action(next_stage_base),
     )
 
 
@@ -4727,7 +4662,7 @@ def _tss_gate_status_and_next_action(lineage_root: Path, current_stage: SessionS
             return f"{code_prefix}_ON_HOLD", f"Wait for explicit {confirm_value}"
         return (
             f"{code_prefix}_PENDING_CONFIRMATION",
-            f"Run with --confirm-{cli_suffix} or reply {confirm_value} <lineage_id>",
+            _confirmation_next_action(confirm_value),
         )
     if current_stage == f"{stage_base}_author":
         return f"{code_prefix}_CONFIRMED", f"Freeze {stage_base} artifacts"
@@ -4771,7 +4706,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             return "IDEA_INTAKE_ON_HOLD", "Wait for explicit CONFIRM_IDEA_INTAKE"
         return (
             "IDEA_INTAKE_PENDING_CONFIRMATION",
-            "Run with --confirm-intake or reply CONFIRM_IDEA_INTAKE <lineage_id> after finishing the intake interview",
+            "Reply CONFIRM_IDEA_INTAKE <lineage_id> in qros-research-session after finishing the intake interview.",
         )
 
     if current_stage == "mandate_confirmation_pending":
@@ -4781,7 +4716,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_mandate_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_MANDATE_ON_HOLD", "Wait for explicit CONFIRM_MANDATE"
-        return "GO_TO_MANDATE_PENDING_CONFIRMATION", "Run with --confirm-mandate or reply CONFIRM_MANDATE <lineage_id>"
+        return "GO_TO_MANDATE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_MANDATE")
 
     if current_stage == "mandate_author":
         return "GO_TO_MANDATE_CONFIRMED", "Freeze mandate artifacts"
@@ -4804,7 +4739,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_data_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
-        return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", "Run with --confirm-data-ready or reply CONFIRM_DATA_READY <lineage_id>"
+        return "GO_TO_CSF_DATA_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_DATA_READY")
 
     if current_stage == "csf_data_ready_author":
         return "GO_TO_CSF_DATA_READY_CONFIRMED", "Freeze csf_data_ready artifacts"
@@ -4823,7 +4758,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_data_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_DATA_READY_ON_HOLD", "Wait for explicit CONFIRM_DATA_READY"
-        return "GO_TO_DATA_READY_PENDING_CONFIRMATION", "Run with --confirm-data-ready or reply CONFIRM_DATA_READY <lineage_id>"
+        return "GO_TO_DATA_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_DATA_READY")
 
     if current_stage == "data_ready_author":
         return "GO_TO_DATA_READY_CONFIRMED", "Freeze data_ready artifacts"
@@ -4842,7 +4777,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_signal_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
-        return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", "Run with --confirm-signal-ready or reply CONFIRM_SIGNAL_READY <lineage_id>"
+        return "GO_TO_SIGNAL_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_SIGNAL_READY")
 
     if current_stage == "signal_ready_author":
         return "GO_TO_SIGNAL_READY_CONFIRMED", "Freeze signal_ready artifacts"
@@ -4861,7 +4796,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_signal_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_SIGNAL_READY_ON_HOLD", "Wait for explicit CONFIRM_SIGNAL_READY"
-        return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", "Run with --confirm-signal-ready or reply CONFIRM_SIGNAL_READY <lineage_id>"
+        return "GO_TO_CSF_SIGNAL_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_SIGNAL_READY")
 
     if current_stage == "csf_signal_ready_author":
         return "GO_TO_CSF_SIGNAL_READY_CONFIRMED", "Freeze csf_signal_ready artifacts"
@@ -4880,7 +4815,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_train_freeze_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
-        return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", "Run with --confirm-train-freeze or reply CONFIRM_TRAIN_FREEZE <lineage_id>"
+        return "GO_TO_TRAIN_FREEZE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_TRAIN_FREEZE")
 
     if current_stage == "train_freeze_author":
         return "GO_TO_TRAIN_FREEZE_CONFIRMED", "Freeze train_freeze artifacts"
@@ -4899,7 +4834,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_train_freeze_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_TRAIN_FREEZE_ON_HOLD", "Wait for explicit CONFIRM_TRAIN_FREEZE"
-        return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", "Run with --confirm-train-freeze or reply CONFIRM_TRAIN_FREEZE <lineage_id>"
+        return "GO_TO_CSF_TRAIN_FREEZE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_TRAIN_FREEZE")
 
     if current_stage == "csf_train_freeze_author":
         return "GO_TO_CSF_TRAIN_FREEZE_CONFIRMED", "Freeze csf_train_freeze artifacts"
@@ -4918,7 +4853,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_test_evidence_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
-        return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", "Run with --confirm-test-evidence or reply CONFIRM_TEST_EVIDENCE <lineage_id>"
+        return "GO_TO_TEST_EVIDENCE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_TEST_EVIDENCE")
 
     if current_stage == "test_evidence_author":
         return "GO_TO_TEST_EVIDENCE_CONFIRMED", "Freeze test_evidence artifacts"
@@ -4937,7 +4872,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_test_evidence_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_TEST_EVIDENCE_ON_HOLD", "Wait for explicit CONFIRM_TEST_EVIDENCE"
-        return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", "Run with --confirm-test-evidence or reply CONFIRM_TEST_EVIDENCE <lineage_id>"
+        return "GO_TO_CSF_TEST_EVIDENCE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_TEST_EVIDENCE")
 
     if current_stage == "csf_test_evidence_author":
         return "GO_TO_CSF_TEST_EVIDENCE_CONFIRMED", "Freeze csf_test_evidence artifacts"
@@ -4956,7 +4891,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_backtest_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
-        return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", "Run with --confirm-backtest-ready or reply CONFIRM_BACKTEST_READY <lineage_id>"
+        return "GO_TO_BACKTEST_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_BACKTEST_READY")
 
     if current_stage == "backtest_ready_author":
         return "GO_TO_BACKTEST_READY_CONFIRMED", "Freeze backtest_ready artifacts"
@@ -4975,7 +4910,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         decision = read_backtest_ready_transition_decision(lineage_root)
         if decision == "HOLD":
             return "GO_TO_CSF_BACKTEST_READY_ON_HOLD", "Wait for explicit CONFIRM_BACKTEST_READY"
-        return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", "Run with --confirm-backtest-ready or reply CONFIRM_BACKTEST_READY <lineage_id>"
+        return "GO_TO_CSF_BACKTEST_READY_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_BACKTEST_READY")
 
     if current_stage == "csf_backtest_ready_author":
         return "GO_TO_CSF_BACKTEST_READY_CONFIRMED", "Freeze csf_backtest_ready artifacts"
@@ -4999,7 +4934,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             return "GO_TO_HOLDOUT_VALIDATION_ON_HOLD", "Wait for explicit CONFIRM_HOLDOUT_VALIDATION"
         return (
             "GO_TO_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
-            "Run with --confirm-holdout-validation or reply CONFIRM_HOLDOUT_VALIDATION <lineage_id>",
+            _confirmation_next_action("CONFIRM_HOLDOUT_VALIDATION"),
         )
 
     if current_stage == "holdout_validation_author":
@@ -5021,7 +4956,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             return "GO_TO_CSF_HOLDOUT_VALIDATION_ON_HOLD", "Wait for explicit CONFIRM_HOLDOUT_VALIDATION"
         return (
             "GO_TO_CSF_HOLDOUT_VALIDATION_PENDING_CONFIRMATION",
-            "Run with --confirm-holdout-validation or reply CONFIRM_HOLDOUT_VALIDATION <lineage_id>",
+            _confirmation_next_action("CONFIRM_HOLDOUT_VALIDATION"),
         )
 
     if current_stage == "csf_holdout_validation_author":

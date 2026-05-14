@@ -72,6 +72,8 @@ def _raw_findings_payload(
         "review_cycle_id": receipt_payload["review_cycle_id"],
         "reviewer_session_id": receipt_payload["requested_reviewer_session_id"],
         "reviewer_agent_id": receipt_payload["reviewer_agent_id"],
+        "reviewer_context_source": receipt_payload["reviewer_context_source"],
+        "reviewer_history_inheritance": receipt_payload["reviewer_history_inheritance"],
         "reviewed_project_root": request_payload["project_root"],
         "reviewed_lineage_root": request_payload["lineage_root"],
         "reviewed_stage_dir": request_payload["stage_dir"],

@@ -44,6 +44,47 @@ def _write_failure_post_retry_decision(lineage_root: Path) -> None:
     )
 
 
+def _prepare_review_complete_mandate(outputs_root: Path, lineage_id: str) -> Path:
+    stage_dir = outputs_root / lineage_id / "01_mandate"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "mandate.md",
+        "research_scope.md",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ):
+        (formal_dir / name).write_text("ok\n", encoding="utf-8")
+    (formal_dir / "research_route.yaml").write_text(
+        "\n".join(
+            [
+                "research_route: cross_sectional_factor",
+                "factor_role: standalone_alpha",
+                "factor_structure: single_factor",
+                "portfolio_expression: long_short_rank_based",
+                "neutralization_policy: market_beta_neutral",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (formal_dir / "time_split.json").write_text("{}\n", encoding="utf-8")
+    (formal_dir / "parameter_grid.yaml").write_text("parameters: []\n", encoding="utf-8")
+    (formal_dir / "run_config.toml").write_text("version = 1\n", encoding="utf-8")
+    (formal_dir / "program_execution_manifest.json").write_text("{}\n", encoding="utf-8")
+    for name in (
+        "latest_review_pack.yaml",
+        "stage_completion_certificate.yaml",
+        "stage_gate_review.yaml",
+    ):
+        (stage_dir / "review" / "closure" / name).parent.mkdir(parents=True, exist_ok=True)
+        (stage_dir / "review" / "closure" / name).write_text(
+            "final_verdict: PASS\nstage_status: PASS\n",
+            encoding="utf-8",
+        )
+    return stage_dir
+
+
 def test_latest_lineage_id_selects_most_recent_existing_lineage(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     _touch_lineage(outputs_root, "old_lineage")
@@ -156,6 +197,24 @@ def test_qros_progress_wrapper_uses_current_repo_outputs(tmp_path: Path) -> None
     assert payload["lineage_id"] == "btc_leads_alts"
     assert payload["selection_mode"] == "latest"
     assert payload["current_stage"] == "idea_intake_confirmation_pending"
+
+
+def test_progress_payload_exposes_skill_first_direct_handoff(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    _prepare_review_complete_mandate(outputs_root, "btc_alt")
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="btc_alt")
+
+    assert payload["current_stage"] == "mandate_next_stage_confirmation_pending"
+    assert payload["current_skill"] == "qros-research-session"
+    assert payload["recommended_skill"] == "qros-research-session"
+    assert payload["handoff_hint"] == "Continue with qros-research-session."
+    assert payload["next_action"] == "Continue with qros-research-session."
+    assert payload["resume_hint"] == "Continue with qros-research-session."
+    assert "qros-session" not in payload["handoff_hint"]
+    assert "qros-resume" not in payload["handoff_hint"]
+    assert "qros-session" not in payload["next_action"]
+    assert "qros-resume" not in payload["next_action"]
 
 
 def test_progress_status_payload_surfaces_failure_disposition_gate(tmp_path: Path) -> None:

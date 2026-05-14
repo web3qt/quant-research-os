@@ -13,6 +13,14 @@ def test_stage_failure_handler_skill_exists_and_covers_failure_flow() -> None:
     assert "test_evidence" in content
     assert "backtest_ready" in content
     assert "holdout_validation" in content
+    assert "csf_data_ready" in content
+    assert "csf_signal_ready" in content
+    assert "csf_train_freeze" in content
+    assert "csf_test_evidence" in content
+    assert "csf_backtest_ready" in content
+    assert "csf_holdout_validation" in content
+    assert "tss_data_ready" in content
+    assert "tss_signal_ready" in content
     assert "PASS FOR RETRY" in content
     assert "RETRY" in content
     assert "NO-GO" in content

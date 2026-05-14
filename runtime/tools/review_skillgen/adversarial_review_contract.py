@@ -87,6 +87,8 @@ CANONICAL_REVIEW_CONTEXT_FIELDS = (
     "review_result_dir",
 )
 RECEIPT_CANONICAL_CONTEXT_FIELDS = ("project_root", "lineage_root", "stage_dir")
+RECEIPT_ISOLATION_FIELDS = ("reviewer_context_source", "reviewer_history_inheritance")
+RECEIPT_REQUIRED_FIELDS = RECEIPT_CANONICAL_CONTEXT_FIELDS + RECEIPT_ISOLATION_FIELDS
 
 
 @dataclass(frozen=True)
@@ -677,6 +679,8 @@ def issue_reviewer_receipt(
         "requested_reviewer_identity": reviewer_identity,
         "requested_reviewer_session_id": reviewer_session_id,
         "receipt_written_at": datetime.now(timezone.utc).isoformat(),
+        "reviewer_context_source": REQUIRED_REVIEWER_CONTEXT_SOURCE,
+        "reviewer_history_inheritance": REQUIRED_REVIEWER_HISTORY_INHERITANCE,
     }
     if receipt_path.exists():
         try:
@@ -688,10 +692,8 @@ def issue_reviewer_receipt(
             existing_review_cycle_id = raw_existing.get("review_cycle_id")
             if existing_review_cycle_id is not None and existing_review_cycle_id != payload["review_cycle_id"]:
                 raise
-            missing_context_fields = [
-                key for key in RECEIPT_CANONICAL_CONTEXT_FIELDS if key not in raw_existing
-            ]
-            for key in RECEIPT_CANONICAL_CONTEXT_FIELDS:
+            missing_context_fields = [key for key in RECEIPT_REQUIRED_FIELDS if key not in raw_existing]
+            for key in RECEIPT_REQUIRED_FIELDS:
                 if key in raw_existing and raw_existing[key] != payload[key]:
                     raise
             if not missing_context_fields:
@@ -704,7 +706,7 @@ def issue_reviewer_receipt(
                 raise
             if {**payload, "receipt_written_at": receipt_written_at} != candidate:
                 raise
-            # 旧 receipt 缺少 canonical context；同一 review cycle 可由 launcher 刷新为当前合同形状。
+            # 旧 receipt 缺少 canonical context / isolation 字段；同一 review cycle 可刷新为当前合同形状。
         else:
             if existing["review_cycle_id"] != payload["review_cycle_id"]:
                 raise ValueError("existing reviewer_receipt.yaml review_cycle_id does not match the active request")
@@ -737,6 +739,8 @@ def issue_reviewer_receipt(
             "reviewer_agent_id": payload["reviewer_agent_id"],
             "execution_mode": payload["execution_mode"],
             "context_isolation_policy": payload["context_isolation_policy"],
+            "reviewer_context_source": payload["reviewer_context_source"],
+            "reviewer_history_inheritance": payload["reviewer_history_inheritance"],
             "write_root": payload["write_root"],
             "handoff_manifest_digest": payload["handoff_manifest_digest"],
         },
@@ -769,6 +773,8 @@ def load_reviewer_receipt(path: str | Path) -> dict[str, Any]:
         "requested_reviewer_identity": _require_string(payload, "requested_reviewer_identity", path=receipt_path),
         "requested_reviewer_session_id": _require_string(payload, "requested_reviewer_session_id", path=receipt_path),
         "receipt_written_at": _require_string(payload, "receipt_written_at", path=receipt_path),
+        "reviewer_context_source": _require_string(payload, "reviewer_context_source", path=receipt_path),
+        "reviewer_history_inheritance": _require_string(payload, "reviewer_history_inheritance", path=receipt_path),
     }
     if data["host"] not in ALLOWED_HOSTS:
         raise ValueError(f"{receipt_path}: host must be one of {sorted(ALLOWED_HOSTS)!r}")
@@ -787,6 +793,14 @@ def load_reviewer_receipt(path: str | Path) -> dict[str, Any]:
     if data["handoff_delivery_method"] not in ALLOWED_HANDOFF_DELIVERY_METHODS:
         raise ValueError(
             f"{receipt_path}: handoff_delivery_method must be one of {sorted(ALLOWED_HANDOFF_DELIVERY_METHODS)!r}"
+        )
+    if data["reviewer_context_source"] != REQUIRED_REVIEWER_CONTEXT_SOURCE:
+        raise ValueError(
+            f"{receipt_path}: reviewer_context_source must be {REQUIRED_REVIEWER_CONTEXT_SOURCE!r}"
+        )
+    if data["reviewer_history_inheritance"] != REQUIRED_REVIEWER_HISTORY_INHERITANCE:
+        raise ValueError(
+            f"{receipt_path}: reviewer_history_inheritance must be {REQUIRED_REVIEWER_HISTORY_INHERITANCE!r}"
         )
     return data
 
@@ -954,6 +968,10 @@ def validate_receipt_contract(
         raise ValueError(
             "reviewer_receipt.yaml handoff_delivery_method must be a supported handoff delivery method"
         )
+    if receipt_payload.get("reviewer_context_source") != REQUIRED_REVIEWER_CONTEXT_SOURCE:
+        raise ValueError("reviewer_receipt.yaml reviewer_context_source must be explicit_handoff_only")
+    if receipt_payload.get("reviewer_history_inheritance") != REQUIRED_REVIEWER_HISTORY_INHERITANCE:
+        raise ValueError("reviewer_receipt.yaml reviewer_history_inheritance must be none")
     expected_invocation_kind = HOST_REVIEWER_INVOCATION_KIND.get(receipt_payload["host"])
     if receipt_payload["reviewer_invocation_kind"] != expected_invocation_kind:
         raise ValueError(
@@ -1058,10 +1076,12 @@ def validate_result_contract(
         raise ValueError(
             "adversarial_review_result.yaml reviewer_execution_mode does not match reviewer_receipt.yaml"
         )
-    if result_payload["reviewer_context_source"] != REQUIRED_REVIEWER_CONTEXT_SOURCE:
-        raise ValueError("adversarial_review_result.yaml reviewer_context_source must be explicit_handoff_only")
-    if result_payload["reviewer_history_inheritance"] != REQUIRED_REVIEWER_HISTORY_INHERITANCE:
-        raise ValueError("adversarial_review_result.yaml reviewer_history_inheritance must be none")
+    if result_payload["reviewer_context_source"] != receipt_payload["reviewer_context_source"]:
+        raise ValueError("adversarial_review_result.yaml reviewer_context_source does not match reviewer_receipt.yaml")
+    if result_payload["reviewer_history_inheritance"] != receipt_payload["reviewer_history_inheritance"]:
+        raise ValueError(
+            "adversarial_review_result.yaml reviewer_history_inheritance does not match reviewer_receipt.yaml"
+        )
     if result_payload["handoff_manifest_digest"] != request_payload["handoff_manifest_digest"]:
         raise ValueError("adversarial_review_result.yaml handoff_manifest_digest does not match the active request")
     if result_payload["handoff_manifest_digest"] != receipt_payload["handoff_manifest_digest"]:

@@ -130,8 +130,8 @@ def _input_digest(parts: Iterable[str | None]) -> str:
 
 def _canonical_lineage_transition(next_action: str) -> str:
     return re.sub(
-        r"Display completed\. HTML: .*?\. Run with --confirm-next-stage",
-        "Display completed. HTML: <html-path>. Run with --confirm-next-stage",
+        r"Display completed\. HTML: .*?\. Reply CONFIRM_NEXT_STAGE",
+        "Display completed. HTML: <html-path>. Reply CONFIRM_NEXT_STAGE",
         next_action,
     )
 

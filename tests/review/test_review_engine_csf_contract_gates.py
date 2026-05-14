@@ -14,10 +14,7 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    run_reviewer_write_scope_audit,
-    write_reviewer_write_scope_baseline,
-)
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
 from tests.session.test_research_session_runtime import _write_minimal_stage_outputs
@@ -75,6 +72,14 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
     required_provenance_paths = ["program_execution_manifest.json"]
     launcher_handoff_context_paths: list[str] = []
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
+    review_context = {
+        "project_root": str(stage_dir.parent.parent.parent.resolve()),
+        "lineage_root": str(stage_dir.parent.resolve()),
+        "stage_dir": str(stage_dir.resolve()),
+        "author_formal_dir": str((stage_dir / "author" / "formal").resolve()),
+        "review_request_dir": str((stage_dir / "review" / "request").resolve()),
+        "review_result_dir": str((stage_dir / "review" / "result").resolve()),
+    }
     _write_yaml(
         handoff_manifest_path,
         {
@@ -92,6 +97,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
             "launcher_handoff_context_paths": launcher_handoff_context_paths,
+            **review_context,
         },
     )
     handoff_manifest_digest = hashlib.sha256(
@@ -115,41 +121,42 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         "launcher_checked_artifact_paths": required_artifact_paths,
         "launcher_checked_provenance_paths": required_provenance_paths,
         "launcher_handoff_context_paths": launcher_handoff_context_paths,
+        **review_context,
     }
     receipt_payload = {
         "review_cycle_id": f"{stage_key}-cycle-1",
+        "project_root": review_context["project_root"],
+        "lineage_root": review_context["lineage_root"],
+        "stage_dir": review_context["stage_dir"],
         "launcher_owner": "qros-runtime-launcher",
         "launcher_session_id": "launcher-session",
         "launcher_thread_id": "leader-thread",
         "execution_mode": "spawned_agent",
         "reviewer_agent_id": "reviewer-child-agent",
         "host": "codex",
-            "reviewer_invocation_kind": "codex_spawn_agent",
-            "context_isolation_policy": "fork_context_false",
-            "handoff_delivery_method": "send_input",
+        "reviewer_invocation_kind": "codex_spawn_agent",
+        "context_isolation_policy": "fork_context_false",
+        "handoff_delivery_method": "send_input",
         "write_root": "review/result",
         "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
         "handoff_manifest_digest": handoff_manifest_digest,
         "requested_reviewer_identity": "reviewer-agent",
         "requested_reviewer_session_id": "review-session",
+        "reviewer_context_source": "explicit_handoff_only",
+        "reviewer_history_inheritance": "none",
         "receipt_written_at": "2026-04-17T03:00:00Z",
     }
     result_payload = {
         "review_cycle_id": f"{stage_key}-cycle-1",
-        "reviewer_identity": "reviewer-agent",
-        "reviewer_role": "reviewer",
         "reviewer_session_id": "review-session",
-        "reviewer_mode": "adversarial",
         "reviewer_agent_id": "reviewer-child-agent",
-        "reviewer_execution_mode": "spawned_agent",
         "reviewer_context_source": "explicit_handoff_only",
         "reviewer_history_inheritance": "none",
-        "handoff_manifest_digest": handoff_manifest_digest,
+        "reviewed_project_root": review_context["project_root"],
+        "reviewed_lineage_root": review_context["lineage_root"],
+        "reviewed_stage_dir": review_context["stage_dir"],
+        "hard_gate_findings_acknowledged": True,
         "review_loop_outcome": "CLOSURE_READY_PASS",
-        "reviewed_program_dir": str(spec["program_dir"]),
-        "reviewed_program_entrypoint": "run_stage.py",
-        "reviewed_artifact_paths": required_artifact_paths,
-        "reviewed_provenance_paths": required_provenance_paths,
         "blocking_findings": [],
         "reservation_findings": [],
         "info_findings": [],
@@ -179,8 +186,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage_key: str) -> None
         launcher_thread_id=receipt_payload["launcher_thread_id"],
         reviewer_agent_id=receipt_payload["reviewer_agent_id"],
     )
-    _write_yaml(stage_dir / "review" / "result" / "adversarial_review_result.yaml", result_payload)
-    run_reviewer_write_scope_audit(stage_dir)
+    _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", result_payload)
 
 
 def test_run_stage_review_blocks_csf_data_ready_when_panel_manifest_contract_is_incomplete(tmp_path: Path) -> None:

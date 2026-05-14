@@ -640,7 +640,8 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
     assert "📍 Current stage: idea_intake_confirmation_pending" in result.stdout
     assert "🧬 Lineage mode: resume_blocked_existing_slug" in result.stdout
     assert "Resume blocked for existing lineage btc_leads_alts" in result.stdout
-    assert "--lineage-id btc_leads_alts" in result.stdout
+    assert "Continue through qros-research-session with that explicit lineage" in result.stdout
+    assert "--lineage-id btc_leads_alts" not in result.stdout
 
 
 def test_run_research_session_explicit_lineage_id_resume_is_visible_in_json(tmp_path: Path) -> None:
@@ -707,7 +708,9 @@ def test_run_research_session_accepts_positional_lineage_continue_mode(tmp_path:
     payload = json.loads(result.stdout)
     assert payload["lineage_id"] == "btc_alt"
     assert payload["current_skill"] == "qros-research-session"
-    assert "qros-session btc_alt --continue" in payload["resume_hint"]
+    assert "qros-research-session" in payload["resume_hint"]
+    assert "qros-session" not in payload["resume_hint"]
+    assert "qros-resume" not in payload["resume_hint"]
 
 
 def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:

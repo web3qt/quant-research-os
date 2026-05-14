@@ -19,6 +19,8 @@ description: Use after stage-specific failure classification is complete, to run
 
 本 skill 只判断"这个修改应该记在哪条谱系上"，不做 stage-specific triage。
 
+当 runtime 已报告 `blocking_reason_code = FAILURE_DISPOSITION_RECORDED` 时，原 lineage 已关闭普通推进路径。不得重新进入普通 review、next-stage confirmation 或 stage authoring；只能在本 skill 下完成 change control，或按 `CHILD_LINEAGE` 规则另开子 lineage。
+
 ## Entry Condition
 
 只能由以下入口触发：

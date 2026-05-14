@@ -127,5 +127,6 @@ def progress_status_payload(*, outputs_root: Path, lineage_id: str | None = None
     payload = asdict(status)
     payload["lineage_root"] = str(status.lineage_root)
     payload["selection_mode"] = selection_mode
-    payload.update(build_direct_handoff_capsule(status))
+    direct_handoff = build_direct_handoff_capsule(status)
+    payload.update(direct_handoff)
     return payload

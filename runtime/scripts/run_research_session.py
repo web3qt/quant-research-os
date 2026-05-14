@@ -62,7 +62,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "lineage_ref",
         nargs="?",
-        help="Optional lineage id shorthand, intended for `qros-session <lineage_id> --continue`.",
+        help="Optional lineage id shorthand for continuing qros-research-session on an existing lineage.",
     )
     parser.add_argument("--outputs-root", type=Path, required=True)
     parser.add_argument("--lineage-id", default=None)

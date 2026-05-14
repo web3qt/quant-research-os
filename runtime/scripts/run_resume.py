@@ -45,13 +45,16 @@ def _render_text(payload: dict[str, object]) -> str:
     )
     if payload.get("recommended_skill"):
         lines.append(f"Recommended next skill: {payload['recommended_skill']}")
+    if payload.get("recommended_skill_reason"):
+        lines.append(f"Recommended next skill reason: {payload['recommended_skill_reason']}")
     return "\n".join(lines)
 
 
 def _payload_from_session(status) -> dict[str, object]:
     payload = asdict(status)
     payload["lineage_root"] = str(status.lineage_root)
-    payload.update(build_direct_handoff_capsule(status))
+    direct_handoff = build_direct_handoff_capsule(status)
+    payload.update(direct_handoff)
     payload["selection_mode"] = "explicit"
     return payload
 

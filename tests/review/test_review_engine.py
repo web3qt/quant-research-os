@@ -12,10 +12,7 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
-from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
-    run_reviewer_write_scope_audit,
-    write_reviewer_write_scope_baseline,
-)
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -85,6 +82,14 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
     required_provenance_paths = ["program_execution_manifest.json"]
     launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
+    review_context = {
+        "project_root": str(stage_dir.parent.parent.parent.resolve()),
+        "lineage_root": str(stage_dir.parent.resolve()),
+        "stage_dir": str(stage_dir.resolve()),
+        "author_formal_dir": str((stage_dir / "author" / "formal").resolve()),
+        "review_request_dir": str((stage_dir / "review" / "request").resolve()),
+        "review_result_dir": str((stage_dir / "review" / "result").resolve()),
+    }
     _write_yaml(
         handoff_manifest_path,
         {
@@ -102,6 +107,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
             "launcher_handoff_context_paths": launcher_handoff_context_paths,
+            **review_context,
         },
     )
     handoff_manifest_digest = hashlib.sha256(
@@ -127,6 +133,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
             "launcher_handoff_context_paths": launcher_handoff_context_paths,
+            **review_context,
         },
     )
 
@@ -179,42 +186,41 @@ def _write_reviewer_receipt(
     )
 
 
-def _write_review_result(stage_dir: Path, *, outcome: str = "CLOSURE_READY_PASS", reviewer_identity: str = "reviewer-agent") -> None:
+def _write_review_result(
+    stage_dir: Path,
+    *,
+    outcome: str = "CLOSURE_READY_PASS",
+    reviewer_identity: str = "reviewer-agent",
+) -> None:
+    rollback_payload = {}
+    if outcome == "CLOSURE_READY_PASS_FOR_RETRY":
+        rollback_payload = {
+            "rollback_stage": "mandate",
+            "allowed_modifications": ["clarify wording only"],
+            "reservation_findings": ["needs controlled rerun log"],
+        }
     _write_yaml(
-        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
         {
             "review_cycle_id": "cycle-1",
-            "reviewer_identity": reviewer_identity,
-            "reviewer_role": "reviewer",
             "reviewer_session_id": "review-session",
-            "reviewer_mode": "adversarial",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewer_execution_mode": "spawned_agent",
             "reviewer_context_source": "explicit_handoff_only",
             "reviewer_history_inheritance": "none",
-            "handoff_manifest_digest": _handoff_manifest_digest(stage_dir),
+            "reviewed_project_root": str(stage_dir.parent.parent.parent.resolve()),
+            "reviewed_lineage_root": str(stage_dir.parent.resolve()),
+            "reviewed_stage_dir": str(stage_dir.resolve()),
+            "hard_gate_findings_acknowledged": True,
             "review_loop_outcome": outcome,
-            "reviewed_program_dir": "program/mandate",
-            "reviewed_program_entrypoint": "run_stage.py",
-            "reviewed_artifact_paths": [
-                "mandate.md",
-                "research_scope.md",
-                "time_split.json",
-                "parameter_grid.yaml",
-                "run_config.toml",
-                "artifact_catalog.md",
-                "field_dictionary.md",
-            ],
-            "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
             "reservation_findings": [],
             "info_findings": [],
             "residual_risks": [],
             "allowed_modifications": [],
             "downstream_permissions": [],
+            **rollback_payload,
         },
     )
-    run_reviewer_write_scope_audit(stage_dir)
 
 
 def test_run_stage_review_pass_path(tmp_path: Path) -> None:

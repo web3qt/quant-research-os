@@ -74,5 +74,10 @@ def test_run_resume_script_reports_direct_handoff_from_disk_state(tmp_path: Path
     assert payload["recommended_skill"] == "qros-research-session"
     assert payload["handoff_hint"] == "Continue with qros-research-session."
     assert payload["next_action"] == "Continue with qros-research-session."
+    assert payload["resume_hint"] == "Continue with qros-research-session."
+    assert "qros-session" not in payload["handoff_hint"]
+    assert "qros-resume" not in payload["handoff_hint"]
+    assert "qros-session" not in payload["next_action"]
+    assert "qros-resume" not in payload["next_action"]
     assert "clear_required" not in payload
     assert "clear_instruction" not in payload

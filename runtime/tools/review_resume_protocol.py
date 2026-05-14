@@ -27,13 +27,14 @@ def build_direct_handoff_capsule(status: HandoffStatus) -> dict[str, Any]:
     else:
         handoff_hint = status.resume_hint
         next_action = status.next_action
-    return {
+    direct_handoff = {
         "recommended_skill": recommended_skill,
         "recommended_skill_reason": status.why_this_skill,
         "handoff_hint": handoff_hint,
         "next_action": next_action,
         "resume_hint": handoff_hint,
     }
+    return direct_handoff
 
 
 def build_review_handoff_notice(

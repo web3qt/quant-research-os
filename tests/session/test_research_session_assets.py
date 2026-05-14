@@ -68,7 +68,8 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "review/result/review_findings.yaml" in content
     assert "launcher_review_ready_status" in content
     assert "./.qros/bin/qros-session" in content
-    assert "./.qros/bin/qros-session <lineage_id> --continue" in content
+    assert "./.qros/bin/qros-session <lineage_id> --continue" not in content
+    assert "runtime status 报告当前需要 author、review、failure handling 或 next-stage confirmation" in content
     assert "stage-specific author/review skill 默认只作为高级/debug/manual recovery 入口" in content
     assert "CONFIRM_REVIEW" in content
     assert "freeze_groups" in content
@@ -93,7 +94,8 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "reviewer 子代理" in content
     assert "spawn_agent" in content
     assert "qros-mandate-review" in content or "qros-*-review" in content
-    assert "qros-session <lineage_id> --continue" in content
+    assert "qros-session <lineage_id> --continue" not in content
+    assert "继续 `$qros-research-session`" in content
     assert "自动识别当前 stage" in content
     assert "高级/debug/manual recovery" in content
     assert "CONFIRM_REVIEW" in content

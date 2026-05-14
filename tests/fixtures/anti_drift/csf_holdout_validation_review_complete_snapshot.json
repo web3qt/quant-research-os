@@ -24,7 +24,7 @@
   "blocking_reasons": [
     "csf_holdout_validation terminal completion confirmation is still incomplete."
   ],
-  "lineage_transition": "Run with --confirm-next-stage to mark the session complete.",
+  "lineage_transition": "Reply CONFIRM_NEXT_STAGE <lineage_id> in qros-research-session to mark the session complete.",
   "evidence_refs": [
     "runtime/tools/anti_drift_scenarios_csf.py::csf_holdout_validation_review_complete"
   ],

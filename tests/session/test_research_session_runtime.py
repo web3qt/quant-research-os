@@ -13,6 +13,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
 from runtime.tools.research_session import (
+    _latest_review_failure_status,
     detect_session_stage,
     run_research_session,
     resolve_lineage_selection,
@@ -1162,8 +1163,8 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
     assert status.current_stage == "mandate_confirmation_pending"
     assert status.current_route == "time_series_signal"
     assert status.next_action == (
-        "Review all mandate freeze groups, then run with --confirm-all-freeze-groups "
-        "or reply 确认全部 to mark them confirmed."
+        "Review all mandate freeze groups in qros-research-session, then reply 确认全部 "
+        "to mark the displayed groups confirmed."
     )
     assert [group["name"] for group in status.freeze_groups or []] == [
         "research_intent",
@@ -1211,7 +1212,9 @@ def test_run_research_session_can_confirm_all_freeze_groups_without_stage_transi
     )
 
     assert status.current_stage == "mandate_confirmation_pending"
-    assert status.next_action == "Run with --confirm-mandate or reply CONFIRM_MANDATE <lineage_id>"
+    assert status.next_action == (
+        "Reply CONFIRM_MANDATE <lineage_id> in qros-research-session after reviewing the displayed contract."
+    )
     assert "00_idea_intake/mandate_freeze_draft.yaml" in status.artifacts_written
     draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
     assert {name: group["confirmed"] for name, group in draft["groups"].items()} == {
@@ -1267,7 +1270,7 @@ def test_run_research_session_stops_at_intake_confirmation_pending_for_new_linea
 
     assert status.current_stage == "idea_intake_confirmation_pending"
     assert status.gate_status == "IDEA_INTAKE_PENDING_CONFIRMATION"
-    assert "--confirm-intake" in status.next_action
+    assert "Reply CONFIRM_IDEA_INTAKE <lineage_id> in qros-research-session" in status.next_action
     assert status.lineage_mode == "fresh_start"
     assert "fresh lineage slug" in (status.lineage_selection_reason or "")
 
@@ -1299,7 +1302,7 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
     assert status.blocking_reason_code == "LINEAGE_RESUME_BLOCKED"
     assert "blocked implicit resume" in status.why_this_skill
     assert "Resume blocked for existing lineage btc_leads_alts" in status.next_action
-    assert "--lineage-id btc_leads_alts" in status.resume_hint
+    assert "Continue qros-research-session with explicit lineage btc_leads_alts" in status.resume_hint
 
 
 def test_run_research_session_explicit_lineage_id_resume_is_still_allowed(tmp_path: Path) -> None:
@@ -2409,6 +2412,13 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
     outputs_root = tmp_path / "outputs"
     cases = [
         (
+            "csf_data_retry",
+            "RETRY",
+            "csf_data_ready",
+            "02_csf_data_ready",
+            "csf_data_ready_review",
+        ),
+        (
             "csf_signal_child_lineage",
             "CHILD LINEAGE",
             "csf_signal_ready",
@@ -2423,11 +2433,25 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
             "csf_train_freeze_review",
         ),
         (
+            "csf_test_retry",
+            "RETRY",
+            "csf_test_evidence",
+            "05_csf_test_evidence",
+            "csf_test_evidence_review",
+        ),
+        (
             "csf_backtest_no_go",
             "NO-GO",
             "csf_backtest_ready",
             "06_csf_backtest_ready",
             "csf_backtest_ready_review",
+        ),
+        (
+            "csf_holdout_no_go",
+            "NO-GO",
+            "csf_holdout_validation",
+            "07_csf_holdout_validation",
+            "csf_holdout_validation_review",
         ),
     ]
 
@@ -2457,6 +2481,35 @@ def test_run_research_session_requires_failure_handling_on_non_advancing_csf_rev
         assert status.failure_stage == expected_stage
         assert "failure" in status.next_action.lower()
         assert status.failure_reason_summary == f"{expected_stage} requires failure handling because review verdict is {verdict}."
+
+
+def test_latest_review_failure_status_covers_tss_route_specific_stages(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    cases = [
+        ("tss_data_ready", "02_tss_data_ready", "tss_data_ready_review"),
+        ("tss_signal_ready", "03_tss_signal_ready", "tss_signal_ready_review"),
+        ("tss_train_freeze", "04_tss_train_freeze", "tss_train_freeze_review"),
+        ("tss_test_evidence", "05_tss_test_evidence", "tss_test_evidence_review"),
+        ("tss_backtest_ready", "06_tss_backtest_ready", "tss_backtest_ready_review"),
+        ("tss_holdout_validation", "07_tss_holdout_validation", "tss_holdout_validation_review"),
+    ]
+
+    for stage, stage_dir_name, expected_stage in cases:
+        lineage_root = outputs_root / f"{stage}_failure_case"
+        mandate_dir = lineage_root / "01_mandate"
+        _write_yaml(
+            _stage_output_path(mandate_dir, "research_route.yaml"),
+            {"research_route": "time_series_signal"},
+        )
+        stage_dir = lineage_root / stage_dir_name
+        _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="NO-GO")
+
+        verdict, requires_failure_handling, failure_stage, reason = _latest_review_failure_status(lineage_root)
+
+        assert verdict == "NO-GO"
+        assert requires_failure_handling is True
+        assert failure_stage == expected_stage
+        assert reason == f"{expected_stage} requires failure handling because review verdict is NO-GO."
 
 
 def test_run_research_session_requires_failure_disposition_after_blocking_failure_package(
@@ -2798,7 +2851,7 @@ def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> No
     assert status.current_skill == "qros-idea-intake-author"
     assert "idea_intake" in status.why_this_skill
     assert status.blocking_reason == "Idea intake inputs or admission evidence are still incomplete."
-    assert "qros-session --lineage-id btc_leads_alts" in status.resume_hint
+    assert "Continue with qros-idea-intake-author for lineage btc_leads_alts" in status.resume_hint
     assert status.review_verdict is None
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
