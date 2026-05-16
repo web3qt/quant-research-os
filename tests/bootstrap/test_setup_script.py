@@ -16,13 +16,28 @@ def _copy_repo_fixture(tmp_path: Path) -> Path:
     shutil.copytree(
         repo_root,
         fixture_root,
-        ignore=shutil.ignore_patterns(".git", ".worktrees", ".pytest_cache", "__pycache__", "*.pyc"),
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".worktrees",
+            ".pytest_cache",
+            ".qros",
+            ".venv",
+            ".omx",
+            "__pycache__",
+            "*.pyc",
+        ),
     )
     return fixture_root
 
 
 def _combined_output(result) -> str:
     return f"{result.stdout}\n{result.stderr}"
+
+
+def _seed_repo_local_python(env: dict[str, str]) -> None:
+    python312 = shutil.which("python3.12", path=env.get("PATH"))
+    if python312:
+        env["QROS_PYTHON"] = python312
 
 
 def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
@@ -34,6 +49,7 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
 
     result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],
@@ -95,6 +111,7 @@ def test_setup_check_reports_incomplete_install(tmp_path: Path) -> None:
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
     result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local", "--check"],
         check=False,
@@ -117,6 +134,7 @@ def test_repo_local_wrapper_blocks_missing_source_repo_path_drift(tmp_path: Path
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
 
     setup_result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],
@@ -161,6 +179,7 @@ def test_repo_local_wrapper_blocks_expected_source_repo_mismatch_with_override(
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
 
     setup_result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],
@@ -212,6 +231,7 @@ def test_qros_update_emits_recovery_diagnostics_instead_of_guard_block(tmp_path:
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
 
     setup_result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],

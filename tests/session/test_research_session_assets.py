@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from runtime.tools import review_session_runtime
 from tests.helpers.skill_test_utils import skill_path
 
 
@@ -138,6 +139,62 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "tss_holdout_validation_confirmation_pending" in content
     assert "reuse_contract" in content
     assert "是否按以上内容冻结 tss_holdout_validation" in content
+
+
+def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatch) -> None:
+    content = Path("docs/guides/qros-review-shared-protocol.md").read_text(encoding="utf-8")
+    skill_content = Path("skills/csf_data_ready/qros-csf-data-ready-review/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    payload = {
+        "lineage_id": "lineage_a",
+        "stage": "csf_data_ready",
+        "stage_dir": "/tmp/repo/outputs/lineage_a/02_csf_data_ready",
+        "lineage_root": "/tmp/repo/outputs/lineage_a",
+        "review_cycle_id": "cycle-123",
+        "request_payload": {
+            "project_root": "/tmp/repo",
+            "lineage_root": "/tmp/repo/outputs/lineage_a",
+            "stage_dir": "/tmp/repo/outputs/lineage_a/02_csf_data_ready",
+        },
+        "receipt_payload": {
+            "launcher_session_id": "launcher-session",
+            "launcher_thread_id": "launcher-thread",
+            "reviewer_agent_id": "reviewer-agent",
+            "reviewer_context_source": "explicit_handoff_only",
+            "reviewer_history_inheritance": "none",
+            "execution_mode": "spawned_agent",
+            "reviewer_invocation_kind": "codex_spawn_agent",
+            "context_isolation_policy": "fork_context_false",
+            "handoff_delivery_method": "send_input",
+        },
+    }
+
+    monkeypatch.setattr(review_session_runtime, "start_review_cycle", lambda **_: payload)
+    handoff = review_session_runtime.prepare_review_cycle_for_handoff(
+        cwd=Path("/tmp/repo"),
+        reviewer_identity="qros-csf-data-ready-reviewer",
+        reviewer_session_id="reviewer-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-agent",
+    )
+    handoff_prompt = handoff["reviewer_handoff_prompt"]
+
+    assert "review/final_review.yaml" in content
+    assert "review/result/reviewer_findings.raw.yaml" not in content
+    assert "qros-review" not in content
+    assert "reviewer_receipt.yaml" not in content
+
+    assert "review/final_review.yaml" in skill_content
+    assert "reviewer_receipt.yaml" not in skill_content
+
+    assert "closer_command" not in handoff
+    assert "review/final_review.yaml" in handoff_prompt
+    assert "Do not run qros-review or any closer step." in handoff_prompt
+    assert "Do not write reviewer_findings.raw.yaml." in handoff_prompt
+    assert "reviewed_artifact_paths: [<relative paths under author/formal>]" in handoff_prompt
+    assert "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there." in handoff_prompt
 
 
 def test_author_skills_allow_bulk_freeze_group_confirmation() -> None:

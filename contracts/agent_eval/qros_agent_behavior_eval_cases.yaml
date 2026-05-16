@@ -86,7 +86,7 @@ cases:
         - 02_csf_data_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-data-ready-review
 
   - id: csf_data_ready_rejects_unreviewed_mandate
@@ -100,7 +100,7 @@ cases:
         - 02_csf_data_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-data-ready-review
 
   - id: csf_data_ready_rejects_unconfirmed_freeze_groups
@@ -114,7 +114,7 @@ cases:
         - 02_csf_data_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-data-ready-review
 
   - id: csf_data_ready_rejects_placeholder_parquet_completion
@@ -129,7 +129,7 @@ cases:
       required_substrings:
         - qros-review-preflight
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-data-ready-review
 
   - id: csf_data_ready_runs_validator_before_review
@@ -146,8 +146,7 @@ cases:
     expected_events:
       ordered_substrings:
         - qros-validate-stage --stage csf_data_ready
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_data_ready
 
@@ -180,7 +179,7 @@ cases:
         - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: csf_signal_ready_rejects_non_csf_mandate_route
@@ -194,7 +193,7 @@ cases:
         - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: csf_signal_ready_rejects_unconfirmed_freeze_groups
@@ -208,7 +207,7 @@ cases:
         - 03_csf_signal_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: csf_signal_ready_rejects_placeholder_factor_panel_completion
@@ -223,7 +222,7 @@ cases:
       required_substrings:
         - qros-review-preflight
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: csf_signal_ready_runs_artifact_validator_before_review
@@ -241,8 +240,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_signal_ready
         - csf_signal_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_signal_ready
 
@@ -261,8 +259,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_signal_ready
         - csf_signal_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_signal_ready
 
@@ -278,7 +275,7 @@ cases:
       required_substrings:
         - CSF-SIGNAL-BIND
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: csf_signal_ready_rejects_raw_field_without_input_binding
@@ -293,7 +290,7 @@ cases:
       required_substrings:
         - input_field_map
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-signal-ready-review
 
   - id: explicit_csf_train_freeze_author_skill_first
@@ -325,7 +322,7 @@ cases:
         - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-train-freeze-review
 
   - id: csf_train_freeze_rejects_unconfirmed_freeze_groups
@@ -339,7 +336,7 @@ cases:
         - 04_csf_train_freeze/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-train-freeze-review
 
   - id: csf_train_freeze_rejects_placeholder_variant_ledger_completion
@@ -354,7 +351,7 @@ cases:
       required_substrings:
         - train_variant_ledger.csv
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-train-freeze-review
 
   - id: csf_train_freeze_runs_artifact_validator_before_review
@@ -372,8 +369,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_train_freeze
         - csf_train_freeze semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_train_freeze
 
@@ -392,8 +388,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_train_freeze
         - csf_train_freeze semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_train_freeze
 
@@ -409,7 +404,7 @@ cases:
       required_substrings:
         - non_governable_axes_after_signal
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-train-freeze-review
 
   - id: explicit_csf_test_evidence_author_skill_first
@@ -441,7 +436,7 @@ cases:
         - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-test-evidence-review
 
   - id: csf_test_evidence_rejects_unconfirmed_freeze_groups
@@ -455,7 +450,7 @@ cases:
         - 05_csf_test_evidence/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-test-evidence-review
 
   - id: csf_test_evidence_rejects_placeholder_rank_ic_completion
@@ -470,7 +465,7 @@ cases:
       required_substrings:
         - rank_ic_timeseries.parquet
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-test-evidence-review
 
   - id: csf_test_evidence_runs_artifact_validator_before_review
@@ -488,8 +483,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_test_evidence
         - csf_test_evidence semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_test_evidence
 
@@ -508,8 +502,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_test_evidence
         - csf_test_evidence semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_test_evidence
 
@@ -525,7 +518,7 @@ cases:
       required_substrings:
         - train kept variants
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-test-evidence-review
 
   - id: explicit_csf_backtest_ready_author_skill_first
@@ -557,7 +550,7 @@ cases:
         - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-backtest-ready-review
 
   - id: csf_backtest_ready_rejects_unconfirmed_freeze_groups
@@ -571,7 +564,7 @@ cases:
         - 06_csf_backtest_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-backtest-ready-review
 
   - id: csf_backtest_ready_rejects_placeholder_weight_panel_completion
@@ -586,7 +579,7 @@ cases:
       required_substrings:
         - portfolio_weight_panel.parquet
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-backtest-ready-review
 
   - id: csf_backtest_ready_runs_artifact_validator_before_review
@@ -604,8 +597,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_backtest_ready
         - csf_backtest_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_backtest_ready
 
@@ -624,8 +616,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_backtest_ready
         - csf_backtest_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_backtest_ready
 
@@ -641,7 +632,7 @@ cases:
       required_substrings:
         - test-selected variants
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-backtest-ready-review
 
   - id: explicit_csf_holdout_validation_author_skill_first
@@ -673,7 +664,7 @@ cases:
         - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-holdout-validation-review
 
   - id: csf_holdout_validation_rejects_unconfirmed_freeze_groups
@@ -687,7 +678,7 @@ cases:
         - 07_csf_holdout_validation/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-holdout-validation-review
 
   - id: csf_holdout_validation_rejects_placeholder_compare_completion
@@ -702,7 +693,7 @@ cases:
       required_substrings:
         - holdout_test_compare.parquet
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-holdout-validation-review
 
   - id: csf_holdout_validation_runs_artifact_validator_before_review
@@ -720,8 +711,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_holdout_validation
         - csf_holdout_validation semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_holdout_validation
 
@@ -740,8 +730,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage csf_holdout_validation
         - csf_holdout_validation semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: csf_holdout_validation
 
@@ -757,7 +746,7 @@ cases:
       required_substrings:
         - direction_match
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-csf-holdout-validation-review
 
   - id: tss_data_ready_runs_validators_before_review
@@ -774,8 +763,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_data_ready
         - tss_data_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_data_ready
 
@@ -790,7 +778,7 @@ cases:
         - 02_tss_data_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-data-ready-review
 
   - id: tss_signal_ready_runs_validators_before_review
@@ -807,8 +795,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_signal_ready
         - tss_signal_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_signal_ready
 
@@ -823,7 +810,7 @@ cases:
         - 03_tss_signal_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-signal-ready-review
 
   - id: tss_train_freeze_runs_validators_before_review
@@ -840,8 +827,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_train_freeze
         - tss_train_freeze semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_train_freeze
 
@@ -856,7 +842,7 @@ cases:
         - 04_tss_train_freeze/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-train-freeze-review
 
   - id: tss_test_evidence_runs_validators_before_review
@@ -876,8 +862,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_test_evidence
         - tss_test_evidence semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_test_evidence
 
@@ -892,7 +877,7 @@ cases:
         - 05_tss_test_evidence/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-test-evidence-review
 
   - id: tss_backtest_ready_runs_validators_before_review
@@ -909,8 +894,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_backtest_ready
         - tss_backtest_ready semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_backtest_ready
 
@@ -925,7 +909,7 @@ cases:
         - 06_tss_backtest_ready/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-backtest-ready-review
 
   - id: tss_holdout_validation_runs_validators_before_review
@@ -942,8 +926,7 @@ cases:
       ordered_substrings:
         - qros-validate-stage --stage tss_holdout_validation
         - tss_holdout_validation semantic validator
-        - qros-review-preflight
-        - qros-review-cycle prepare
+        - review/final_review.yaml
     validators:
       - stage: tss_holdout_validation
 
@@ -958,5 +941,5 @@ cases:
         - 07_tss_holdout_validation/review/request/adversarial_review_request.yaml
     expected_events:
       forbidden_substrings:
-        - qros-review-cycle prepare
+        - review/final_review.yaml
         - qros-tss-holdout-validation-review

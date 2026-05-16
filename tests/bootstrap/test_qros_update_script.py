@@ -126,7 +126,16 @@ def _copy_repo_fixture(tmp_path: Path) -> Path:
     shutil.copytree(
         repo_root,
         fixture_root,
-        ignore=shutil.ignore_patterns(".git", ".worktrees", ".pytest_cache", "__pycache__", "*.pyc"),
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".worktrees",
+            ".pytest_cache",
+            ".qros",
+            ".venv",
+            ".omx",
+            "__pycache__",
+            "*.pyc",
+        ),
     )
     return fixture_root
 

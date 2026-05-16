@@ -187,11 +187,13 @@ from runtime.tools.lineage_program_runtime import (
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    FINAL_REVIEW_FILENAME,
     FIX_REQUIRED_OUTCOME,
     REVIEWER_RECEIPT_FILENAME,
     ensure_adversarial_review_request,
     load_adversarial_review_request,
     load_adversarial_review_result,
+    load_final_review,
     load_reviewer_receipt,
     validate_receipt_contract,
     validate_result_contract,
@@ -2644,6 +2646,10 @@ def summarize_session_status(
         runtime_next_action
         if requires_failure_handling
         or current_stage.endswith("_author")
+        or (
+            current_stage.endswith("_review")
+            and stage_status in {"awaiting_author_fix", "blocked_requires_failure_handling"}
+        )
         or (current_stage.endswith("_review_confirmation_pending") and stage_status == "awaiting_author_fix")
         or current_stage.endswith("_review_complete")
         else next_action
@@ -2741,6 +2747,8 @@ def _current_skill_for_stage(
 ) -> str:
     if requires_failure_handling:
         return "qros-stage-failure-handler"
+    if runtime_stage_status == "blocked_requires_failure_handling" and current_stage.endswith("_review"):
+        return "qros-stage-failure-handler"
     if runtime_stage_status == "awaiting_author_fix" and (
         current_stage.endswith("_review") or current_stage.endswith("_review_confirmation_pending")
     ):
@@ -2788,6 +2796,11 @@ def _why_this_skill(
             f"so {current_skill} is the fixed review skill for that next lane."
         )
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return (
+                f"Current stage {current_stage} has a non-advancing final review verdict, "
+                f"so {current_skill} is the active failure-handling skill."
+            )
         if runtime_stage_status == "awaiting_author_fix":
             return f"Current stage {current_stage} has fixable adversarial findings, so {current_skill} is the active author-fix skill."
         return f"Current stage {current_stage} requires formal review closure, so {current_skill} is the active review skill."
@@ -2821,6 +2834,10 @@ def _orchestrated_why_this_skill(
             f"qros-research-session identified {stage_base} as review-ready and is holding the explicit review confirmation gate."
         )
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return (
+                f"qros-research-session identified {stage_base} as blocked by a non-advancing final review verdict and must hand off to failure handling."
+            )
         if runtime_stage_status == "awaiting_author_fix":
             return (
                 f"qros-research-session identified fixable {stage_base} review findings and must return to author repair."
@@ -2895,6 +2912,8 @@ def _orchestrated_blocking_reason(
             return f"{stage_base} author outputs must be repaired before review can be confirmed."
         return f"{stage_base} review is waiting for explicit CONFIRM_REVIEW in qros-research-session."
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return f"{stage_base} review is blocked by a non-advancing final review verdict and must enter failure handling."
         return f"{stage_base} review lane is active and waiting for reviewer output, audit, or closure."
     return _blocking_reason(
         current_stage=current_stage,
@@ -2935,8 +2954,10 @@ def _resume_hint(
             return f"Continue with {current_skill} for lineage {lineage_id}; repair author/formal outputs so review preflight passes."
         return f"Continue with {current_skill} for lineage {lineage_id}; launch a reviewer and prepare {stage_base} for review."
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return f"Continue with qros-stage-failure-handler for lineage {lineage_id}; follow the failure protocol recorded in review/{FINAL_REVIEW_FILENAME}."
         if runtime_stage_status == "awaiting_author_fix":
-            return f"Continue with {current_skill} for lineage {lineage_id}; repair review/result/review_findings.yaml and refresh author/formal outputs."
+            return f"Continue with {current_skill} for lineage {lineage_id}; read review/{FINAL_REVIEW_FILENAME}, repair author/formal outputs, and prepare a fresh reviewer cycle."
         return f"Continue with {current_skill} for lineage {lineage_id}; review the updated status in the same research repo."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Continue with {current_skill} for lineage {lineage_id}; confirm the next-stage handoff for {stage_base}."
@@ -2966,6 +2987,8 @@ def _orchestrated_resume_hint(
             return f"Continue qros-research-session for {lineage_id}; repair {stage_base} author/formal outputs before review."
         return f"Continue qros-research-session for {lineage_id}; confirm review for {stage_base} and launch the reviewer."
     if current_stage.endswith("_review"):
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return f"Continue qros-research-session for {lineage_id}; enter failure handling for {stage_base} from review/{FINAL_REVIEW_FILENAME}."
         return f"Continue qros-research-session for {lineage_id}; run the {stage_base} review lane until reviewer output, audit, and closure are resolved."
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return f"Continue qros-research-session for {lineage_id}; confirm the next-stage handoff for {stage_base}."
@@ -2988,15 +3011,19 @@ def _orchestrated_next_action(
     stage_base = _stage_base_name(current_stage)
     if runtime_stage_status == "awaiting_author_fix":
         return f"Continue qros-research-session for {lineage_id}; repair author/formal outputs for {stage_base} using the stage-specific author protocol internally."
+    if runtime_stage_status == "blocked_requires_failure_handling":
+        return f"Continue qros-research-session for {lineage_id}; enter the stage failure protocol for {stage_base} from review/{FINAL_REVIEW_FILENAME}."
     if runtime_stage_status == "awaiting_stage_program":
         location = f" under {required_program_dir}" if required_program_dir is not None else ""
         return f"Continue qros-research-session for {lineage_id}; author or refresh the lineage-local stage program{location} using the stage-specific author protocol internally."
     if runtime_stage_status in {"awaiting_program_validation", "awaiting_program_execution"}:
         return f"Continue qros-research-session for {lineage_id}; validate or execute the {stage_base} stage program using the stage-specific author protocol internally."
     if current_stage.endswith("_review_confirmation_pending"):
-        return f"Ask for explicit CONFIRM_REVIEW for {stage_base}. After approval, qros-research-session should launch the reviewer and run qros-review-cycle prepare / qros-review using the stage-specific review protocol internally; stage-specific review skills remain advanced/debug entrypoints."
+        return f"Ask for explicit CONFIRM_REVIEW for {stage_base}. After approval, qros-research-session should launch the reviewer and wait for review/{FINAL_REVIEW_FILENAME} using the stage-specific review protocol internally; stage-specific review skills remain advanced/debug entrypoints."
     if current_stage.endswith("_review"):
-        return f"Continue qros-research-session review orchestration for {stage_base}: launch or wait for the reviewer, then run ./.qros/bin/qros-review for closure using the stage-specific review protocol internally."
+        if runtime_stage_status == "blocked_requires_failure_handling":
+            return f"Continue qros-research-session review orchestration for {stage_base}: read review/{FINAL_REVIEW_FILENAME} and route directly into stage failure handling."
+        return f"Continue qros-research-session review orchestration for {stage_base}: launch or wait for the reviewer, then consume review/{FINAL_REVIEW_FILENAME} using the stage-specific review protocol internally."
     return next_action
 
 
@@ -3057,7 +3084,7 @@ def _review_state_snapshot(
         )
     except Exception:
         request_payload = {}
-    review_result = _load_adversarial_review_result_if_present(stage_dir)
+    review_result = _load_final_review_if_present(stage_dir)
     certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
     closure_written_at = (
         datetime.fromtimestamp(certificate_path.stat().st_mtime, timezone.utc).isoformat()
@@ -3076,8 +3103,20 @@ def _review_state_snapshot(
     review_state = "review_not_started"
     if request_payload:
         review_state = "review_in_progress"
-    if review_result and review_result.get("review_loop_outcome") == FIX_REQUIRED_OUTCOME:
-        review_state = "awaiting_author_fix"
+    if review_result:
+        if review_result.get("verdict") == FIX_REQUIRED_OUTCOME:
+            review_state = "awaiting_author_fix"
+        elif review_result.get("verdict") in NON_ADVANCING_COMPLETION_STATUSES:
+            review_state = "review_blocked_failure_handling"
+        else:
+            review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
+            audit_error = _review_write_scope_audit_error(stage_dir)
+            if review_audit is None:
+                review_state = "awaiting_reviewer_write_scope_audit"
+            elif audit_error is not None or review_audit.get("audit_status") != "PASS":
+                review_state = "review_audit_failed"
+            else:
+                review_state = "awaiting_review_closure"
     if certificate_path.exists():
         verdict = _review_verdict_from_stage_dir(stage_dir)
         if verdict in ADVANCING_COMPLETION_STATUSES:
@@ -3167,6 +3206,13 @@ def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
     if not result_path.exists():
         return None
     return load_adversarial_review_result(result_path)
+
+
+def _load_final_review_if_present(stage_dir: Path) -> dict | None:
+    final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
+    if not final_review_path.exists():
+        return None
+    return load_final_review(final_review_path)
 
 
 def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
@@ -3327,7 +3373,7 @@ def _review_substate(
 ) -> tuple[str, str, str, str]:
     request_path = _review_request_path(stage_dir)
     review_receipt = _load_reviewer_receipt_if_present(stage_dir)
-    review_result = _load_adversarial_review_result_if_present(stage_dir)
+    review_result = _load_final_review_if_present(stage_dir)
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
@@ -3345,7 +3391,7 @@ def _review_substate(
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is ready for independent adversarial review, but {ADVERSARIAL_REVIEW_REQUEST_FILENAME} is missing.",
-            f"Enter {review_skill} in the current session; launch a reviewer agent, run ./.qros/bin/qros-review-cycle prepare for {stage_base}, and then wait for reviewer output.",
+            f"Enter {review_skill} in the current session; launch a reviewer agent and then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_receipt is None and proof_chain_error is not None:
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -3374,14 +3420,14 @@ def _review_substate(
             return (
                 "awaiting_reviewer_completion",
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"{stage_base} has an active {actor_label} and is waiting for it to write {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
-                f"Wait for {actor_label} to finish and write {ADVERSARIAL_REVIEW_RESULT_FILENAME}, then rerun {review_skill}.",
+                f"{stage_base} has an active {actor_label} and is waiting for it to write review/{FINAL_REVIEW_FILENAME}.",
+                f"Wait for {actor_label} to finish and write review/{FINAL_REVIEW_FILENAME}, then rerun {review_skill}.",
             )
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
             f"{stage_base} is waiting for a reviewer to register {REVIEWER_RECEIPT_FILENAME} before review can begin.",
-            f"Enter {review_skill} in the current session, launch the reviewer, run ./.qros/bin/qros-review-cycle prepare, then wait for {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"Enter {review_skill} in the current session, launch the reviewer, then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
@@ -3390,19 +3436,26 @@ def _review_substate(
             f"{stage_base} has reviewer artifacts on disk, but the reviewer proof chain is invalid: {proof_chain_error}",
             f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher, then rerun {review_skill}.",
         )
-    if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
+    if review_result["verdict"] == FIX_REQUIRED_OUTCOME:
         return (
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh reviewer cycle.",
+            f"Read review/{FINAL_REVIEW_FILENAME}, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh reviewer cycle.",
+        )
+    if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
+        return (
+            "blocked_requires_failure_handling",
+            "FAILURE_HANDLER_REQUIRED",
+            f"{stage_base} review recorded a non-advancing verdict {review_result['verdict']} in review/{FINAL_REVIEW_FILENAME}; ordinary review closure must stop here.",
+            f"Do not replay locked formal artifacts. Enter qros-stage-failure-handler for {stage_base} and follow the failure/retry protocol described in review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_audit is None:
         return (
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_PENDING",
             f"{stage_base} has a closure-ready review result, but {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} is still missing.",
-            f"Run ./.qros/bin/qros-review to canonicalize findings, run write-scope audit, and write closure artifacts for {stage_base}.",
+            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base}, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None:
         return (
@@ -3421,8 +3474,8 @@ def _review_substate(
     return (
         "awaiting_review_closure",
         "REVIEW_CLOSURE_PENDING",
-        f"{stage_base} has a closure-ready adversarial review result and is waiting for deterministic closure artifacts.",
-        f"Run ./.qros/bin/qros-review to validate findings, run audit if needed, and write closure artifacts.",
+        f"{stage_base} has a closure-ready final review verdict in review/{FINAL_REVIEW_FILENAME} and is waiting for deterministic closure artifacts.",
+        f"Write or verify the remaining closure artifacts for {stage_base}, then continue qros-research-session.",
     )
 
 
@@ -4304,6 +4357,7 @@ def _review_has_started(stage_dir: Path) -> bool:
         path.exists()
         for path in (
             _review_request_path(stage_dir),
+            stage_dir / "review" / FINAL_REVIEW_FILENAME,
             _review_result_path(stage_dir),
             _review_closure_path(stage_dir, "stage_completion_certificate.yaml"),
         )
@@ -4518,20 +4572,20 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         return "REVIEW_PENDING", "Complete the review workflow."
     request_exists = _review_request_path(stage_dir).exists()
     receipt_exists = _review_receipt_path(stage_dir).exists()
-    review_result = _load_adversarial_review_result_if_present(stage_dir)
+    review_result = _load_final_review_if_present(stage_dir)
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Enter {review_skill} in the current session; launch a reviewer and run ./.qros/bin/qros-review-cycle prepare to register the active review cycle.",
+            f"Enter {review_skill} in the current session; launch a reviewer and wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if not receipt_exists and proof_chain_error is not None:
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing {ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+                f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing review/{FINAL_REVIEW_FILENAME}; proof chain validation failed.",
             )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
@@ -4540,41 +4594,45 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if not receipt_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Launch a reviewer, issue {REVIEWER_RECEIPT_FILENAME}, then wait for "
-            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"Launch a reviewer, issue {REVIEWER_RECEIPT_FILENAME}, then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_result is None:
         if receipt_exists and proof_chain_error is not None:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
                 f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher before producing "
-                f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+                f"review/{FINAL_REVIEW_FILENAME}; proof chain validation failed.",
             )
         review_receipt = _load_reviewer_receipt_if_present(stage_dir)
         if review_receipt is not None:
             return (
                 "ADVERSARIAL_REVIEW_PENDING",
-                f"Wait for reviewer agent {review_receipt['reviewer_agent_id']} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+                f"Wait for reviewer agent {review_receipt['reviewer_agent_id']} to produce review/{FINAL_REVIEW_FILENAME}.",
             )
         return (
             "ADVERSARIAL_REVIEW_PENDING",
-            f"Wait for the reviewer recorded in {REVIEWER_RECEIPT_FILENAME} to produce {ADVERSARIAL_REVIEW_RESULT_FILENAME}.",
+            f"Wait for the reviewer recorded in {REVIEWER_RECEIPT_FILENAME} to produce review/{FINAL_REVIEW_FILENAME}.",
         )
     if proof_chain_error is not None:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
             f"Reissue {REVIEWER_RECEIPT_FILENAME} via the runtime launcher and regenerate "
-            f"{ADVERSARIAL_REVIEW_RESULT_FILENAME}; proof chain validation failed.",
+            f"review/{FINAL_REVIEW_FILENAME}; proof chain validation failed.",
         )
-    if review_result["review_loop_outcome"] == FIX_REQUIRED_OUTCOME:
+    if review_result["verdict"] == FIX_REQUIRED_OUTCOME:
         return (
             "AUTHOR_FIX_REQUIRED",
-            f"Read review/result/review_findings.yaml and adversarial_review_result.yaml, explicitly resume the author lane, refresh author/formal outputs, then re-enter {review_skill} for a fresh reviewer cycle.",
+            f"Read review/{FINAL_REVIEW_FILENAME}, explicitly resume the author lane, refresh author/formal outputs, then re-enter {review_skill} for a fresh reviewer cycle.",
+        )
+    if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
+        return (
+            "FAILURE_HANDLER_REQUIRED",
+            f"Do not replay locked formal artifacts. Enter qros-stage-failure-handler for {_stage_base_name(current_stage)} and follow review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_audit is None:
         return (
             "REVIEW_AUDIT_PENDING",
-            "Run ./.qros/bin/qros-review to canonicalize findings, execute audit, and write deterministic closure artifacts.",
+            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {_stage_base_name(current_stage)}, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None or review_audit["audit_status"] != "PASS":
         return (
@@ -4583,7 +4641,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         )
     return (
         "REVIEW_CLOSURE_PENDING",
-        "Run ./.qros/bin/qros-review to complete deterministic review closure.",
+        f"Write or verify the remaining closure artifacts for {_stage_base_name(current_stage)}, then continue qros-research-session.",
     )
 
 
@@ -4693,7 +4751,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
         return (
             "REVIEW_CONFIRMATION_PENDING",
-            f"Enter {review_skill} in the current session. That stage-specific review skill should launch a reviewer, run ./.qros/bin/qros-review-cycle prepare, and then complete review with ./.qros/bin/qros-review.",
+            f"Enter {review_skill} in the current session. That stage-specific review skill should launch a reviewer and then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
 
 

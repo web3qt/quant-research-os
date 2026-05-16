@@ -11,6 +11,12 @@ import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_skillgen.adversarial_review_contract import (
+    load_adversarial_review_request,
+    load_reviewer_receipt,
+    ReviewerRuntimeIdentity,
+)
+from runtime.tools.review_skillgen.protocol_validator import load_and_validate_protocol
 from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
@@ -189,6 +195,95 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         reviewer_agent_id=receipt_payload["reviewer_agent_id"],
     )
     _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", raw_findings_payload)
+
+
+def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(tmp_path: Path) -> None:
+    stage_dir = _prepare_csf_stage(
+        tmp_path,
+        stage_key="csf_signal_ready",
+        stage_dir_name="03_csf_signal_ready",
+    )
+    _write_review_request_and_result(stage_dir, stage="csf_signal_ready")
+
+    manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
+    manifest_payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    manifest_payload["required_artifact_paths"] = ["artifact_catalog.md"]
+    manifest_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+    manifest_payload["stage_content_artifact_paths"] = ["artifact_catalog.md"]
+    manifest_payload["stage_content_provenance_paths"] = ["program_execution_manifest.json"]
+    manifest_payload["launcher_checked_artifact_paths"] = ["artifact_catalog.md"]
+    manifest_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+    manifest_payload["launcher_handoff_context_paths"] = ["artifact_catalog.md"]
+    manifest_path.write_text(
+        yaml.safe_dump(manifest_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    manifest_digest = hashlib.sha256(manifest_path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload["required_artifact_paths"] = ["artifact_catalog.md"]
+    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["stage_content_artifact_paths"] = ["artifact_catalog.md"]
+    request_payload["stage_content_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["launcher_checked_artifact_paths"] = ["artifact_catalog.md"]
+    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["launcher_handoff_context_paths"] = ["artifact_catalog.md"]
+    request_payload["handoff_manifest_digest"] = manifest_digest
+    request_path.write_text(
+        yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    for path in (
+        stage_dir / "review" / "request" / "reviewer_receipt.yaml",
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml",
+    ):
+        if path.exists():
+            path.unlink()
+
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": "csf_signal_ready",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": ["artifact_catalog.md"],
+            "reviewed_program_path": "program/cross_sectional_factor/csf_signal_ready/run_stage.py",
+            "reviewed_artifact_digest": "sha256:artifact-digest",
+            "reviewed_program_digest": "sha256:program-digest",
+            "verdict": "CONDITIONAL PASS",
+            "review_summary": "scope review completed",
+            "blocking_findings": [],
+            "reservation_findings": ["volume and liquidity components remain coupled"],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": ["may proceed to csf_train_freeze confirmation"],
+            "recommended_next_action": "advance to next-stage confirmation",
+        },
+    )
+
+    payload = load_and_validate_protocol(
+        review_request_dir=stage_dir / "review" / "request",
+        review_result_dir=stage_dir / "review" / "result",
+        request_loader=load_adversarial_review_request,
+        receipt_loader=load_reviewer_receipt,
+        runtime_identity=ReviewerRuntimeIdentity(
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        ),
+    )
+
+    assert payload["receipt_payload"] == {}
+    assert payload["audit_payload"] == {}
+    assert payload["review_result"]["review_loop_outcome"] == "CLOSURE_READY_CONDITIONAL_PASS"
 
 
 def test_run_stage_review_blocks_csf_test_evidence_when_rank_ic_is_non_positive(tmp_path: Path) -> None:

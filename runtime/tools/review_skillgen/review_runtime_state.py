@@ -27,10 +27,13 @@ _ACTIVE_REQUEST_FILES = (
     "reviewer_receipt.yaml",
     "reviewer_write_scope_baseline.yaml",
 )
+_ACTIVE_REVIEW_ROOT_FILES = (
+    "final_review.yaml",
+)
 _ACTIVE_RESULT_FILES = (
+    "review_findings.yaml",
     "reviewer_findings.raw.yaml",
     "adversarial_review_result.yaml",
-    "review_findings.yaml",
     "reviewer_write_scope_audit.yaml",
 )
 _ACTIVE_CLOSURE_FILES = (
@@ -155,6 +158,30 @@ def _archive_file_tree(
         except OSError:
             pass
 
+    return written
+
+
+def _archive_named_files(
+    stage_dir: Path,
+    src_root: Path,
+    dst_root: Path,
+    *,
+    filenames: Sequence[str],
+    review_cycle_id: str,
+    reason: str,
+    timestamp: str,
+) -> list[str]:
+    written: list[str] = []
+    dst_root.mkdir(parents=True, exist_ok=True)
+    for filename in filenames:
+        src = src_root / filename
+        if not src.exists():
+            continue
+        stem = src.stem
+        suffix = "".join(src.suffixes)
+        dst = dst_root / f"{stem}.{review_cycle_id}.{reason}.{timestamp}{suffix}"
+        src.rename(dst)
+        written.append(str(dst.relative_to(stage_dir)))
     return written
 
 
@@ -291,20 +318,45 @@ def archive_active_review_cycle(
     ):
         src_root = stage_dir / "review" / subdir_name
         dst_root = archive_root / subdir_name
-        dst_root.mkdir(parents=True, exist_ok=True)
-        for filename in filenames:
-            src = src_root / filename
-            if not src.exists():
-                continue
-            stem = src.stem
-            suffix = "".join(src.suffixes)
-            dst = dst_root / f"{stem}.{review_cycle_id}.{reason}.{timestamp}{suffix}"
-            src.rename(dst)
-            written.append(str(dst.relative_to(stage_dir)))
+        written.extend(
+            _archive_named_files(
+                stage_dir,
+                src_root,
+                dst_root,
+                filenames=filenames,
+                review_cycle_id=review_cycle_id,
+                reason=reason,
+                timestamp=timestamp,
+            )
+        )
+
+    review_root = stage_dir / "review"
+    review_archive_root = archive_root / "review"
+    written.extend(
+        _archive_named_files(
+            stage_dir,
+            review_root,
+            review_archive_root,
+            filenames=_ACTIVE_REVIEW_ROOT_FILES,
+            review_cycle_id=review_cycle_id,
+            reason=reason,
+            timestamp=timestamp,
+        )
+    )
 
     result_src_root = stage_dir / "review" / "result"
     result_dst_root = archive_root / "result"
-    result_dst_root.mkdir(parents=True, exist_ok=True)
+    written.extend(
+        _archive_named_files(
+            stage_dir,
+            result_src_root,
+            result_dst_root,
+            filenames=_ACTIVE_RESULT_FILES,
+            review_cycle_id=review_cycle_id,
+            reason=reason,
+            timestamp=timestamp,
+        )
+    )
     written.extend(
         _archive_file_tree(
             stage_dir,

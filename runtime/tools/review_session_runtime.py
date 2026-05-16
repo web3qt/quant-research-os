@@ -282,11 +282,8 @@ def _reviewer_handoff_prompt(
     stage_dir = Path(payload["stage_dir"]).resolve()
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
     author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
-    result_root = _display_path(stage_dir / "review" / "result", display_root=display_root)
-    result_path = _display_path(
-        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
-        display_root=display_root,
-    )
+    review_root = _display_path(stage_dir / "review", display_root=display_root)
+    final_review_path = _display_path(stage_dir / "review" / "final_review.yaml", display_root=display_root)
     request_payload = payload["request_payload"]
     receipt_payload = payload["receipt_payload"]
     lines = [
@@ -294,13 +291,12 @@ def _reviewer_handoff_prompt(
         "",
         "Launcher boundary:",
         "- The current/main conversation is the launcher, not the reviewer.",
-        "- Do not write reviewer_findings.raw.yaml from the launcher conversation.",
+        "- Do not write review/final_review.yaml from the launcher conversation.",
         "- Send this handoff to an independent reviewer/subagent.",
         f"- launcher_session_id: {receipt_payload['launcher_session_id']}",
         f"- launcher_thread_id: {receipt_payload['launcher_thread_id']}",
         f"- reviewer_agent_id: {receipt_payload['reviewer_agent_id']}",
-        "- The QROS governance repo is not the active research repo unless the canonical paths below point there.",
-        "- The QROS governance repo is not the active research repo unless the canonical paths above point there.",
+        "- The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there.",
         "",
         "Isolation contract:",
         f"- reviewer_context_source: {receipt_payload['reviewer_context_source']}",
@@ -319,7 +315,7 @@ def _reviewer_handoff_prompt(
         f"- stage_dir: {request_payload['stage_dir']}",
         f"- author_formal_dir: {author_root}",
         f"- review_request_dir: {request_root}",
-        f"- review_result_dir: {result_root}",
+        f"- review_dir: {review_root}",
         "",
         f"Lineage: {payload['lineage_id']}",
         f"Stage: {payload['stage']}",
@@ -329,7 +325,7 @@ def _reviewer_handoff_prompt(
         f"Reviewer session id / agent id: {reviewer_session_id}",
         "",
         "Hard constraints:",
-        "- Do not run qros-review.",
+        "- Do not run qros-review or any closer step.",
         "- Do not write closure artifacts.",
         "- Do not modify author/formal or review/request files.",
         "",
@@ -338,44 +334,31 @@ def _reviewer_handoff_prompt(
         f"- {author_root}/*",
         "",
         "Permitted write only:",
-        f"- {result_path}",
+        f"- {final_review_path}",
         "",
-        "Write reviewer_findings.raw.yaml with top-level fields:",
-        f"review_cycle_id: {payload['review_cycle_id']}",
-        f"reviewer_session_id: {reviewer_session_id}",
+        "Write exactly one canonical machine-readable review artifact.",
+        "Do not write reviewer_findings.raw.yaml.",
+        "Required final review schema:",
+        f"lineage_id: {payload['lineage_id']}",
+        f"stage_id: {payload['stage']}",
+        f"reviewer_identity: {reviewer_identity}",
         f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
-        f"reviewer_context_source: {payload['receipt_payload']['reviewer_context_source']}",
-        f"reviewer_history_inheritance: {payload['receipt_payload']['reviewer_history_inheritance']}",
-        f"reviewed_project_root: {request_payload['project_root']}",
-        f"reviewed_lineage_root: {request_payload['lineage_root']}",
-        f"reviewed_stage_dir: {request_payload['stage_dir']}",
-        "review_loop_outcome",
-        "blocking_findings",
-        "reservation_findings",
-        "info_findings",
-        "residual_risks",
+        "reviewed_artifact_paths: [<relative paths under author/formal>]",
+        "reviewed_program_path: <relative path>",
+        "reviewed_artifact_digest: <artifact digest>",
+        "reviewed_program_digest: <program digest>",
+        "verdict: one of PASS, CONDITIONAL PASS, FIX_REQUIRED, RETRY, NO-GO, CHILD LINEAGE",
+        "review_summary: <single sentence>",
+        "blocking_findings: []",
+        "reservation_findings: []",
+        "info_findings: []",
+        "residual_risks: []",
+        "allowed_modifications: []",
+        "rollback_stage: <stage or null>",
+        "downstream_permissions: []",
+        "recommended_next_action: <single sentence>",
     ]
     return "\n".join(lines)
-
-
-def _closer_command(
-    *,
-    payload: dict[str, Any],
-    reviewer_identity: str,
-    reviewer_session_id: str,
-    display_root: Path | None,
-) -> str:
-    stage_dir = _display_path(Path(payload["stage_dir"]), display_root=display_root)
-    lineage_root = _display_path(Path(payload["lineage_root"]), display_root=display_root)
-    return (
-        "./.qros/bin/qros-review "
-        f"--stage-dir {stage_dir} "
-        f"--lineage-root {lineage_root} "
-        f"--reviewer-id {reviewer_identity} "
-        "--reviewer-role reviewer "
-        f"--reviewer-session-id {reviewer_session_id} "
-        "--reviewer-mode adversarial"
-    )
 
 
 def prepare_review_cycle_for_handoff(
@@ -408,12 +391,6 @@ def prepare_review_cycle_for_handoff(
             reviewer_session_id=reviewer_session_id,
             display_root=display_root,
             host=host,
-        ),
-        "closer_command": _closer_command(
-            payload=payload,
-            reviewer_identity=reviewer_identity,
-            reviewer_session_id=reviewer_session_id,
-            display_root=display_root,
         ),
     }
 

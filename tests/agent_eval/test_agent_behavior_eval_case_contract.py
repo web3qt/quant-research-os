@@ -108,8 +108,7 @@ def test_csf_data_ready_eval_cases_lock_gate_specific_event_assertions() -> None
     assert success_case["expected_skill"] == "qros-csf-data-ready-author"
     assert success_case["expected_events"]["ordered_substrings"] == [
         "qros-validate-stage --stage csf_data_ready",
-        "qros-review-preflight",
-        "qros-review-cycle prepare",
+        "review/final_review.yaml",
     ]
     assert success_case["validators"] == [{"stage": "csf_data_ready"}]
 
@@ -121,7 +120,7 @@ def test_csf_data_ready_eval_cases_lock_gate_specific_event_assertions() -> None
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-data-ready-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_csf_signal_ready_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -137,8 +136,7 @@ def test_csf_signal_ready_eval_cases_lock_gate_specific_event_assertions() -> No
         assert case["expected_events"]["ordered_substrings"] == [
             "qros-validate-stage --stage csf_signal_ready",
             "csf_signal_ready semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert case["validators"] == [{"stage": "csf_signal_ready"}]
 
@@ -152,7 +150,7 @@ def test_csf_signal_ready_eval_cases_lock_gate_specific_event_assertions() -> No
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-signal-ready-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_csf_train_freeze_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -168,8 +166,7 @@ def test_csf_train_freeze_eval_cases_lock_gate_specific_event_assertions() -> No
         assert case["expected_events"]["ordered_substrings"] == [
             "qros-validate-stage --stage csf_train_freeze",
             "csf_train_freeze semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert case["validators"] == [{"stage": "csf_train_freeze"}]
 
@@ -181,7 +178,7 @@ def test_csf_train_freeze_eval_cases_lock_gate_specific_event_assertions() -> No
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-train-freeze-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_csf_test_evidence_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -197,8 +194,7 @@ def test_csf_test_evidence_eval_cases_lock_gate_specific_event_assertions() -> N
         assert case["expected_events"]["ordered_substrings"] == [
             "qros-validate-stage --stage csf_test_evidence",
             "csf_test_evidence semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert case["validators"] == [{"stage": "csf_test_evidence"}]
 
@@ -210,7 +206,7 @@ def test_csf_test_evidence_eval_cases_lock_gate_specific_event_assertions() -> N
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-test-evidence-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_csf_backtest_ready_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -226,8 +222,7 @@ def test_csf_backtest_ready_eval_cases_lock_gate_specific_event_assertions() -> 
         assert case["expected_events"]["ordered_substrings"] == [
             "qros-validate-stage --stage csf_backtest_ready",
             "csf_backtest_ready semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert case["validators"] == [{"stage": "csf_backtest_ready"}]
 
@@ -239,7 +234,7 @@ def test_csf_backtest_ready_eval_cases_lock_gate_specific_event_assertions() -> 
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-backtest-ready-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_csf_holdout_validation_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -255,8 +250,7 @@ def test_csf_holdout_validation_eval_cases_lock_gate_specific_event_assertions()
         assert case["expected_events"]["ordered_substrings"] == [
             "qros-validate-stage --stage csf_holdout_validation",
             "csf_holdout_validation semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert case["validators"] == [{"stage": "csf_holdout_validation"}]
 
@@ -268,7 +262,7 @@ def test_csf_holdout_validation_eval_cases_lock_gate_specific_event_assertions()
     ):
         case = cases[case_id]
         assert case["expected_skill"] == "qros-csf-holdout-validation-author"
-        assert "qros-review-cycle prepare" in case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in case["expected_events"]["forbidden_substrings"]
 
 
 def test_tss_eval_cases_lock_gate_specific_event_assertions() -> None:
@@ -291,14 +285,13 @@ def test_tss_eval_cases_lock_gate_specific_event_assertions() -> None:
         assert success_case["expected_events"]["ordered_substrings"] == [
             f"qros-validate-stage --stage {stage}",
             f"{stage} semantic validator",
-            "qros-review-preflight",
-            "qros-review-cycle prepare",
+            "review/final_review.yaml",
         ]
         assert success_case["validators"] == [{"stage": stage}]
 
         reject_case = cases[f"{stage}_rejects_gate"]
         assert reject_case["expected_skill"] == skill
-        assert "qros-review-cycle prepare" in reject_case["expected_events"]["forbidden_substrings"]
+        assert "review/final_review.yaml" in reject_case["expected_events"]["forbidden_substrings"]
         assert review_skill in reject_case["expected_events"]["forbidden_substrings"]
 
 

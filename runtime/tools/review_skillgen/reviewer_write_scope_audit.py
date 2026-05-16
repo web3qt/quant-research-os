@@ -9,6 +9,7 @@ import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    FINAL_REVIEW_FILENAME,
     REVIEWER_RECEIPT_FILENAME,
     load_adversarial_review_result,
     load_reviewer_receipt,
@@ -23,6 +24,7 @@ from runtime.tools.review_skillgen.review_result_writer import RAW_REVIEWER_FIND
 REVIEWER_WRITE_SCOPE_BASELINE_FILENAME = "reviewer_write_scope_baseline.yaml"
 REVIEWER_WRITE_SCOPE_AUDIT_FILENAME = "reviewer_write_scope_audit.yaml"
 REVIEW_RESULT_ROOT = Path("review/result")
+REVIEW_FINAL_REVIEW_PATH = Path("review") / FINAL_REVIEW_FILENAME
 ALLOWED_RESULT_FILENAMES = {
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     RAW_REVIEWER_FINDINGS_FILENAME,
@@ -57,6 +59,9 @@ def _iter_protected_files(stage_dir: Path) -> dict[str, str]:
             continue
         if rel == trace_rel:
             continue
+        # canonical final review is reviewer-owned output, not protected launcher state
+        if rel == REVIEW_FINAL_REVIEW_PATH:
+            continue
         if rel.parts[:2] == REVIEW_RESULT_ROOT.parts:
             continue
         snapshot[rel.as_posix()] = _hash_file(path)
@@ -77,6 +82,7 @@ def write_reviewer_write_scope_baseline(
         "launcher_thread_id": launcher_thread_id,
         "reviewer_agent_id": reviewer_agent_id,
         "excluded_roots": [REVIEW_RESULT_ROOT.as_posix()],
+        "excluded_files": [REVIEW_FINAL_REVIEW_PATH.as_posix()],
         "protected_snapshot": _iter_protected_files(stage_dir),
         "baseline_written_at": datetime.now(timezone.utc).isoformat(),
     }

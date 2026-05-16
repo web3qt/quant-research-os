@@ -19,7 +19,16 @@ def _copy_repo_fixture(tmp_path: Path) -> Path:
     shutil.copytree(
         REPO_ROOT,
         fixture_root,
-        ignore=shutil.ignore_patterns(".git", ".worktrees", ".pytest_cache", "__pycache__", "*.pyc"),
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".worktrees",
+            ".pytest_cache",
+            ".qros",
+            ".venv",
+            ".omx",
+            "__pycache__",
+            "*.pyc",
+        ),
     )
     return fixture_root
 
@@ -103,6 +112,12 @@ def _run_qros_session(project_root: Path, env: dict[str, str], *args: str):
     )
 
 
+def _seed_repo_local_python(env: dict[str, str]) -> None:
+    python312 = shutil.which("python3.12", path=env.get("PATH"))
+    if python312:
+        env["QROS_PYTHON"] = python312
+
+
 def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path) -> None:
     fixture_root = _copy_repo_fixture(tmp_path)
     project_root = tmp_path / "research-project"
@@ -112,6 +127,7 @@ def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["PATH"] = f"{Path(sys.executable).parent}:{env['PATH']}"
+    _seed_repo_local_python(env)
 
     setup_result = run(
         [str(fixture_root / "setup"), "--host", "codex", "--mode", "repo-local"],

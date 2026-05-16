@@ -17,6 +17,7 @@ from runtime.tools.review_skillgen.review_scope_builder import (
 
 ADVERSARIAL_REVIEW_REQUEST_FILENAME = "adversarial_review_request.yaml"
 ADVERSARIAL_REVIEW_RESULT_FILENAME = "adversarial_review_result.yaml"
+FINAL_REVIEW_FILENAME = "final_review.yaml"
 REVIEWER_RECEIPT_FILENAME = "reviewer_receipt.yaml"
 REVIEWER_HANDOFF_MANIFEST_FILENAME = "reviewer_handoff_manifest.yaml"
 REVIEW_FINDINGS_FILENAME = "review_findings.yaml"
@@ -76,6 +77,14 @@ CLOSURE_READY_OUTCOMES = {
     "CLOSURE_READY_CHILD_LINEAGE": "CHILD LINEAGE",
 }
 ALLOWED_REVIEW_LOOP_OUTCOMES = {FIX_REQUIRED_OUTCOME, *CLOSURE_READY_OUTCOMES}
+ALLOWED_FINAL_REVIEW_VERDICTS = {
+    "PASS",
+    "CONDITIONAL PASS",
+    "FIX_REQUIRED",
+    "RETRY",
+    "NO-GO",
+    "CHILD LINEAGE",
+}
 REQUIRED_HANDOFF_INPUT_ROOTS = ("review/request", "author/formal")
 REQUIRED_HANDOFF_CONTEXT_PATHS = ("artifact_catalog.md", "field_dictionary.md", "run_manifest.json")
 CANONICAL_REVIEW_CONTEXT_FIELDS = (
@@ -127,6 +136,22 @@ def _require_string_list(payload: dict[str, Any], key: str, *, path: Path) -> li
     if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
         raise ValueError(f"{path}: {key} must be a list of non-empty strings")
     return [item.strip() for item in value]
+
+
+def _require_non_empty_string_list(payload: dict[str, Any], key: str, *, path: Path) -> list[str]:
+    values = _require_string_list(payload, key, path=path)
+    if not values:
+        raise ValueError(f"{path}: {key} must be a non-empty list of non-empty strings")
+    return values
+
+
+def _require_nullable_string(payload: dict[str, Any], key: str, *, path: Path) -> str | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{path}: {key} must be a non-empty string when provided")
+    return value.strip()
 
 
 def _stable_yaml_text(payload: dict[str, Any]) -> str:
@@ -867,6 +892,42 @@ def load_adversarial_review_result(path: str | Path) -> dict[str, Any]:
         value = payload.get(timestamp_key)
         if isinstance(value, str) and value.strip():
             data[timestamp_key] = value.strip()
+    return data
+
+
+def load_final_review(path: str | Path) -> dict[str, Any]:
+    final_review_path = Path(path)
+    payload = _require_mapping(final_review_path)
+    verdict = _require_string(payload, "verdict", path=final_review_path)
+    if verdict not in ALLOWED_FINAL_REVIEW_VERDICTS:
+        raise ValueError(f"{final_review_path}: unsupported verdict {verdict!r}")
+
+    data = {
+        "lineage_id": _require_string(payload, "lineage_id", path=final_review_path),
+        "stage_id": _require_string(payload, "stage_id", path=final_review_path),
+        "reviewer_identity": _require_string(payload, "reviewer_identity", path=final_review_path),
+        "reviewer_agent_id": _require_string(payload, "reviewer_agent_id", path=final_review_path),
+        "reviewed_artifact_paths": _require_non_empty_string_list(
+            payload,
+            "reviewed_artifact_paths",
+            path=final_review_path,
+        ),
+        "reviewed_program_path": _require_string(payload, "reviewed_program_path", path=final_review_path),
+        "reviewed_artifact_digest": _require_string(payload, "reviewed_artifact_digest", path=final_review_path),
+        "reviewed_program_digest": _require_string(payload, "reviewed_program_digest", path=final_review_path),
+        "verdict": verdict,
+        "review_summary": _require_string(payload, "review_summary", path=final_review_path),
+        "blocking_findings": _require_string_list(payload, "blocking_findings", path=final_review_path),
+        "reservation_findings": _require_string_list(payload, "reservation_findings", path=final_review_path),
+        "info_findings": _require_string_list(payload, "info_findings", path=final_review_path),
+        "residual_risks": _require_string_list(payload, "residual_risks", path=final_review_path),
+        "allowed_modifications": _require_string_list(payload, "allowed_modifications", path=final_review_path),
+        "downstream_permissions": _require_string_list(payload, "downstream_permissions", path=final_review_path),
+        "recommended_next_action": _require_string(payload, "recommended_next_action", path=final_review_path),
+    }
+    rollback_stage = _require_nullable_string(payload, "rollback_stage", path=final_review_path)
+    if rollback_stage is not None:
+        data["rollback_stage"] = rollback_stage
     return data
 
 

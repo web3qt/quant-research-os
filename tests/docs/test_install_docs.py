@@ -137,11 +137,12 @@ def test_review_protocol_documents_fail_closed_boundaries() -> None:
     assert "REVIEW_CONTEXT_ROOT_MISMATCH" in protocol
     assert "HARD_GATE_DOWNGRADED" in protocol
     assert "REVIEW_RESULT_PROJECTION_DRIFT" in protocol
-    assert "reviewer_findings.raw.yaml" in combined
-    assert "reviewer_session_id" in combined
-    assert "reviewed_project_root" in combined
-    assert "reviewed_lineage_root" in combined
-    assert "reviewed_stage_dir" in combined
-    assert "hard_gate_findings_acknowledged" in combined
+    assert "review/final_review.yaml" in combined
+    assert "reviewer_findings.raw.yaml" not in combined
+    assert "reviewed_artifact_paths" in combined
+    assert "reviewed_program_path" in combined
+    assert "reviewed_artifact_digest" in combined
+    assert "reviewed_program_digest" in combined
+    assert "recommended_next_action" in combined
     assert "mean_rank_ic <= 0" in csf_review_skill
     assert "不得降级为 reservation" in csf_review_skill

@@ -245,6 +245,30 @@ def _write_adversarial_review_result(
             "downstream_permissions": [],
         },
     )
+    final_review_verdict = final_verdict_by_outcome.get(outcome, outcome)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": ["artifact_catalog.md"],
+            "reviewed_program_path": f"{program_dir}/run_stage.py",
+            "reviewed_artifact_digest": "sha256:test-artifact-digest",
+            "reviewed_program_digest": "sha256:test-program-digest",
+            "verdict": final_review_verdict,
+            "review_summary": "test review fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "test review fixture",
+        },
+    )
     run_reviewer_write_scope_audit(stage_dir)
 
 
@@ -2766,7 +2790,7 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.failure_reason_summary is None
     assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
     assert "qros-mandate-review" in status.next_action
-    assert "./.qros/bin/qros-review-cycle prepare" in status.next_action
+    assert "review/final_review.yaml" in status.next_action
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(
@@ -2794,7 +2818,7 @@ def test_run_research_session_exposes_author_fix_substate_for_fix_required_revie
     assert status.current_skill == "qros-mandate-author"
     assert status.gate_status == "AUTHOR_FIX_REQUIRED"
     assert "author-fix skill" in status.why_this_skill
-    assert "review_findings.yaml" in status.next_action
+    assert "review/final_review.yaml" in status.next_action
     assert "fresh reviewer cycle" in status.next_action
 
 

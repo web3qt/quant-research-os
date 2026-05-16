@@ -315,7 +315,7 @@ graph TB
     end
 ```
 
-Runtime 的主会话状态机判定逻辑更准确地说是：**required outputs 存在于磁盘 + provenance 存在 = author 阶段可进入 review lane**。在进入 review lane 后，`qros-review` / review engine 会继续依据 review artifacts、closure artifacts，以及部分 stage-specific contract gates（尤其是 CSF 结构 / 指标门）决定能否正式关闭。整个流程都不依赖对话历史，也不依赖 Agent 记忆。
+Runtime 的主会话状态机判定逻辑更准确地说是：**required outputs 存在于磁盘 + provenance 存在 = author 阶段可进入 review lane**。普通 review 路径不再要求 reviewer 先写 raw findings 再由 closer 合并。独立 reviewer 子代理直接写 `review/final_review.yaml`，主线程读取该文件的 `verdict`，再结合 closure artifacts 与部分 stage-specific contract gates（尤其是 CSF 结构 / 指标门）决定继续 author-fix、next-stage confirmation 还是 failure handling。整个流程都不依赖对话历史，也不依赖 Agent 记忆。
 
 ---
 

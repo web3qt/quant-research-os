@@ -12,6 +12,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
+    load_final_review,
     load_reviewer_handoff_manifest,
     load_reviewer_receipt,
     validate_receipt_contract,
@@ -20,6 +21,7 @@ from runtime.tools.review_session_runtime import prepare_review_cycle_for_handof
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_trace
 from runtime.tools.review_skillgen.review_runtime_state import (
+    archive_active_review_cycle,
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
@@ -472,6 +474,95 @@ def test_review_cycle_binds_request_receipt_and_handoff_to_canonical_context(tmp
     mismatched_receipt["stage_dir"] = str((tmp_path / "outputs" / "other_lineage" / "01_mandate").resolve())
     with pytest.raises(ValueError, match="stage_dir"):
         validate_receipt_contract(request_payload=request_payload, receipt_payload=mismatched_receipt)
+
+
+def test_load_final_review_requires_reviewer_identity_and_scope_binding(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "lineage_a" / "02_csf_data_ready"
+    review_dir = stage_dir / "review"
+    review_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "lineage_id": "lineage_a",
+        "stage_id": "csf_data_ready",
+        "reviewer_identity": "qros-csf-data-ready-reviewer",
+        "reviewer_agent_id": "agent-123",
+        "reviewed_artifact_paths": ["author/formal/panel_manifest.json"],
+        "reviewed_program_path": "program/cross_sectional_factor/data_ready/run_stage.py",
+        "reviewed_artifact_digest": "sha256:artifact-digest",
+        "reviewed_program_digest": "sha256:program-digest",
+        "verdict": "FIX_REQUIRED",
+        "review_summary": "coverage evidence is incomplete",
+        "blocking_findings": ["coverage snapshot set is incomplete"],
+        "reservation_findings": [],
+        "info_findings": [],
+        "residual_risks": [],
+        "allowed_modifications": ["refresh current stage formal artifacts"],
+        "rollback_stage": "csf_data_ready",
+        "downstream_permissions": [],
+        "recommended_next_action": "resume author-fix",
+    }
+    (review_dir / "final_review.yaml").write_text(
+        yaml.safe_dump(payload, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    loaded = load_final_review(review_dir / "final_review.yaml")
+    assert loaded["verdict"] == "FIX_REQUIRED"
+    assert loaded["reviewer_identity"] == "qros-csf-data-ready-reviewer"
+    assert loaded["reviewed_artifact_digest"] == "sha256:artifact-digest"
+
+    missing_scope_payload = dict(payload)
+    missing_scope_payload.pop("reviewed_artifact_paths")
+    (review_dir / "final_review.yaml").write_text(
+        yaml.safe_dump(missing_scope_payload, sort_keys=False),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="reviewed_artifact_paths"):
+        load_final_review(review_dir / "final_review.yaml")
+
+    empty_scope_payload = dict(payload)
+    empty_scope_payload["reviewed_artifact_paths"] = []
+    (review_dir / "final_review.yaml").write_text(
+        yaml.safe_dump(empty_scope_payload, sort_keys=False),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="reviewed_artifact_paths"):
+        load_final_review(review_dir / "final_review.yaml")
+
+
+def test_archive_active_review_cycle_archives_root_level_final_review(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "outputs" / "lineage_a" / "02_csf_data_ready"
+    review_dir = stage_dir / "review"
+    result_dir = review_dir / "result"
+    result_dir.mkdir(parents=True, exist_ok=True)
+    (review_dir / "final_review.yaml").write_text("verdict: FIX_REQUIRED\n", encoding="utf-8")
+    (result_dir / "review_findings.yaml").write_text("blocking_findings: []\n", encoding="utf-8")
+    (result_dir / "reviewer_findings.raw.yaml").write_text("review_loop_outcome: FIX_REQUIRED\n", encoding="utf-8")
+    (result_dir / "adversarial_review_result.yaml").write_text("review_loop_outcome: FIX_REQUIRED\n", encoding="utf-8")
+    (result_dir / "reviewer_write_scope_audit.yaml").write_text("status: ok\n", encoding="utf-8")
+
+    written = archive_active_review_cycle(
+        stage_dir,
+        review_cycle_id="cycle123",
+        reason="reset",
+    )
+
+    archived_final_review = [path for path in written if path.startswith("review/archive/review/final_review.")]
+    assert len(archived_final_review) == 1
+    assert not (review_dir / "final_review.yaml").exists()
+    assert (stage_dir / archived_final_review[0]).read_text(encoding="utf-8") == "verdict: FIX_REQUIRED\n"
+
+    archived_review_findings = [path for path in written if path.startswith("review/archive/result/review_findings.")]
+    assert len(archived_review_findings) == 1
+    assert not (result_dir / "review_findings.yaml").exists()
+    for prefix, filename, expected_text in (
+        ("review/archive/result/reviewer_findings.raw.", "reviewer_findings.raw.yaml", "review_loop_outcome: FIX_REQUIRED\n"),
+        ("review/archive/result/adversarial_review_result.", "adversarial_review_result.yaml", "review_loop_outcome: FIX_REQUIRED\n"),
+        ("review/archive/result/reviewer_write_scope_audit.", "reviewer_write_scope_audit.yaml", "status: ok\n"),
+    ):
+        archived_paths = [path for path in written if path.startswith(prefix)]
+        assert len(archived_paths) == 1
+        assert not (result_dir / filename).exists()
+        assert (stage_dir / archived_paths[0]).read_text(encoding="utf-8") == expected_text
 
 
 def test_issue_reviewer_receipt_refreshes_legacy_receipt_with_canonical_context(tmp_path: Path) -> None:

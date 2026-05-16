@@ -7,7 +7,12 @@ import yaml
 
 from runtime.tools.lineage_lock_ledger import FROZEN_ARTIFACT_MUTATED, lock_reviewed_stage
 from runtime.tools.progress_runtime import progress_status_payload
-from runtime.tools.research_session import run_research_session
+from runtime.tools.research_session import (
+    CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS,
+    run_research_session,
+    write_review_transition_decision,
+)
+from runtime.tools.review_skillgen.adversarial_review_contract import ensure_adversarial_review_request
 from runtime.tools.review_skillgen.protected_state_guard import REVIEWER_FINDINGS_UNBOUND
 from runtime.tools.review_skillgen.review_result_writer import RAW_REVIEWER_FINDINGS_FILENAME
 from runtime.tools.review_skillgen.review_runtime_state import (
@@ -91,6 +96,45 @@ def _build_review_pending_lineage(tmp_path: Path) -> tuple[Path, Path, Path]:
     _write(formal_dir / "parameter_grid.yaml", "parameters: []\n")
     _write(formal_dir / "run_config.toml", "version = 1\n")
     _write(formal_dir / "program_execution_manifest.json", "{}\n")
+    return outputs_root, lineage_root, stage_dir
+
+
+def _build_csf_train_freeze_review_lineage(tmp_path: Path) -> tuple[Path, Path, Path]:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "lineage_a"
+    stage_dir = lineage_root / "04_csf_train_freeze"
+    formal_dir = stage_dir / "author" / "formal"
+    for name in CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS:
+        _write(formal_dir / name, "ok\n")
+    _write(formal_dir / "program_execution_manifest.json", "{}\n")
+    _write(
+        lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml",
+        "\n".join(
+            [
+                "research_route: cross_sectional_factor",
+                "factor_role: standalone_alpha",
+                "factor_structure: single_factor",
+                "portfolio_expression: long_short_rank_based",
+                "neutralization_policy: market_beta_neutral",
+                "",
+            ]
+        ),
+    )
+    write_review_transition_decision(
+        lineage_root,
+        current_stage="csf_train_freeze_review_confirmation_pending",
+    )
+    ensure_adversarial_review_request(
+        stage_dir,
+        lineage_id=lineage_root.name,
+        stage="csf_train_freeze",
+        author_identity="author-agent",
+        author_session_id="author-session",
+        required_program_dir="program/cross_sectional_factor/train_freeze",
+        required_program_entrypoint="run_stage.py",
+        required_artifact_paths=list(CSF_TRAIN_FREEZE_REQUIRED_OUTPUTS),
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
     return outputs_root, lineage_root, stage_dir
 
 
@@ -288,3 +332,59 @@ def test_stage_entry_guard_blocks_protected_review_state_drift(tmp_path: Path) -
     assert result.allowed is False
     assert result.current_active_skill == "qros-research-session"
     assert "REVIEW_STATE_PROJECTION_DRIFT" in result.message
+
+
+def test_session_routes_fix_required_and_retry_differently_from_final_review(tmp_path: Path) -> None:
+    outputs_root, lineage_root, stage_dir = _build_csf_train_freeze_review_lineage(tmp_path)
+    review_dir = stage_dir / "review"
+    fix_required_payload = {
+        "lineage_id": lineage_root.name,
+        "stage_id": "csf_train_freeze",
+        "reviewer_identity": "reviewer",
+        "reviewer_agent_id": "agent-1",
+        "reviewed_artifact_paths": ["author/formal/csf_train_freeze.yaml"],
+        "reviewed_program_path": "program/cross_sectional_factor/train_freeze/run_stage.py",
+        "reviewed_artifact_digest": "sha256:a",
+        "reviewed_program_digest": "sha256:b",
+        "verdict": "FIX_REQUIRED",
+        "review_summary": "binding mismatch",
+        "blocking_findings": ["binding mismatch"],
+        "reservation_findings": [],
+        "info_findings": [],
+        "residual_risks": [],
+        "allowed_modifications": ["refresh current stage formal artifacts"],
+        "rollback_stage": "csf_train_freeze",
+        "downstream_permissions": [],
+        "recommended_next_action": "resume author-fix",
+    }
+    _write(
+        review_dir / "final_review.yaml",
+        yaml.safe_dump(fix_required_payload, sort_keys=False),
+    )
+
+    fix_status = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert fix_status["current_stage"] == "csf_train_freeze_review"
+    assert fix_status["current_skill"] == "qros-csf-train-freeze-author"
+    assert fix_status["review_state"] == "awaiting_author_fix"
+    assert fix_status["blocking_reason_code"] == "AUTHOR_FIX_REQUIRED"
+    assert "author" in fix_status["next_action"]
+    assert "failure" not in fix_status["next_action"]
+
+    for verdict in ("RETRY", "NO-GO", "CHILD LINEAGE"):
+        retry_payload = dict(fix_required_payload)
+        retry_payload["verdict"] = verdict
+        retry_payload["recommended_next_action"] = "enter failure handling"
+        _write(
+            review_dir / "final_review.yaml",
+            yaml.safe_dump(retry_payload, sort_keys=False),
+        )
+
+        retry_status = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+        assert retry_status["current_stage"] == "csf_train_freeze_review"
+        assert retry_status["current_skill"] == "qros-stage-failure-handler"
+        assert retry_status["review_state"] == "review_blocked_failure_handling"
+        assert retry_status["blocking_reason_code"] == "FAILURE_HANDLER_REQUIRED"
+        assert "failure" in retry_status["next_action"]
+        assert "author" not in retry_status["next_action"]
