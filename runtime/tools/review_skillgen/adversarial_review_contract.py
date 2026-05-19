@@ -549,6 +549,15 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         value = payload.get(optional_key)
         if isinstance(value, str) and value.strip():
             data[optional_key] = value.strip()
+    for optional_key in (
+        "bound_author_materialization_digest",
+        "stage_contract_context_yaml_path",
+        "stage_contract_context_md_path",
+        "stage_contract_context_digest",
+    ):
+        value = payload.get(optional_key)
+        if isinstance(value, str) and value.strip():
+            data[optional_key] = value.strip()
 
     manifest_path = stage_dir / data["handoff_manifest_path"]
     if not manifest_path.exists():

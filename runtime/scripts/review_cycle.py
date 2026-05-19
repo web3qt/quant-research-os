@@ -144,9 +144,6 @@ def main() -> int:
     print()
     print("Reviewer handoff prompt:")
     print(payload["reviewer_handoff_prompt"])
-    print()
-    print("Closer command:")
-    print(payload["closer_command"])
     return 0
 
 

@@ -9,12 +9,16 @@ import yaml
 from tests.helpers.repo_paths import REPO_ROOT
 from tests.review.test_start_review_session import _prepare_mandate_stage
 from runtime.tools import review_session_runtime
-from runtime.tools.review_session_runtime import reset_review_cycle, start_review_cycle
+from runtime.tools.review_session_runtime import (
+    prepare_review_cycle_for_handoff,
+    reset_review_cycle,
+    start_review_cycle,
+)
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import current_unexpected_result_files
 
 
-def test_review_cycle_prepare_script_emits_handoff_prompt_and_closer_command(tmp_path: Path) -> None:
+def test_review_cycle_prepare_script_emits_handoff_prompt(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
 
@@ -51,9 +55,10 @@ def test_review_cycle_prepare_script_emits_handoff_prompt_and_closer_command(tmp
     assert payload["review_cycle_id"]
     assert "Permitted reads only" in payload["reviewer_handoff_prompt"]
     assert "outputs/topic_a/01_mandate/review/request/*" in payload["reviewer_handoff_prompt"]
-    assert "reviewer_findings.raw.yaml" in payload["reviewer_handoff_prompt"]
-    assert "./.qros/bin/qros-review" in payload["closer_command"]
-    assert "--stage-dir outputs/topic_a/01_mandate" in payload["closer_command"]
+    assert "review/final_review.yaml" in payload["reviewer_handoff_prompt"]
+    assert "reviewer_findings.raw.yaml" not in payload["reviewer_handoff_prompt"]
+    assert "stage_contract_context.yaml" in payload["reviewer_handoff_prompt"]
+    assert "stage_contract_context.md" in payload["reviewer_handoff_prompt"]
 
     receipt_payload = yaml.safe_load(
         (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
@@ -86,6 +91,29 @@ def test_review_cycle_prepare_preflights_runtime_config_before_writing_request(
     assert "missing review checklist stage: mandate" in message
     assert not (stage_dir / "review" / "request" / "adversarial_review_request.yaml").exists()
     assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+
+
+def test_prepare_writes_stage_contract_context_files(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    payload = prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="codex-mandate-reviewer",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-1",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    assert (request_dir / "stage_contract_context.yaml").exists()
+    assert (request_dir / "stage_contract_context.md").exists()
+    assert "stage_contract_context.yaml" in payload["reviewer_handoff_prompt"]
+    assert "stage_contract_context.md" in payload["reviewer_handoff_prompt"]
 
 
 def test_qros_review_cycle_wrapper_exists() -> None:

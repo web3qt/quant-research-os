@@ -64,3 +64,34 @@ def test_generator_dry_run_reports_stale_outputs_when_generated_file_drifts(tmp_
     finally:
         if temp_root.exists():
             shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def test_generated_review_skill_points_to_stage_contract_context_instead_of_inlining_stage_truth(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "rendered"
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/gen_stage_review_skills.py",
+            "--host",
+            "codex",
+            "--output-root",
+            str(output_root),
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+
+    skill_path = output_root / "skills" / "csf_data_ready" / "qros-csf-data-ready-review" / "SKILL.md"
+    content = skill_path.read_text(encoding="utf-8")
+
+    assert "stage_contract_context.yaml" in content
+    assert "stage_contract_context.md" in content
+    assert "qros-review-cycle prepare" in content
+    assert "## 正式门禁" not in content
+    assert "## 审查清单" not in content
+    assert "## 本阶段下游权限" not in content

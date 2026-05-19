@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
+import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
@@ -37,6 +39,34 @@ _FINAL_REVIEW_OUTCOME_BY_VERDICT = {
     "NO-GO": "CLOSURE_READY_NO_GO",
     "CHILD LINEAGE": "CLOSURE_READY_CHILD_LINEAGE",
 }
+
+
+def _validate_stage_contract_context(request_payload: dict[str, Any], review_request_dir: Path) -> None:
+    context_relpath = request_payload.get("stage_contract_context_yaml_path")
+    if not isinstance(context_relpath, str) or not context_relpath.strip():
+        return
+
+    context_path = review_request_dir.parent.parent / context_relpath
+    if not context_path.exists():
+        raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: stage contract context file is missing")
+
+    context_text = context_path.read_text(encoding="utf-8")
+    context_payload = yaml.safe_load(context_text)
+    if not isinstance(context_payload, dict):
+        raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: stage contract context must be a mapping")
+    if context_payload.get("review_cycle_id") != request_payload["review_cycle_id"]:
+        raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: review_cycle_id does not match the active request")
+
+    bound_author_digest = request_payload.get("bound_author_materialization_digest")
+    if isinstance(bound_author_digest, str) and bound_author_digest.strip():
+        if context_payload.get("author_materialization_digest") != bound_author_digest:
+            raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: author digest does not match the active request")
+
+    expected_digest = request_payload.get("stage_contract_context_digest")
+    if isinstance(expected_digest, str) and expected_digest.strip():
+        current_digest = hashlib.sha256(context_text.encode("utf-8")).hexdigest()
+        if current_digest != expected_digest:
+            raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: stage contract context digest changed after prepare")
 
 
 def _project_final_review_result(
@@ -115,6 +145,7 @@ def load_and_validate_protocol(
     stage_dir = review_request_dir.parent.parent
 
     request_payload = request_loader(request_path)
+    _validate_stage_contract_context(request_payload, review_request_dir)
     final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
     if final_review_path.exists():
         final_review_payload = load_final_review(final_review_path)

@@ -183,16 +183,15 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
 
     assert "review/final_review.yaml" in content
     assert "review/result/reviewer_findings.raw.yaml" not in content
-    assert "qros-review" not in content
+    assert "./.qros/bin/qros-review" not in content
     assert "reviewer_receipt.yaml" not in content
 
     assert "review/final_review.yaml" in skill_content
-    assert "reviewer_receipt.yaml" not in skill_content
 
     assert "closer_command" not in handoff
     assert "review/final_review.yaml" in handoff_prompt
     assert "Do not run qros-review or any closer step." in handoff_prompt
-    assert "Do not write reviewer_findings.raw.yaml." in handoff_prompt
+    assert "reviewer_findings.raw.yaml" not in handoff_prompt
     assert "reviewed_artifact_paths: [<relative paths under author/formal>]" in handoff_prompt
     assert "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there." in handoff_prompt
 

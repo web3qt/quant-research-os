@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import yaml
 
 from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract
 from runtime.tools.lineage_program_runtime import inspect_stage_program, load_provenance_manifest
@@ -14,6 +16,7 @@ from runtime.tools.research_session import (
     detect_session_stage,
 )
 from runtime.tools.review_skillgen.adversarial_review_contract import (
+    ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
@@ -33,6 +36,12 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     load_review_runtime_state,
     review_runtime_state_path,
     write_review_runtime_state,
+)
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
 )
 from runtime.tools.stage_evaluator import StageEvaluatorConfigurationError, evaluate_stage
 
@@ -209,6 +218,28 @@ def _prepare_review_cycle(
         required_outputs=request_payload["required_artifact_paths"],
         required_provenance_paths=request_payload["required_provenance_paths"],
     )
+    request_dir = stage_dir / "review" / "request"
+    context_payload = build_stage_contract_context(
+        stage_id=spec.stage_id,
+        lineage_id=lineage_root.name,
+        review_cycle_id=request_payload["review_cycle_id"],
+        author_materialization_digest=current_digest,
+        review_cycle_stage_dir=stage_dir,
+    )
+    context_yaml_path = request_dir / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = request_dir / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_md_text = render_stage_contract_context_markdown(context_payload)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(context_md_text, encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = current_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    (request_dir / ADVERSARIAL_REVIEW_REQUEST_FILENAME).write_text(
+        yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
     state_payload = write_review_runtime_state(
         stage_dir,
         review_state="review_in_progress",
@@ -286,6 +317,8 @@ def _reviewer_handoff_prompt(
     final_review_path = _display_path(stage_dir / "review" / "final_review.yaml", display_root=display_root)
     request_payload = payload["request_payload"]
     receipt_payload = payload["receipt_payload"]
+    stage_contract_context_yaml_path = request_payload.get("stage_contract_context_yaml_path")
+    stage_contract_context_md_path = request_payload.get("stage_contract_context_md_path")
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
         "",
@@ -333,11 +366,14 @@ def _reviewer_handoff_prompt(
         f"- {request_root}/*",
         f"- {author_root}/*",
         "",
+        "Read these generated contract context files before evaluating stage truth:",
+        f"- {_display_path(stage_dir / stage_contract_context_yaml_path, display_root=display_root) if isinstance(stage_contract_context_yaml_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_YAML_FILENAME}",
+        f"- {_display_path(stage_dir / stage_contract_context_md_path, display_root=display_root) if isinstance(stage_contract_context_md_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_MD_FILENAME}",
+        "",
         "Permitted write only:",
         f"- {final_review_path}",
         "",
         "Write exactly one canonical machine-readable review artifact.",
-        "Do not write reviewer_findings.raw.yaml.",
         "Required final review schema:",
         f"lineage_id: {payload['lineage_id']}",
         f"stage_id: {payload['stage']}",

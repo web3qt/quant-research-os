@@ -144,5 +144,5 @@ def test_review_protocol_documents_fail_closed_boundaries() -> None:
     assert "reviewed_artifact_digest" in combined
     assert "reviewed_program_digest" in combined
     assert "recommended_next_action" in combined
-    assert "mean_rank_ic <= 0" in csf_review_skill
-    assert "不得降级为 reservation" in csf_review_skill
+    assert "stage_contract_context.yaml" in csf_review_skill
+    assert "stage_contract_context.md" in csf_review_skill
