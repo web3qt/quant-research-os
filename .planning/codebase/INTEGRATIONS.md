@@ -1,156 +1,132 @@
 # External Integrations
 
-**Analysis Date:** 2026-05-06
+**Analysis Date:** 2026-05-20
 
-## AI Host Platforms
+## APIs & External Services
 
-**OpenAI Codex:**
-- Role: Primary AI coding agent host. QROS is designed as a Codex skill framework.
-- Skill installation: Skills copied to `~/.codex/skills/<skill_name>/` with `SKILL.md` + `agents/openai.yaml`
-- Agent spawning: Via `spawn_agent` Codex tool with `fork_context=false` for isolation
-- Handoff: Via `send_input` Codex tool
-- Implementation: `runtime/tools/install_runtime.py` (host="codex"), `runtime/scripts/gen_stage_review_skills.py`
-- Config: `_HOST_CONFIG["codex"] = ".codex"` in `install_runtime.py:23`
+**GitHub:**
+- Used for framework distribution and version updates
+- Repository: `https://github.com/web3qt/quant-research-os.git`
+- Integration: `git clone` / `git pull` / `git fetch` via `subprocess` in `runtime/tools/install_runtime.py` and `runtime/tools/update_runtime.py`
+- SDK/Client: Git CLI via `subprocess.run`
+- Auth: SSH key or HTTPS credential (user-configured, not in repo)
 
-**Anthropic Claude Code:**
-- Role: Secondary AI coding agent host. Full parity with Codex.
-- Skill installation: Skills copied to `~/.claude/skills/` or `.claude-plugin/skills/<skill_name>/`
-- Agent definition: `.claude-plugin/agents/qros-reviewer.md` -- adversarial reviewer agent prompt
-- Agent spawning: Via `.claude-plugin/agents/qros-reviewer.md` task creation; Claude Code platform provides isolation
-- Handoff: Handoff manifest passed as task prompt
-- Implementation: `runtime/tools/install_runtime.py` (host="claude-code"), `runtime/scripts/gen_stage_review_skills.py`
-- Hook system: `runtime/hooks/hooks.json` -- SessionStart hook triggers `hooks/session-start` script
-- Config: `_HOST_CONFIG["claude-code"] = ".claude"` in `install_runtime.py:24`
+**AI Agent Hosts (Codex / Claude Code):**
+- Codex CLI — Skill discovery at `~/.codex/skills/qros-*/`, agent sub-spawning with `spawn_agent (fork_context=false)`
+- Claude Code — Plugin system at `.claude-plugin/`, session hooks at `runtime/hooks/`, adversarial reviewer agent at `.claude-plugin/agents/qros-reviewer.md`
+- Integration: File-system-based skill discovery, AGENTS.md instruction chaining, shell entry points
+- Auth: Host-provided (user's existing Codex/Claude Code session)
 
-## Version Control
+## Data Storage
 
-**Git:**
-- Role: Source control for the framework repository and research lineage tracking
-- Usage patterns:
-  - `install_runtime.py` -- reads HEAD commit for install manifest (`subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"])`)
-  - `update_runtime.py` -- full git workflow: fetch, pull/ff-only, clone, reset, clean, remote management
-  - `lineage_program_runtime.py` -- executes lineage-local stage programs via `subprocess.run` in lineage root
-- Repository: `https://github.com/web3qt/quant-research-os.git` (default in `update_runtime.py:12`)
-- No GitPython or other Git library; all interactions via `subprocess.run(["git", ...])`
+**Databases:**
+- None — QROS does not use a database. All state is file-based.
 
-## Data Format Integrations
+**File Storage:**
+- Local filesystem only — Stage state, artifacts, freeze groups, and provenance stored as files in active research repo's `outputs/<lineage_id>/` directory
+- Artifact formats: YAML, JSON, Parquet, CSV, Markdown
+- Provenance tracking: `program_execution_manifest.json` per stage
+- Lineage lock ledger: `runtime/tools/lineage_lock_ledger.py` tracks frozen artifact integrity
 
-**YAML (PyYAML):**
-- Role: Primary contract and configuration format. The machine-readable "language" of the framework.
-- Read: All contracts loaded via `yaml.safe_load()` in `runtime/tools/review_skillgen/loaders.py:19` and `runtime/tools/artifact_contract_runtime.py:49`
-- Write: Scaffold builders generate YAML draft artifacts (freeze groups, review requests, stage programs)
-- Contract files: 24 YAML contracts in `contracts/` directory
-  - Stage gates: `contracts/stages/workflow_stage_gates.yaml`
-  - Review checklist: `contracts/review/review_checklist_master.yaml`
-  - Artifact schemas: `contracts/artifacts/*_artifacts.yaml` (14 files)
-  - Diagnostic profiles: `contracts/diagnostics/*.yaml` (4 files)
-  - Intake schemas: `contracts/intake/*.yaml` (2 files)
-  - Agent eval: `contracts/agent_eval/qros_agent_behavior_eval_cases.yaml`
+**Caching:**
+- Python bytecode cache (`__pycache__/`) — Standard Python caching
+- Anti-drift snapshot cache: `tests/fixtures/anti_drift/*_snapshot.json` — Blessed baseline snapshots for regression detection
 
-**JSON:**
-- Role: Machine-readable state, manifests, and anti-drift snapshots
-- Write: Install manifests (`install-manifest.json`), anti-drift snapshots, stage evaluator results (`stage_evaluator_results.jsonl`), hooks config
-- Read: Manifest validation, snapshot comparison
-- Implementation: `json` stdlib throughout; no special JSON library
+## Authentication & Identity
 
-**Parquet (PyArrow):**
-- Role: Quantitative research output format for tabular data
-- Write only (no read in framework code): Scaffold builders create placeholder Parquet artifacts
-- Key files written by scaffolds:
-  - `factor_panel.parquet`, `rank_ic_timeseries.parquet`, `qc_report.parquet`
-  - `portfolio_weight_panel.parquet`, `turnover_capacity_report.parquet`, `portfolio_summary.parquet`
-  - `holdout_backtest_compare.parquet`, `target_strategy_compare.parquet`
-- Implementation: `pyarrow.parquet` and `pyarrow` in `runtime/tools/csf_backtest_runtime.py:47-48`, `runtime/tools/signal_ready_runtime.py:109`
+**Auth Provider:**
+- Not applicable — QROS has no user authentication system
+- Identity is implicitly tied to the AI agent host session (Codex or Claude Code)
+- Author vs Reviewer separation enforced by governance contracts, not by technical auth:
+  - Author lane produces artifacts
+  - Reviewer lane performs adversarial review via `.claude-plugin/agents/qros-reviewer.md`
+  - `contracts/stages/workflow_stage_gates.yaml` mandates independent reviewer
 
-**CSV:**
-- Role: Lightweight tabular research output format
-- Write only: Param manifests, signal coverage reports, rebalance ledgers
-- Key files: `param_manifest.csv`, `signal_coverage.csv`, `rebalance_ledger.csv`, `universe_exclusions.csv`
-- Implementation: `csv` stdlib in `runtime/tools/signal_ready_runtime.py:154-160`, `runtime/tools/csf_backtest_runtime.py`
+## Monitoring & Observability
 
-**TOML:**
-- Role: Research run configuration format
-- Write: `run_config.toml` generated by scaffold builders
-- Read: Validated as artifact type "toml" via `tomllib` stdlib in `artifact_contract_runtime.py:72`
-- Implementation: Python 3.11+ `tomllib` stdlib (read-only)
+**Error Tracking:**
+- None — No external error tracking service
 
-**Markdown:**
-- Role: Human-readable artifacts, skill definitions, agent instructions, SOP documentation
-- Read/Written extensively via `Path.write_text()` and `Path.read_text()`
-- 368 `.md` files across the project
-- 69 `SKILL.md` files defining review/author/failure skills for each stage
+**Logs:**
+- `runtime/tools/research_session.py` outputs session state to stdout as structured JSON
+- `runtime/scripts/run_progress.py` provides read-only progress display
+- Anti-drift nightly reports: `runtime/scripts/render_anti_drift_nightly_report.py`
+- Stage evaluator output: JSON files following `contracts/stages/stage_evaluator.schema.json`
 
-## File System Integration
+## CI/CD & Deployment
 
-**Lineage Output Structure:**
-- Role: The framework's primary "storage" is the file system under `outputs/<lineage_id>/` in research repos
-- Artifact layout: `runtime/tools/stage_artifact_layout.py` defines `ensure_stage_author_layout()` for consistent directory structure
-- Stage program execution: `runtime/tools/lineage_program_runtime.py` runs user's Python/Rust/Bash programs in lineage context via `subprocess.run`
-- Provenance tracking: `program_execution_manifest.json` captures execution metadata (exit code, timestamps, digests)
+**Hosting:**
+- GitHub repository hosting: `https://github.com/web3qt/quant-research-os`
+- No server hosting — QROS runs locally in the user's research environment
 
-**Hashing / Integrity:**
-- Role: SHA-256 digests for upstream binding verification
-- Implementation: `hashlib.sha256` in `runtime/tools/tss_test_evidence_runtime.py:344-345`
-- Used for: Verifying upstream artifacts (time_split, train_freeze_contract, review_closure) haven't been tampered with between stages
-
-## CI/CD Integration
-
-**GitHub Actions:**
-- Workflow: `.github/workflows/anti-drift.yml`
+**CI Pipeline:**
+- GitHub Actions — `.github/workflows/anti-drift.yml`
 - Triggers: PR, push to main, nightly cron (03:00 UTC), manual dispatch
-- Steps:
-  1. Checkout + Python 3.13 setup
-  2. Install deps (pip install PyYAML pytest pyarrow)
-  3. Run anti-drift test suite (8 test files + session + contracts + review tests)
-  4. Generator freshness check (`gen_stage_review_skills.py --dry-run`)
-  5. Snapshot baseline comparison (export current, compare with blessed)
-  6. Nightly gate summary and release artifact generation
-- Artifact upload: Anti-drift snapshots, comparison results, gate summaries, release metadata
-
-## Subprocess / External Process Execution
-
-**Lineage Stage Programs:**
-- `runtime/tools/lineage_program_runtime.py` -- Executes user-provided stage programs (Python, Rust, Bash) in the lineage directory context
-- `runtime/tools/data_ready_runtime.py:35` -- Runs data pipeline commands
-- `runtime/tools/csf_data_ready_runtime.py:42` -- Runs CSF data pipeline commands
-
-**Git Operations:**
-- `runtime/tools/update_runtime.py` -- fetch, pull, clone, reset, clean, remote management
-- `runtime/tools/install_runtime.py:300` -- rev-parse for commit hash
-
-**Framework CLI Commands:**
-- All `runtime/bin/qros-*` scripts are Python entry points that import from `runtime/tools/` and `runtime/scripts/`
-
-## No Integrations (Explicitly Absent)
-
-The following are **not** present in this codebase:
-- No HTTP client libraries (requests, httpx, aiohttp) -- no outbound API calls
-- No database drivers or ORM -- no SQL/NoSQL databases
-- No cloud SDKs (boto3, google-cloud, azure) -- no cloud service calls
-- No message queues (Redis, RabbitMQ, Celery) -- no async task processing
-- No web frameworks (Flask, Django, FastAPI) -- no HTTP server
-- No authentication/OAuth libraries -- no user auth
-- No Docker/container tooling -- no containerization
-- No monitoring/logging services (Sentry, Datadog, etc.) -- no external observability
-- No package registries beyond PyPI (via uv) -- no private package sources
+- Jobs:
+  - `pr-gate`: Anti-drift regression tests on PRs and pushes
+  - `nightly-release-gate`: Full nightly pipeline with snapshot comparison and release artifact generation
+- CI Dependencies: Python 3.13, PyYAML, pytest, pyarrow
+- Actions used: `actions/checkout@v4`, `actions/setup-python@v5`, `actions/upload-artifact@v4`
 
 ## Environment Configuration
 
-**Required:**
-- Python 3.11+ runtime
-- `uv` package manager (for dependency installation)
-- Git
+**Required env vars:**
+- `QROS_PYTHON` (optional) — Override Python binary for runtime wrappers
+- `CLAUDE_PLUGIN_ROOT` (set by Claude Code) — Plugin root for hook resolution
 
-**No env vars required:**
-- No API keys, no database URLs, no cloud credentials
-- The framework is self-contained; no external service authentication needed
-- `.env` files are not present (confirmed absent from project root)
+**Secrets location:**
+- No secrets stored in repository
+- Git credentials managed externally by user's SSH/HTTPS setup
 
-**Host-Specific Config:**
-- Codex: Skills installed to `~/.codex/skills/`
-- Claude Code: Skills installed to `~/.claude/skills/` or `.claude-plugin/skills/`
-- Repo-local runtime: Installed to `.qros/` in the active research repository
+## Webhooks & Callbacks
+
+**Incoming:**
+- None
+
+**Outgoing:**
+- None
+
+## Data Formats & Interchange
+
+**Parquet (pyarrow):**
+- Primary binary format for research data artifacts
+- Used for factor panels, signal panels, quality flags, coverage reports, diagnostic outputs
+- Read/write via `pyarrow.parquet` in `runtime/tools/artifact_contract_runtime.py`, `csf_*_runtime.py`, `tss_*_runtime.py`, `factor_diagnostics.py`, `signal_diagnostics.py`
+
+**YAML (PyYAML):**
+- Machine-readable contracts, stage gates, freeze groups, manifests
+- Used throughout `contracts/` and `runtime/tools/`
+
+**JSON:**
+- Run manifests, provenance files, evaluator results, diagnostic summaries
+- Schema validation via `contracts/stages/stage_evaluator.schema.json` (JSON Schema draft 2020-12)
+
+**CSV:**
+- Ledger files, variant tracking, gate tables
+
+**Markdown:**
+- Human-readable artifacts (gate decisions, contracts, field dictionaries, catalogs)
+- Skill definitions (`SKILL.md` files in `skills/`)
+
+## Agent Skill System Integration
+
+**Skill Discovery:**
+- Codex: `~/.codex/skills/qros-<skill-name>/SKILL.md`
+- Claude Code: `.claude-plugin/skills/<skill-name>/SKILL.md`
+- Built from `skills/` source via `runtime/scripts/gen_stage_review_skills.py`
+- Templates: `templates/skills/review-stage/`
+
+**Skill Types:**
+- Core skills: `qros-research-session`, `qros-progress`, `qros-update`, `qros-factor-diagnostics`, `qros-signal-diagnostics`, `qros-stage-display`, `using-qros`
+- Stage-specific author skills: Per-stage skill bundles in `skills/<stage>/` (22 stage directories)
+- Review skills: Generated per-stage from templates
+- Failure handling skills: `skills/failure_handling/`
+
+**Review Agent:**
+- Claude Code: `.claude-plugin/agents/qros-reviewer.md` — Independent adversarial reviewer
+- Review protocol: `runtime/tools/review_session_runtime.py`, `runtime/scripts/review_cycle.py`
+- Review skill generation: `runtime/tools/review_skillgen/` (24 files in dedicated subpackage)
 
 ---
 
-*Integration audit: 2026-05-06*
+*Integration audit: 2026-05-20*

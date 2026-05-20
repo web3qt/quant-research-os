@@ -1,186 +1,162 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-05-06
+**Analysis Date:** 2026-05-20
 
-## Security Concerns
+## Tech Debt
 
-### Shell Injection via `shell=True` in subprocess
-- **Severity:** HIGH
-- **Files:** `runtime/scripts/run_agent_behavior_eval.py:102`
-- **What:** `subprocess.run(command, shell=True, ...)` where `command` is built from a format template that includes file paths read from the filesystem. The `command_template` variable is formatted with `prompt_path`, `transcript_path`, `work_dir`, and `prompt` (file contents), any of which could contain shell metacharacters.
-- **Impact:** If a prompt file contains shell metacharacters (`;`, `` ` ``, `$()`, etc.), arbitrary command execution is possible.
-- **Fix:** Use `subprocess.run([...], shell=False)` with an explicit argument list. If shell features are truly needed, use `shlex.quote()` on all dynamic values.
+**GOD file: `research_session.py` (5346 lines, 225 functions):**
+- Issue: Single file contains session state machine, stage detection, route dispatch, review orchestration, output validation, and scaffolding for 3 research routes (CSF, TSS, legacy) across 7+ stages each.
+- Files: `runtime/tools/research_session.py`
+- Impact: Any change to any stage or route requires editing this monolith. High merge-conflict risk when multiple features touch different stages simultaneously. Cognitive overload for contributors. Slow review cycles.
+- Fix approach: Extract per-stage handler classes or functions into `runtime/tools/session_stages/`. Move `REQUIRED_OUTPUTS` constants into their respective stage runtime modules (e.g., `csf_data_ready_runtime.py` already owns its outputs but `research_session.py` duplicates them). Extract `detect_session_stage()` into a standalone `runtime/tools/stage_detector.py`. Extract route dispatch into `runtime/tools/session_router.py`.
 
-### No Timeout on Any subprocess.run Calls
-- **Severity:** MEDIUM
-- **Files:** All 14 `subprocess.run()` calls across the runtime:
-  - `runtime/tools/data_ready_runtime.py:35`
-  - `runtime/tools/update_runtime.py:158,183,197,215,227`
-  - `runtime/tools/csf_data_ready_runtime.py:42`
-  - `runtime/tools/install_runtime.py:300`
-  - `runtime/tools/lineage_program_runtime.py:367,446,712`
-  - `runtime/scripts/run_verification_tier.py:73`
-  - `runtime/scripts/run_agent_behavior_eval.py:102`
-- **What:** None of the subprocess calls specify a `timeout` parameter. A child process that hangs will block the calling process indefinitely.
-- **Impact:** A stalled stage program or git operation could hang the entire orchestration pipeline with no recovery mechanism.
-- **Fix:** Add explicit `timeout=` values to all `subprocess.run()` calls. Handle `subprocess.TimeoutExpired` exceptions appropriately.
+**Pattern duplication across CSF/TSS/legacy routes:**
+- Issue: The CSF and TSS routes each repeat the same 7-stage pattern (data_ready, signal_ready, train_freeze, test_evidence, backtest_ready, holdout_validation) with near-identical logic. There are 18 `_outputs_complete` functions, 18 `_closure_complete` functions, and 18 `REQUIRED_OUTPUTS` lists -- each a 1-line wrapper calling the same `stage_outputs_complete()` with a different constant.
+- Files: `runtime/tools/research_session.py` (lines 4284-4351 for outputs, 4703-4767 for closures, 368-640 for constants)
+- Impact: Adding a new research route (e.g., `event_trigger`) requires adding ~50 near-identical functions and constants. Bug fixes must be applied in triplicate.
+- Fix approach: Define a `RouteStageConfig` dataclass holding the stage list, required outputs, draft files, and group orders. Build a registry keyed by `(route, stage)` that replaces the `_csf_*`/`_tss_*` function explosion with generic dispatch.
 
-### Missing `encoding` Parameter on 122 `write_text()` Calls
-- **Severity:** LOW
-- **Files:** Across all scaffold and runtime modules (e.g., `runtime/tools/stage_program_scaffold.py:314,319,344`, `runtime/tools/idea_runtime.py:304,367,405,429,445,456`, `runtime/tools/csf_backtest_runtime.py:266`, and 115+ more).
-- **What:** `write_text()` calls without explicit `encoding=` parameter default to the platform encoding (e.g., `cp1252` on Windows). The codebase contains Chinese characters (e.g., `"验证报告"`, `"质量语义"`) and uses `encoding="utf-8"` consistently in `read_text()` calls, but inconsistently in `write_text()`.
-- **Impact:** On non-UTF-8 platforms, scaffolded files could be written with wrong encoding, causing downstream `read_text(encoding="utf-8")` calls to fail with `UnicodeDecodeError`.
-- **Fix:** Add `encoding="utf-8"` to all `write_text()` calls. This is a consistency issue -- `read_text()` calls already specify it.
+**TSS fallback scaffolds in `research_session.py` lines 59-170:**
+- Issue: Six `try/except ModuleNotFoundError` blocks define inline fallback implementations for TSS stage scaffolds. This couples the session module to TSS module availability and hides import failures silently.
+- Files: `runtime/tools/research_session.py` (lines 59-170)
+- Impact: If a TSS module is moved or renamed, the session silently falls back to a default scaffold rather than failing loudly. Debugging requires tracing through exception handlers.
+- Fix approach: Make TSS modules a required dependency (they exist in the repo), or use a proper plugin registry pattern with explicit module discovery.
 
----
+**No type-checking or linting tooling configured:**
+- Issue: `pyproject.toml` contains no `mypy`, `pyright`, `ruff`, `flake8`, or `pylint` configuration. No static analysis runs in CI.
+- Files: `pyproject.toml`
+- Impact: Type errors, unused imports, and style drift accumulate undetected. The `# type: ignore` comments in 15+ files suggest known type issues being deferred indefinitely.
+- Fix approach: Add `ruff` (formatter + linter) and `mypy` or `pyright` to dev dependencies. Configure in `pyproject.toml`. Add a lint step to CI before the existing anti-drift gate.
 
-## Maintainability Concerns
+**No logging framework:**
+- Issue: Runtime code uses no logging module (`logging`, `structlog`, etc.). The `install_runtime.py` CLI uses `print()` statements. Scripts use `print()` for JSON output. Library code has no observable diagnostics.
+- Files: `runtime/tools/install_runtime.py` (lines 626-651), `runtime/scripts/review_cycle.py` (lines 98-144), all `runtime/tools/*.py`
+- Impact: No structured way to debug production issues. No log levels to filter noise. No audit trail for stage transitions or review cycles.
+- Fix approach: Adopt Python `logging` module with a project-level logger convention. Replace `print()` in library code with `logging.info/debug/warning`. Keep `print()` only in CLI entry points where JSON output is intentional.
 
-### God Object: `research_session.py` at 4,887 Lines with 204 Functions
-- **Severity:** HIGH
-- **Files:** `runtime/tools/research_session.py`
-- **What:** This single file contains the entire session state machine, all stage transition logic, all scaffold orchestration, and all closure completion checks. It imports 21 modules from `runtime.tools.*`. The file defines 100+ `_closure_complete()` helper functions that are near-identical one-liners (e.g., `_data_ready_closure_complete`, `_csf_data_ready_closure_complete`, `_tss_data_ready_closure_complete`, each differing only by a path check).
-- **Impact:** Any change to session logic requires understanding and testing a 5K-line file. The file is a merge conflict magnet. 10+ modules depend on it, creating a tight coupling bottleneck.
-- **Fix:** Extract into sub-modules:
-  - `research_session/stage_transitions.py` -- per-stage transition logic
-  - `research_session/closure_checks.py` -- the 18+ `_closure_complete()` functions
-  - `research_session/approval_paths.py` -- the 8+ `_approval_path()` functions
-  - `research_session/scaffolding.py` -- scaffold orchestration
+## Known Bugs
 
-### Systemic CSF/TSS Code Duplication (24 Paired Files)
-- **Severity:** HIGH
-- **Files:** 24 paired files in `runtime/tools/`:
-  - `csf_*_runtime.py` (12 files) and `tss_*_runtime.py` (12 files)
-  - `csf_*_contract_runtime.py` (6 files) and `tss_*_contract_runtime.py` (6 files)
-- **What:** The CSF and TSS routes are near-identical implementations that differ only in directory names (`02_csf_data_ready` vs `02_tss_data_ready`), metric library paths, and stage identifiers. This duplication is amplified in `research_session.py` which duplicates every transition, closure check, and approval path for both routes.
-- **Impact:** A bug fix or feature addition must be applied in 2-4 places. The CSF and TSS paths can easily drift apart. This is already visible in function counts: CSF contract runtimes have 9-18 functions while TSS equivalents have 2-6, suggesting uneven maintenance.
-- **Fix:** Introduce a route-abstracted base layer with a `RouteConfig` dataclass that captures route-specific names and paths. The scaffold/validate/load functions should be parameterized by route rather than duplicated.
+**No known critical bugs detected.** The anti-drift CI pipeline (`tests/anti_drift/`) provides regression coverage for the deterministic output paths. The `todo.md` item 8 ("current artifacts are duplicated") and item 9 ("reduce artifact files") suggest known output redundancy issues tracked informally.
 
-### Near-Identical Diagnostics Modules
-- **Severity:** MEDIUM
-- **Files:** `runtime/tools/factor_diagnostics.py` (893 lines, 69 functions) and `runtime/tools/signal_diagnostics.py` (838 lines, 60 functions)
-- **What:** These two files share identical helper functions (`_load_yaml`, `_read_json`, `_read_yaml_optional`, `_read_csv_rows`, `_read_parquet_rows`, `_observe_metric`, `_missing`, `_observed`, `_infer_stage`, `_latest_mtime`), differing only in error class names, stage directory mappings, and metric library paths. A diff of the first 60 lines shows only 4 lines differ (imports, path constants, class name, and one extra field).
-- **Impact:** Bug fixes to shared utilities must be applied twice. The `_read_json` and `_read_yaml_optional` functions silently return `None` on any exception, hiding data corruption.
-- **Fix:** Extract shared utilities into `runtime/tools/diagnostics_common.py` or a base class. The route-specific parts (stage dirs, metric library paths, error class) should be configuration, not duplication.
+## Security Considerations
 
-### Anti-Drift Scenarios Duplication
-- **Severity:** LOW
-- **Files:** `runtime/tools/anti_drift_scenarios_mainline.py` (113 lines), `runtime/tools/anti_drift_scenarios_csf.py` (89 lines), `runtime/tools/anti_drift_scenarios_failure.py` (167 lines), `runtime/tools/anti_drift_scenarios_support.py` (413 lines)
-- **What:** Three scenario files (`mainline`, `csf`, `failure`) follow identical patterns with different stage names and snapshot functions. The function signatures are structurally identical, differing only in stage prefixes (`snapshot_data_ready_confirmation` vs `snapshot_csf_data_ready_confirmation`).
-- **Impact:** Adding a new stage requires updating all three scenario files. Not directly tested (all three are in the UNTESTED list).
-- **Fix:** Parameterize by route and stage, generating scenarios from a shared configuration.
+**Subprocess invocation with environment passthrough:**
+- Risk: `runtime/tools/lineage_program_runtime.py` (line 374) passes `**os.environ` to subprocess, then adds `QROS_*` variables. Any secrets in the parent environment are inherited by spawned stage programs.
+- Files: `runtime/tools/lineage_program_runtime.py` (lines 373-389)
+- Current mitigation: The framework runs locally as a research tool, not as a network service. No user-supplied input controls the subprocess command directly (commands come from validated program manifests).
+- Recommendations: Filter `os.environ` to pass only `QROS_*` and `PATH` variables. Document which environment variables are expected by stage programs.
 
----
+**`update_runtime.py` clones git repositories via subprocess:**
+- Risk: The update mechanism (`runtime/tools/update_runtime.py`) runs `git clone` and `git checkout` with a URL derived from a constant (`DEFAULT_REPO_URL = "https://github.com/web3qt/quant-research-os.git"`). The clone target path is derived from user home directory.
+- Files: `runtime/tools/update_runtime.py` (lines 268, 367-469)
+- Current mitigation: URL is a hardcoded constant, not user-supplied. Git operations are standard.
+- Recommendations: Validate that resolved paths stay within expected directory bounds. Add a checksum or tag verification step after clone.
 
-## Reliability Concerns
+**No input sanitization on idea slug:**
+- Risk: `slugify_idea()` in `research_session.py` (line 1388) strips non-alphanumeric characters and uses the result as a directory name. While it raises on empty results, path traversal via crafted inputs is not explicitly prevented.
+- Files: `runtime/tools/research_session.py` (lines 1388-1393)
+- Current mitigation: `re.sub(r"[^a-z0-9]+", "_", ...)` effectively strips any path separator or special character. Only lowercase alphanumeric and underscore remain.
+- Recommendations: Add an explicit check that the slug does not start with `.` or `_`, and does not match reserved names like `..`.
 
-### 67 Broad `except Exception` Catches Swallowing Errors
-- **Severity:** HIGH
-- **Files:** Contract runtimes and diagnostics modules:
-  - `runtime/tools/csf_signal_ready_contract_runtime.py:62,74,88,98`
-  - `runtime/tools/csf_holdout_validation_contract_runtime.py:62,75,85`
-  - `runtime/tools/csf_train_freeze_contract_runtime.py:75,87,110,120`
-  - `runtime/tools/csf_test_evidence_contract_runtime.py:75+`
-  - `runtime/tools/tss_data_ready_contract_runtime.py:36`
-  - `runtime/tools/tss_holdout_validation_contract_runtime.py:29`
-  - `runtime/tools/tss_train_runtime.py:229`
-  - `runtime/tools/tss_holdout_runtime.py:217`
-  - `runtime/tools/factor_diagnostics.py:166,178,188,199,210`
-  - `runtime/tools/signal_diagnostics.py:173,185,195,206`
-- **What:** 67 `except Exception` catches in production code. Many silently swallow errors and return `None` or an error list, making it impossible to distinguish between "file does not exist" and "file is corrupted" or "permission denied".
-- **Impact:** Corrupted artifacts, permission issues, or encoding errors are silently ignored. Diagnostics may report metrics as "missing" when the actual problem is a file system error.
-- **Fix:** Catch specific exceptions (`FileNotFoundError`, `PermissionError`, `json.JSONDecodeError`, `yaml.YAMLError`, `UnicodeDecodeError`). Log the actual error. Distinguish between "file absent" (expected) and "file unreadable" (actual error).
+## Performance Bottlenecks
 
-### `except ModuleNotFoundError` Fallback Stubs in research_session.py
-- **Severity:** MEDIUM
-- **Files:** `runtime/tools/research_session.py:48-159` (6 `try/except ModuleNotFoundError` blocks)
-- **What:** TSS runtime modules are imported with fallback stubs that define minimal versions of scaffold functions. If a TSS module fails to import for any reason other than absence (e.g., syntax error, import error in the module itself), the fallback stub silently takes over, providing a degraded experience.
-- **Impact:** A broken TSS module will silently fall back to minimal stubs rather than surfacing the import error. Debugging this requires understanding the fallback pattern.
-- **Fix:** Use `importlib.util.find_spec()` to check if the module exists, then import normally so that real import errors propagate. Or make TSS modules optional via `pyproject.toml` extras rather than runtime fallbacks.
+**`detect_session_stage()` probes all stage directories sequentially:**
+- Problem: Called on every session invocation. Checks 21 directories (7 stages x 3 routes) plus their output files. Each check calls `stage_outputs_complete()` which reads file existence for 5-10 required outputs.
+- Files: `runtime/tools/research_session.py` (lines 1449-1650)
+- Cause: No caching or early-exit optimization. The function walks from the last stage backward through all stages every time.
+- Improvement path: Cache the detected stage in a session state file (e.g., `.qros_session_state.yaml`). Read the cache first, only re-detect if the cache is stale or missing. Alternatively, walk forward from the current stage rather than backward from the end.
 
-### No File Locking for Concurrent Access
-- **Severity:** MEDIUM
-- **Files:** All runtime tools that write artifacts, especially `runtime/tools/research_session.py` (28 write operations) and `runtime/tools/lineage_program_runtime.py`.
-- **What:** No file locking mechanism (`fcntl`, `filelock`, etc.) is used anywhere in the codebase. Multiple processes could read/write session state, freeze drafts, or transition approval files concurrently, leading to torn writes or race conditions.
-- **Impact:** If two QROS sessions operate on the same lineage root simultaneously, state files could be corrupted or transitions could be applied twice.
-- **Fix:** Add file-based locking around critical state transitions. At minimum, document that concurrent access to the same lineage root is unsupported.
+**Review cycle artifact I/O without streaming:**
+- Problem: Review engine reads entire YAML/CSV/Parquet artifacts into memory for validation. For large datasets (backtest results with many rows), this can consume significant memory.
+- Files: `runtime/tools/review_skillgen/stage_content_gate.py` (lines 94, 265), `runtime/tools/review_skillgen/artifact_realism.py` (lines 127-159)
+- Cause: No streaming or chunked reading for large artifact files.
+- Improvement path: For Parquet files, use row-group-level reading with `pyarrow.parquet.ParquetFile` and iterate row groups. For CSV, use row-by-row validation where possible. Add a file-size check before full load with a warning for files exceeding a threshold (e.g., 100MB).
 
----
+## Fragile Areas
 
-## Dependency Concerns
+**SessionStage Literal union with 100+ members:**
+- Files: `runtime/tools/research_session.py` (lines 254-356)
+- Why fragile: The `SessionStage` type is a `Literal[...]` with approximately 100 string values. Adding a stage requires updating this type, the `detect_session_stage()` function, the stage-to-skill mapping, the `_outputs_complete` functions, the `_closure_complete` functions, the `_approval_path` functions, and the gate status functions. Missing any one of these causes silent misrouting.
+- Safe modification: When adding a stage, grep for all `_csf_data_ready` references and replicate the pattern for the new stage. Run the full anti-drift test suite before committing.
+- Test coverage: `tests/session/test_research_session_runtime.py` (2922 lines) provides comprehensive session coverage but adding a stage still requires updates to 7+ locations.
 
-### Minimal Dependency Surface (Low Risk)
-- **Severity:** LOW
-- **Files:** `pyproject.toml`
-- **What:** The project has only 2 runtime dependencies (`PyYAML>=6.0`, `pyarrow>=20.0`) and 1 dev dependency (`pytest>=8.0`). The `uv.lock` file shows additional transitive deps are minimal (`colorama`, `iniconfig`, `packaging`, `pluggy`).
-- **Impact:** Low supply-chain risk. However, `pip-audit` is not installed and no automated vulnerability scanning is configured.
-- **Fix:** Add `pip-audit` to dev dependencies and integrate into CI pipeline.
+**Review skillgen module (20 files, 5200 lines) with dense cross-references:**
+- Files: `runtime/tools/review_skillgen/` (20 Python files)
+- Why fragile: `adversarial_review_contract.py` imports from `review_scope_builder`, `review_cycle_trace`. `review_engine.py` imports from 5+ sibling modules. `protocol_validator.py` imports from 3 modules. Changes to the review request schema in `adversarial_review_contract.py` ripple through the entire module.
+- Safe modification: The review module is well-tested (`tests/review/`). Always run `tests/review/test_adversarial_review_runtime.py` (1427 lines) after changes. The contract constants at the top of `adversarial_review_contract.py` (lines 18-56) are the key extension points.
+- Test coverage: Good within the review module, but the integration between `research_session.py` and the review module is tested primarily through session-level tests.
 
----
+**Stage output lists duplicated between stage runtimes and `research_session.py`:**
+- Files: `runtime/tools/research_session.py` (lines 368-640), plus individual `*_runtime.py` files that define their own outputs
+- Why fragile: `csf_data_ready_runtime.py` defines its scaffold outputs, and `research_session.py` independently defines `CSF_DATA_READY_REQUIRED_OUTPUTS`. These lists must stay synchronized but have no programmatic link.
+- Safe modification: After modifying outputs in any `*_runtime.py`, always update the corresponding `*_REQUIRED_OUTPUTS` list in `research_session.py` and run `tests/runtime/test_csf_data_ready_runtime.py` plus `tests/session/test_research_session_runtime.py`.
+
+## Scaling Limits
+
+**Research routes scale linearly with stage count:**
+- Current capacity: 3 routes x 7 stages = 21 stage variants
+- Limit: Each new route requires ~500 lines in `research_session.py` (constants, detection, dispatch, outputs, closures, approvals). The file is already 5346 lines. At 5-6 routes it becomes unmaintainable.
+- Scaling path: Extract route definitions into declarative YAML or dataclass registries. Replace the 100+ `SessionStage` literals with a computed type or generic `stage(phase, route)` pattern.
+
+**CI only runs anti-drift tests, not the full suite:**
+- Current capacity: CI (`anti-drift.yml`) runs ~10 specific test files. Full suite has 110 test files.
+- Limit: Regression bugs in non-anti-drift areas (contract runtimes, review engine, install/update) are not caught by CI.
+- Scaling path: Add a separate CI job for the full test suite. Start with a nightly run, then promote to PR gate once timing is acceptable.
+
+## Dependencies at Risk
+
+**`pyarrow>=20.0`:**
+- Risk: `pyarrow` is a heavy dependency (large binary wheels) used for Parquet file reading in review validation and artifact realism checks. The minimum version 20.0 is very recent.
+- Impact: If `pyarrow` has compatibility issues on a target platform, the entire review pipeline is blocked. Version pinning may conflict with downstream consumers.
+- Migration plan: Evaluate whether `polars` (which bundles its own Parquet reader) or the lighter `fastparquet` could serve as a fallback. Alternatively, isolate pyarrow usage behind an optional import with graceful degradation for non-Parquet workflows.
+
+**No lockfile pinning for runtime dependencies:**
+- Risk: `pyproject.toml` specifies `PyYAML>=6.0` and `pyarrow>=20.0` with loose version ranges. The `uv.lock` exists but is not enforced for installed runtime copies.
+- Impact: Different environments may resolve to different dependency versions, causing subtle behavioral differences in YAML serialization or Parquet handling.
+- Migration plan: Pin exact versions in `pyproject.toml` or document that `uv.lock` is the source of truth and must be used for reproducible installs.
+
+## Missing Critical Features
+
+**No structured error catalog:**
+- Problem: Errors are raised as `RuntimeError`, `ValueError`, or custom exceptions with string messages. No error codes, no structured error catalog, no way to programmatically match on error types for automated recovery.
+- Files: All `runtime/tools/*.py` files use ad-hoc error classes.
+- Blocks: Automated failure recovery, structured SOP dispatch, and programmatic error handling.
+
+**No concurrency or parallel execution support:**
+- Problem: The session state machine is entirely sequential. No support for running independent stages in parallel (e.g., TSS and CSF data_ready for the same idea).
+- Files: `runtime/tools/research_session.py`
+- Blocks: Research throughput when exploring multiple route hypotheses simultaneously.
+
+**No session persistence / resume-from-middle:**
+- Problem: `detect_session_stage()` always probes the filesystem to infer state. There is no explicit session state file that records the current stage, recent transitions, or pending operations.
+- Files: `runtime/tools/research_session.py` (lines 1449+)
+- Blocks: Reliable resumption after interruption, audit logging of session lifecycle, and fast stage detection.
+
+**No `conftest.py` shared fixtures:**
+- Problem: Tests use per-test fixtures defined inline (e.g., `@pytest.fixture()` in each test class). No shared `conftest.py` at any level despite 110 test files.
+- Files: `tests/` directory (no `conftest.py` files found)
+- Blocks: Test refactorability and fixture reuse. Contributors must recreate common setups (lineage roots, stage scaffolds) in each test file.
 
 ## Test Coverage Gaps
 
-### 21 Runtime Modules Have No Direct Tests
-- **Severity:** HIGH
-- **Files:** All untested modules in `runtime/tools/`:
-  - All 6 TSS contract runtimes: `tss_data_ready_contract_runtime.py`, `tss_signal_ready_contract_runtime.py`, `tss_train_freeze_contract_runtime.py`, `tss_test_evidence_contract_runtime.py`, `tss_backtest_ready_contract_runtime.py`, `tss_holdout_validation_contract_runtime.py`
-  - All 6 CSF contract runtimes: `csf_data_ready_contract_runtime.py`, `csf_signal_ready_contract_runtime.py`, `csf_train_freeze_contract_runtime.py`, `csf_test_evidence_contract_runtime.py`, `csf_backtest_ready_contract_runtime.py`, `csf_holdout_validation_contract_runtime.py`
-  - `stage_program_scaffold.py`, `stage_artifact_layout.py`, `update_runtime.py`
-  - `review_session_runtime.py`
-  - All 3 anti_drift_scenarios files: `anti_drift_scenarios.py`, `anti_drift_scenarios_csf.py`, `anti_drift_scenarios_failure.py`
-  - `anti_drift_scenarios_support.py`
-- **What:** These 21 modules handle stage validation, scaffolding, and update logic but have zero dedicated test files. They are only tested indirectly through the monolithic `research_session.py` integration tests.
-- **Impact:** Bugs in contract validation, scaffolding, or update logic may go undetected until they manifest in a full session run.
+**Non-anti-drift test files not in CI:**
+- What's not tested by CI: Contract runtime validators, semantic validation tests, install/update smoke tests, agent behavior eval, pipeline tests, and all review engine tests.
+- Files: `tests/runtime/`, `tests/review/`, `tests/bootstrap/`, `tests/pipeline/`, `tests/agent_eval/`
+- Risk: Changes that break non-anti-drift functionality pass CI. The anti-drift tests are important for deterministic output verification but do not exercise most runtime paths.
+- Priority: High -- Add a full-suite CI job.
 
-### CI Only Runs Subset of Tests
-- **Severity:** HIGH
-- **Files:** `.github/workflows/anti-drift.yml`
-- **What:** The CI workflow runs tests from only 5 of 10+ test directories: `tests/anti_drift`, `tests/contracts`, `tests/review`, `tests/session`, and `tests/fixtures`. The following directories are NOT in CI:
-  - `tests/agent_eval` -- agent behavior evaluation tests
-  - `tests/bootstrap` -- installation bootstrap tests
-  - `tests/runtime` -- runtime tool unit tests (lineage program, artifact contracts, stage identity)
-  - `tests/skills` -- skill freshness tests
-  - `tests/e2e` -- end-to-end tests
-  - `tests/pipeline` -- pipeline tests
-- **Impact:** 897 tests are collected but only a subset runs in CI. Bugs in runtime tools, agent evaluation, and skill generation can be committed without detection.
-- **Fix:** Add all test directories to the CI pipeline, or at minimum add `tests/runtime` and `tests/agent_eval`.
+**No integration tests for update/install lifecycle:**
+- What's not tested: End-to-end `qros-update` and `qros-install` flows in CI. Tests exist (`tests/bootstrap/test_qros_update_script.py` at 703 lines, `tests/bootstrap/test_install_runtime.py`) but are not run in CI.
+- Files: `tests/bootstrap/`
+- Risk: Update or install regressions are only caught when a user attempts to update.
+- Priority: Medium
 
-### Stale Documentation References Deleted Scripts
-- **Severity:** LOW
-- **Files:** `docs/archive/plans/2026-03-25-hybrid-stage-review-engine-implementation-plan.md`, `docs/archive/plans/2026-03-25-codex-stage-review-engine-implementation-plan.md`, `docs/superpowers/plans/2026-04-21-spawn-agent-review-implementation.md`
-- **What:** These archived plan documents reference deleted scripts (`gen_codex_stage_review_skills.py`, `start_spawned_review_cycle`, `issue_spawned_reviewer_receipt`) and deleted binaries (`qros-spawn-reviewer`, `qros-start-spawned-review`).
-- **Impact:** Developers following archived plans will encounter missing files. Low severity since they are in `docs/archive/` and `docs/superpowers/`.
-- **Fix:** Add deprecation notices to archived docs or remove references to deleted artifacts.
+**No test for concurrent or interleaved session access:**
+- What's not tested: What happens if two `qros-session` processes target the same lineage root simultaneously.
+- Files: No test files found for this scenario.
+- Risk: File corruption from concurrent writes to the same stage directory. Race conditions in stage detection.
+- Priority: Low (single-user research tool, but worth documenting as a known limitation).
 
 ---
 
-## Performance Concerns
-
-### Excessive Synchronous Filesystem Operations
-- **Severity:** LOW
-- **Files:** `runtime/tools/research_session.py` (105 `.exists()`/`.is_file()`/`.is_dir()` calls per session), `runtime/tools/lineage_program_runtime.py`
-- **What:** The session state machine performs dozens of synchronous filesystem checks on every invocation to determine current state (checking for the existence of transition approval files, closure markers, stage directories, etc.). Each session step may perform 50+ stat() calls.
-- **Impact:** On network filesystems or slow storage, this adds perceptible latency. On local SSDs this is negligible (<10ms total).
-- **Fix:** Low priority. If performance becomes an issue, cache the filesystem state at the start of each session invocation.
-
-### No Atomic File Writes
-- **Severity:** LOW
-- **Files:** All runtime tools that write state files.
-- **What:** Files are written directly with `path.write_text()` rather than using atomic write patterns (write to temp file, then `os.replace()`). If the process crashes mid-write, partial/corrupted files may be left behind.
-- **Impact:** A crash during state transition could leave a partially written freeze draft or approval file, potentially corrupting the session state.
-- **Fix:** Implement an atomic write helper: write to `path.with_suffix('.tmp')`, flush/fsync, then `os.replace()`. Low priority since crashes during file writes are rare.
-
----
-
-## Structural Concerns
-
-### Large Uncommitted Change Set (62 Files Modified)
-- **Severity:** MEDIUM
-- **Files:** Current working tree shows 62 files modified with 705 insertions and 793 deletions (per `git diff --stat`).
-- **What:** A large set of changes on the `dev` branch includes modifications to runtime tools, test files, skills, docs, and CI configuration. Five runtime scripts/binaries have been deleted.
-- **Impact:** Long-lived uncommitted changes increase merge conflict risk and make it harder to bisect bugs.
-- **Fix:** Commit the changes in logical groups (e.g., "remove spawned review scripts", "update review protocol").
-
----
-
-*Concerns audit: 2026-05-06*
+*Concerns audit: 2026-05-20*

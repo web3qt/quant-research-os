@@ -1,146 +1,114 @@
 # Technology Stack
 
-**Analysis Date:** 2026-05-06
+**Analysis Date:** 2026-05-20
 
 ## Languages
 
 **Primary:**
-- Python 3.11+ - Entire codebase is Python. ~656 `.py` files, ~58,381 lines of code (excluding `.venv`, `.worktrees`, `__pycache__`). All runtime tools, scripts, tests, and contract validators are Python.
-- Markdown - ~368 `.md` files. SKILL.md definitions, SOP documentation, CLAUDE.md agent instructions, contract companion docs, README files. This is the "configuration language" of the framework.
-- YAML - ~66 `.yaml` files. Machine-readable contracts (stage gates, artifact schemas, review checklists, diagnostic profiles), anti-drift snapshots, test fixtures, AGENTS.md agent prompts.
+- Python 3.11+ (requires `>=3.11` per `pyproject.toml`) — All runtime tools, scripts, tests, and skill generators. Python 3.12 preferred for `uv` runtime (`runtime/tools/uv_runtime_env.py` sets `PYTHON_RUNTIME = "3.12"`).
 
 **Secondary:**
-- Bash - Shell wrapper `setup` script at project root (`/Users/mac08/workspace/web3qt/quant-research-os/setup`). No other standalone shell scripts; all CLI entry points are Python scripts.
-- JSON - Machine-readable state files (manifests, anti-drift snapshots, stage evaluator results, hooks config). Not hand-authored; generated programmatically.
-- TOML - Used as an output artifact format (`run_config.toml`), read back via `tomllib` stdlib in `artifact_contract_runtime.py`. `pyproject.toml` for project metadata.
-- CSV - Output artifact format for tabular research data (param manifests, signal coverage, rebalance ledgers). Written via `csv` stdlib.
-- Parquet - Output artifact format for quantitative research data (factor panels, backtest results, portfolio metrics). Written via `pyarrow.parquet`.
-- DrawIO - Architecture diagrams in `docs/visuals/`. Not code-executed.
+- Bash — CLI entry points in `runtime/bin/` (e.g., `qros-session`, `qros-review`, `qros-update`, `qros-progress`). Shell wrappers that locate Python and invoke runtime scripts.
+- YAML — Machine-readable contracts in `contracts/` (stage gates, artifact schemas, diagnostic profiles, review checklists).
+- JSON — Stage evaluator schemas (`contracts/stages/stage_evaluator.schema.json`), run manifests, provenance files, diagnostic outputs.
+- TOML — Project config (`pyproject.toml`), research run configs (`run_config.toml` in research outputs).
+- Markdown — Human-readable artifacts, skill definitions (`SKILL.md`), gate decisions, documentation.
 
 ## Runtime
 
 **Environment:**
-- Python 3.11+ (minimum; CI uses 3.13)
-- No Node.js, no Rust, no Go, no JVM -- pure Python project
+- Python `>=3.11` (CI uses Python 3.13 per `.github/workflows/anti-drift.yml`)
+- `tomllib` used for TOML parsing (stdlib in Python 3.11+)
 
 **Package Manager:**
-- `uv` (Astral) -- lockfile at `uv.lock` (version 1, revision 3)
-- Lockfile present and committed
-
-**Virtual Environment:**
-- `.venv/` directory at project root (standard Python venv)
-- `.venv/pyvenv.cfg` present
+- uv — Fast Python package manager used for dependency resolution and virtual environment management
+- Lockfile: `uv.lock` present (191 lines, v1 format)
+- Config: `pyproject.toml`
 
 ## Frameworks
 
 **Core:**
-- No web framework (no Flask, Django, FastAPI, etc.)
-- No data science framework at runtime (no pandas, numpy, scipy, sklearn, torch, tensorflow)
-- The project is a governance/workflow framework, not a computation engine
+- No web framework — QROS is a CLI-based governance framework, not a server application
+- Custom stage-gated state machine built from scratch in `runtime/tools/research_session.py` (229K+ lines)
 
 **Testing:**
-- pytest >= 8.0 (dev dependency)
-- pluggy, iniconfig, packaging -- pytest transitive dependencies
-- colorama -- terminal color support (likely for pytest output)
+- pytest >=8.0 — Test runner with config in `pyproject.toml` (`[tool.pytest.ini_options]`)
+- 999 collected tests across multiple test directories
 
 **Build/Dev:**
-- pyarrow >= 20.0 -- used for writing Parquet artifacts in scaffold/runtime code
-- PyYAML >= 6.0 -- YAML contract loading and generation throughout
+- uv — Package management and virtual environment provisioning
+- `./setup` — Bootstrap script that calls `runtime/tools/install_runtime.py`
+- `runtime/tools/uv_runtime_env.py` — Ensures repo-local uv runtime with correct Python version
 
 ## Key Dependencies
 
-**Critical (runtime):**
-- `PyYAML >= 6.0` -- Loads and validates all YAML contracts (stage gates, artifact schemas, review checklists, diagnostic profiles). The most-used third-party import after stdlib (140 import sites).
-- `pyarrow >= 20.0` -- Writes Parquet research artifacts (factor panels, backtest comparison tables, portfolio metrics). Used in scaffold builders and runtime validators (34 import sites for `pq`, 17 for `pa`).
+**Critical:**
+- PyYAML >=6.0 — YAML parsing for contracts, stage gates, artifact schemas, freeze groups, review checklists. Used pervasively across `runtime/tools/` and `runtime/scripts/`.
+- pyarrow >=20.0 (locked to 24.0.0) — Parquet file I/O for research artifacts (factor panels, signal panels, quality flags, diagnostics, coverage reports). Used in `runtime/tools/artifact_contract_runtime.py`, `csf_*_runtime.py`, `tss_*_runtime.py`, `factor_diagnostics.py`, `signal_diagnostics.py`.
 
-**Dev:**
-- `pytest >= 8.0` -- Test runner. Config at `[tool.pytest.ini_options]` in `pyproject.toml`.
+**Standard Library (Heavy Usage):**
+- `json` — Run manifests, provenance files, diagnostic summaries, evaluator results
+- `pathlib` — File system operations throughout all runtime tools
+- `dataclasses` — Data structures for session context, freeze groups, stage evaluation
+- `subprocess` — Git operations in `install_runtime.py` and `update_runtime.py`
+- `hashlib` — Content hashing for anti-drift snapshots and provenance
+- `argparse` — CLI argument parsing in scripts
+- `tomllib` — TOML config reading (Python 3.11+ stdlib)
+- `csv` — Ledger and variant file I/O
+- `re` — Pattern matching in session parsing, anti-drift
+- `shutil`, `tempfile` — File operations in install/update tooling
 
-**Stdlib-Heavy:**
-- `pathlib` -- 284 import sites. Ubiquitous path manipulation.
-- `json` -- 101 import sites. Manifest generation, anti-drift snapshots, stage evaluator results.
-- `subprocess` -- Used for git operations (update_runtime, install_runtime, lineage_program_runtime) and data pipeline execution.
-- `csv` -- 24 import sites. Research data output format.
-- `hashlib` -- SHA-256 digests for upstream binding verification in TSS stages.
-- `tomllib` -- Python 3.11+ stdlib for reading TOML artifacts.
-- `dataclasses`, `typing` -- Extensive use of frozen dataclasses and type annotations.
-- `argparse` -- CLI argument parsing for all scripts and bin wrappers.
-
-**Infrastructure:**
-- No database drivers, no ORM, no cache layer
-- No HTTP client libraries (no requests, httpx, aiohttp)
-- No cloud SDKs (no boto3, google-cloud, azure)
+**Dev Dependencies:**
+- pytest >=8.0 — Test framework (`[project.optional-dependencies] dev`)
 
 ## Configuration
 
-**Project Metadata:**
-- `pyproject.toml` at `/Users/mac08/workspace/web3qt/quant-research-os/pyproject.toml`
-  - Project name: `quant-research-os`
-  - Version: `0.4.4`
-  - Description: "Agentic stage-gated governance framework for quantitative research workflows"
-  - requires-python: `>=3.11`
+**Environment:**
+- No `.env` files in repo — configuration is contract-file-driven
+- `QROS_PYTHON` env var — Override Python binary selection in `runtime/bin/qros-wrapper-lib`
+- `CLAUDE_PLUGIN_ROOT` env var — Set by Claude Code plugin system for hook resolution
+- Settings: `.claude/settings.local.json` present (local Claude Code settings)
 
 **Build:**
-- No build system beyond `pyproject.toml` (no setuptools, no hatchling, no poetry)
-- `setup` is a bash script, not a Python package config
-- No Dockerfile, no docker-compose, no containerization
+- `pyproject.toml` — Project metadata, dependencies, pytest config
+- `uv.lock` — Deterministic dependency lockfile
+- `.gitignore` — Excludes `.venv/`, `__pycache__/`, `.omc/`, `.omx/`, `.qros/`, `outputs/`, `governance/`
 
-**Lockfile:**
-- `uv.lock` at `/Users/mac08/workspace/web3qt/quant-research-os/uv.lock`
-- 9 packages total (including transitive): colorama, iniconfig, packaging, pluggy, pyarrow, pygments, pytest, pyyaml, quant-research-os
-
-**Python Test Config:**
-```ini
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
-```
-
-**Git:**
-- `.gitignore` at `/Users/mac08/workspace/web3qt/quant-research-os/.gitignore`
-- Main branch: `main`; development branch: `dev`
+**Contracts:**
+- `contracts/stages/workflow_stage_gates.yaml` — Master stage gate definitions (2326 lines)
+- `contracts/stages/stage_evaluator.schema.json` — JSON Schema for evaluator output
+- `contracts/artifacts/*.yaml` — Per-stage artifact expectations (14 files)
+- `contracts/review/review_checklist_master.yaml` — Review checklist definitions
+- `contracts/intake/*.yaml` — Idea gate and qualification scorecard schemas
+- `contracts/diagnostics/*.yaml` — Diagnostic metric libraries and stage profiles
 
 ## Platform Requirements
 
 **Development:**
-- Python 3.11+ (3.13 in CI)
-- `uv` package manager (for lockfile fidelity)
+- Python >=3.11 (3.12+ recommended)
+- uv package manager
 - Git
-- No other system dependencies
+- Supported AI host: Codex CLI (>=0.130.0) or Claude Code (>=2.1.128)
 
-**Supported AI Hosts:**
-- OpenAI Codex -- primary host; skills installed to `~/.codex/skills/`
-- Claude Code -- secondary host; skills installed to `~/.claude/skills/` or `.claude-plugin/skills/`
+**Production:**
+- Active research repo consuming QROS as a governance layer
+- QROS installed via `./setup --host codex|claude-code --mode user-global|repo-local`
+- Research repo bootstrapped with `./.qros/` runtime directory
+- Deployment is agent-driven: no traditional server deployment
 
-**Production/Deployment:**
-- No server deployment. This is a framework repository, not a running service.
-- Installed into research repos via `setup` script or `install_runtime.py`
-- Runtime assets copied to `.qros/` (repo-local) or host skill directories (global)
+## Host Agent Integration
 
-## CI/CD
+**Codex:**
+- Skill discovery via `~/.codex/skills/qros-*/`
+- Install instructions: `.codex/INSTALL.md`
+- AGENTS.md instruction chain for directory-scoped rules
 
-**Pipeline:**
-- GitHub Actions -- single workflow at `.github/workflows/anti-drift.yml`
-- Runs on: PRs, pushes to main, nightly schedule (cron 03:00 UTC), manual dispatch
-- Runner: `ubuntu-latest`, Python 3.13
-
-**Jobs:**
-1. `pr-gate` (PRs and pushes): Runs anti-drift tests, generator freshness check, snapshot baseline comparison
-2. `nightly-release-gate` (schedule/dispatch): Full nightly pipeline including research session snapshot verification
-
-**Test Commands (from CI):**
-```bash
-python -m pip install PyYAML pytest pyarrow
-python -m pytest tests/anti_drift/ tests/session/ tests/contracts/ tests/review/ ...
-python runtime/scripts/gen_stage_review_skills.py --dry-run
-python runtime/scripts/export_anti_drift_snapshots.py --output-dir /tmp/current_snapshots
-python runtime/scripts/anti_drift_baseline.py compare --baseline ... --current ...
-```
-
-**Artifacts:**
-- Uploaded via `actions/upload-artifact@v4`
-- Anti-drift snapshots, comparison JSON, nightly reports, gate summaries, release artifacts
+**Claude Code:**
+- Plugin system via `.claude-plugin/` (skills + agents)
+- Session start hook: `runtime/hooks/hooks.json` + `runtime/hooks/session-start`
+- Reviewer agent: `.claude-plugin/agents/qros-reviewer.md`
+- Install instructions: `.claude/INSTALL.md`
 
 ---
 
-*Stack analysis: 2026-05-06*
+*Stack analysis: 2026-05-20*

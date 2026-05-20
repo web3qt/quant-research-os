@@ -1,206 +1,350 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-05-06
+**Analysis Date:** 2026-05-20
 
 ## Directory Layout
 
 ```
 quant-research-os/
-├── contracts/          # Machine-readable stage gates, artifact schemas, review checklists
-├── docs/               # SOPs, user guides, design specs, implementation plans, visuals
-├── hooks/              # Empty directory (hooks live in runtime/hooks/)
-├── runtime/            # Python runtime: bin entry points, scripts, tools library
-├── skills/             # Author, review, failure, orchestrator SKILL.md definitions
-├── templates/          # Jinja-style skill templates for generated review skills
-├── tests/              # Multi-layer test suite
-├── .claude-plugin/     # Claude Code host config: reviewer agent, review skill bindings
-├── .codex/             # Codex host config: installation instructions
-├── .github/            # CI/CD workflows (anti-drift gate)
-├── .planning/          # GSD planning artifacts (this file lives here)
-├── pyproject.toml      # Python project metadata (name=quant-research-os, v0.4.4)
-├── uv.lock             # uv lockfile
-├── AGENTS.md           # Top-level agent context document
-├── README.md           # Project README (Chinese)
-├── RELEASE_NOTES.md    # Release history
-└── todo.md             # Project-level TODO
+├── contracts/                # Machine-readable truth layer
+│   ├── stages/               # Stage gate definitions (YAML/JSON)
+│   ├── artifacts/            # Per-stage artifact schemas (YAML)
+│   ├── review/               # Review checklists
+│   ├── diagnostics/          # Diagnostic profiles and metric libraries
+│   ├── intake/               # Idea intake schemas
+│   ├── agent_eval/           # Agent behavior eval cases
+│   ├── governance/           # Governance contracts
+│   └── AGENTS.md             # Contract editing rules
+├── runtime/                  # Python runtime engine
+│   ├── bin/                  # CLI entry points (16 commands)
+│   ├── scripts/              # Command wrappers and task runners
+│   ├── tools/                # Core engine modules (~60 .py files)
+│   │   └── review_skillgen/  # Review engine subsystem (~20 .py files)
+│   ├── hooks/                # Session hooks (hooks.json + session-start)
+│   └── AGENTS.md             # Runtime editing rules
+├── skills/                   # Agent behavior bundles (~56 skills)
+│   ├── core/                 # Cross-cutting utilities (7 skills)
+│   ├── idea_intake/          # Idea intake skill
+│   ├── mandate/              # Mandate skills (author, review)
+│   ├── <stage>/              # Per-stage skills (author, review, failure)
+│   ├── tss_<stage>/          # Time-series signal route skills
+│   ├── csf_<stage>/          # Cross-sectional factor route skills
+│   ├── failure_handling/     # Failure and lineage change skills
+│   └── AGENTS.md             # Skills editing rules
+├── templates/                # Skill template generator
+│   └── skills/
+│       └── review-stage/
+│           └── SKILL.md.tmpl
+├── tests/                    # Test suite (999 tests, 12 directories)
+│   ├── session/              # Session orchestration tests
+│   ├── review/               # Review engine tests
+│   ├── contracts/            # Contract compliance tests
+│   ├── anti_drift/           # Anti-drift regression tests
+│   ├── skills/               # Skill tree integrity tests
+│   ├── runtime/              # Runtime tool tests
+│   ├── pipeline/             # End-to-end pipeline tests
+│   ├── bootstrap/            # Project bootstrap tests
+│   ├── docs/                 # Documentation regression tests
+│   ├── e2e/                  # End-to-end integration tests
+│   ├── agent_eval/           # Agent behavior eval tests
+│   ├── fixtures/             # Test fixtures and shared data
+│   ├── helpers/              # Test helper utilities
+│   └── AGENTS.md             # Test directory rules
+├── docs/                     # Documentation
+│   ├── guides/               # User guides
+│   ├── sop/                  # Standard operating procedures
+│   ├── governance/           # Governance documentation
+│   ├── visuals/              # Diagrams and visual assets
+│   ├── plans/                # Planning documents
+│   ├── archive/              # Archived documents
+│   ├── superpowers/          # Superpower specs and plans
+│   └── AGENTS.md             # Documentation editing rules
+├── .claude/                  # Claude Code installation
+│   ├── INSTALL.md            # Claude Code install instructions
+│   └── settings.local.json   # Local Claude Code settings
+├── .claude-plugin/           # Claude Code plugin distribution
+│   ├── agents/               # Reviewer agent definition
+│   └── skills/               # Plugin-specific review skills
+├── .codex/                   # Codex CLI installation
+│   └── INSTALL.md            # Codex install instructions
+├── .planning/                # Project planning (not committed to release)
+├── AGENTS.md                 # Root agent rules and conventions
+├── README.md                 # Project overview and quick start
+├── RELEASE_NOTES.md          # Version release notes
+├── pyproject.toml            # Python project configuration
+├── uv.lock                   # UV lockfile
+├── setup                     # Installation bootstrap script
+├── todo.md                   # Development task tracking
+└── .gitignore                # Git ignore rules
 ```
 
 ## Directory Purposes
 
-**`contracts/`:**
-- Purpose: Single source of machine-readable truth for the entire governance framework
-- Contains: Stage gate definitions (YAML), artifact schemas (YAML), review checklists (YAML), JSON schemas, diagnostic profiles, agent eval cases, intake schemas
-- Key files: `contracts/stages/workflow_stage_gates.yaml` (2318 lines, the central stage definition), `contracts/stages/stage_evaluator.schema.json`, `contracts/artifacts/*.yaml`, `contracts/review/review_checklist_master.yaml`
+### `contracts/`
 
-**`runtime/`:**
-- Purpose: Executable Python code that enforces contracts, scaffolds stages, runs reviews, validates artifacts, and manages installation
-- Contains: Shell entry points (bin/), CLI wrapper scripts (scripts/), Python library modules (tools/), hook definitions (hooks/)
-- Key files: `runtime/bin/qros-session`, `runtime/bin/qros-review`, `runtime/bin/qros-update`, `runtime/tools/research_session.py`, `runtime/tools/review_skillgen/review_engine.py`
+- **Purpose**: Machine-readable truth layer. All stage gates, artifact schemas, verdict vocabularies, and review checklists.
+- **Contains**: YAML gate definitions, JSON schemas, YAML artifact manifests, diagnostic metric libraries
+- **Key files**:
+  - `contracts/stages/workflow_stage_gates.yaml` -- The central contract: all 20 stage definitions with gates, verdicts, rollback rules, downstream permissions, structural and metric gate checks
+  - `contracts/stages/stage_evaluator.schema.json` -- JSON schema for stage evaluator configuration
+  - `contracts/artifacts/<stage>_artifacts.yaml` -- 14 artifact manifest files (one per non-idea-intake stage)
+  - `contracts/review/review_checklist_master.yaml` -- Master review checklist loaded by review engine
+  - `contracts/diagnostics/factor_metric_library.yaml`, `tss_metric_library.yaml` -- Metric definitions for diagnostics
+  - `contracts/intake/idea_gate_decision_schema.yaml`, `qualification_scorecard_schema.yaml` -- Idea intake schemas
 
-**`skills/`:**
-- Purpose: Agent-readable SKILL.md instructions organized by stage domain
-- Contains: ~30 skill directories, each containing a `SKILL.md` and optionally `agents/openai.yaml`
-- Key files: `skills/core/qros-research-session/SKILL.md` (primary orchestrator skill), `skills/<stage>/qros-<stage>-review/SKILL.md` (review skills), `skills/<stage>/qros-<stage>-author/SKILL.md` (author skills)
+### `runtime/`
 
-**`templates/`:**
-- Purpose: Template files for code generation (review skill generation)
-- Contains: `templates/skills/review-stage/SKILL.md.tmpl`
-- Generated: No (these are source templates)
-- Committed: Yes
+- **Purpose**: Python runtime engine providing deterministic state machines, contract validation, review orchestration, and CLI entry points
+- **Contains**: CLI scripts (`bin/`), command wrappers (`scripts/`), core engine modules (`tools/`), session hooks (`hooks/`)
+- **Key files**:
+  - `runtime/bin/qros-session` -- Unified research session entry point
+  - `runtime/bin/qros-review` -- Stage review entry point
+  - `runtime/bin/qros-progress` -- Read-only progress viewer
+  - `runtime/bin/qros-update` -- Version update command
+  - `runtime/bin/qros-factor-diagnostics` -- CSF factor diagnostics
+  - `runtime/bin/qros-signal-diagnostics` -- TSS signal diagnostics
+  - `runtime/bin/qros-validate-stage` -- Stage artifact validation
+  - `runtime/bin/qros-wrapper-lib` -- Shared wrapper library
+  - `runtime/tools/research_session.py` -- Central session orchestrator (5346 lines), stage detection, skill dispatch
+  - `runtime/tools/stage_evaluator.py` -- Stage artifact validation engine (902 lines)
+  - `runtime/tools/freeze_contract_runtime.py` -- Freeze group validation and SHA256 digest management
+  - `runtime/tools/lineage_lock_ledger.py` -- Frozen artifact mutation detection
+  - `runtime/tools/stage_entry_guard.py` -- Stage entry authorization (author vs review lane)
+  - `runtime/tools/review_skillgen/review_engine.py` -- Core review engine
+  - `runtime/tools/review_skillgen/closure_writer.py` -- Review closure artifact writer
+  - `runtime/tools/review_skillgen/review_preflight.py` -- Pre-review validation orchestrator
+  - `runtime/tools/review_skillgen/upstream_binding_validator.py` -- Route inheritance validation
+  - `runtime/tools/review_skillgen/protected_state_guard.py` -- Review state integrity guard
+  - `runtime/tools/verification_tiers.py` -- Smoke/full-smoke test tier definitions
+  - `runtime/tools/anti_drift.py` -- Anti-drift baseline comparison engine
+  - `runtime/tools/anti_drift_scenarios.py` -- Anti-drift scenario definitions
+  - `runtime/tools/<stage>_runtime.py` -- Per-stage scaffold functions (18 stage-specific runtimes)
+  - `runtime/tools/<stage>_contract_runtime.py` -- Per-stage semantic validation (11 contract runtimes)
 
-**`tests/`:**
-- Purpose: Multi-layer test suite ensuring correctness across contracts, runtime, sessions, reviews, and anti-drift
-- Contains: 10 test directories mirroring system layers
-- Key files: `tests/helpers/repo_paths.py` (shared test constants), `tests/fixtures/anti_drift/*_snapshot.json` (blessed snapshots)
+### `skills/`
 
-**`docs/`:**
-- Purpose: Human-readable documentation including SOPs, guides, design specs, implementation plans, and visual diagrams
-- Contains: `docs/sop/` (standard operating procedures per stage), `docs/guides/` (user guides), `docs/superpowers/specs/` (design specs), `docs/superpowers/plans/` (implementation plans), `docs/archive/plans/` (historical plans), `docs/visuals/` (diagrams)
+- **Purpose**: Agent behavior bundles that define how AI agents should act during each stage-role combination
+- **Contains**: SKILL.md files organized in `<stage>/qros-<role>-<stage>/` directories
+- **Key files**:
+  - `skills/AGENTS.md` -- Skill editing rules
+  - `skills/core/qros-research-session/SKILL.md` -- Unified session entry skill
+  - `skills/core/qros-progress/SKILL.md` -- Progress viewing skill
+  - `skills/core/qros-update/SKILL.md` -- Version update skill
+  - `skills/core/qros-factor-diagnostics/SKILL.md` -- CSF diagnostics skill
+  - `skills/core/qros-signal-diagnostics/SKILL.md` -- TSS diagnostics skill
+  - `skills/core/qros-stage-display/SKILL.md` -- Stage display skill
+  - `skills/core/using-qros/SKILL.md` -- General QROS usage guide (loaded by session-start hook)
+  - `skills/failure_handling/qros-stage-failure-handler/SKILL.md` -- Failure handling dispatch
+  - `skills/failure_handling/qros-lineage-change-control/SKILL.md` -- Child lineage creation
+  - `skills/failure_handling/qros-shadow-failure/SKILL.md` -- Shadow failure analysis
 
-**`.claude-plugin/`:**
-- Purpose: Claude Code host configuration for running QROS review skills
-- Contains: `agents/qros-reviewer.md` (reviewer agent definition), `skills/` (review skill bindings mirroring `skills/` review skills)
-- Generated: Partially (review skills are generated from templates and installed here)
-- Committed: Yes
+### `tests/`
 
-**`.codex/`:**
-- Purpose: Codex host configuration
-- Contains: `INSTALL.md` (installation instructions fetched by users)
+- **Purpose**: 999 pytest tests covering all runtime behavior, contract compliance, and anti-drift regression
+- **Contains**: pytest modules organized by concern
+- **Key files**:
+  - `tests/session/test_research_session_runtime.py` -- Session orchestration tests
+  - `tests/review/test_stage_evaluator.py` -- Review engine tests
+  - `tests/contracts/test_stage_evaluator_contract.py` -- Contract compliance tests
+  - `tests/anti_drift/test_anti_drift.py` -- Anti-drift baseline tests
+  - `tests/anti_drift/test_anti_drift_metamorphic.py` -- Metamorphic regression tests
+  - `tests/bootstrap/test_project_bootstrap.py` -- Project bootstrap tests
+  - `tests/skills/test_skill_tree.py` -- Skill tree integrity tests
+
+### `docs/`
+
+- **Purpose**: User-facing documentation, SOPs, guides, and governance docs
+- **Contains**: Markdown documents organized by type
+- **Key files**:
+  - `docs/README.md` -- Documentation navigation hub
+  - `docs/guides/installation.md` -- Installation guide
+  - `docs/guides/qros-research-session-usage.md` -- Session usage guide
+  - `docs/guides/qros-review-constraint-map.md` -- Review constraint reference
+  - `docs/guides/stage-freeze-group-field-guide.md` -- Freeze group field reference
+  - `docs/guides/qros-factor-diagnostics.md` -- CSF diagnostics guide
+  - `docs/guides/qros-signal-diagnostics.md` -- TSS diagnostics guide
+  - `docs/sop/main-flow/` -- Research workflow SOP
+
+### `templates/`
+
+- **Purpose**: Host-agnostic skill templates for generating review skills at install time
+- **Contains**: Jinja-like template files
+- **Key files**: `templates/skills/review-stage/SKILL.md.tmpl`
+
+### `.claude-plugin/`
+
+- **Purpose**: Claude Code plugin distribution. Contains review skills that are loaded into the Claude Code plugin system.
+- **Contains**: Agent definitions and host-specific skill copies
+- **Key files**: `.claude-plugin/agents/qros-reviewer.md`
+
+### `.codex/`
+
+- **Purpose**: Codex CLI installation instructions
+- **Key files**: `.codex/INSTALL.md`
 
 ## Key File Locations
 
-**Entry Points:**
-- `runtime/bin/qros-session`: Primary research session entry (shell script, delegates to `run_research_session.py`)
-- `runtime/bin/qros-review`: Review execution entry (shell script, delegates to `run_stage_review.py`)
-- `runtime/bin/qros-update`: Framework update entry (shell script, delegates to `run_qros_update.py`)
-- `runtime/bin/qros-progress`: Read-only progress query (shell script, delegates to `run_progress.py`)
-- `runtime/bin/qros-validate-stage`: Deterministic preflight validation (shell script, delegates to `validate_stage_artifacts.py`)
-- `runtime/bin/qros-factor-diagnostics`: CSF diagnostic entry (shell script, delegates to `run_factor_diagnostics.py`)
-- `runtime/bin/qros-signal-diagnostics`: TSS diagnostic entry (shell script, delegates to `run_signal_diagnostics.py`)
-- `runtime/bin/qros-review-cycle`: Review cycle management (shell script, delegates to `review_cycle.py`)
-- `runtime/bin/qros-review-preflight`: Review preflight check (shell script, delegates to `qros_review_preflight.py`)
-- `runtime/bin/qros-start-review`: Review session starter (shell script, delegates to `start_review_session.py`)
-- `runtime/bin/qros-audit-reviewer`: Reviewer audit (shell script, delegates to `audit_reviewer_write_scope.py`)
-- `runtime/bin/qros-agent-eval`: Agent behavior evaluation (shell script, delegates to `run_agent_behavior_eval.py`)
+### Entry Points
 
-**Configuration:**
-- `pyproject.toml`: Python project metadata (version 0.4.4, requires-python >=3.11, deps: PyYAML, pyarrow)
-- `contracts/stages/workflow_stage_gates.yaml`: Central stage gate definition (all stages, verdicts, rules)
-- `runtime/hooks/hooks.json`: Claude Code session-start hook configuration
+- `runtime/bin/qros-session`: Unified research session CLI
+- `runtime/bin/qros-review`: Stage review CLI
+- `runtime/bin/qros-progress`: Read-only progress viewer
+- `runtime/bin/qros-update`: Version update CLI
+- `runtime/bin/qros-validate-stage`: Stage validation CLI
+- `runtime/bin/qros-factor-diagnostics`: CSF factor diagnostics CLI
+- `runtime/bin/qros-signal-diagnostics`: TSS signal diagnostics CLI
+- `runtime/bin/qros-review-cycle`: Review cycle management
+- `runtime/bin/qros-start-review`: Review initiation
+- `runtime/bin/qros-review-preflight`: Pre-review validation
+- `runtime/bin/qros-check-stage-entry`: Stage entry guard
+- `runtime/bin/qros-audit-reviewer`: Reviewer audit
+- `runtime/bin/qros-agent-eval`: Agent behavior evaluation
+- `runtime/bin/qros-resume`: Session resume
+- `runtime/bin/qros-verify`: Verification runner
+- `runtime/bin/qros-wrapper-lib`: Shared wrapper library
 
-**Core Logic:**
-- `runtime/tools/research_session.py`: Main session orchestration (stage lifecycle, routing, scaffolding)
-- `runtime/tools/review_skillgen/review_engine.py`: Review engine (loads contracts, validates protocol, runs gates)
-- `runtime/tools/review_skillgen/closure_writer.py`: Writes closure artifacts and stage evaluator results
-- `runtime/tools/review_skillgen/protocol_validator.py`: Validates review protocol compliance
-- `runtime/tools/review_skillgen/stage_content_gate.py`: Structural and metric gate checks
-- `runtime/tools/review_skillgen/upstream_binding_validator.py`: Route inheritance and upstream digest validation
-- `runtime/tools/review_skillgen/adversarial_review_contract.py`: Review contract constants and validation
-- `runtime/tools/stage_evaluator.py`: Stage completion evaluation
-- `runtime/tools/lineage_program_runtime.py`: Lineage-local program identity and provenance
-- `runtime/tools/install_runtime.py`: Framework installation logic
-- `runtime/tools/anti_drift.py`: Anti-drift regression detection
-- `runtime/tools/verification_tiers.py`: Test tier definitions (smoke, full-smoke)
+### Configuration
 
-**Testing:**
-- `tests/contracts/`: Contract schema and artifact contract validation tests
-- `tests/runtime/`: Runtime tool tests (stage runtimes, semantic validation, contract validators)
-- `tests/session/`: Research session integration tests (artifact shapes, routing, reflection)
-- `tests/review/`: Review engine tests (generation, engine, preflight, closure, evaluator)
-- `tests/anti_drift/`: Anti-drift regression tests (baseline, replay, metamorphic, snapshots)
-- `tests/bootstrap/`: Installation and setup tests
-- `tests/pipeline/`: Full pipeline tests (CSF and TSS routes)
-- `tests/e2e/`: End-to-end agent session tests
-- `tests/agent_eval/`: Agent behavior evaluation case tests
-- `tests/docs/`: Documentation hygiene tests
-- `tests/helpers/`: Shared test utilities (repo_paths, fixtures, assertions, harness)
-- `tests/fixtures/anti_drift/`: Blessed snapshot files for anti-drift comparison
+- `pyproject.toml`: Python project metadata, dependencies (PyYAML>=6.0, pyarrow>=20.0), pytest config
+- `contracts/stages/workflow_stage_gates.yaml`: Central stage gate definitions
+- `contracts/review/review_checklist_master.yaml`: Master review checklist
+- `runtime/hooks/hooks.json`: Claude Code session hook configuration
+- `runtime/tools/verification_tiers.py`: Smoke/full-smoke test tier definitions
+
+### Core Logic
+
+- `runtime/tools/research_session.py`: Central session orchestrator (5346 lines)
+- `runtime/tools/stage_evaluator.py`: Stage artifact validation (902 lines)
+- `runtime/tools/freeze_contract_runtime.py`: Freeze group management
+- `runtime/tools/lineage_lock_ledger.py`: Frozen artifact mutation detection
+- `runtime/tools/stage_entry_guard.py`: Stage entry authorization
+- `runtime/tools/review_skillgen/review_engine.py`: Review engine core
+- `runtime/tools/review_skillgen/closure_writer.py`: Review closure writer
+- `runtime/tools/review_skillgen/review_preflight.py`: Pre-review validation
+- `runtime/tools/lineage_program_runtime.py`: Lineage-local program validation
+- `runtime/tools/artifact_contract_runtime.py`: Artifact contract validation
+- `runtime/tools/author_context_runtime.py`: Author context building
+- `runtime/tools/install_runtime.py`: Installation logic
+- `runtime/tools/update_runtime.py`: Version update logic
+- `runtime/tools/progress_runtime.py`: Progress display logic
+
+### Testing
+
+- `tests/session/`: Session orchestration tests
+- `tests/review/`: Review engine tests
+- `tests/contracts/`: Contract compliance tests
+- `tests/anti_drift/`: Anti-drift regression tests
+- `tests/skills/`: Skill tree integrity tests
+- `tests/runtime/`: Runtime tool tests
+- `tests/pipeline/`: End-to-end pipeline tests
+- `tests/e2e/`: End-to-end integration tests
+- `tests/bootstrap/`: Project bootstrap tests
+- `tests/docs/`: Documentation regression tests
+- `tests/agent_eval/`: Agent behavior evaluation tests
 
 ## Naming Conventions
 
-**Files:**
-- Shell entry points: `qros-<verb>` (e.g., `qros-session`, `qros-review`, `qros-update`)
-- Python scripts: `run_<action>.py` or `<action>.py` in `runtime/scripts/` (e.g., `run_research_session.py`, `review_cycle.py`)
-- Python tools: `<domain>_runtime.py` for stage runtimes (e.g., `csf_data_ready_runtime.py`), `<feature>.py` for utilities (e.g., `anti_drift.py`)
-- Review skillgen modules: `<concern>.py` in `runtime/tools/review_skillgen/` (e.g., `closure_writer.py`, `protocol_validator.py`)
-- Skill directories: `qros-<stage>-<role>` (e.g., `qros-csf-data-ready-review`, `qros-mandate-author`)
-- Contract files: `<stage>_artifacts.yaml`, `<domain>_schema.yaml`, `<domain>_library.yaml`
-- Test files: `test_<subject>.py` in mirror directories (e.g., `tests/runtime/test_csf_data_ready_runtime.py`)
+### Files
 
-**Directories:**
-- Stage domains: snake_case (e.g., `csf_data_ready`, `tss_holdout_validation`, `idea_intake`)
-- Test directories: snake_case matching source layer (e.g., `anti_drift`, `agent_eval`, `bootstrap`)
-- Documentation: snake_case (e.g., `docs/sop/main-flow/`, `docs/guides/`)
+- **Stage-specific runtimes**: `<stage>_runtime.py` (e.g., `tss_data_ready_runtime.py`, `csf_signal_ready_runtime.py`)
+- **Stage-specific contract runtimes**: `<stage>_contract_runtime.py` (e.g., `tss_test_evidence_contract_runtime.py`)
+- **Artifact schemas**: `<stage>_artifacts.yaml` (e.g., `csf_backtest_ready_artifacts.yaml`)
+- **Skill directories**: `qros-<stage>-<role>` (e.g., `qros-tss-test-evidence-author`, `qros-csf-signal-ready-review`)
+- **CLI entry points**: `qros-<command>` (e.g., `qros-session`, `qros-review`, `qros-update`)
+- **Script wrappers**: `run_<command>.py` or `<action>_<noun>.py` (e.g., `run_research_session.py`, `build_anti_drift_gate_summary.py`)
+
+### Directories
+
+- **Stage directories in consumer repos**: `<nn>_<stage>` with zero-padded number (e.g., `02_tss_data_ready`, `05_csf_test_evidence`)
+- **Skill bundles**: `<stage>/qros-<stage>-<role>/` where role is `author`, `review`, or `failure`
+- **Route prefixes**: `tss_` for time_series_signal, `csf_` for cross_sectional_factor
+- **Test directories**: lowercase snake_case matching the concern area (e.g., `anti_drift`, `agent_eval`)
+
+### Stage Keys
+
+- `idea_intake` -- no prefix, no route
+- `mandate` -- no prefix, route-neutral
+- `tss_data_ready`, `tss_signal_ready`, `tss_train_freeze`, `tss_test_evidence`, `tss_backtest_ready`, `tss_holdout_validation` -- time_series_signal route
+- `csf_data_ready`, `csf_signal_ready`, `csf_train_freeze`, `csf_test_evidence`, `csf_backtest_ready`, `csf_holdout_validation` -- cross_sectional_factor route
+- Legacy unprefixed stages (`data_ready`, `signal_ready`, `train_calibration`, `test_evidence`, `backtest_ready`, `holdout_validation`) -- original time_series_signal route
 
 ## Where to Add New Code
 
-**New Stage (e.g., new CSF or TSS stage):**
-- Contract definition: `contracts/stages/workflow_stage_gates.yaml` (add new stage entry)
-- Artifact schema: `contracts/artifacts/<stage>_artifacts.yaml`
-- Stage runtime: `runtime/tools/<stage>_runtime.py`
-- Contract runtime: `runtime/tools/<stage>_contract_runtime.py`
-- Author skill: `skills/<domain>/qros-<stage>-author/SKILL.md`
-- Review skill: `skills/<domain>/qros-<stage>-review/SKILL.md`
-- Failure skill: `skills/<domain>/qros-<stage>-failure/SKILL.md` (if applicable)
-- SOP: `docs/sop/main-flow/<nn>_<stage>_sop_cn.md`
-- Tests: `tests/runtime/test_<stage>_runtime.py`, `tests/contracts/test_<stage>_artifact_contract.py`, `tests/session/test_<stage>_artifact_shape.py`, `tests/review/test_review_preflight_<stage>_contract.py`
-- Register in: `runtime/tools/research_session.py` (routing), `runtime/tools/stage_evaluator.py` (required outputs), `runtime/tools/anti_drift.py` (stage mapping)
+### New Stage (e.g., adding `regime_filter` stage)
 
-**New Review Skillgen Feature:**
-- Implementation: `runtime/tools/review_skillgen/<feature>.py`
-- Tests: `tests/review/test_<feature>.py`
-- Template integration: `templates/skills/review-stage/SKILL.md.tmpl` (if affects generated skills)
+1. **Contract definition**: Add stage entry to `contracts/stages/workflow_stage_gates.yaml`
+2. **Artifact schema**: Create `contracts/artifacts/<stage>_artifacts.yaml`
+3. **Runtime scaffold**: Create `runtime/tools/<stage>_runtime.py` with `scaffold_<stage>()` and freeze group constants
+4. **Runtime contract validation**: Create `runtime/tools/<stage>_contract_runtime.py` with `validate_<stage>_semantics()`
+5. **Session integration**: Update `runtime/tools/research_session.py` stage mappings and `STAGE_ACTIVE_SKILLS`
+6. **Stage evaluator**: Update `runtime/tools/stage_evaluator.py` required outputs
+7. **Skills**: Create `skills/<stage>/qros-<stage>-author/SKILL.md`, `skills/<stage>/qros-<stage>-review/SKILL.md`, optionally `skills/<stage>/qros-<stage>-failure/SKILL.md`
+8. **Template**: Update `templates/skills/review-stage/SKILL.md.tmpl` if review behavior changes
+9. **Tests**: Add tests in `tests/session/`, `tests/review/`, `tests/contracts/`, `tests/anti_drift/`
 
-**New CLI Command:**
-- Shell entry point: `runtime/bin/qros-<verb>`
-- Python script: `runtime/scripts/<verb>.py` or `runtime/scripts/run_<verb>.py`
-- Python tool: `runtime/tools/<feature>.py`
+### New Route (e.g., adding `portfolio_optimization` route)
 
-**New Diagnostic Profile:**
-- Contract: `contracts/diagnostics/<profile>.yaml`
-- Runtime: `runtime/tools/<profile>_diagnostics.py`
-- Script: `runtime/scripts/run_<profile>_diagnostics.py`
-- Bin: `runtime/bin/qros-<profile>-diagnostics`
-- Skill: `skills/core/qros-<profile>-diagnostics/SKILL.md`
-- Tests: `tests/runtime/test_<profile>_diagnostics.py`
+1. **Contract**: Add route entries to `contracts/stages/workflow_stage_gates.yaml` with new prefix (e.g., `po_`)
+2. **Artifact schemas**: Create `contracts/artifacts/po_<stage>_artifacts.yaml` for each stage
+3. **Diagnostic profiles**: Create `contracts/diagnostics/po_stage_diagnostic_profiles.yaml` and `po_metric_library.yaml`
+4. **Runtime**: Create `runtime/tools/po_<stage>_runtime.py` and `runtime/tools/po_<stage>_contract_runtime.py` for each stage
+5. **Skills**: Create `skills/po_<stage>/` directories with author, review, and failure skills
+6. **Session routing**: Update `runtime/tools/research_session.py` route dispatch logic
+7. **Tests**: Comprehensive new test directories mirroring existing route tests
 
-**New Utility/Helper:**
-- Shared helpers: `tests/helpers/<utility>.py`
-- Runtime utility: `runtime/tools/<utility>.py`
+### New CLI Command
+
+1. **Script**: Create `runtime/scripts/run_<command>.py`
+2. **Bin entry**: Create `runtime/bin/qros-<command>` that delegates to the script
+3. **Core skill** (if agent-facing): Create `skills/core/qros-<command>/SKILL.md`
+4. **Tests**: Add tests in appropriate `tests/` subdirectory
+
+### New Diagnostic Profile
+
+1. **Metric library**: Add metrics to `contracts/diagnostics/<route>_metric_library.yaml`
+2. **Diagnostic profile**: Add stage profile to `contracts/diagnostics/<route>_stage_diagnostic_profiles.yaml`
+3. **Runtime**: Update `runtime/tools/factor_diagnostics.py` or `runtime/tools/signal_diagnostics.py`
+4. **Tests**: Add tests in `tests/runtime/`
+
+### New Utility / Shared Helper
+
+- **Runtime helpers**: Place in `runtime/tools/` as `<descriptive_name>.py`
+- **Test helpers**: Place in `tests/helpers/`
+- **Test fixtures**: Place in `tests/fixtures/`
 
 ## Special Directories
 
-**`runtime/tools/review_skillgen/`:**
-- Purpose: Review engine package -- the most complex subsystem in the framework
-- Contains: 16 Python modules handling adversarial review contracts, closure writing, protocol validation, scope building, upstream binding, and gate checking
-- Generated: No (all hand-written)
-- Committed: Yes
-- Key modules: `review_engine.py` (central orchestrator), `closure_writer.py` (artifact output), `protocol_validator.py` (compliance), `stage_content_gate.py` (structural/metric gates), `upstream_binding_validator.py` (route inheritance)
+### `.claude-plugin/`
 
-**`tests/fixtures/anti_drift/`:**
-- Purpose: Blessed baseline snapshots for anti-drift regression testing
-- Contains: `*_snapshot.json` files capturing contract state at known-good points
-- Generated: Yes (by `runtime/scripts/export_anti_drift_snapshots.py`)
-- Committed: Yes (updates require deliberate baseline promotion per `docs/anti_drift_baseline_promotion_protocol.md`)
+- **Purpose**: Claude Code plugin distribution with host-specific review skills and agent definitions
+- **Generated**: Partially -- review skill SKILL.md files are generated from templates during `qros-update`
+- **Committed**: Yes
 
-**`.claude-plugin/`:**
-- Purpose: Claude Code host-specific configuration
-- Contains: Agent definition (`agents/qros-reviewer.md`) and skill bindings (`skills/`)
-- Generated: Partially -- review skills are generated from templates by `gen_stage_review_skills.py` and installed here during `$qros-update`
-- Committed: Yes
+### `.codex/`
 
-**`.codex/`:**
-- Purpose: Codex host-specific configuration
-- Contains: `INSTALL.md` (installation bootstrap instructions)
-- Generated: No
-- Committed: Yes
+- **Purpose**: Codex CLI installation instructions
+- **Generated**: No
+- **Committed**: Yes
 
-**`docs/visuals/`:**
-- Purpose: Architecture diagrams and stage flow visuals
-- Contains: `.drawio` and `.excalidraw` files with `.md` renderings
-- Generated: No (hand-crafted diagrams)
-- Committed: Yes
+### `.planning/`
+
+- **Purpose**: Project planning documents, phases, and codebase analysis
+- **Generated**: By GSD tooling
+- **Committed**: Varies by content
+
+### `.venv/`
+
+- **Purpose**: Python virtual environment
+- **Generated**: Yes, by `uv sync`
+- **Committed**: No (gitignored)
+
+### `runtime/tools/review_skillgen/`
+
+- **Purpose**: Self-contained review engine subsystem with its own models, validators, and writers
+- **Generated**: No
+- **Committed**: Yes
+- **Note**: This is a package within `runtime/tools/`, not a separate top-level directory
 
 ---
 
-*Structure analysis: 2026-05-06*
+*Structure analysis: 2026-05-20*

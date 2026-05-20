@@ -1,255 +1,211 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-05-06
+**Analysis Date:** 2026-05-20
+
+## Language & Runtime
+
+**Primary:** Python 3.11+ (enforced via `requires-python = ">=3.11"` in `pyproject.toml`)
+
+**Key characteristics:**
+- Uses modern Python syntax: `str | None` union types (not `Optional[str]`), `tuple[str, ...]`
+- `from __future__ import annotations` is present in nearly all source files (~103 of ~111 runtime files) and most test files (~111 test files)
+- No type stubs or `py.typed` marker detected; typing is inline
 
 ## Naming Patterns
 
 **Files:**
-- snake_case throughout: `review_engine.py`, `stage_evaluator.py`, `adversarial_review_contract.py`
-- Module files use single-word or compound-snake names: `anti_drift.py`, `closure_writer.py`
-- Test files use `test_` prefix matching the module under test: `test_review_engine.py`, `test_stage_evaluator.py`
-- Scripts in `runtime/scripts/` follow the same snake_case pattern: `gen_stage_review_skills.py`, `run_research_session.py`
-- Contract YAML files use snake_case: `workflow_stage_gates.yaml`, `review_checklist_master.yaml`
-- Binary scripts in `runtime/bin/` use kebab-case: `qros-update`, `qros-spawn-reviewer`
+- snake_case for all Python modules: `review_engine.py`, `stage_evaluator.py`, `adversarial_review_contract.py`
+- Test files prefixed with `test_`: `test_review_engine.py`, `test_csf_data_ready_artifact_contract.py`
+- Helper modules in `tests/helpers/`: `stage_fixtures.py`, `gate_assertions.py`, `agent_harness.py`
+- Runtime contract files suffixed with `_runtime.py`: `csf_data_ready_runtime.py`, `tss_signal_ready_runtime.py`
+- Runtime contract files suffixed with `_contract_runtime.py`: `csf_data_ready_contract_runtime.py`, `tss_data_ready_contract_runtime.py`
 
 **Functions:**
-- snake_case with descriptive multi-word names: `run_stage_review()`, `canonical_snapshot_from_session_context()`
-- Private/internal functions prefixed with single underscore: `_require_stage_config()`, `_read_yaml_if_present()`
-- Public API functions have no prefix: `evaluate_stage()`, `build_review_scope()`
-- Builder/factory functions use `build_` or `scaffold_` prefix: `build_csf_signal_ready_from_data_ready()`, `scaffold_csf_data_ready()`
+- snake_case universally: `run_stage_review()`, `load_gate_schema()`, `assert_protected_review_state_intact()`
+- Private/internal helpers prefixed with underscore: `_require_stage_config()`, `_load_yaml()`, `_write_yaml()`
+- Boolean-returning functions use `is_`/`has_` prefixes: `is_complete`, `_is_non_empty_value()`
+- Factory/builders use `build_`/`prepare_`/`ensure_` prefixes: `build_review_payload()`, `prepare_mandate()`, `ensure_adversarial_review_request()`
 - Loader functions use `load_` prefix: `load_gate_schema()`, `load_adversarial_review_request()`
-- Validator functions use `validate_` prefix: `validate_receipt_against_request()`, `validate_result_contract()`
-- Issuer/writer functions use `ensure_` or `write_` prefix: `ensure_adversarial_review_request()`, `write_closure_artifacts()`
+- Validation functions use `validate_`/`assert_`/`check_`/`_require_` prefixes: `validate_receipt_against_request()`, `assert_all_gates_pass()`, `check_structural_gates()`, `_require_string()`
 
 **Variables:**
-- snake_case: `stage_dir`, `lineage_root`, `review_result`
-- Private module-level variables prefixed with single underscore: `_SESSION_STAGE_TO_GATE_STAGE`, `_NEXT_STAGE_SNAPSHOT`
-- Constants use UPPER_SNAKE_CASE: `ROOT`, `SNAPSHOT_VERSION`, `ALLOWED_REVIEW_LOOP_OUTCOMES`
-- Frozen tuples for constant collections: `IDEA_INTAKE_REQUIRED_OUTPUTS`, `MANDATE_REQUIRED_OUTPUTS`
-- Type aliases use PascalCase: `GateSchema`, `ChecklistSchema`, `InstallMode`, `ResolvedInstallMode`
+- snake_case: `blocking_findings`, `stage_dir`, `review_loop_outcome`
+- Constants are UPPER_SNAKE_CASE at module level: `GATES_PATH`, `CHECKLIST_PATH`, `FIX_REQUIRED_OUTCOME`
+- Tuple constants for frozen collections: `IDEA_INTAKE_REQUIRED_OUTPUTS = ("idea_brief.md", ...)`
 
 **Types:**
-- dataclasses with `frozen=True` for immutable value objects: `StageEvaluatorSpec`, `CanonicalDecisionSnapshot`, `ReviewerRuntimeIdentity`
-- `Literal` types for constrained strings: `InstallMode = Literal["repo-local", "user-global", "auto"]`
-- Return type annotations on all public functions
-- Use `from __future__ import annotations` in 101 of 100 runtime files and 90 test files for forward-reference type hints
-- `dict[str, Any]` is the dominant complex type; `Path` is used consistently for filesystem paths
-- `str | None` union pattern for optional strings (Python 3.11+ syntax)
+- `PascalCase` for dataclasses and classes: `StageEvaluatorSpec`, `ReviewerRuntimeIdentity`, `ProtectedStateError`, `AgentHarness`
+- Custom exceptions inherit from `RuntimeError`: `ReviewRuntimeConfigurationError`, `StageEvaluatorConfigurationError`
+- Type aliases use `PascalCase`: `GateSchema = dict[str, Any]`, `ChecklistSchema = dict[str, Any]`
+- Frozen dataclasses for immutable value objects: `@dataclass(frozen=True)`
 
 ## Code Style
 
 **Formatting:**
-- No explicit formatter configuration detected (no `.prettierrc`, no `black`, no `ruff.toml`, no `biome.json`)
-- Code follows consistent PEP 8 style as written
-- 4-space indentation
-- Double quotes for strings
-- Trailing commas in multi-line collections and function arguments
-- Blank lines between top-level functions (PEP 8 standard)
-- 79-100 character line lengths observed
+- No formatter config detected (no `.prettierrc`, `black.toml`, `ruff.toml`)
+- Indentation: 4 spaces (consistent throughout)
+- Line length appears to follow ~120 chars soft limit
+- Trailing commas in multi-line collections
 
 **Linting:**
-- No linter configuration detected (no `.flake8`, no `.ruff.toml`, no `pyproject.toml` lint section)
-- No type checker configuration (no `mypy.ini`, no `[tool.mypy]` in pyproject.toml)
-- No pre-commit hooks configuration (no `.pre-commit-config.yaml`)
-
-**Key observations:**
-- The codebase relies on disciplined manual style consistency rather than automated enforcement
-- `from __future__ import annotations` is used universally, enabling modern type syntax without runtime cost
+- No linter config detected (no `.eslintrc`, `ruff.toml`, `flake8`)
+- Code is consistently clean and well-structured despite lack of tooling enforcement
 
 ## Import Organization
 
-**Order:**
-1. `from __future__ import annotations` (always first)
-2. Standard library imports: `import json`, `from pathlib import Path`, `from dataclasses import dataclass`
-3. Third-party imports: `import yaml`, `import pyarrow.parquet as pq`
-4. Local imports: `from runtime.tools.review_skillgen.adversarial_review_contract import ...`
+**Order (source files):**
+1. `from __future__ import annotations` (first line in ~93% of files)
+2. Standard library: `csv`, `json`, `hashlib`, `os`, `datetime`, `pathlib`, `typing`
+3. Third-party: `yaml`, `pyarrow`
+4. Internal `runtime.*` imports (absolute paths)
 
-**Within local imports:**
-- Absolute imports only (no relative imports observed)
-- `from runtime.tools.<module> import <specific_names>` is the standard pattern
-- Multiple names from the same module on a single import line when logically related
-- Multi-line import blocks when importing many names from the same module
+**Order (test files):**
+1. `from __future__ import annotations`
+2. Standard library: `pathlib`, `typing`
+3. Third-party: `pytest`, `yaml`
+4. Internal `runtime.*` imports
+5. Internal `tests.helpers.*` imports
 
 **Path Aliases:**
-- No path aliases configured (no `[tool.pytest.ini_options]` pythonpath beyond `"."`)
-- Imports reference the package root `runtime.tools.*` directly
+- No path aliases configured (no `[tool.setuptools]` path rewriting)
+- All imports use full absolute paths: `from runtime.tools.review_skillgen.loaders import load_gate_schema`
+- Tests import from helpers via: `from tests.helpers.stage_fixtures import prepare_mandate`
+- `pythonpath = ["."]` in pytest config enables this
 
-**Example from `runtime/tools/review_engine.py`:**
+**Key import convention:**
 ```python
-from __future__ import annotations
-
-import csv
-import json
-from datetime import datetime, timezone
-from pathlib import Path
-import os
-from typing import Any
-
-import yaml
-
 from runtime.tools.review_skillgen.adversarial_review_contract import (
+    ADVERSARIAL_REVIEW_REQUEST_FILENAME,
     FIX_REQUIRED_OUTCOME,
-    ReviewerRuntimeIdentity,
     load_adversarial_review_request,
-    ...
+    load_reviewer_receipt,
 )
 ```
+- Constants first, then functions, each on its own line in parenthesized imports
 
 ## Error Handling
 
-**Patterns:**
-- Custom exception classes extend `RuntimeError` or `ValueError`: `ReviewRuntimeConfigurationError(RuntimeError)`, `InstallError(RuntimeError)`, `StageProgramRuntimeError(ValueError)`, `ArtifactContractError(ValueError)`
-- Each major module defines its own domain-specific exception: 10 custom exception classes across the runtime
-- Validation functions raise `ValueError` with descriptive messages including the path and expected condition
-- Error messages include actionable fix suggestions, e.g., `"fix: add a StageEvaluatorSpec to STAGE_EVALUATOR_SPECS"`
-- Bilingual error messages: configuration errors include both English descriptions and Chinese docstrings (e.g., `"QROS review runtime configuration error:"` in messages, Chinese in class docstrings)
-- `try/except` blocks are narrow and purpose-specific (e.g., YAML loading, file parsing)
-- No bare `except:` or overly broad exception catching
-- Missing-file scenarios return empty defaults rather than raising: `_read_yaml_if_present()` returns `{}` if file missing
+**Strategy:** Fail-fast with descriptive `ValueError` messages that include the file path and actionable context.
 
-**Raise pattern example:**
-```python
-raise ReviewRuntimeConfigurationError(
-    "\n".join([
-        "QROS review runtime configuration error:",
-        f"missing {missing_label}: {stage}",
-        f"fix: add `{stage}:` under `stages:` in `{relative_path}`",
-    ])
-)
-```
+**Patterns:**
+- Input validation uses private `_require_*` helper functions that raise `ValueError` with file path context:
+  ```python
+  def _require_string(payload: dict[str, Any], key: str, *, path: Path) -> str:
+      value = payload.get(key)
+      if not isinstance(value, str) or not value.strip():
+          raise ValueError(f"{path}: {key} must be a non-empty string")
+      return value.strip()
+  ```
+- Configuration errors use custom exception classes with multi-line diagnostic messages:
+  ```python
+  raise ReviewRuntimeConfigurationError(
+      "\n".join([
+          "QROS review runtime configuration error:",
+          f"missing stage gate: {stage}",
+          f"stage_dir: {stage_dir}",
+          f"fix: add `{stage}:` under `stages:` in `{relative_path}`",
+      ])
+  )
+  ```
+- Protected state violations use `ProtectedStateError(RuntimeError)` with structured payload containing `reason_code`, `protected_path`, `message`, and `next_action` fields.
+- Error codes as constants: `PROTECTED_STATE_DRIFT`, `REVIEW_STATE_PROJECTION_DRIFT`, `REVIEWER_FINDINGS_UNBOUND`
+- Tests for errors use `try/except/else` pattern rather than `pytest.raises`:
+  ```python
+  try:
+      run_stage_review(...)
+  except ValueError as exc:
+      assert "reviewer identity must differ" in str(exc)
+  else:
+      raise AssertionError("expected self-review rejection")
+  ```
 
 ## Logging
 
-**Framework:** No logging framework used. The codebase does not import `logging` or any logging library.
+**Framework:** No structured logging framework. No `logging` module usage detected.
 
-**Output mechanism:**
-- Library code (`runtime/tools/`) returns values and raises exceptions -- no stdout output
-- CLI scripts (`runtime/scripts/`) use `print()` for user-facing output
-- `print(..., file=sys.stderr)` for error output in CLI scripts
-- No structured logging, no log levels, no log files
-
-**Convention:** Keep library code silent; let the CLI layer handle all user-facing output. This is a deliberate design choice -- the runtime is a library consumed by agent scripts.
+**Patterns:**
+- Errors are communicated via exceptions, not log statements
+- Runtime state is persisted to YAML/JSONL files (e.g., `review_cycle_trace.jsonl`) rather than logs
+- Timestamps use `datetime.now(timezone.utc).isoformat()` format
 
 ## Comments
 
 **When to Comment:**
-- Module-level docstrings are rare; the code is largely self-documenting through descriptive names
-- Inline comments are sparse, used only for non-obvious logic
-- Chinese comments appear in a few places alongside English: `"Stage content gate 只处理当前阶段自身内容"`
-- TODO comments appear only in template/scaffold code (e.g., `idea_runtime.py` generates template files with `"TODO"` placeholders for users to fill in)
-- No FIXME, HACK, or XXX comments found in library code
+- Module-level docstrings describe purpose (especially in `tests/helpers/`)
+- Inline comments explain non-obvious logic, often in Chinese:
+  ```python
+  # 先把合同里写明的关键数值门禁落成真实 blocking findings，避免"有产物但坏结果也放行"。
+  blocking_findings.extend(deterministic_gate_findings)
+  ```
+  ```python
+  # Stage content gate 只处理当前阶段自身内容；上游绑定验证单独走 deterministic validator。
+  ```
+- Error messages use Chinese in exception docstrings: `"""QROS review runtime 配置缺口，面向 CLI 输出可操作修复信息。"""`
+- Bilingual documentation: Chinese inline comments coexist with English code
 
-**Docstrings:**
-- Classes use one-line docstrings: `"""QROS review runtime configuration error, with actionable fix info."""`
-- Functions rarely have docstrings; the function name and type annotations serve as documentation
-- Test helper modules have module-level docstrings: `"""Shared stage fixture builders for CSF pipeline tests."""`
-- Dataclass fields rely on field names for documentation rather than docstrings
+**JSDoc/TSDoc:**
+- No docstrings on most functions; intent is conveyed through clear naming
+- Docstrings appear primarily on public helper functions and test classes: `"""Shared stage fixture builders for CSF pipeline tests."""`
 
 ## Function Design
 
-**Size:** Functions tend to be focused. The largest functions are orchestration functions like `run_stage_review()` (~280 lines) and `evaluate_stage()` that coordinate multiple steps. Helper functions are typically 10-30 lines.
+**Size:** Functions range from small helpers (5-20 lines) to large orchestrators (100+ lines). The `run_stage_review()` function in `runtime/tools/review_skillgen/review_engine.py` is ~320 lines, which is atypical; most functions are under 50 lines.
 
 **Parameters:**
-- Keyword-only arguments for public APIs using `*` separator: `def run_stage_review(*, cwd=None, ...)`
-- Path parameters accept `str | Path` and resolve internally: `stage_dir: str | Path`
-- Complex configuration passed as dicts loaded from YAML contracts
-- No default mutable arguments
+- Keyword-only arguments with `*` separator for functions with many parameters:
+  ```python
+  def run_stage_review(
+      *,
+      cwd: Path | None = None,
+      explicit_context: dict[str, Any] | None = None,
+      reviewer_identity: str | None = None,
+  ) -> dict[str, Any]:
+  ```
+- `Path | None` for optional path arguments, defaulting to `None`
+- Return type is almost always `dict[str, Any]` for runtime functions
 
 **Return Values:**
-- Functions return `dict[str, Any]` for structured data payloads
-- Builder functions return `Path` pointing to the created directory
-- Validation functions return `None` on success, raise on failure
-- Check functions return `list[str]` of findings (empty = pass)
+- Runtime functions return `dict[str, Any]` payloads (not typed dataclasses for most return values)
+- Dataclasses used for configuration/spec objects: `StageEvaluatorSpec`, `ReviewerRuntimeIdentity`
+- Boolean functions return plain `bool`
 
 ## Module Design
 
 **Exports:**
-- No explicit `__all__` declarations
-- Modules export public functions and classes by naming convention (no underscore prefix)
-- The `runtime/tools/review_skillgen/__init__.py` exists but is empty
+- No `__all__` exports; modules rely on `_` prefix convention for private functions
+- Public API is the set of non-underscore-prefixed functions
+- Entry points are in `runtime/bin/` (shell scripts) and `runtime/scripts/` (Python scripts)
 
 **Barrel Files:**
-- No barrel/index files used; consumers import directly from specific modules
-- `runtime/tools/review_skillgen/` is the only package (has `__init__.py`); all other modules are single files
+- `__init__.py` files are empty or minimal (just to mark packages)
+- No re-export barrel files; all imports use full paths
 
-**Module organization by domain:**
-- `runtime/tools/review_skillgen/` -- review protocol subsystem (18 files)
-- `runtime/tools/*_runtime.py` -- per-stage runtime logic
-- `runtime/tools/*_contract_runtime.py` -- per-stage contract validation
-- `runtime/scripts/` -- CLI entry points that call into `runtime/tools/`
+## Data Format Conventions
 
-## Data Patterns
+**YAML files:**
+- Written with `yaml.safe_dump(payload, sort_keys=False, allow_unicode=True)` for ordered, readable output
+- Read with `yaml.safe_load()`
+- Always specify `encoding="utf-8"` on read/write
 
-**Dataclasses:**
-- All dataclasses use `frozen=True` for immutability
-- Value objects: `StageEvaluatorSpec`, `CanonicalDecisionSnapshot`, `ReviewerRuntimeIdentity`
-- Configuration objects: `InstallTarget`, `RuntimeAsset`
-- Diagnostic objects: `FactorDiagnosticProfile`, `SignalDiagnosticProfile`
+**JSON files:**
+- Written with `json.dumps(payload, ensure_ascii=False, indent=2) + "\n"`
+- Read with `json.loads()`
 
-**Dictionaries as data:**
-- YAML contract schemas are loaded as `dict[str, Any]`
-- Gate configurations, checklist schemas, and artifact contracts flow through the system as dicts
-- Payload construction uses dict literals, not dataclasses
-- This is a deliberate choice: contracts are defined externally in YAML and consumed as dicts
+**Parquet files:**
+- Use `polars` in test fixtures: `pl.DataFrame(rows).write_parquet(path)`
+- Use `pyarrow` in runtime: `pq.read_table(path).to_pylist()`
 
-**Constants:**
-- Stage output requirements defined as frozen tuples: `DATA_READY_REQUIRED_OUTPUTS = (...)`
-- Lookup tables as frozen dicts: `STAGE_EVALUATOR_SPECS: dict[str, StageEvaluatorSpec]`
-- Allowed value sets as frozen sets: `ALLOWED_REVIEW_LOOP_OUTCOMES = {...}`
+## Path Conventions
 
-## Configuration File Patterns
-
-**YAML contracts (authoritative):**
-- `contracts/stages/workflow_stage_gates.yaml` -- stage gate definitions, required outputs, structural/metric checks
-- `contracts/review/review_checklist_master.yaml` -- review checklist per stage
-- `contracts/artifacts/*_artifacts.yaml` -- per-stage artifact contracts
-
-**pyproject.toml:**
-- Minimal configuration: project name, version, Python requirement, dependencies
-- pytest config section: `testpaths = ["tests"]`, `pythonpath = ["."]`
-
-**No environment files checked into VCS:** `.env` files are in `.gitignore`
-
-## Git Workflow Conventions
-
-**Branch strategy:**
-- `main` branch is the release branch
-- `dev` branch is active development
-- Feature branches used for changes (implied by PR workflow)
-
-**CI:**
-- Single GitHub Actions workflow: `.github/workflows/anti-drift.yml`
-- Runs on: pull requests, pushes to main, nightly cron (3 AM UTC), manual dispatch
-- Python 3.13 in CI
-- Installs dependencies via pip (not uv, despite lockfile)
-
-**Commit messages:**
-- Conventional commit style: `spec:`, `chore:`, `fix:` prefixes observed in recent history
-- Example: `spec: host-neutral review protocol design for Phase 3`, `chore: release 0.4.4`
-
-## File Encoding
-
-- All file I/O uses explicit `encoding="utf-8"`
-- YAML output uses `allow_unicode=True` for Chinese content support
-
-## Code Organization Within Files
-
-**Standard file layout (library modules):**
-1. `from __future__ import annotations`
-2. Standard library imports
-3. Third-party imports
-4. Local imports
-5. Module-level constants (ROOT, paths, allowed sets)
-6. Custom exception classes
-7. Private helper functions (`_` prefix)
-8. Public API functions
-
-**Standard file layout (CLI scripts):**
-1. Same import structure
-2. `argparse` setup
-3. Main function with business logic
-4. `if __name__ == "__main__":` entry point
+- All file paths use `pathlib.Path`, never string concatenation
+- `ROOT = Path(__file__).resolve().parents[N]` for repo-relative paths
+- `stage_dir / "author" / "formal"` for artifact directories
+- `stage_dir / "review" / "request"` and `stage_dir / "review" / "result"` for review protocol
+- `stage_dir / "review" / "closure"` for closure artifacts
+- Stage directories numbered: `00_idea_intake/`, `01_mandate/`, `02_data_ready/`, ... `07_holdout/`
+- CSF routes: `02_csf_data_ready/`, `03_csf_signal_ready/`, etc.
+- TSS routes: `02_tss_data_ready/`, `03_tss_signal_ready/`, etc.
 
 ---
 
-*Convention analysis: 2026-05-06*
+*Convention analysis: 2026-05-20*
