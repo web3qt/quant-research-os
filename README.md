@@ -1,13 +1,4 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.11+-blue?style=flat-square&logo=python" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-999-green?style=flat-square" alt="Tests 999">
-  <img src="https://img.shields.io/badge/version-0.4.11-blue?style=flat-square" alt="Version 0.4.11">
-  <img src="https://img.shields.io/badge/hosts-Codex%20%7C%20Claude%20Code-purple?style=flat-square" alt="Hosts">
-  <img src="https://img.shields.io/badge/stage%20keys-20-blueviolet?style=flat-square" alt="20 Stage Keys">
-  <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License MIT">
-</p>
-
-<h1 align="center">🧭 QROS</h1>
+<h1 align="center">QROS</h1>
 
 <p align="center"><b>量化研究治理操作系统</b> — 把研究想法推进成可审查、可复现、可追溯的 research lineage。</p>
 
@@ -22,28 +13,28 @@
 
 ---
 
-> 💡 **一句话定位**：QROS 不替你发明 alpha，也不替某条研究线保存策略代码；它负责把研究过程里的 freeze、review、formal artifacts、failure routing 和 provenance 固定下来。
+> **一句话定位**：QROS 不替你发明 alpha，也不替某条研究线保存策略代码；它负责把研究过程里的 freeze、review、formal artifacts、failure routing 和 provenance 固定下来。
 
 <br>
 
-## 📌 为什么需要
+## 为什么需要
 
 Agent 已经能写代码、跑回测、生成报告。但量化研究的核心风险不在执行，在治理：
 
 <p align="center">
 <table>
-<tr><td align="center">🎯</td><td><b>阶段门禁</b></td><td>每个阶段的输入、输出、冻结和审查都有 formal contract，不能跳过</td></tr>
-<tr><td align="center">📋</td><td><b>独立审查</b></td><td>写代码的 author 不能当自己的 reviewer，adversarial reviewer 必须独立</td></tr>
-<tr><td align="center">⚖️</td><td><b>产物真值</b></td><td>空目录、placeholder 文件和合同说明文档不算阶段完成</td></tr>
-<tr><td align="center">♻️</td><td><b>失败处置</b></td><td>review 失败不是 debug，有专门的 failure routing、rollback 和 child lineage 路径</td></tr>
+<tr><td><b>阶段门禁</b></td><td>每个阶段的输入、输出、冻结和审查都有 formal contract，不能跳过</td></tr>
+<tr><td><b>独立审查</b></td><td>写代码的 author 不能当自己的 reviewer，adversarial reviewer 必须独立</td></tr>
+<tr><td><b>产物真值</b></td><td>空目录、placeholder 文件和合同说明文档不算阶段完成</td></tr>
+<tr><td><b>失败处置</b></td><td>review 失败不是 debug，有专门的 failure routing、rollback 和 child lineage 路径</td></tr>
 </table>
 </p>
 
-> ⚠️ QROS 是 **框架仓**，不是策略实现仓。真实研究程序和正式研究产物应写在 active research repo 的 `outputs/<lineage_id>/` 下。
+> QROS 是 **框架仓**，不是策略实现仓。真实研究程序和正式研究产物应写在 active research repo 的 `outputs/<lineage_id>/` 下。
 
 <br>
 
-## 🧱 项目设计原理
+## 项目设计原理
 
 QROS 的核心设计不是“多写几份报告”，而是把量化研究中最容易漂移的判断点，拆成可冻结、可复建、可审查的机器合同。
 
@@ -63,7 +54,7 @@ QROS 的核心设计不是“多写几份报告”，而是把量化研究中最
 
 <br>
 
-## 🚀 Quick Start
+## Quick Start
 
 <table>
 <tr>
@@ -126,7 +117,7 @@ $qros-update
 
 <br>
 
-## 🗺️ 主流程
+## 主流程
 
 `qros-research-session` 是统一入口，推进到 `holdout_validation review` closure 为止。
 
@@ -151,7 +142,7 @@ $qros-update
 
 <br>
 
-## 🏗️ 仓库地图
+## 仓库地图
 
 ```
                     contracts/  ← machine-readable truth
@@ -180,13 +171,13 @@ $qros-update
 
 <br>
 
-## 🛡️ Review 规则
+## Review 规则
 
 <table>
 <tr>
-<td width="33%" align="center"><b>🔒 独立审查</b></td>
-<td width="33%" align="center"><b>📋 Formal Gate</b></td>
-<td width="33%" align="center"><b>🚫 失败处置</b></td>
+<td width="33%" align="center"><b>独立审查</b></td>
+<td width="33%" align="center"><b>Formal Gate</b></td>
+<td width="33%" align="center"><b>失败处置</b></td>
 </tr>
 <tr>
 <td>每个 review 阶段要求<br>独立 adversarial reviewer<br>author 不能自审</td>
@@ -197,7 +188,7 @@ $qros-update
 
 <br>
 
-## 🖥️ 支持的宿主
+## 支持的宿主
 
 当前 README 校验环境：
 
@@ -249,13 +240,13 @@ spawn_agent (fork_context=false)
 
 <br>
 
-## ✅ 质量体系
+## 质量体系
 
 <table>
 <tr>
-<td width="33%" align="center"><b>🧪 测试</b></td>
-<td width="33%" align="center"><b>🔍 Anti-Drift</b></td>
-<td width="33%" align="center"><b>📊 Verification</b></td>
+<td width="33%" align="center"><b>测试</b></td>
+<td width="33%" align="center"><b>Anti-Drift</b></td>
+<td width="33%" align="center"><b>Verification</b></td>
 </tr>
 <tr>
 <td>999 条 pytest collected tests<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
@@ -266,19 +257,19 @@ spawn_agent (fork_context=false)
 
 <br>
 
-## 📚 常用文档
+## 常用文档
 
 | 想了解 | 去哪里 |
 |------|------|
-| 📖 文档导航 | [docs/README.md](docs/README.md) |
-| 🚀 安装说明 | [docs/guides/installation.md](docs/guides/installation.md) |
-| ⚡ Quick Start | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
-| 📋 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
-| 🔍 Review 约束地图 | [docs/guides/qros-review-constraint-map.md](docs/guides/qros-review-constraint-map.md) |
-| 📊 CSF 因子诊断 | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
-| 📈 TSS 信号诊断 | [docs/guides/qros-signal-diagnostics.md](docs/guides/qros-signal-diagnostics.md) |
-| 🔧 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
-| 📋 Release Notes | [RELEASE_NOTES.md](RELEASE_NOTES.md) |
+| 文档导航 | [docs/README.md](docs/README.md) |
+| 安装说明 | [docs/guides/installation.md](docs/guides/installation.md) |
+| Quick Start | [docs/guides/quickstart-codex.md](docs/guides/quickstart-codex.md) |
+| 统一研究会话说明 | [docs/guides/qros-research-session-usage.md](docs/guides/qros-research-session-usage.md) |
+| Review 约束地图 | [docs/guides/qros-review-constraint-map.md](docs/guides/qros-review-constraint-map.md) |
+| CSF 因子诊断 | [docs/guides/qros-factor-diagnostics.md](docs/guides/qros-factor-diagnostics.md) |
+| TSS 信号诊断 | [docs/guides/qros-signal-diagnostics.md](docs/guides/qros-signal-diagnostics.md) |
+| 阶段冻结字段说明 | [docs/guides/stage-freeze-group-field-guide.md](docs/guides/stage-freeze-group-field-guide.md) |
+| Release Notes | [RELEASE_NOTES.md](RELEASE_NOTES.md) |
 
 <br>
 
