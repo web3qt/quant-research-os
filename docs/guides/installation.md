@@ -273,7 +273,7 @@ test -d ./.qros
 | 开始或继续一条研究线 | `qros-research-session 帮我研究这个想法：BTC 领动高流动性 ALT` |
 | 查看 QROS 使用帮助 | `qros-research-session help` |
 | 查看当前研究进度 | `qros-progress` |
-| 更新 QROS 到远程最新版本，并刷新当前 host + 当前 repo 的 `./.qros/` | `qros-update` |
+| 更新 QROS 到最新稳定版本，并刷新当前 host + 当前 repo 的 `./.qros/` | `qros-update` |
 
 > 推荐用户路径是 skill-first。源码克隆只是 authored source；`user-global` 让 Codex 看见已安装 skills，`repo-local` 让当前 research repo 拥有自己的 runtime。
 

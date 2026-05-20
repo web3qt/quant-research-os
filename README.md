@@ -118,6 +118,8 @@ $qros-update
 
 `qros-update` 是 Codex 和 Claude Code 的统一更新入口。用户只需要在 active research repo 根目录输入 `qros-update`；它会自动识别当前 host，刷新全局 QROS 安装，并重建当前 repo 的 `./.qros/` runtime。
 
+默认路径会更新到最新稳定版本；如果你是框架开发者并且需要跟踪未发布主干，使用 `qros-update main`。
+
 </td>
 </tr>
 </table>

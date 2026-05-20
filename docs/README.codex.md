@@ -39,7 +39,7 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 | 查看当前研究进度 | `$qros-progress` |
 | 查看横截面因子阶段质量诊断 | `$qros-factor-diagnostics` |
 | 查看时序信号阶段质量诊断 | `$qros-signal-diagnostics` |
-| 更新 QROS 到远程最新版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
+| 更新 QROS 到最新稳定版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
 | 高级/debug 手动进入某阶段 review | `$qros-mandate-review` |
 
 因子 diagnostics 通常在 Codex 里直接问，例如：
