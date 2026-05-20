@@ -41,8 +41,8 @@
 - 由人显式发起
 - 进入时先向 runtime 注册 active review cycle
 - 只允许 review scope 内读写
-- reviewer 只写 `reviewer_findings.raw.yaml`
-- deterministic closer 负责 canonical result / audit / closure
+- reviewer 只写 `review/final_review.yaml`
+- runtime/session 负责 final review projection / audit / closure
 
 ### Runtime
 

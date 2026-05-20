@@ -22,16 +22,22 @@ def test_generator_dry_run_reports_fresh_outputs() -> None:
     assert "qros-mandate-review" in result.stdout
     assert "qros-data-ready-review" in result.stdout
     assert "qros-csf-data-ready-review" in result.stdout
+    assert "qros-tss-data-ready-review" in result.stdout
     assert "qros-signal-ready-review" in result.stdout
     assert "qros-csf-signal-ready-review" in result.stdout
+    assert "qros-tss-signal-ready-review" in result.stdout
     assert "qros-train-freeze-review" in result.stdout
     assert "qros-csf-train-freeze-review" in result.stdout
+    assert "qros-tss-train-freeze-review" in result.stdout
     assert "qros-test-evidence-review" in result.stdout
     assert "qros-csf-test-evidence-review" in result.stdout
+    assert "qros-tss-test-evidence-review" in result.stdout
     assert "qros-backtest-ready-review" in result.stdout
     assert "qros-csf-backtest-ready-review" in result.stdout
+    assert "qros-tss-backtest-ready-review" in result.stdout
     assert "qros-holdout-validation-review" in result.stdout
     assert "qros-csf-holdout-validation-review" in result.stdout
+    assert "qros-tss-holdout-validation-review" in result.stdout
     assert "STALE:" not in result.stdout
 
 
@@ -91,6 +97,8 @@ def test_generated_review_skill_points_to_stage_contract_context_instead_of_inli
 
     assert "stage_contract_context.yaml" in content
     assert "stage_contract_context.md" in content
+    assert "review/final_review.yaml" in content
+    assert "reviewer_findings.raw.yaml" not in content
     assert "qros-review-cycle prepare" in content
     assert "## 正式门禁" not in content
     assert "## 审查清单" not in content

@@ -66,6 +66,8 @@ def _init_origin_repo(tmp_path: Path) -> tuple[Path, Path]:
     _git(["init", "--bare", str(origin_repo)], cwd=tmp_path)
     _git(["remote", "add", "origin", str(origin_repo)], cwd=source_repo)
     _git(["push", "-u", "origin", "main"], cwd=source_repo)
+    _git(["tag", "v0.1.0"], cwd=source_repo)
+    _git(["push", "origin", "v0.1.0"], cwd=source_repo)
     return source_repo, origin_repo
 
 

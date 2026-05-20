@@ -147,6 +147,11 @@ def build_manifest(
     installed_runtime_files: list[str],
     runtime_env: RuntimeEnvMetadata | None = None,
     host: str = "codex",
+    update_channel: str | None = None,
+    requested_ref: str | None = None,
+    resolved_ref_type: str | None = None,
+    resolved_git_ref: str | None = None,
+    resolved_git_tag: str | None = None,
 ) -> dict[str, object]:
     git_status_short = _git_status_short(repo_root)
     manifest: dict[str, object] = {
@@ -175,6 +180,16 @@ def build_manifest(
                 "runtime_lock_digest": runtime_env.lock_digest,
             }
         )
+    if update_channel is not None:
+        manifest["update_channel"] = update_channel
+    if requested_ref is not None:
+        manifest["requested_ref"] = requested_ref
+    if resolved_ref_type is not None:
+        manifest["resolved_ref_type"] = resolved_ref_type
+    if resolved_git_ref is not None:
+        manifest["resolved_git_ref"] = resolved_git_ref
+    if resolved_git_tag is not None:
+        manifest["resolved_git_tag"] = resolved_git_tag
     return manifest
 
 
@@ -184,6 +199,11 @@ def install_qros(
     home: Path,
     mode: str,
     host: str = "codex",
+    update_channel: str | None = None,
+    requested_ref: str | None = None,
+    resolved_ref_type: str | None = None,
+    resolved_git_ref: str | None = None,
+    resolved_git_tag: str | None = None,
 ) -> InstallResult:
     _validate_host(host)
     repo_root = repo_root.resolve()
@@ -207,6 +227,11 @@ def install_qros(
             runtime_assets=runtime_assets,
             installed_skills=skills_written,
             host=host,
+            update_channel=update_channel,
+            requested_ref=requested_ref,
+            resolved_ref_type=resolved_ref_type,
+            resolved_git_ref=resolved_git_ref,
+            resolved_git_tag=resolved_git_tag,
         )
         return InstallResult(
             mode=target.mode,
@@ -226,6 +251,11 @@ def install_qros(
         installed_runtime_files=sorted(runtime_written),
         runtime_env=runtime_env,
         host=host,
+        update_channel=update_channel,
+        requested_ref=requested_ref,
+        resolved_ref_type=resolved_ref_type,
+        resolved_git_ref=resolved_git_ref,
+        resolved_git_tag=resolved_git_tag,
     )
     target.manifest_path.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
@@ -247,6 +277,11 @@ def _install_repo_local_runtime(
     runtime_assets: list[RuntimeAsset],
     installed_skills: list[str],
     host: str,
+    update_channel: str | None,
+    requested_ref: str | None,
+    resolved_ref_type: str | None,
+    resolved_git_ref: str | None,
+    resolved_git_tag: str | None,
 ) -> list[str]:
     target.runtime_root.parent.mkdir(parents=True, exist_ok=True)
     staging_root = Path(
@@ -287,6 +322,11 @@ def _install_repo_local_runtime(
             installed_runtime_files=sorted(runtime_written),
             runtime_env=runtime_env,
             host=host,
+            update_channel=update_channel,
+            requested_ref=requested_ref,
+            resolved_ref_type=resolved_ref_type,
+            resolved_git_ref=resolved_git_ref,
+            resolved_git_tag=resolved_git_tag,
         )
         staging_target.manifest_path.write_text(
             json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",

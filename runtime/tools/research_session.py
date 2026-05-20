@@ -5,10 +5,16 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 
+from runtime.tools.author_context_runtime import (
+    STAGE_AUTHOR_CONTEXT_MD_FILENAME,
+    STAGE_AUTHOR_CONTEXT_YAML_FILENAME,
+    build_stage_author_context,
+    render_stage_author_context_markdown,
+)
 from runtime.tools.lineage_lock_ledger import (
     FROZEN_ARTIFACT_MUTATED,
     FrozenArtifactMutationError,
@@ -649,6 +655,133 @@ BACKTEST_READY_TRANSITION_APPROVAL_FILE = "backtest_ready_transition_approval.ya
 HOLDOUT_VALIDATION_TRANSITION_APPROVAL_FILE = "holdout_validation_transition_approval.yaml"
 REVIEW_TRANSITION_APPROVAL_FILE = "review_transition_approval.yaml"
 NEXT_STAGE_TRANSITION_APPROVAL_FILE = "next_stage_transition_approval.yaml"
+
+_AUTHOR_STAGE_DIR_BY_STAGE_ID = {
+    "idea_intake": "00_idea_intake",
+    "mandate": "01_mandate",
+    "data_ready": "02_data_ready",
+    "signal_ready": "03_signal_ready",
+    "train_freeze": "04_train_freeze",
+    "test_evidence": "05_test_evidence",
+    "backtest_ready": "06_backtest",
+    "holdout_validation": "07_holdout",
+    "csf_data_ready": "02_csf_data_ready",
+    "csf_signal_ready": "03_csf_signal_ready",
+    "csf_train_freeze": "04_csf_train_freeze",
+    "csf_test_evidence": "05_csf_test_evidence",
+    "csf_backtest_ready": "06_csf_backtest_ready",
+    "csf_holdout_validation": "07_csf_holdout_validation",
+    "tss_data_ready": "02_tss_data_ready",
+    "tss_signal_ready": "03_tss_signal_ready",
+    "tss_train_freeze": "04_tss_train_freeze",
+    "tss_test_evidence": "05_tss_test_evidence",
+    "tss_backtest_ready": "06_tss_backtest_ready",
+    "tss_holdout_validation": "07_tss_holdout_validation",
+}
+
+
+def _stage_id_from_author_session_stage(current_stage: SessionStage) -> str:
+    if current_stage.endswith("_confirmation_pending"):
+        return current_stage.removesuffix("_confirmation_pending")
+    if current_stage.endswith("_author"):
+        return current_stage.removesuffix("_author")
+    if current_stage == "idea_intake":
+        return "idea_intake"
+    raise ValueError(f"unsupported author session stage: {current_stage}")
+
+
+def _route_for_author_stage(stage_id: str) -> str:
+    if stage_id.startswith("csf_"):
+        return "cross_sectional_factor"
+    if stage_id.startswith("tss_"):
+        return "time_series_signal"
+    if stage_id in {
+        "data_ready",
+        "signal_ready",
+        "train_freeze",
+        "test_evidence",
+        "backtest_ready",
+        "holdout_validation",
+    }:
+        return "time_series_signal"
+    return "route_neutral"
+
+
+def _stage_dir_name_for_stage_id(stage_id: str) -> str:
+    try:
+        return _AUTHOR_STAGE_DIR_BY_STAGE_ID[stage_id]
+    except KeyError as exc:
+        raise ValueError(f"missing stage dir mapping for author context stage {stage_id}") from exc
+
+
+def _author_context_for_current_stage(
+    *,
+    lineage_id: str,
+    current_stage: SessionStage,
+    lineage_root: Path,
+) -> dict[str, Any]:
+    stage_id = _stage_id_from_author_session_stage(current_stage)
+    return build_stage_author_context(
+        stage_id=stage_id,
+        current_stage=current_stage,
+        lineage_id=lineage_id,
+        route=_route_for_author_stage(stage_id),
+        review_cycle_stage_dir=lineage_root / _stage_dir_name_for_stage_id(stage_id),
+    )
+
+
+def _author_context_dir_for_stage(lineage_root: Path, current_stage: SessionStage) -> Path:
+    stage_id = _stage_id_from_author_session_stage(current_stage)
+    return lineage_root / _stage_dir_name_for_stage_id(stage_id) / "author" / "context"
+
+
+def _write_stage_author_context_for_current_stage(
+    *,
+    lineage_id: str,
+    current_stage: SessionStage,
+    lineage_root: Path,
+) -> dict[str, str]:
+    context_dir = _author_context_dir_for_stage(lineage_root, current_stage)
+    context_dir.mkdir(parents=True, exist_ok=True)
+    payload = _author_context_for_current_stage(
+        lineage_id=lineage_id,
+        current_stage=current_stage,
+        lineage_root=lineage_root,
+    )
+    yaml_path = context_dir / STAGE_AUTHOR_CONTEXT_YAML_FILENAME
+    md_path = context_dir / STAGE_AUTHOR_CONTEXT_MD_FILENAME
+    yaml_text = yaml.safe_dump(payload, sort_keys=False, allow_unicode=True)
+    md_text = render_stage_author_context_markdown(payload)
+    if not yaml_path.exists() or yaml_path.read_text(encoding="utf-8") != yaml_text:
+        yaml_path.write_text(yaml_text, encoding="utf-8")
+    if not md_path.exists() or md_path.read_text(encoding="utf-8") != md_text:
+        md_path.write_text(md_text, encoding="utf-8")
+    return {
+        "yaml_path": str(yaml_path.relative_to(lineage_root)),
+        "md_path": str(md_path.relative_to(lineage_root)),
+    }
+
+
+def _next_author_action_from_context(
+    context: dict[str, Any],
+    *,
+    unresolved_groups: list[str],
+    all_groups_confirmed: bool,
+    final_confirmation_complete: bool,
+) -> dict[str, Any]:
+    if unresolved_groups:
+        return {"kind": "resolve_next_freeze_group", "group_id": unresolved_groups[0]}
+    if all_groups_confirmed and not final_confirmation_complete:
+        return {"kind": "request_final_author_confirmation"}
+    return {"kind": "build_and_validate"}
+
+
+def _is_author_context_stage(current_stage: SessionStage) -> bool:
+    if current_stage == "idea_intake":
+        return True
+    if current_stage.endswith("_review_confirmation_pending") or current_stage.endswith("_next_stage_confirmation_pending"):
+        return False
+    return current_stage.endswith("_confirmation_pending") or current_stage.endswith("_author")
 
 
 def _scaffold_tss_stage(
@@ -2465,6 +2598,76 @@ def validate_freeze_groups_for_stage_transition(
         return
     _, _, group_order, _ = spec
     validate_confirmed_freeze_groups(_freeze_draft_path(lineage_root, current_stage), group_order)
+
+
+_AUTHOR_GATE_SPECS: dict[str, tuple[Any, str, str]] = {
+    "mandate": (next_mandate_freeze_group, "CONFIRM_MANDATE", "GO_TO_MANDATE"),
+    "data_ready": (next_data_ready_freeze_group, "CONFIRM_DATA_READY", "GO_TO_DATA_READY"),
+    "csf_data_ready": (next_csf_data_ready_freeze_group, "CONFIRM_DATA_READY", "GO_TO_CSF_DATA_READY"),
+    "tss_data_ready": (next_tss_data_ready_freeze_group, "CONFIRM_DATA_READY", "GO_TO_TSS_DATA_READY"),
+    "signal_ready": (next_signal_ready_freeze_group, "CONFIRM_SIGNAL_READY", "GO_TO_SIGNAL_READY"),
+    "csf_signal_ready": (next_csf_signal_ready_freeze_group, "CONFIRM_SIGNAL_READY", "GO_TO_CSF_SIGNAL_READY"),
+    "tss_signal_ready": (next_tss_signal_ready_freeze_group, "CONFIRM_SIGNAL_READY", "GO_TO_TSS_SIGNAL_READY"),
+    "train_freeze": (next_train_freeze_group, "CONFIRM_TRAIN_FREEZE", "GO_TO_TRAIN_FREEZE"),
+    "csf_train_freeze": (next_csf_train_freeze_group, "CONFIRM_TRAIN_FREEZE", "GO_TO_CSF_TRAIN_FREEZE"),
+    "tss_train_freeze": (next_tss_train_freeze_group, "CONFIRM_TRAIN_FREEZE", "GO_TO_TSS_TRAIN_FREEZE"),
+    "test_evidence": (next_test_evidence_group, "CONFIRM_TEST_EVIDENCE", "GO_TO_TEST_EVIDENCE"),
+    "csf_test_evidence": (next_csf_test_evidence_group, "CONFIRM_TEST_EVIDENCE", "GO_TO_CSF_TEST_EVIDENCE"),
+    "tss_test_evidence": (next_tss_test_evidence_group, "CONFIRM_TEST_EVIDENCE", "GO_TO_TSS_TEST_EVIDENCE"),
+    "backtest_ready": (next_backtest_ready_group, "CONFIRM_BACKTEST_READY", "GO_TO_BACKTEST_READY"),
+    "csf_backtest_ready": (next_csf_backtest_ready_group, "CONFIRM_BACKTEST_READY", "GO_TO_CSF_BACKTEST_READY"),
+    "tss_backtest_ready": (next_tss_backtest_ready_group, "CONFIRM_BACKTEST_READY", "GO_TO_TSS_BACKTEST_READY"),
+    "holdout_validation": (next_holdout_validation_group, "CONFIRM_HOLDOUT_VALIDATION", "GO_TO_HOLDOUT_VALIDATION"),
+    "csf_holdout_validation": (
+        next_csf_holdout_validation_group,
+        "CONFIRM_HOLDOUT_VALIDATION",
+        "GO_TO_CSF_HOLDOUT_VALIDATION",
+    ),
+    "tss_holdout_validation": (
+        next_tss_holdout_validation_group,
+        "CONFIRM_HOLDOUT_VALIDATION",
+        "GO_TO_TSS_HOLDOUT_VALIDATION",
+    ),
+}
+
+
+def _author_gate_status_from_context(
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> tuple[str, str] | None:
+    if not _is_author_context_stage(current_stage):
+        return None
+    _write_stage_author_context_for_current_stage(
+        lineage_id=lineage_root.name,
+        current_stage=current_stage,
+        lineage_root=lineage_root,
+    )
+    if current_stage == "idea_intake":
+        return None
+    stage_id = _stage_id_from_author_session_stage(current_stage)
+    spec = _AUTHOR_GATE_SPECS.get(stage_id)
+    if spec is None:
+        return None
+    next_group_fn, confirm_value, code_prefix = spec
+    context = _author_context_for_current_stage(
+        lineage_id=lineage_root.name,
+        current_stage=current_stage,
+        lineage_root=lineage_root,
+    )
+    if current_stage == f"{stage_id}_confirmation_pending":
+        next_group = next_group_fn(lineage_root)
+        action = _next_author_action_from_context(
+            context,
+            unresolved_groups=[next_group] if next_group is not None else [],
+            all_groups_confirmed=next_group is None,
+            final_confirmation_complete=False,
+        )
+        if action["kind"] == "resolve_next_freeze_group":
+            return f"{code_prefix}_PENDING_CONFIRMATION", _all_freeze_groups_next_action(stage_id)
+        return f"{code_prefix}_PENDING_CONFIRMATION", _confirmation_next_action(confirm_value)
+    if current_stage == f"{stage_id}_author":
+        return f"{code_prefix}_CONFIRMED", f"Freeze {stage_id} artifacts"
+    return None
 
 
 def _all_freeze_groups_next_action(stage_label: str) -> str:
@@ -4757,6 +4960,10 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
 
     if current_stage.endswith("_next_stage_confirmation_pending"):
         return _next_stage_gate_status_and_next_action(lineage_root, current_stage)
+
+    author_gate_status = _author_gate_status_from_context(lineage_root, current_stage)
+    if author_gate_status is not None:
+        return author_gate_status
 
     if current_stage == "idea_intake_confirmation_pending":
         decision = read_idea_intake_transition_decision(lineage_root)

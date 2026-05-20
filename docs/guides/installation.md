@@ -62,7 +62,7 @@ Claude Code 通过 `.claude-plugin/` 目录提供完整的 QROS skill discovery 
 - `.claude-plugin/agents/qros-reviewer.md` 定义了独立的 adversarial reviewer agent，确保 reviewer 与 author 身份隔离
 - review skill template 已支持 host-agnostic 生成：`{{HOST_SPAWN_TOOL}}` 在 Codex 下为 `spawn_agent`，在 Claude Code 下为通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task
 - review skill 生成器支持 `--host claude-code`，将 skills 写入 `.claude-plugin/skills/`
-- `qros-review-cycle prepare` 已支持 `--host claude-code`，自动生成对应的 reviewer handoff prompt 和 closer command
+- `qros-review-cycle prepare` 已支持 `--host claude-code`，自动生成对应的 reviewer handoff prompt
 
 ---
 
@@ -94,7 +94,7 @@ Claude Code 用户更新 QROS runtime 时，普通路径也是在 active researc
 qros-update
 ```
 
-`qros-update` 默认会自动识别当前 host。识别顺序是：新版 wrapper 的显式 `--host`、`QROS_HOST`、当前 agent 环境变量、当前 repo 的 `./.qros/install-manifest.json.host`，最后 fallback 到 Codex。识别为 Claude Code 时，它会刷新 `~/.claude/skills/` / `~/.claude/qros/`，并刷新当前 repo 的 `./.qros/` runtime。
+`qros-update` 默认会自动识别当前 host，并更新到最新稳定版本。识别顺序是：新版 wrapper 的显式 `--host`、`QROS_HOST`、当前 agent 环境变量、当前 repo 的 `./.qros/install-manifest.json.host`，最后 fallback 到 Codex。识别为 Claude Code 时，它会刷新 `~/.claude/skills/` / `~/.claude/qros/`，并刷新当前 repo 的 `./.qros/` runtime。
 
 如果需要从 source checkout 直接调用，等价 backend 命令是：
 
@@ -203,13 +203,19 @@ Repo-local `./.qros/bin/qros-*` wrappers 会在运行 session、review、validat
 
 更新会就地刷新已克隆的 QROS 源码仓。
 
-不管你在 Codex 还是 Claude Code 里，推荐输入：
+不管你在 Codex 还是 Claude Code 里，普通用户推荐输入：
 
 ```text
 qros-update
 ```
 
-它会自动识别当前 host，并同时刷新匹配 host 的全局安装和当前 repo 的 `./.qros/` runtime。
+它会自动识别当前 host，并同时刷新匹配 host 的全局安装和当前 repo 的 `./.qros/` runtime，默认跟踪最新稳定版本。
+
+如果你是框架开发者，需要显式跟踪未发布主干：
+
+```text
+qros-update main
+```
 
 请从 active research repo 根目录运行 `qros-update`，这样它会刷新全局 skills，同时刷新该 repo 的 `./.qros/`。
 

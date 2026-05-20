@@ -58,6 +58,21 @@ def test_install_docs_describe_research_repo_first_fetch_flow() -> None:
     assert "--host codex` and `--host claude-code` are manual recovery/debug overrides" in update_skill
 
 
+def test_install_docs_describe_stable_default_and_main_developer_path() -> None:
+    combined = "\n".join(
+        [
+            Path(".codex/INSTALL.md").read_text(encoding="utf-8"),
+            Path(".claude/INSTALL.md").read_text(encoding="utf-8"),
+            Path("docs/guides/installation.md").read_text(encoding="utf-8"),
+            Path("docs/README.codex.md").read_text(encoding="utf-8"),
+            Path("skills/core/qros-update/SKILL.md").read_text(encoding="utf-8"),
+        ]
+    )
+
+    assert "latest stable" in combined or "最新稳定版本" in combined
+    assert "qros-update main" in combined
+
+
 def test_install_docs_describe_uv_python312_repo_local_runtime() -> None:
     installation = Path("docs/guides/installation.md").read_text(encoding="utf-8")
 
@@ -146,3 +161,11 @@ def test_review_protocol_documents_fail_closed_boundaries() -> None:
     assert "recommended_next_action" in combined
     assert "stage_contract_context.yaml" in csf_review_skill
     assert "stage_contract_context.md" in csf_review_skill
+
+
+def test_qros_research_session_usage_documents_stage_author_context() -> None:
+    content = Path("docs/guides/qros-research-session-usage.md").read_text(encoding="utf-8")
+    assert "stage_author_context.yaml" in content
+    assert "stage_author_context.md" in content
+    assert "author truth entrypoint" in content
+    assert "author orchestration" in content

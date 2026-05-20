@@ -11,7 +11,13 @@ import pytest
 
 import runtime.tools.install_runtime as install_runtime
 from tests.helpers.repo_paths import REPO_ROOT
-from runtime.tools.update_runtime import resolve_source_repo, resolve_update_host, run_qros_update
+from runtime.tools.update_runtime import (
+    UpdateError,
+    resolve_source_repo,
+    resolve_update_host,
+    run_qros_update,
+)
+from runtime.scripts.run_qros_update import _parse_args
 from runtime.tools.uv_runtime_env import RuntimeEnvMetadata
 
 
@@ -164,6 +170,8 @@ def _init_origin_repo(tmp_path: Path) -> tuple[Path, Path]:
     _git(["init", "--bare", str(origin_repo)], cwd=tmp_path)
     _git(["remote", "add", "origin", str(origin_repo)], cwd=source_repo)
     _git(["push", "-u", "origin", "main"], cwd=source_repo)
+    _git(["tag", "v0.1.0"], cwd=source_repo)
+    _git(["push", "origin", "v0.1.0"], cwd=source_repo)
     return source_repo, origin_repo
 
 
@@ -269,6 +277,65 @@ def test_resolve_update_host_detects_codex_runtime_environment(tmp_path: Path) -
     ) == "codex"
 
 
+def test_resolve_update_target_defaults_to_stable() -> None:
+    from runtime.tools.update_runtime import resolve_update_target
+
+    resolved = resolve_update_target(
+        target=None,
+        available_tags=["v0.9.0", "v1.0.0-rc1", "v1.2.3", "v1.3.0-beta.2", "v1.10.0"],
+    )
+
+    assert resolved.mode == "stable"
+    assert resolved.requested_ref is None
+    assert resolved.resolved_git_ref == "refs/tags/v1.10.0"
+    assert resolved.resolved_git_tag == "v1.10.0"
+
+
+def test_resolve_update_target_supports_main_tag_and_sha() -> None:
+    from runtime.tools.update_runtime import resolve_update_target
+
+    resolved_main = resolve_update_target(target="main", available_tags=["v1.2.3"])
+    resolved_tag = resolve_update_target(target="v1.2.3", available_tags=["v1.2.3"])
+    resolved_ref = resolve_update_target(target="a1b2c3d4e5f6", available_tags=["v1.2.3"])
+
+    assert resolved_main.mode == "main"
+    assert resolved_main.requested_ref == "main"
+    assert resolved_main.resolved_git_ref == "origin/main"
+    assert resolved_main.resolved_git_tag is None
+
+    assert resolved_tag.mode == "tag"
+    assert resolved_tag.requested_ref == "v1.2.3"
+    assert resolved_tag.resolved_git_ref == "refs/tags/v1.2.3"
+    assert resolved_tag.resolved_git_tag == "v1.2.3"
+
+    assert resolved_ref.mode == "ref"
+    assert resolved_ref.requested_ref == "a1b2c3d4e5f6"
+    assert resolved_ref.resolved_git_ref == "a1b2c3d4e5f6"
+    assert resolved_ref.resolved_git_tag is None
+
+
+def test_resolve_update_target_rejects_unknown_target() -> None:
+    from runtime.tools.update_runtime import resolve_update_target
+
+    with pytest.raises(UpdateError, match="unknown update target"):
+        resolve_update_target(target="release-candidate", available_tags=["v1.2.3"])
+
+
+def test_resolve_update_target_fails_when_no_stable_tag_exists() -> None:
+    from runtime.tools.update_runtime import resolve_update_target
+
+    with pytest.raises(UpdateError, match="no stable semver tag available"):
+        resolve_update_target(target=None, available_tags=["v1.0.0-rc1", "nightly", "beta"])
+
+
+def test_parse_args_sets_target_and_keeps_legacy_branch_optional(monkeypatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["run_qros_update.py", "main"])
+    args = _parse_args()
+
+    assert args.target == "main"
+    assert args.branch is None
+
+
 def test_run_qros_update_refreshes_user_global_and_repo_local(tmp_path: Path, monkeypatch) -> None:
     _, origin_repo = _init_origin_repo(tmp_path)
     managed_repo = tmp_path / "managed-repo"
@@ -286,6 +353,7 @@ def test_run_qros_update_refreshes_user_global_and_repo_local(tmp_path: Path, mo
         explicit_source_repo=managed_repo,
         repo_root_fallback=managed_repo,
         repo_url=str(origin_repo),
+        target=None,
         environ={},
     )
 
@@ -319,6 +387,7 @@ def test_run_qros_update_auto_host_uses_repo_local_manifest(tmp_path: Path, monk
         explicit_source_repo=managed_repo,
         repo_root_fallback=managed_repo,
         repo_url=str(origin_repo),
+        target=None,
         environ={},
     )
 
@@ -362,11 +431,90 @@ def test_run_qros_update_self_heals_dirty_managed_repo(tmp_path: Path, monkeypat
         explicit_source_repo=managed_repo,
         repo_root_fallback=managed_repo,
         repo_url=str(origin_repo),
+        target="main",
     )
 
     assert result.source_git_commit == expected_head
     assert _git(["rev-parse", "HEAD"], cwd=managed_repo) == expected_head
     assert _git(["status", "--short"], cwd=managed_repo) == ""
+
+
+def test_run_qros_update_defaults_to_latest_stable_tag(tmp_path: Path, monkeypatch) -> None:
+    source_repo, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    env = os.environ.copy()
+    env["GIT_AUTHOR_NAME"] = "QROS Test"
+    env["GIT_AUTHOR_EMAIL"] = "qros-test@example.com"
+    env["GIT_COMMITTER_NAME"] = "QROS Test"
+    env["GIT_COMMITTER_EMAIL"] = "qros-test@example.com"
+    (source_repo / "README.md").write_text("stable release\n", encoding="utf-8")
+    _git(["add", "README.md"], cwd=source_repo, env=env)
+    _git(["commit", "-m", "release prep"], cwd=source_repo, env=env)
+    _git(["tag", "v0.1.1"], cwd=source_repo)
+    _git(["push", "origin", "main", "v0.1.1"], cwd=source_repo)
+    expected_commit = _git(["rev-list", "-n", "1", "v0.1.1"], cwd=source_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    manifest_path = home_root / ".codex" / "qros" / "install-manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps({"source_repo_path": str(managed_repo)}), encoding="utf-8")
+    monkeypatch.setenv("HOME", str(home_root))
+
+    result = run_qros_update(
+        target_cwd=target_cwd,
+        home=home_root,
+        explicit_source_repo=None,
+        repo_root_fallback=REPO_ROOT,
+        repo_url=str(origin_repo),
+        target=None,
+        branch=None,
+        host="codex",
+    )
+
+    assert result.source_git_commit == expected_commit
+    assert _git(["rev-parse", "HEAD"], cwd=managed_repo) == expected_commit
+
+
+def test_run_qros_update_main_keeps_branch_tracking(tmp_path: Path, monkeypatch) -> None:
+    source_repo, origin_repo = _init_origin_repo(tmp_path)
+    managed_repo = tmp_path / "managed-repo"
+    target_cwd = tmp_path / "research-project"
+    target_cwd.mkdir()
+    _clone_managed_repo(origin_repo, managed_repo)
+
+    env = os.environ.copy()
+    env["GIT_AUTHOR_NAME"] = "QROS Test"
+    env["GIT_AUTHOR_EMAIL"] = "qros-test@example.com"
+    env["GIT_COMMITTER_NAME"] = "QROS Test"
+    env["GIT_COMMITTER_EMAIL"] = "qros-test@example.com"
+    (source_repo / "README.md").write_text("main advance\n", encoding="utf-8")
+    _git(["add", "README.md"], cwd=source_repo, env=env)
+    _git(["commit", "-m", "advance main"], cwd=source_repo, env=env)
+    _git(["push", "origin", "main"], cwd=source_repo)
+    expected_head = _git(["rev-parse", "HEAD"], cwd=source_repo)
+
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    result = run_qros_update(
+        target_cwd=target_cwd,
+        home=home_root,
+        explicit_source_repo=managed_repo,
+        repo_root_fallback=managed_repo,
+        repo_url=str(origin_repo),
+        target="main",
+        branch=None,
+        host="codex",
+    )
+
+    assert result.source_git_commit == expected_head
+    assert _git(["rev-parse", "HEAD"], cwd=managed_repo) == expected_head
 
 
 def test_qros_update_wrapper_refreshes_current_repo(tmp_path: Path, monkeypatch) -> None:

@@ -1,11 +1,11 @@
 ---
 name: qros-update
-description: Update QROS to the latest published main and refresh the current repo-local runtime for the active host workspace
+description: Update QROS to the latest stable published version by default and refresh the current repo-local runtime for the active host workspace
 ---
 
 # QROS Update
 
-Use this skill when the user asks to update QROS, refresh to the latest released version, sync the latest main branch, or rebuild the current repo's `./.qros/` runtime.
+Use this skill when the user asks to update QROS, refresh to the latest stable release, sync the latest main branch, pin an exact release tag, or rebuild the current repo's `./.qros/` runtime.
 
 Run this skill from the active research repo root. The current working directory determines which repo-local `./.qros/` runtime is refreshed.
 
@@ -17,11 +17,17 @@ For ordinary users, the update command is always:
 qros-update
 ```
 
+For developers who explicitly want unreleased mainline behavior:
+
+```text
+qros-update main
+```
+
 Do not ask users to choose Codex vs Claude Code for the normal path. `qros-update` auto-detects the active host and refreshes the matching global surface plus the current repo-local runtime. `--host codex` and `--host claude-code` are manual recovery/debug overrides.
 
 ## Goal
 
-Bring the user to the latest published `origin/main` version of QROS and leave the current working repo ready to use immediately.
+Bring the user to the latest stable published version of QROS by default, and leave the current working repo ready to use immediately. Explicit `main`, tag, and SHA targets remain available for developers and recovery flows.
 
 ## Host awareness
 
@@ -44,7 +50,8 @@ Note: if QROS skills were installed via `/plugin install qros@quant-research-os`
 
 ## Required behavior
 
-- Treat published `origin/main` as the source of truth.
+- Treat the latest stable semver tag as the ordinary user update source.
+- Treat `main` as an explicit developer/debug path.
 - Refresh both surfaces:
   - global install state (Codex: `~/.codex/skills/` and `~/.codex/qros/`; Claude Code: `~/.claude/skills/` and `~/.claude/qros/`)
   - the current repo's local runtime under `./.qros/`
@@ -53,6 +60,17 @@ Note: if QROS skills were installed via `/plugin install qros@quant-research-os`
 Normal user path:
 ```text
 qros-update
+```
+
+Developer path:
+```text
+qros-update main
+```
+
+Advanced exact-version paths:
+```text
+qros-update v0.4.12
+qros-update abc1234
 ```
 
 Backend equivalent when calling the source checkout directly:
@@ -90,10 +108,11 @@ Default recovery order:
 2. Read the host-specific global manifest and use `source_repo_path` when it exists.
 3. If manifest is missing or stale, try `~/workspace/quant-research-os`.
 4. If the managed source repo still does not exist, clone the official QROS repo.
-5. Update the managed source repo to `origin/main`.
-6. Refresh `user-global`.
-7. Refresh the current repo's `repo-local`.
-8. Run install checks.
+5. Resolve the requested update target (`stable`, `main`, exact tag, or exact ref).
+6. Update the managed source repo to that resolved target.
+7. Refresh `user-global`.
+8. Refresh the current repo's `repo-local`.
+9. Run install checks.
 
 ## When to stop and surface a blocker
 

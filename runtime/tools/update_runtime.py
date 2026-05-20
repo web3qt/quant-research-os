@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
+from typing import Literal, Mapping
 
 from runtime.tools.install_runtime import SUPPORTED_HOSTS, check_install, install_qros
 
@@ -16,6 +17,14 @@ DEFAULT_REPO_URL = "https://github.com/web3qt/quant-research-os.git"
 
 class UpdateError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class UpdateTarget:
+    mode: Literal["stable", "main", "tag", "ref"]
+    requested_ref: str | None
+    resolved_git_ref: str
+    resolved_git_tag: str | None
 
 
 @dataclass(frozen=True)
@@ -35,6 +44,44 @@ def global_manifest_path(home: Path, host: str = "codex") -> Path:
 
 def default_source_repo(home: Path) -> Path:
     return home / "workspace" / "quant-research-os"
+
+
+def resolve_update_target(*, target: str | None, available_tags: list[str]) -> UpdateTarget:
+    normalized_target = target.strip() if isinstance(target, str) else ""
+    if not normalized_target:
+        stable_tag = _select_latest_stable_semver_tag(available_tags)
+        return UpdateTarget(
+            mode="stable",
+            requested_ref=None,
+            resolved_git_ref=f"refs/tags/{stable_tag}",
+            resolved_git_tag=stable_tag,
+        )
+
+    if normalized_target == DEFAULT_BRANCH:
+        return UpdateTarget(
+            mode="main",
+            requested_ref=normalized_target,
+            resolved_git_ref=f"origin/{DEFAULT_BRANCH}",
+            resolved_git_tag=None,
+        )
+
+    if normalized_target in available_tags:
+        return UpdateTarget(
+            mode="tag",
+            requested_ref=normalized_target,
+            resolved_git_ref=f"refs/tags/{normalized_target}",
+            resolved_git_tag=normalized_target,
+        )
+
+    if _looks_like_commit_sha(normalized_target):
+        return UpdateTarget(
+            mode="ref",
+            requested_ref=normalized_target,
+            resolved_git_ref=normalized_target,
+            resolved_git_tag=None,
+        )
+
+    raise UpdateError(f"unknown update target: {normalized_target}")
 
 
 def resolve_update_host(
@@ -100,7 +147,8 @@ def run_qros_update(
     explicit_source_repo: Path | None = None,
     repo_root_fallback: Path | None = None,
     repo_url: str = DEFAULT_REPO_URL,
-    branch: str = DEFAULT_BRANCH,
+    target: str | None = None,
+    branch: str | None = None,
     host: str = "auto",
     legacy_default_host: bool = False,
     environ: Mapping[str, str] | None = None,
@@ -118,10 +166,15 @@ def run_qros_update(
         repo_root_fallback=repo_root_fallback,
         host=resolved_host,
     )
+    requested_target = target or branch
+    update_target = resolve_update_target(
+        target=requested_target,
+        available_tags=_available_tags_for_update(source_repo=source_repo, repo_url=repo_url),
+    )
     updated_repo = ensure_managed_source_repo(
         source_repo=source_repo,
         repo_url=repo_url,
-        branch=branch,
+        update_target=update_target,
     )
 
     install_qros(
@@ -130,6 +183,11 @@ def run_qros_update(
         home=home,
         mode="user-global",
         host=resolved_host,
+        update_channel=update_target.mode,
+        requested_ref=update_target.requested_ref,
+        resolved_ref_type=_resolved_ref_type(update_target),
+        resolved_git_ref=update_target.resolved_git_ref,
+        resolved_git_tag=update_target.resolved_git_tag,
     )
     install_qros(
         repo_root=updated_repo,
@@ -137,6 +195,11 @@ def run_qros_update(
         home=home,
         mode="repo-local",
         host=resolved_host,
+        update_channel=update_target.mode,
+        requested_ref=update_target.requested_ref,
+        resolved_ref_type=_resolved_ref_type(update_target),
+        resolved_git_ref=update_target.resolved_git_ref,
+        resolved_git_tag=update_target.resolved_git_tag,
     )
 
     global_ok, global_messages = check_install(
@@ -178,39 +241,35 @@ def ensure_managed_source_repo(
     *,
     source_repo: Path,
     repo_url: str,
-    branch: str,
+    update_target: UpdateTarget,
 ) -> Path:
     if not source_repo.exists():
-        return clone_managed_source_repo(source_repo=source_repo, repo_url=repo_url, branch=branch)
+        return clone_managed_source_repo(source_repo=source_repo, repo_url=repo_url, update_target=update_target)
 
     if not (source_repo / ".git").exists():
         raise UpdateError(f"managed source repo is not a git repository: {source_repo}")
 
     _ensure_origin_remote(source_repo=source_repo, repo_url=repo_url)
     try:
-        _git(source_repo, "fetch", "origin", branch)
         _clean_worktree(source_repo)
-        _checkout_branch(source_repo, branch)
-        _git(source_repo, "pull", "--ff-only", "origin", branch)
+        _update_managed_repo_to_target(source_repo=source_repo, update_target=update_target)
     except UpdateError:
-        _git(source_repo, "fetch", "origin", branch)
         _clean_worktree(source_repo)
-        _checkout_branch(source_repo, branch)
-        _git(source_repo, "reset", "--hard", f"origin/{branch}")
-        _git(source_repo, "clean", "-fd")
+        _recover_managed_repo_to_target(source_repo=source_repo, update_target=update_target)
     return source_repo.resolve()
 
 
-def clone_managed_source_repo(*, source_repo: Path, repo_url: str, branch: str) -> Path:
+def clone_managed_source_repo(*, source_repo: Path, repo_url: str, update_target: UpdateTarget) -> Path:
     source_repo.parent.mkdir(parents=True, exist_ok=True)
-    completed = subprocess.run(
-        ["git", "clone", "--branch", branch, repo_url, str(source_repo)],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    clone_args = ["git", "clone"]
+    if update_target.mode == "main":
+        clone_args.extend(["--branch", DEFAULT_BRANCH])
+    clone_args.extend([repo_url, str(source_repo)])
+    completed = subprocess.run(clone_args, check=False, capture_output=True, text=True)
     if completed.returncode != 0:
         raise UpdateError(_format_git_error(completed, source_repo))
+    if update_target.mode != "main":
+        _update_managed_repo_to_target(source_repo=source_repo, update_target=update_target)
     return source_repo.resolve()
 
 
@@ -271,6 +330,39 @@ def _looks_like_codex(environ: Mapping[str, str]) -> bool:
     )
 
 
+def _resolved_ref_type(target: UpdateTarget) -> str:
+    if target.mode == "main":
+        return "branch"
+    if target.mode == "tag":
+        return "tag"
+    if target.mode == "stable":
+        return "tag"
+    return "commit"
+
+
+def _looks_like_commit_sha(value: str) -> bool:
+    return bool(re.fullmatch(r"[0-9a-fA-F]{7,40}", value))
+
+
+def _select_latest_stable_semver_tag(available_tags: list[str]) -> str:
+    stable_tags = [
+        (_parse_stable_semver_tag(tag), tag)
+        for tag in available_tags
+        if _parse_stable_semver_tag(tag) is not None
+    ]
+    if not stable_tags:
+        raise UpdateError("no stable semver tag available")
+    stable_tags.sort(key=lambda item: item[0])
+    return stable_tags[-1][1]
+
+
+def _parse_stable_semver_tag(tag: str) -> tuple[int, int, int] | None:
+    match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", tag.strip())
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
 def _ensure_origin_remote(*, source_repo: Path, repo_url: str) -> None:
     current = subprocess.run(
         ["git", "-C", str(source_repo), "remote", "get-url", "origin"],
@@ -298,9 +390,67 @@ def _checkout_branch(source_repo: Path, branch: str) -> None:
     _git(source_repo, "checkout", "-b", branch, f"origin/{branch}")
 
 
+def _checkout_detached(source_repo: Path, git_ref: str) -> None:
+    _git(source_repo, "checkout", "--detach", git_ref)
+
+
 def _clean_worktree(source_repo: Path) -> None:
     _git(source_repo, "reset", "--hard")
     _git(source_repo, "clean", "-fd")
+
+
+def _available_tags_for_update(*, source_repo: Path, repo_url: str) -> list[str]:
+    if source_repo.exists() and (source_repo / ".git").exists():
+        _ensure_origin_remote(source_repo=source_repo, repo_url=repo_url)
+        _git(source_repo, "fetch", "--tags", "origin")
+        output = _git(source_repo, "tag", "--list")
+        return [line.strip() for line in output.splitlines() if line.strip()]
+
+    completed = subprocess.run(
+        ["git", "ls-remote", "--tags", repo_url],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        raise UpdateError(f"git update failed for {source_repo}: {completed.stderr.strip() or completed.stdout.strip()}")
+    tags: list[str] = []
+    for line in completed.stdout.splitlines():
+        if not line.strip():
+            continue
+        _, ref = line.split("\t", 1)
+        if ref.endswith("^{}"):
+            ref = ref[:-3]
+        if ref.startswith("refs/tags/"):
+            tag = ref.removeprefix("refs/tags/")
+            if tag not in tags:
+                tags.append(tag)
+    return tags
+
+
+def _update_managed_repo_to_target(*, source_repo: Path, update_target: UpdateTarget) -> None:
+    if update_target.mode == "main":
+        _git(source_repo, "fetch", "origin", DEFAULT_BRANCH)
+        _checkout_branch(source_repo, DEFAULT_BRANCH)
+        _git(source_repo, "pull", "--ff-only", "origin", DEFAULT_BRANCH)
+        return
+
+    _git(source_repo, "fetch", "--tags", "origin")
+    _git(source_repo, "fetch", "origin")
+    _checkout_detached(source_repo, update_target.resolved_git_ref)
+
+
+def _recover_managed_repo_to_target(*, source_repo: Path, update_target: UpdateTarget) -> None:
+    if update_target.mode == "main":
+        _git(source_repo, "fetch", "origin", DEFAULT_BRANCH)
+        _checkout_branch(source_repo, DEFAULT_BRANCH)
+        _git(source_repo, "reset", "--hard", f"origin/{DEFAULT_BRANCH}")
+        _git(source_repo, "clean", "-fd")
+        return
+
+    _git(source_repo, "fetch", "--tags", "origin")
+    _git(source_repo, "fetch", "origin")
+    _checkout_detached(source_repo, update_target.resolved_git_ref)
 
 
 def _git_commit(source_repo: Path) -> str:

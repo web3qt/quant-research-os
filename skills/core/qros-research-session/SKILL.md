@@ -106,31 +106,7 @@ After mandate review closure, do **not** continue into the legacy unprefixed pos
 - `tss_holdout_validation`
 - `tss_holdout_validation review`
 
-Use the TSS-specific grouped confirmations and ask for these frozen contract groups in order:
-
-- `extraction_contract`
-- `quality_semantics`
-- `universe_admission`
-- `shared_derived_layer`
-- `delivery_contract`
-- `signal_expression`
-- `param_identity`
-- `time_semantics`
-- `signal_schema`
-- `window_contract`
-- `threshold_contract`
-- `quality_filters`
-- `param_governance`
-- `formal_gate_contract`
-- `admissibility_contract`
-- `audit_contract`
-- `execution_policy`
-- `portfolio_policy`
-- `risk_overlay`
-- `engine_contract`
-- `reuse_contract`
-- `drift_audit`
-- `failure_governance`
+For TSS author-eligible stages, do not reconstruct stage-specific author truth from this skill body. Load `stage_author_context.yaml` and `stage_author_context.md`, and use them as the current-stage author truth entrypoint for grouped confirmation order, final author confirmation, build, and validate/preflight sequencing.
 
 ## CSF Route Branch
 
@@ -157,32 +133,7 @@ After mandate review closure, do **not** jump directly into CSF data-ready autho
 - `csf_holdout_validation`
 - `csf_holdout_validation review`
 
-Use the CSF-specific grouped confirmations and ask for these frozen contract groups in order:
-
-- `panel_contract`
-- `quality_semantics`
-- `universe_admission`
-- `shared_derived_layer`
-- `delivery_contract`
-- `factor_identity`
-- `factor_role_contract`
-- `factor_structure_contract`
-- `neutralization_policy`
-- `preprocess_contract`
-- `neutralization_contract`
-- `ranking_bucket_contract`
-- `rebalance_contract`
-- `window_contract`
-- `formal_gate_contract`
-- `admissibility_contract`
-- `audit_contract`
-- `execution_policy`
-- `portfolio_policy`
-- `risk_overlay`
-- `engine_contract`
-- `reuse_contract`
-- `drift_audit`
-- `failure_governance`
+For CSF author-eligible stages, do not reconstruct stage-specific author truth from this skill body. Load `stage_author_context.yaml` and `stage_author_context.md`, and use them as the current-stage author truth entrypoint for grouped confirmation order, final author confirmation, build, and validate/preflight sequencing.
 
 ## Failure Routing
 
@@ -226,19 +177,42 @@ Disk artifacts and runtime gates remain the source of truth; chat memory is neve
 
 - 统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外语言口径。
 
+## Author Context
+
+When runtime places the session in an author-eligible stage, do not reconstruct stage-specific author truth from this skill body.
+Load:
+
+- `stage_author_context.yaml`
+- `stage_author_context.md`
+
+Treat them as the current-stage author truth entrypoint for session author orchestration.
+
+## Author Orchestration Skeleton
+
+For any author-eligible stage:
+
+1. enter
+2. load context
+3. resolve next interaction
+4. collect/confirm
+5. final author confirmation
+6. build
+7. validate/preflight
+8. route outcome
+
 ## Review Discipline
 
 - review 仍然需要人显式确认；普通入口里的显式动作是确认 `CONFIRM_REVIEW`，不是要求用户手动切换到某个 `qros-*-review` skill
 - 当前主会话推进到 `*_review_confirmation_pending` 后，必须完成 `review-ready` 自查并询问是否确认进入 review
 - 用户确认后，`qros-research-session` 进入 `<stage>_review` lane，并在当前会话内部复用对应 stage-specific review 协议
 - review lane 必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
-- 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt / closer command
+- 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
-- reviewer 子代理只允许写入 `review/result/reviewer_findings.raw.yaml`
+- reviewer 子代理只允许写入 `review/final_review.yaml`
 - reviewer 子代理不得修改 `author/formal/*`
-- 当前主线程不得自己撰写 `review/result/adversarial_review_result.yaml` 或 `review/result/review_findings.yaml`
-- reviewer 正常只写 `reviewer_findings.raw.yaml`
-- `./.qros/bin/qros-review` 是唯一 deterministic closer；它负责 canonical result、write-scope audit 和 closure
+- 当前主线程不得自己撰写 `review/final_review.yaml`
+- reviewer 正常只写 `review/final_review.yaml`
+- 当前主线程只能读取 `review/final_review.yaml`，再按 runtime state 推进 author-fix、failure handling、next-stage confirmation 或 deterministic closure artifacts
 
 ## Main-Agent Review Loop
 
@@ -250,7 +224,7 @@ Disk artifacts and runtime gates remain the source of truth; chat memory is neve
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
 - 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
-- 若 `review_loop_outcome = FIX_REQUIRED`，主 Agent 必须先阅读 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后通过 `qros-research-session` 重新进入 review confirmation / review lane
+- 若 `review/final_review.yaml` 的 `verdict = FIX_REQUIRED`，主 Agent 必须先阅读 `review/final_review.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后通过 `qros-research-session` 重新进入 review confirmation / review lane
 - author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs
 
 ## Working Rules

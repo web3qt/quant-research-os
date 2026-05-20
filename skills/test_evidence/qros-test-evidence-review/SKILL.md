@@ -24,9 +24,9 @@ description: Codex review skill for Test Evidence stage verification.
 该共享审查协议统一定义：
 
 - adversarial reviewer-agent 合同
-- `adversarial_review_request.yaml` / `adversarial_review_result.yaml` / closure artifacts 要求
-- `FIX_REQUIRED` 与 closure-ready adverse verdict 语义
-- 只有 closure-ready 后才允许运行 `./.qros/bin/qros-review`
+- `adversarial_review_request.yaml` / `review/final_review.yaml` / closure artifacts 要求
+- `FIX_REQUIRED` 与 closure-ready final verdict 语义
+- reviewer 与 launcher 主线程的职责边界
 
 ## 独立 reviewer 子代理要求
 
@@ -68,7 +68,7 @@ reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 - 主线程交给 reviewer 子代理的 scope 必须是**当前** author outputs，而不是旧 request、旧 digest 或修复前的 stale artifacts
 - handoff 必须明确这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设，而不是盲交 reviewer
 - handoff 必须与 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths` 一致
-- 如果上一轮 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
+- 如果上一轮 `review/final_review.yaml` 的 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/final_review.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
 - 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替主线程猜测或补齐上下文
 - 进入 reviewer lane 前必须先完成 deterministic review-ready 自查；若 preflight 有 blocking finding，必须先修 author outputs。
 
@@ -98,4 +98,4 @@ These files are the review-cycle-local rendering of current contracts and curren
 4. 用 `send_input` 向 reviewer 子代理交付 request / handoff 与 `stage_contract_context.*`
 5. 等待 reviewer 子代理只写 `review/final_review.yaml`
 6. 主线程读取 `review/final_review.yaml`
-7. 以 `stage_contract_context.*`、request scope 和 final verdict 解释当前 stage 的 review 结果
+7. 以 `stage_contract_context.*`、request scope 和 final verdict 解释当前 stage 的 review 结果，并交回 runtime/session 继续 author-fix、failure handling、next-stage confirmation 或 deterministic closure

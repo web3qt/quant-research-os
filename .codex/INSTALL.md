@@ -81,7 +81,7 @@ qros-update
 
 It auto-detects the active host and refreshes both the global install and the current repo's `./.qros/` runtime. For Codex this means `~/.codex/skills/`, `~/.codex/qros/`, and the active repo's `./.qros/`.
 
-Run `qros-update` from the active research repo root so the refreshed repo-local runtime is written to that repo.
+Run `qros-update` from the active research repo root so the refreshed repo-local runtime is written to that repo. This defaults to the latest stable published version; use `qros-update main` only when you explicitly want the latest unreleased mainline code.
 
 If update state looks stale, run `qros-update` from the active research repo root and then Restart Codex.
 

@@ -53,9 +53,9 @@ QROS 当前的 review 不是“reviewer 自由发挥”。
 它统一规定：
 
 - reviewer 子代理与 launcher 主线程的职责边界
-- `adversarial_review_request.yaml` / `reviewer_receipt.yaml` / `reviewer_findings.raw.yaml` / closure artifacts 的协议
+- `adversarial_review_request.yaml` / `review/final_review.yaml` / closure artifacts 的协议
 - `FIX_REQUIRED` 与 closure-ready outcome 的语义
-- `qros-review` 作为 deterministic closer 的行为
+- runtime/session 将 final review 投影到 review result、audit 与 closure 的行为
 
 ### 2. Stage Gate 真值
 

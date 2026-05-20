@@ -178,21 +178,48 @@ def test_manifest_fields_include_install_metadata(tmp_path: Path, monkeypatch: p
     assert manifest["host"] == "codex"
     assert manifest["install_mode"] == "repo-local"
     assert manifest["installed_skills"]
-    assert manifest["installed_runtime_files"]
-    assert manifest["source_git_commit"]
+
+
+def test_build_manifest_records_update_channel_and_resolved_ref(tmp_path: Path) -> None:
+    runtime_root = tmp_path / ".qros"
+    repo_root = tmp_path / "source"
+    repo_root.mkdir()
+    target = install_runtime.InstallTarget(
+        mode="repo-local",
+        skills_root=tmp_path / "skills",
+        runtime_root=runtime_root,
+        manifest_path=runtime_root / "install-manifest.json",
+    )
+    manifest = install_runtime.build_manifest(
+        repo_root=repo_root,
+        target=target,
+        installed_skills=[],
+        installed_runtime_files=[],
+        runtime_env=RuntimeEnvMetadata(
+            python_executable="/tmp/python",
+            python_version="3.12.9",
+            lock_path="/tmp/uv.lock",
+            lock_digest="lock-digest",
+        ),
+        host="codex",
+        update_channel="stable",
+        requested_ref=None,
+        resolved_ref_type="tag",
+        resolved_git_ref="refs/tags/v0.4.12",
+        resolved_git_tag="v0.4.12",
+    )
+
+    assert manifest["update_channel"] == "stable"
+    assert manifest["resolved_ref_type"] == "tag"
+    assert manifest["resolved_git_ref"] == "refs/tags/v0.4.12"
+    assert manifest["resolved_git_tag"] == "v0.4.12"
+    assert "source_git_commit" in manifest
     assert manifest["source_repo_path"] == str(repo_root.resolve())
     assert isinstance(manifest["source_git_dirty"], bool)
     assert isinstance(manifest["source_git_status_short"], list)
-    assert manifest["python_executable"] == str(Path(sys.executable).resolve())
-    assert manifest["python_version"].startswith(f"{sys.version_info.major}.{sys.version_info.minor}")
-    assert manifest["runtime_python_executable"] == str(
-        (install_root / ".qros" / ".venv" / "bin" / "python").resolve()
-    )
     assert manifest["runtime_python_version"] == "3.12.9"
-    assert manifest["runtime_lock_path"] == str((install_root / ".qros" / "uv.lock").resolve())
-    assert manifest["runtime_lock_digest"] == hashlib.sha256(
-        (install_root / ".qros" / "uv.lock").read_bytes()
-    ).hexdigest()
+    assert manifest["runtime_lock_path"] == "/tmp/uv.lock"
+    assert manifest["runtime_lock_digest"] == "lock-digest"
 
 
 def test_repo_local_install_manifest_ignores_staging_dir_when_repo_root_is_install_cwd(

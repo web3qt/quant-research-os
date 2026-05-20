@@ -14,7 +14,10 @@ from runtime.tools.update_runtime import DEFAULT_BRANCH, DEFAULT_REPO_URL, Updat
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Update QROS to the latest published main and refresh the current repo-local runtime.")
+    parser = argparse.ArgumentParser(
+        description="Update QROS to the latest stable tag by default, or to an explicit target such as main, a tag, or a commit ref."
+    )
+    parser.add_argument("target", nargs="?", default=None)
     parser.add_argument("--cwd", type=Path, default=None)
     parser.add_argument("--host", default="auto", choices=["auto", "codex", "claude-code"])
     parser.add_argument(
@@ -24,7 +27,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--source-repo", type=Path, default=None)
     parser.add_argument("--repo-url", default=DEFAULT_REPO_URL)
-    parser.add_argument("--branch", default=DEFAULT_BRANCH)
+    parser.add_argument("--branch", default=None, help="Legacy compatibility override. Prefer positional target.")
     return parser.parse_args()
 
 
@@ -39,6 +42,7 @@ def main() -> int:
             explicit_source_repo=args.source_repo.resolve() if args.source_repo is not None else None,
             repo_root_fallback=ROOT,
             repo_url=args.repo_url,
+            target=args.target,
             branch=args.branch,
             host=args.host,
             legacy_default_host=args.host == "codex" and not args.host_explicit,

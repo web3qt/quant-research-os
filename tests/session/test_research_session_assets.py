@@ -62,11 +62,11 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     assert "独立 reviewer 子代理" in content
     assert "spawn_agent" in content
     assert "./.qros/bin/qros-review-cycle prepare" in content
-    assert "不得自己撰写 `review/result/adversarial_review_result.yaml`" in content
+    assert "不得自己撰写 `review/final_review.yaml`" in content
     assert "./.qros/bin/qros-review" in content
     assert "Main-Agent Review Loop" in content
     assert "review-ready" in content
-    assert "review/result/review_findings.yaml" in content
+    assert "review/final_review.yaml" in content
     assert "launcher_review_ready_status" in content
     assert "./.qros/bin/qros-session" in content
     assert "./.qros/bin/qros-session <lineage_id> --continue" not in content
@@ -194,6 +194,16 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
     assert "reviewer_findings.raw.yaml" not in handoff_prompt
     assert "reviewed_artifact_paths: [<relative paths under author/formal>]" in handoff_prompt
     assert "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there." in handoff_prompt
+
+
+def test_session_skill_documents_stage_author_context_as_author_truth_entrypoint() -> None:
+    content = Path("skills/core/qros-research-session/SKILL.md").read_text(encoding="utf-8")
+
+    assert "stage_author_context.yaml" in content
+    assert "stage_author_context.md" in content
+    assert "current-stage author truth entrypoint" in content
+    assert "Use the CSF-specific grouped confirmations and ask for these frozen contract groups in order:" not in content
+    assert "Use the TSS-specific grouped confirmations and ask for these frozen contract groups in order:" not in content
 
 
 def test_author_skills_allow_bulk_freeze_group_confirmation() -> None:

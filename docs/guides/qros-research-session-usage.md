@@ -140,7 +140,16 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 
 真实研究流里，`mandate` 之后的 stage program 由 Codex 在当前 author lane 显式生成或刷新；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper。每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，把 `program_hash`、entrypoint、authoring session 和 output refs 记账，其中 `program_hash` 记录的是整个 `program_dir` 的 hash，而不是单个 `run_stage.py` 文件。共享 helper 可以放在 `outputs/<lineage_id>/program/common/`，但 completion 永远不能 fallback 到 framework-side shared builder；fixture/demo-only helper 也必须与真实研究流主路径隔离。
 
-如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。这时正确动作不是等 runtime 补默认程序，也不是提示普通用户执行继续命令，而是继续 `$qros-research-session`，让 Codex 在当前 research repo 中显式生成或刷新本 stage 的 lineage-local stage program。`qros-research-session` 会自动识别当前 stage、判断需要 author 还是 review、以及是否还缺用户确认。程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。stage-specific author/review skill（例如高级调试时的 `qros-*-review`）仍然存在，但它们是高级/debug/manual recovery 协议；普通推进应由 `qros-research-session` 内部复用这些协议，而不是要求用户记住每个 stage skill 名。对大 stage，stage program 可以声明 `prebuild_schema_gate`，让 runtime 先跑 dry-run schema report，检查 required columns、primary key、coverage fields 和 manifest fields，通过后才触发全量 build。当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这就是当前的 mandate-first / mandate-only rollout truth。只要 `mandate` 的 `author/formal/*` required outputs 已齐，runtime 就会先跑 `qros-review-preflight`。如果 author outputs 过不了这道 reviewer-lane gate，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。对 `mandate` 来说，preflight 不是 optional hygiene check，而是 reviewer lane 之前的强制门禁，必须先拦下 thin wrapper stage program、placeholder 文件和 contract-only fake machine artifacts。其余 post-mandate `*_review_confirmation_pending` 目前仍要求主 Agent 完成 `review-ready` 自查与 handoff 准备，但 runtime 还没有统一自动执行这道 deterministic preflight；不要把它写成已经全量 rollout。新的治理方向下，review 仍需要人显式确认，但显式动作是 `CONFIRM_REVIEW`。确认后 runtime 会进入 `<stage>_review` lane；`qros-research-session` 在当前会话里通过 host 特定机制拉起 reviewer 子代理（Codex 下为 `spawn_agent`，Claude Code 下通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task），再调用 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 request/receipt、生成 reviewer handoff prompt，并写出：
+如果 freeze 已批准但程序缺失，`qros-session --json` 会把 `stage_status` 设为 `awaiting_stage_program`，并返回 `blocking_reason_code = STAGE_PROGRAM_MISSING`，同时给出 `required_program_dir`、`required_program_entrypoint`、`next_action` 与 `resume_hint`。这时正确动作不是等 runtime 补默认程序，也不是提示普通用户执行继续命令，而是继续 `$qros-research-session`，让 Codex 在当前 research repo 中显式生成或刷新本 stage 的 lineage-local stage program。`qros-research-session` 会自动识别当前 stage、判断需要 author 还是 review、以及是否还缺用户确认。
+
+在 author lane，session 现在应视：
+
+- `stage_author_context.yaml`
+- `stage_author_context.md`
+
+为 current-stage author truth entrypoint。它们承载 truth-backed fields、orchestration fields 和 session-facing guidance，供 `qros-research-session` 的 author orchestration 统一消费，而不是继续在主 skill 正文里长期重写每个 stage 的 author truth。
+
+程序存在但 contract 不合法时，会改为 `awaiting_program_validation` / `STAGE_PROGRAM_INVALID`；程序执行完成后，session 通常会先进入 `*_review_confirmation_pending`。stage-specific author/review skill（例如高级调试时的 `qros-*-review`）仍然存在，但它们是高级/debug/manual recovery 协议；普通推进应由 `qros-research-session` 内部复用这些协议，而不是要求用户记住每个 stage skill 名。对大 stage，stage program 可以声明 `prebuild_schema_gate`，让 runtime 先跑 dry-run schema report，检查 required columns、primary key、coverage fields 和 manifest fields，通过后才触发全量 build。当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这就是当前的 mandate-first / mandate-only rollout truth。只要 `mandate` 的 `author/formal/*` required outputs 已齐，runtime 就会先跑 `qros-review-preflight`。如果 author outputs 过不了这道 reviewer-lane gate，session 会直接停在 `awaiting_author_fix` / `OUTPUTS_INVALID`，要求先修 author/formal，再进入 review。对 `mandate` 来说，preflight 不是 optional hygiene check，而是 reviewer lane 之前的强制门禁，必须先拦下 thin wrapper stage program、placeholder 文件和 contract-only fake machine artifacts。其余 post-mandate `*_review_confirmation_pending` 目前仍要求主 Agent 完成 `review-ready` 自查与 handoff 准备，但 runtime 还没有统一自动执行这道 deterministic preflight；不要把它写成已经全量 rollout。新的治理方向下，review 仍需要人显式确认，但显式动作是 `CONFIRM_REVIEW`。确认后 runtime 会进入 `<stage>_review` lane；`qros-research-session` 在当前会话里通过 host 特定机制拉起 reviewer 子代理（Codex 下为 `spawn_agent`，Claude Code 下通过 `.claude-plugin/agents/qros-reviewer.md` 创建 task），再调用 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 request/receipt、生成 reviewer handoff prompt，并写出：
 
 - `review/request/stage_contract_context.yaml`
 - `review/request/stage_contract_context.md`
@@ -177,17 +186,12 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 
 如果 reviewer 返回 `FIX_REQUIRED`，主 Agent 也不应该直接原地再叫一个 reviewer 来“复看一眼”。正确顺序是：
 
-1. 先阅读 `review/result/adversarial_review_result.yaml`
-2. 再阅读 `review/result/review_findings.yaml`
-3. 回 author lane 修复允许范围内的问题
-4. 刷新 `author/formal/*` 与 review request scope
-5. 通过 `qros-research-session` 重新进入 review confirmation / review lane，起一个新的 reviewer cycle
+1. 先阅读 `review/final_review.yaml`
+2. 回 author lane 修复允许范围内的问题
+3. 刷新 `author/formal/*` 与 review request scope
+4. 通过 `qros-research-session` 重新进入 review confirmation / review lane，起一个新的 reviewer cycle
 
-如果 reviewer 只写了：
-
-- `review/result/reviewer_findings.raw.yaml`
-
-而没有正式写出 `adversarial_review_result.yaml`，当前 runtime 会在 `qros-review` 内按 active request / receipt / runtime reviewer identity 做 deterministic 规范化写入。这样 reviewer 不必手写 `review_cycle_id`、`handoff_manifest_digest`、`reviewed_*_paths` 等 proof 字段；旧 canonical result 也会被当前 raw findings 正常覆盖。
+普通 reviewer 子代理只写 `review/final_review.yaml`。`review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml` 是 runtime/session 后续投影或兼容恢复时的产物；不要让 reviewer 子代理直接写这些文件，也不要复用旧投影来证明新的 author outputs。
 
 author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs。
 
@@ -455,7 +459,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 
 - 一个 active review cycle 只认一个 reviewer child
 - reviewer child 只读 `review/request/*` 和 `author/formal/*`
-- reviewer child 只写 `review/result/*`
+- reviewer child 只写 `review/final_review.yaml`
 - 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
 <br>
@@ -602,10 +606,10 @@ session runtime 会按下面这个顺序检查磁盘状态：
 在 review 阶段，session 现在会显式区分几类状态：
 
 - `awaiting_adversarial_review`：当前 stage 还没有 active review cycle，或 reviewer 子代理尚未写出 review 结果
-- `awaiting_reviewer_completion`：active review cycle 已注册，当前只等待该 reviewer 子代理落 `review/result/*`
-- `awaiting_reviewer_write_scope_audit`：closure-ready result 已存在，但 deterministic closer 还没完成 audit / closure
+- `awaiting_reviewer_completion`：active review cycle 已注册，当前只等待该 reviewer 子代理落 `review/final_review.yaml`
+- `awaiting_reviewer_write_scope_audit`：closure-ready final review 已存在，但 runtime/session 还没完成 audit / closure
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须显式回 author lane 修复
-- `awaiting_review_closure`：reviewer 已给出 `CLOSURE_READY_*`，等待 deterministic closer 写正式 closure artifacts
+- `awaiting_review_closure`：reviewer 已给出 closure-ready final verdict，等待 runtime/session 写正式 closure artifacts
 
 也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。author lane 与 reviewer 子代理之间的切换也必须是显式的，不再由 author 主会话静默自审。
 
