@@ -6,6 +6,29 @@
 
 <br>
 
+## 0.5.0 - 2026-05-20
+
+### 新增
+
+- 新增稳定 tag 发布路径：`qros-update` 现在可以明确解析并安装已发布的稳定版本 tag，而不必默认跟随未发布主干。
+- 新增更薄的 generated review skill 形态，把 stage-specific review 协议更多下沉到共享 runtime / author context，减少技能文档与真实 gate 之间的重复口径。
+
+### 改进
+
+- 强化 review lane 主路径：author context、review handoff、direct final review workflow 和 failure routing 的边界更清晰，普通用户继续只需要通过 `$qros-research-session` 推进。
+- 更新 `qros-update` 稳定版文档、安装说明和用户入口文档，明确 stable release、`main` 跟踪和 repo-local runtime 刷新的关系。
+- 首页 README 做了一轮视觉分层整理，增强头部导航、callout 和区块辨识度，但不改变 workflow / contract 语义。
+- 代码地图与文档入口同步刷新，方便维护者理解 thin review skills、runtime guard 和当前主流程边界。
+
+### 验证
+
+- 本版本发布前已运行 release notes focused tests 与 docs/bootstrap 最小检查。
+- `pyproject.toml`、`uv.lock` 与 `RELEASE_NOTES.md` 同步到 `0.5.0`。
+
+---
+
+<br>
+
 ## 0.4.11 - 2026-05-09
 
 ### 新增
