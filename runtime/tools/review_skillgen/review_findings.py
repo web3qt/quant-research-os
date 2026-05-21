@@ -8,13 +8,29 @@ import yaml
 from runtime.tools.review_skillgen.closure_models import ALLOWED_VERDICTS
 
 
-def _normalize_list(data: dict[str, Any], key: str) -> list[str]:
-    value = data.get(key, [])
+def normalize_string_list_field(
+    value: Any,
+    *,
+    key: str,
+    allow_single_string: bool = False,
+    source: str | Path | None = None,
+) -> list[str]:
+    prefix = f"{source}: " if source is not None else ""
     if value is None:
         return []
+    if allow_single_string and value == "":
+        return []
+    if allow_single_string and isinstance(value, str):
+        return [value]
     if not isinstance(value, list):
-        raise ValueError(f"{key} must be a list")
-    return [str(item) for item in value]
+        raise ValueError(f"{prefix}{key} must be a list")
+    if not all(isinstance(item, str) for item in value):
+        raise ValueError(f"{prefix}{key} must be a list of strings")
+    return list(value)
+
+
+def _normalize_list(data: dict[str, Any], key: str) -> list[str]:
+    return normalize_string_list_field(data.get(key, []), key=key)
 
 
 def load_review_findings(path: str | Path) -> dict[str, Any]:

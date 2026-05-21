@@ -14,6 +14,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_result,
     resolve_closure_verdict,
 )
+from runtime.tools.review_skillgen.raw_review_normalizer import normalize_raw_review_payload
 from runtime.tools.review_skillgen.review_scope_builder import (
     stage_content_artifact_paths_from_request,
     stage_content_provenance_paths_from_request,
@@ -60,6 +61,7 @@ def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(payload, dict):
         raise ValueError(f"{path}: raw reviewer findings must load to a mapping")
+    payload = normalize_raw_review_payload(payload, source=path)
     outcome = payload.get("review_loop_outcome")
     if not isinstance(outcome, str) or not outcome.strip():
         raise ValueError(f"{path}: review_loop_outcome must be a non-empty string")
