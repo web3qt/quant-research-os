@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
+from runtime.tools.review_eligibility import ReviewEligibilityStatus
 
 
 def _touch_lineage(outputs_root: Path, lineage_id: str, filename: str = "marker.txt") -> Path:
@@ -17,6 +18,12 @@ def _touch_lineage(outputs_root: Path, lineage_id: str, filename: str = "marker.
     marker = lineage_root / filename
     marker.write_text(lineage_id + "\n", encoding="utf-8")
     return lineage_root
+
+
+def _write_review_eligibility(lineage_root: Path, payload: dict) -> None:
+    path = lineage_root / "review_eligibility.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _write_failure_post_retry_decision(lineage_root: Path) -> None:
@@ -144,7 +151,7 @@ def test_progress_json_outputs_stable_status_fields_for_explicit_lineage(tmp_pat
     payload = json.loads(result.stdout)
     assert payload["lineage_id"] == "btc_leads_alts"
     assert payload["selection_mode"] == "explicit"
-    assert payload["current_stage"] == "idea_intake_confirmation_pending"
+    assert payload["current_stage"] == "mandate_admission"
     assert "current_skill" in payload
     assert "gate_status" in payload
     assert "next_action" in payload
@@ -172,7 +179,7 @@ def test_progress_cli_without_lineage_id_uses_latest_lineage(tmp_path: Path) -> 
 
     assert "QROS Progress" in result.stdout
     assert "Lineage: latest_lineage (latest)" in result.stdout
-    assert "Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "Current stage: mandate_admission" in result.stdout
 
 
 def test_qros_progress_wrapper_uses_current_repo_outputs(tmp_path: Path) -> None:
@@ -196,7 +203,7 @@ def test_qros_progress_wrapper_uses_current_repo_outputs(tmp_path: Path) -> None
     payload = json.loads(result.stdout)
     assert payload["lineage_id"] == "btc_leads_alts"
     assert payload["selection_mode"] == "latest"
-    assert payload["current_stage"] == "idea_intake_confirmation_pending"
+    assert payload["current_stage"] == "mandate_admission"
 
 
 def test_progress_payload_exposes_skill_first_direct_handoff(tmp_path: Path) -> None:
@@ -231,3 +238,132 @@ def test_progress_status_payload_surfaces_failure_disposition_gate(tmp_path: Pat
     assert payload["requires_failure_handling"] is True
     assert payload["failure_stage"] == "csf_backtest_ready"
     assert "failure_disposition.yaml" in payload["next_action"]
+
+
+def test_progress_does_not_recommend_review_skill_when_stage_is_not_review_eligible(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "blocked_case")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "csf_test_evidence",
+                "reason_code": "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+                "reason": "Canonical review eligibility blocked review entry for csf_test_evidence.",
+                "failure_reason_summary": "Canonical review eligibility requires failure handling for csf_test_evidence.",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "csf_test_evidence_review_confirmation_pending",
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.compute_review_eligibility",
+        lambda **kwargs: ReviewEligibilityStatus(
+            eligible_for_review=False,
+            blocking_reason_code="CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+            blocking_reason="Canonical review eligibility blocked review entry for csf_test_evidence.",
+            review_blocking_surface="failure_package",
+            authorized_review_skill=None,
+            requires_failure_handling=True,
+            failure_stage="csf_test_evidence",
+            failure_reason_summary="Canonical review eligibility requires failure handling for csf_test_evidence.",
+        ),
+        raising=False,
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="blocked_case")
+
+    assert payload["current_stage"] == "csf_test_evidence_review_confirmation_pending"
+    assert payload["stage_status"] == "blocked_requires_failure_handling"
+    assert payload["gate_status"] == "FAILURE_HANDLING_REQUIRED"
+    assert payload["current_skill"] == "qros-stage-failure-handler"
+    assert payload["recommended_skill"] == "qros-stage-failure-handler"
+    assert payload["blocking_reason_code"] == "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED"
+    assert payload["requires_failure_handling"] is True
+    assert payload["failure_stage"] == "csf_test_evidence"
+    assert payload["failure_reason_summary"] == (
+        "Canonical review eligibility requires failure handling for csf_test_evidence."
+    )
+
+
+def test_progress_non_failure_review_blocker_preserves_author_fix_skill_handoff(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "preflight_blocked_case")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "semantic_gate": {
+                "status": "pass",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "csf_test_evidence_review_confirmation_pending",
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.compute_review_eligibility",
+        lambda **kwargs: ReviewEligibilityStatus(
+            eligible_for_review=False,
+            blocking_reason_code="AUTHOR_OUTPUTS_INVALID",
+            blocking_reason="Author outputs must be repaired before review entry.",
+            review_blocking_surface="semantic_gate",
+            authorized_review_skill=None,
+            requires_failure_handling=False,
+            failure_stage=None,
+            failure_reason_summary=None,
+        ),
+        raising=False,
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="preflight_blocked_case")
+
+    assert payload["current_stage"] == "csf_test_evidence_review_confirmation_pending"
+    assert payload["stage_status"] == "awaiting_author_fix"
+    assert payload["gate_status"] == "OUTPUTS_INVALID"
+    assert payload["current_skill"] == "qros-csf-test-evidence-author"
+    assert payload["recommended_skill"] == "qros-csf-test-evidence-author"
+    assert payload["blocking_reason_code"] == "AUTHOR_OUTPUTS_INVALID"
+    assert payload["blocking_reason"] == "Author outputs must be repaired before review entry."
+    assert payload["requires_failure_handling"] is False
+
+
+def test_progress_real_review_eligibility_failure_handler_normalizes_failure_stage_name(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "real_helper_blocked_case")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "csf_test_evidence_review_confirmation_pending",
+                "reason_code": "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+                "reason": "Canonical review eligibility blocked review entry for csf_test_evidence.",
+                "failure_reason_summary": "Canonical review eligibility requires failure handling for csf_test_evidence.",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "csf_test_evidence_review_confirmation_pending",
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="real_helper_blocked_case")
+
+    assert payload["current_stage"] == "csf_test_evidence_review_confirmation_pending"
+    assert payload["stage_status"] == "blocked_requires_failure_handling"
+    assert payload["gate_status"] == "FAILURE_HANDLING_REQUIRED"
+    assert payload["failure_stage"] == "csf_test_evidence"
+    assert payload["next_action"] == (
+        "Enter failure handling for csf_test_evidence via qros-stage-failure-handler"
+    )
