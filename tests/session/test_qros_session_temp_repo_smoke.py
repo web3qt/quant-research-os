@@ -50,6 +50,52 @@ def _route_assessment() -> dict:
     }
 
 
+def _mandate_admission_payload(lineage_id: str) -> dict:
+    route_assessment = _route_assessment()
+    route_assessment["route_decision_pending"] = False
+    return {
+        "lineage_id": lineage_id,
+        "raw_idea": "BTC leads high-liquidity alts after shock events",
+        "observation": "BTC shocks precede ALT reactions.",
+        "primary_hypothesis": "BTC leads price discovery.",
+        "counter_hypothesis": "Moves are shared beta.",
+        "research_questions": ["Do ALTs follow BTC after shocks?"],
+        "scope": {
+            "market": "binance perp",
+            "instrument_type": "perpetual",
+            "universe": "high liquidity alts",
+            "data_source": "binance um futures klines",
+            "bar_size": "5m",
+            "holding_horizons": ["15m", "30m"],
+            "target_task": "event-driven relative return study",
+            "excluded_scope": ["low liquidity tails"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        },
+        "qualification": {
+            "summary": "Researchable.",
+            "dimensions": {
+                name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                for name in [
+                    "observability",
+                    "mechanism_plausibility",
+                    "tradeability",
+                    "data_feasibility",
+                    "scoping_clarity",
+                    "distinctiveness",
+                ]
+            },
+        },
+        "route_assessment": route_assessment,
+        "admission_decision": {
+            "verdict": "ACCEPT_FOR_MANDATE",
+            "why": ["Scope is concrete."],
+            "kill_criteria": ["No edge after costs."],
+            "required_reframe_actions": [],
+        },
+    }
+
+
 def _mandate_freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -146,46 +192,21 @@ def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path
         "BTC leads high-liquidity alts after shock events",
     )
     assert first_result.returncode == 0, first_result.stderr
-    assert "Current stage: idea_intake_confirmation_pending" in first_result.stdout
+    assert "Current stage: mandate_admission" in first_result.stdout
 
     outputs_root = project_root / "outputs"
     lineage_dirs = sorted(path for path in outputs_root.iterdir() if path.is_dir())
     assert len(lineage_dirs) == 1
     lineage_root = lineage_dirs[0]
     lineage_id = lineage_root.name
-    intake_dir = lineage_root / "00_idea_intake"
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
 
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": lineage_id,
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {
-                "market": "binance perp",
-                "data_source": "binance um futures klines",
-                "bar_size": "5m",
-            },
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "scope_canvas.yaml",
-        {
-            "market": "binance perp",
-            "data_source": "binance um futures klines",
-            "bar_size": "5m",
-        },
-    )
+    _write_yaml(draft_dir / "mandate_admission.yaml", _mandate_admission_payload(lineage_id))
 
-    intake_confirm_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id, "--confirm-intake")
-    assert intake_confirm_result.returncode == 0, intake_confirm_result.stderr
-    assert "Current stage: mandate_confirmation_pending" in intake_confirm_result.stdout
-
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
-    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- BTC leads ALTs\n", encoding="utf-8")
+    freeze_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id)
+    assert freeze_result.returncode == 0, freeze_result.stderr
+    assert "Current stage: mandate_freeze_confirmation_pending" in freeze_result.stdout
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
     ensure_stage_program(lineage_root, "mandate")
 
     mandate_result = _run_qros_session(project_root, env, "--lineage-id", lineage_id, "--confirm-mandate")

@@ -19,6 +19,7 @@ SCHEMA_VERSION = "workflow_stage_gates@v1"
 
 _SESSION_STAGE_TO_GATE_STAGE = {
     "idea_intake": "idea_intake",
+    "mandate_admission": "mandate",
     "mandate": "mandate",
     "data_ready": "data_ready",
     "signal_ready": "signal_ready",

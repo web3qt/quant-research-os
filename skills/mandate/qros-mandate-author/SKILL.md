@@ -1,13 +1,13 @@
 ---
 name: qros-mandate-author
-description: Use when a qualified idea has passed intake gate and must be frozen into formal mandate artifacts.
+description: Use when mandate admission has passed and must be frozen into formal mandate artifacts.
 ---
 
 # Mandate Author
 
 ## Purpose
 
-只在 `GO_TO_MANDATE` 条件下，把 `00_idea_intake` 产物冻结成正式 `01_mandate` 产物。
+只在 `mandate_admission.yaml` 明确 `ACCEPT_FOR_MANDATE` 且 mandate freeze 已确认后，把 `01_mandate/author/draft/` 产物冻结成正式 `01_mandate/author/formal/` 产物。
 
 这里的 `mandate` 不是静默补文档，而是交互式冻结研究合同。
 
@@ -21,15 +21,14 @@ description: Use when a qualified idea has passed intake gate and must be frozen
 
 ## Required Inputs
 
-- `qualification_scorecard.yaml`
-- `research_question_set.md`
-- `scope_canvas.yaml`
-- `idea_gate_decision.yaml`
+- `01_mandate/author/draft/mandate_admission.yaml`
+- `01_mandate/author/draft/mandate_freeze_draft.yaml`
+- `01_mandate/author/draft/mandate_transition_approval.yaml`
 - `route_assessment`
 
 ## Admission Rule
 
-只有当 `idea_gate_decision.yaml` 明确写出 `GO_TO_MANDATE`，才允许继续。
+只有当 `mandate_admission.yaml` 明确写出 `ACCEPT_FOR_MANDATE`，且 freeze groups 与 `mandate_transition_approval.yaml` 都确认后，才允许继续。
 
 如果 verdict 是：
 

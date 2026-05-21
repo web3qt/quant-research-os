@@ -47,6 +47,72 @@ def _route_assessment() -> dict:
     }
 
 
+def _write_mandate_admission(
+    lineage_root: Path,
+    *,
+    accepted: bool = True,
+    include_route: bool = True,
+    freeze_confirmed: bool | None = None,
+) -> Path:
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    route_assessment = _route_assessment()
+    route_assessment["route_decision_pending"] = False
+    payload = {
+        "lineage_id": lineage_root.name,
+        "raw_idea": "BTC leads ALTs",
+        "observation": "BTC shocks precede ALT reactions.",
+        "primary_hypothesis": "BTC leads price discovery.",
+        "counter_hypothesis": "Moves are shared beta.",
+        "research_questions": ["Do ALTs follow BTC after shocks?"],
+        "scope": {
+            "market": "binance perp",
+            "instrument_type": "perpetual",
+            "universe": "high liquidity alts",
+            "data_source": "binance um futures klines",
+            "bar_size": "5m",
+            "holding_horizons": ["15m", "30m"],
+            "target_task": "event-driven relative return study",
+            "excluded_scope": ["low liquidity tails"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        },
+        "qualification": {
+            "summary": "Researchable.",
+            "dimensions": {
+                name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                for name in [
+                    "observability",
+                    "mechanism_plausibility",
+                    "tradeability",
+                    "data_feasibility",
+                    "scoping_clarity",
+                    "distinctiveness",
+                ]
+            },
+        },
+        "route_assessment": route_assessment
+        if include_route
+        else {
+            "candidate_routes": [],
+            "recommended_route": "",
+            "why_recommended": [],
+            "why_not_other_routes": {},
+            "route_risks": [],
+            "route_decision_pending": True,
+        },
+        "admission_decision": {
+            "verdict": "ACCEPT_FOR_MANDATE" if accepted else "NEEDS_REFRAME",
+            "why": ["Scope is concrete."],
+            "kill_criteria": ["No edge after costs."],
+            "required_reframe_actions": [] if accepted else ["narrow universe"],
+        },
+    }
+    _write_yaml(draft_dir / "mandate_admission.yaml", payload)
+    if freeze_confirmed is not None:
+        _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=freeze_confirmed))
+    return draft_dir
+
+
 def _write_stage_completion_certificate(
     path: Path,
     *,
@@ -561,10 +627,56 @@ def test_run_research_session_creates_lineage_from_raw_idea(tmp_path: Path) -> N
 
     assert result.returncode == 2
     lineage_root = outputs_root / "btc_leads_high_liquidity_alts_after_shock_events"
-    assert (lineage_root / "00_idea_intake").exists()
-    assert "📍 Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert (lineage_root / "01_mandate" / "author" / "draft" / "mandate_admission.yaml").exists()
+    assert not (lineage_root / "00_idea_intake").exists()
+    assert "📍 Current stage: mandate_admission" in result.stdout
     assert "🧭 Current orchestrator: qros-research-session" in result.stdout
-    assert "🔨 Current active skill: qros-idea-intake-author" in result.stdout
+    assert "🔨 Current active skill: qros-research-session" in result.stdout
+
+
+def test_run_research_session_scaffolds_mandate_admission_for_raw_idea(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    result = run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "runtime" / "scripts" / "run_research_session.py"),
+            "--outputs-root",
+            str(outputs_root),
+            "--raw-idea",
+            "对全市场数字货币计算突破质量分数",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 2
+    assert "Current stage: mandate_admission" in result.stdout
+    lineage_dirs = list(outputs_root.iterdir())
+    assert len(lineage_dirs) == 1
+    assert (lineage_dirs[0] / "01_mandate" / "author" / "draft" / "mandate_admission.yaml").exists()
+    assert not (lineage_dirs[0] / "00_idea_intake").exists()
+
+
+def test_run_research_session_no_longer_accepts_confirm_intake(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    result = run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "runtime" / "scripts" / "run_research_session.py"),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "breakout_quality",
+            "--confirm-intake",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode != 0
+    assert "--confirm-intake has been retired" in result.stderr
 
 
 def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
@@ -591,8 +703,8 @@ def test_run_research_session_supports_json_output(tmp_path: Path) -> None:
     assert result.returncode == 2
     payload = json.loads(result.stdout)
     assert payload["current_orchestrator"] == "qros-research-session"
-    assert payload["current_stage"] == "idea_intake_confirmation_pending"
-    assert payload["current_skill"] == "qros-idea-intake-author"
+    assert payload["current_stage"] == "mandate_admission"
+    assert payload["current_skill"] == "qros-research-session"
     assert payload["lineage_root"].endswith("btc_leads_high_liquidity_alts_after_shock_events")
     assert payload["lineage_mode"] == "fresh_start"
     assert "fresh lineage slug" in payload["lineage_selection_reason"]
@@ -637,7 +749,7 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
     )
 
     assert result.returncode == 2
-    assert "📍 Current stage: idea_intake_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_admission" in result.stdout
     assert "🧬 Lineage mode: resume_blocked_existing_slug" in result.stdout
     assert "Resume blocked for existing lineage btc_leads_alts" in result.stdout
     assert "Continue through qros-research-session with that explicit lineage" in result.stdout
@@ -737,10 +849,10 @@ def test_run_research_session_supports_snapshot_output(tmp_path: Path) -> None:
     assert result.returncode == 2
     payload = json.loads(result.stdout)
     assert payload["fixture_id"] == "btc_leads_high_liquidity_alts_after_shock_events"
-    assert payload["route_skill"] == "qros-idea-intake-author"
-    assert payload["stage_id"] == "idea_intake"
-    assert payload["session_stage"] == "idea_intake_confirmation_pending"
-    assert payload["formal_decision"] == "IDEA_INTAKE_PENDING_CONFIRMATION"
+    assert payload["route_skill"] == "qros-research-session"
+    assert payload["stage_id"] == "mandate"
+    assert payload["session_stage"] == "mandate_admission"
+    assert payload["formal_decision"] == "MANDATE_ADMISSION_IN_PROGRESS"
     assert "artifact_catalog.md" in payload["required_artifacts"]
     assert "runtime/scripts/run_research_session.py" in payload["evidence_refs"]
     assert "🧭" not in result.stdout
@@ -752,30 +864,7 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {
-                "market": "binance perp",
-                "data_source": "binance um futures klines",
-                "bar_size": "5m",
-            },
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "scope_canvas.yaml",
-        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
-    )
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
-    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+    _write_mandate_admission(lineage_root, freeze_confirmed=False)
 
     result = run(
         [
@@ -793,9 +882,8 @@ def test_run_research_session_stops_at_pending_confirmation_when_intake_admitted
     )
 
     assert result.returncode == 2
-    assert "Current stage: idea_intake_confirmation_pending" in result.stdout
-    assert "CONFIRM_IDEA_INTAKE" in result.stdout
-    assert "Why now:" in result.stdout
+    assert "Current stage: mandate_freeze_confirmation_pending" in result.stdout
+    assert "Freeze groups:" in result.stdout
 
 
 def test_run_research_session_cli_confirms_all_freeze_groups(tmp_path: Path) -> None:
@@ -803,32 +891,7 @@ def test_run_research_session_cli_confirms_all_freeze_groups(tmp_path: Path) -> 
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+    draft_dir = _write_mandate_admission(lineage_root, freeze_confirmed=False)
 
     result = run(
         [
@@ -850,9 +913,9 @@ def test_run_research_session_cli_confirms_all_freeze_groups(tmp_path: Path) -> 
     assert "✅ Confirmation recorded: CONFIRM_ALL_FREEZE_GROUPS" in result.stdout
     assert "Freeze groups:" in result.stdout
     assert "- research_intent: confirmed" in result.stdout
-    assert "📍 Current stage: mandate_confirmation_pending" in result.stdout
+    assert "📍 Current stage: mandate_freeze_confirmation_pending" in result.stdout
     assert "CONFIRM_MANDATE" in result.stdout
-    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    draft = _read_yaml(draft_dir / "mandate_freeze_draft.yaml")
     assert all(group["confirmed"] for group in draft["groups"].values())
     assert all(group.get("freeze_digest_sha256") for group in draft["groups"].values())
     assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
@@ -863,33 +926,10 @@ def test_run_research_session_cli_rejects_empty_freeze_group_confirmation(tmp_pa
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
+    draft_dir = _write_mandate_admission(lineage_root)
     draft = _freeze_draft(confirmed=False)
     draft["groups"]["research_intent"]["draft"] = {}
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft)
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", draft)
 
     result = run(
         [
@@ -909,7 +949,7 @@ def test_run_research_session_cli_rejects_empty_freeze_group_confirmation(tmp_pa
 
     assert result.returncode != 0
     assert "freeze draft incomplete" in result.stderr
-    draft_after = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    draft_after = _read_yaml(draft_dir / "mandate_freeze_draft.yaml")
     assert not draft_after["groups"]["research_intent"]["confirmed"]
     assert "freeze_digest_sha256" not in draft_after["groups"]["research_intent"]
 
@@ -919,31 +959,7 @@ def test_run_research_session_cli_reopens_freeze_when_confirmed_draft_changes(tm
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+    draft_dir = _write_mandate_admission(lineage_root, freeze_confirmed=False)
     confirm_result = run(
         [
             sys.executable,
@@ -961,9 +977,9 @@ def test_run_research_session_cli_reopens_freeze_when_confirmed_draft_changes(tm
     )
     assert confirm_result.returncode == 2
 
-    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    draft = _read_yaml(draft_dir / "mandate_freeze_draft.yaml")
     draft["groups"]["research_intent"]["draft"]["primary_hypothesis"] = "Changed after freeze."
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", draft)
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", draft)
 
     result = run(
         [
@@ -983,7 +999,7 @@ def test_run_research_session_cli_reopens_freeze_when_confirmed_draft_changes(tm
 
     assert result.returncode != 0
     assert "freeze draft changed after confirmation" in result.stderr
-    assert not (intake_dir / "mandate_transition_approval.yaml").exists()
+    assert not (draft_dir / "mandate_transition_approval.yaml").exists()
     assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
 
     reconfirm_result = run(
@@ -1010,9 +1026,6 @@ def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Pat
     repo_root = REPO_ROOT
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
 
     result = run(
         [
@@ -1030,39 +1043,14 @@ def test_run_research_session_accepts_explicit_intake_confirmation(tmp_path: Pat
         cwd=repo_root,
     )
 
-    assert result.returncode == 2
-    assert (intake_dir / "idea_intake_transition_approval.yaml").exists()
-    assert "Confirmation recorded: CONFIRM_IDEA_INTAKE" in result.stdout
-    assert "Confirmation did not advance the workflow because intake gate requirements are still incomplete." in result.stdout
+    assert result.returncode != 0
+    assert "--confirm-intake has been retired" in result.stderr
 
 
 def test_run_research_session_confirm_intake_advances_to_mandate_confirmation_when_gate_ready(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {
-                "market": "binance perp",
-                "data_source": "binance um futures klines",
-                "bar_size": "5m",
-            },
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "scope_canvas.yaml",
-        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
-    )
 
     result = run(
         [
@@ -1080,10 +1068,8 @@ def test_run_research_session_confirm_intake_advances_to_mandate_confirmation_wh
         cwd=repo_root,
     )
 
-    assert result.returncode == 2
-    assert "Confirmation recorded: CONFIRM_IDEA_INTAKE" in result.stdout
-    assert "Confirmation advanced the workflow." in result.stdout
-    assert "Current stage: mandate_confirmation_pending" in result.stdout
+    assert result.returncode != 0
+    assert "--confirm-intake has been retired" in result.stderr
 
 
 def test_run_research_session_requires_route_assessment_before_mandate_pending(tmp_path: Path) -> None:
@@ -1091,38 +1077,7 @@ def test_run_research_session_requires_route_assessment_before_mandate_pending(t
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "approved_scope": {
-                "market": "binance perp",
-                "data_source": "binance um futures klines",
-                "bar_size": "5m",
-            },
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "scope_canvas.yaml",
-        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
-    )
-    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+    _write_mandate_admission(lineage_root, include_route=False)
 
     result = run(
         [
@@ -1140,8 +1095,8 @@ def test_run_research_session_requires_route_assessment_before_mandate_pending(t
     )
 
     assert result.returncode == 2
-    assert "Current stage: idea_intake" in result.stdout
-    assert "route_assessment" in result.stdout
+    assert "Current stage: mandate_admission" in result.stdout
+    assert "recommended_route" in result.stdout or "route_assessment" in result.stdout
     assert "Research route:" not in result.stdout
     assert not (_stage_output_path(lineage_root / "01_mandate", "mandate.md")).exists()
 
@@ -1151,40 +1106,7 @@ def test_run_research_session_builds_mandate_only_after_explicit_confirmation(tm
     script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {
-                "market": "binance perp",
-                "data_source": "binance um futures klines",
-                "bar_size": "5m",
-            },
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "scope_canvas.yaml",
-        {"market": "binance perp", "data_source": "binance um futures klines", "bar_size": "5m"},
-    )
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=True))
-    (intake_dir / "research_question_set.md").write_text("# Research Questions\n\n- TODO\n", encoding="utf-8")
+    _write_mandate_admission(lineage_root, freeze_confirmed=True)
     ensure_stage_program(lineage_root, "mandate")
 
     confirm_result = run(

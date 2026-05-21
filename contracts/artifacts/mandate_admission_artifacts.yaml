@@ -1,0 +1,228 @@
+schema_id: mandate-admission-artifacts-v1
+schema_version: v1
+stage: mandate_admission
+stage_dir: 01_mandate/author/draft
+unknown_machine_top_level_fields: forbid
+
+artifacts:
+  mandate_admission.yaml:
+    type: yaml
+    unknown_top_level_fields: forbid
+    fields:
+      - path: lineage_id
+        description: 标识当前研究 lineage，用于把 admission 判断绑定到唯一研究线。
+        type: string
+      - path: raw_idea
+        description: 记录用户原始研究想法，用于审计 mandate 来源。
+        type: string
+      - path: observation
+        description: 记录可观察市场现象，禁止直接把想法写成收益结论。
+        type: string
+      - path: primary_hypothesis
+        description: 记录主假设，用于说明为什么该现象可能形成可研究边。
+        type: string
+      - path: counter_hypothesis
+        description: 记录对立假设，用于防止只采纳支持性叙事。
+        type: string
+      - path: research_questions
+        description: 记录主要研究问题和必要子问题。
+        type: list[string]
+        default: []
+      - path: scope
+        description: 记录 admission 批准范围。
+        type: map
+      - path: scope.market
+        description: 声明研究市场。
+        type: string
+      - path: scope.instrument_type
+        description: 声明交易品种类型。
+        type: string
+        default: ""
+      - path: scope.universe
+        description: 声明研究标的池。
+        type: string
+      - path: scope.data_source
+        description: 声明数据来源。
+        type: string
+      - path: scope.bar_size
+        description: 声明基础 K 线或采样粒度。
+        type: string
+      - path: scope.holding_horizons
+        description: 列出研究持有周期。
+        type: list[string]
+        default: []
+      - path: scope.target_task
+        description: 声明目标研究任务。
+        type: string
+      - path: scope.excluded_scope
+        description: 列出明确排除范围。
+        type: list[string]
+        default: []
+      - path: scope.budget_days
+        description: 声明研究预算天数。
+        type: integer
+        default: 0
+      - path: scope.max_iterations
+        description: 声明最大研究迭代次数。
+        type: integer
+        default: 0
+      - path: qualification
+        description: 记录想法资格评分。
+        type: map
+      - path: qualification.summary
+        description: 记录资格评分摘要。
+        type: string
+        default: ""
+      - path: qualification.dimensions
+        description: 承载各资格评分维度。
+        type: map
+      - path: qualification.dimensions.observability.score
+        description: 记录可观测性评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.observability.evidence
+        description: 记录可观测性证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.observability.uncertainty
+        description: 记录可观测性不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.observability.kill_reason
+        description: 记录可观测性终止原因。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.mechanism_plausibility.score
+        description: 记录机制可信度评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.mechanism_plausibility.evidence
+        description: 记录机制可信度证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.mechanism_plausibility.uncertainty
+        description: 记录机制可信度不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.mechanism_plausibility.kill_reason
+        description: 记录机制可信度终止原因。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.tradeability.score
+        description: 记录可交易性评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.tradeability.evidence
+        description: 记录可交易性证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.tradeability.uncertainty
+        description: 记录可交易性不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.tradeability.kill_reason
+        description: 记录可交易性终止原因。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.data_feasibility.score
+        description: 记录数据可行性评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.data_feasibility.evidence
+        description: 记录数据可行性证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.data_feasibility.uncertainty
+        description: 记录数据可行性不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.data_feasibility.kill_reason
+        description: 记录数据可行性终止原因。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.scoping_clarity.score
+        description: 记录范围清晰度评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.scoping_clarity.evidence
+        description: 记录范围清晰度证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.scoping_clarity.uncertainty
+        description: 记录范围清晰度不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.scoping_clarity.kill_reason
+        description: 记录范围清晰度终止原因。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.distinctiveness.score
+        description: 记录差异化评分。
+        type: integer
+        default: 0
+      - path: qualification.dimensions.distinctiveness.evidence
+        description: 记录差异化证据。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.distinctiveness.uncertainty
+        description: 记录差异化不确定性。
+        type: list[string]
+        default: []
+      - path: qualification.dimensions.distinctiveness.kill_reason
+        description: 记录差异化终止原因。
+        type: list[string]
+        default: []
+      - path: route_assessment
+        description: 记录 route 判断。
+        type: map
+      - path: route_assessment.candidate_routes
+        description: 列出候选研究路线。
+        type: list[string]
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+      - path: route_assessment.recommended_route
+        description: 声明推荐研究路线。
+        type: string
+        allowed_values_if_nonempty:
+          - time_series_signal
+          - cross_sectional_factor
+      - path: route_assessment.why_recommended
+        description: 记录路线推荐理由。
+        type: list[string]
+        default: []
+      - path: route_assessment.why_not_other_routes
+        description: 记录未选择其他路线的理由。
+        type: map
+        default: {}
+      - path: route_assessment.route_risks
+        description: 记录路线风险。
+        type: list[string]
+        default: []
+      - path: route_assessment.route_decision_pending
+        description: 记录路线决策是否待确认。
+        type: boolean
+        default: true
+      - path: admission_decision
+        description: 记录 mandate admission 结论。
+        type: map
+      - path: admission_decision.verdict
+        description: 声明 admission 结论。
+        type: enum
+        values:
+          - ACCEPT_FOR_MANDATE
+          - NEEDS_REFRAME
+          - DROP
+        default: NEEDS_REFRAME
+      - path: admission_decision.why
+        description: 记录 admission 结论理由。
+        type: list[string]
+        default: []
+      - path: admission_decision.kill_criteria
+        description: 记录终止条件。
+        type: list[string]
+        default: []
+      - path: admission_decision.required_reframe_actions
+        description: 记录必须完成的重构动作。
+        type: list[string]
+        default: []

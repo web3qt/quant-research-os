@@ -13,9 +13,13 @@ STAGE_PROGRAM_SPECS: dict[str, dict[str, object]] = {
         "route": "route_neutral",
         "program_dir": Path("program/mandate"),
         "module": "runtime.tools.idea_runtime",
-        "function": "build_mandate_from_intake",
+        "function": "build_mandate_from_admission",
         "stage_dir": Path("01_mandate"),
-        "inputs": ["00_idea_intake/idea_gate_decision.yaml", "00_idea_intake/mandate_freeze_draft.yaml"],
+        "inputs": [
+            "01_mandate/author/draft/mandate_admission.yaml",
+            "01_mandate/author/draft/mandate_freeze_draft.yaml",
+            "01_mandate/author/draft/mandate_transition_approval.yaml",
+        ],
         "outputs": [
             "01_mandate/author/formal/mandate.md",
             "01_mandate/author/formal/research_scope.md",

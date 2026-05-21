@@ -9,17 +9,17 @@ def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
     content = skill_file.read_text(encoding="utf-8")
 
     assert skill_file.exists()
-    assert "idea_intake" in content
-    assert "idea_intake_confirmation_pending" in content
+    assert "mandate_admission" in content
+    assert "mandate_freeze_confirmation_pending" in content
     assert "mandate" in content
     assert "mandate review" in content.lower()
-    assert "mandate_confirmation_pending" in content
+    assert "mandate_freeze_confirmation_pending" in content
     assert "CONFIRM_MANDATE" in content
     assert "是否确认进入 mandate" in content
     assert "observation" in content
     assert "counter-hypothesis" in content or "counter_hypothesis" in content
     assert "kill criteria" in content
-    assert "CONFIRM_IDEA_INTAKE" in content
+    assert "ACCEPT_FOR_MANDATE" in content
     assert "data source" in content.lower() or "数据来源" in content
     assert "bar_size" in content or "1m" in content
     assert "research_intent" in content
@@ -89,8 +89,8 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "./.qros/bin/qros-session" in content
     assert "qros-research-session" in content
     assert "data_ready" in content
-    assert "mandate_confirmation_pending" in content
-    assert "idea_intake_confirmation_pending" in content
+    assert "mandate_freeze_confirmation_pending" in content
+    assert "mandate_admission" in content
     assert "用户不需要记住内部命令" in content
     assert "reviewer 子代理" in content
     assert "spawn_agent" in content
@@ -110,7 +110,7 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "route_inheritance_contract.yaml" in content
     assert "intake" in content.lower()
     assert "kill criteria" in content
-    assert "--confirm-intake" in content
+    assert "`--confirm-intake` 已退役" in content
     assert "--confirm-all-freeze-groups" in content
     assert "freeze_digest_sha256" in content
     assert "missing_items" in content

@@ -12,6 +12,10 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
+from runtime.tools.mandate_admission_runtime import (
+    admission_ready_for_freeze,
+    scaffold_mandate_admission,
+)
 from runtime.tools.research_session import (
     _latest_review_failure_status,
     detect_session_stage,
@@ -67,6 +71,168 @@ def _route_assessment() -> dict:
         "route_risks": ["Universe breadth may be limited."],
         "route_decision_pending": True,
     }
+
+
+def _write_mandate_admission(
+    lineage_root: Path,
+    *,
+    accepted: bool = True,
+    include_route: bool = True,
+    freeze_confirmed: bool | None = None,
+    transition_confirmed: bool = False,
+) -> Path:
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    route_assessment = _route_assessment()
+    route_assessment["route_decision_pending"] = False
+    payload = {
+        "lineage_id": lineage_root.name,
+        "raw_idea": "BTC leads ALTs",
+        "observation": "BTC shocks precede ALT reactions.",
+        "primary_hypothesis": "BTC leads price discovery.",
+        "counter_hypothesis": "Moves are shared beta.",
+        "research_questions": ["Do ALTs follow BTC after shocks?"],
+        "scope": {
+            "market": "binance perp",
+            "instrument_type": "perpetual",
+            "universe": "high liquidity alts",
+            "data_source": "binance um futures klines",
+            "bar_size": "5m",
+            "holding_horizons": ["15m", "30m"],
+            "target_task": "event-driven relative return study",
+            "excluded_scope": ["low liquidity tails"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        },
+        "qualification": {
+            "summary": "Researchable.",
+            "dimensions": {
+                name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                for name in [
+                    "observability",
+                    "mechanism_plausibility",
+                    "tradeability",
+                    "data_feasibility",
+                    "scoping_clarity",
+                    "distinctiveness",
+                ]
+            },
+        },
+        "route_assessment": route_assessment
+        if include_route
+        else {
+            "candidate_routes": [],
+            "recommended_route": "",
+            "why_recommended": [],
+            "why_not_other_routes": {},
+            "route_risks": [],
+            "route_decision_pending": True,
+        },
+        "admission_decision": {
+            "verdict": "ACCEPT_FOR_MANDATE" if accepted else "NEEDS_REFRAME",
+            "why": ["Scope is concrete."],
+            "kill_criteria": ["No edge after costs."],
+            "required_reframe_actions": [] if accepted else ["narrow universe"],
+        },
+    }
+    _write_yaml(draft_dir / "mandate_admission.yaml", payload)
+    if freeze_confirmed is not None:
+        _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=freeze_confirmed))
+    if transition_confirmed:
+        _write_yaml(
+            draft_dir / "mandate_transition_approval.yaml",
+            {
+                "lineage_id": lineage_root.name,
+                "decision": "CONFIRM_MANDATE",
+                "approved_by": "tester",
+                "approved_at": "2026-05-21T10:00:00Z",
+                "source_stage": "mandate_freeze_confirmation_pending",
+            },
+        )
+    return draft_dir
+
+
+def test_scaffold_mandate_admission_creates_compressed_draft(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "breakout_quality"
+
+    artifacts = scaffold_mandate_admission(lineage_root, raw_idea="突破质量分数")
+
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    assert "01_mandate/author/draft/mandate_admission.yaml" in artifacts
+    assert "01_mandate/author/draft/mandate_freeze_draft.yaml" in artifacts
+    payload = _read_yaml(draft_dir / "mandate_admission.yaml")
+    assert payload["lineage_id"] == "breakout_quality"
+    assert payload["raw_idea"] == "突破质量分数"
+    assert payload["admission_decision"]["verdict"] == "NEEDS_REFRAME"
+
+
+def test_admission_ready_for_freeze_requires_accept_verdict_and_route() -> None:
+    payload = {
+        "lineage_id": "breakout_quality",
+        "raw_idea": "breakout quality",
+        "observation": "Clean breakouts may continue.",
+        "primary_hypothesis": "Volume-confirmed breakouts have relative strength.",
+        "counter_hypothesis": "The effect is shared beta.",
+        "research_questions": ["Does quality rank forecast forward returns?"],
+        "scope": {
+            "market": "crypto perpetual futures",
+            "instrument_type": "perpetual",
+            "universe": "top 30 Binance USD-M",
+            "data_source": "/data/binance",
+            "bar_size": "5m",
+            "holding_horizons": ["30m", "2h"],
+            "target_task": "cross-sectional ranking",
+            "excluded_scope": ["spot"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        },
+        "qualification": {
+            "summary": "Researchable.",
+            "dimensions": {
+                name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                for name in [
+                    "observability",
+                    "mechanism_plausibility",
+                    "tradeability",
+                    "data_feasibility",
+                    "scoping_clarity",
+                    "distinctiveness",
+                ]
+            },
+        },
+        "route_assessment": {
+            "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
+            "recommended_route": "cross_sectional_factor",
+            "why_recommended": ["Ranking is the thesis."],
+            "why_not_other_routes": {"time_series_signal": ["Single-asset direction is secondary."]},
+            "route_risks": ["Short leg fragility."],
+            "route_decision_pending": False,
+        },
+        "admission_decision": {
+            "verdict": "ACCEPT_FOR_MANDATE",
+            "why": ["Scope is concrete."],
+            "kill_criteria": ["No monotonic buckets after costs."],
+            "required_reframe_actions": [],
+        },
+    }
+
+    assert admission_ready_for_freeze(payload) is None
+
+    payload["route_assessment"]["route_decision_pending"] = True
+    assert (
+        admission_ready_for_freeze(payload)
+        == "route_assessment.route_decision_pending must be false"
+    )
+    payload["route_assessment"]["route_decision_pending"] = False
+
+    payload["qualification"]["dimensions"]["observability"]["score"] = True
+    assert (
+        admission_ready_for_freeze(payload)
+        == "qualification.dimensions.observability.score must be positive"
+    )
+    payload["qualification"]["dimensions"]["observability"]["score"] = 3
+
+    payload["route_assessment"]["recommended_route"] = ""
+    assert admission_ready_for_freeze(payload) == "route_assessment.recommended_route is required"
 
 
 def _write_stage_completion_certificate(
@@ -1063,92 +1229,86 @@ def test_resolve_lineage_root_raises_for_existing_same_slug_raw_idea(tmp_path: P
         resolve_lineage_root(outputs_root, lineage_id=None, raw_idea="BTC leads ALTs")
 
 
-def test_detect_session_stage_returns_idea_intake_when_lineage_missing(tmp_path: Path) -> None:
+def test_detect_session_stage_returns_mandate_admission_when_lineage_missing(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
 
-    assert detect_session_stage(lineage_root) == "idea_intake"
+    assert detect_session_stage(lineage_root) == "mandate_admission"
+
+
+def test_detect_session_stage_returns_mandate_freeze_confirmation_when_admission_accepted(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "breakout_quality"
+    scaffold_mandate_admission(lineage_root, raw_idea="breakout quality")
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    payload = _read_yaml(draft_dir / "mandate_admission.yaml")
+    payload.update(
+        {
+            "observation": "Clean breakouts may continue.",
+            "primary_hypothesis": "Volume-confirmed breakouts have relative strength.",
+            "counter_hypothesis": "The effect is shared beta.",
+            "research_questions": ["Does quality rank forecast forward returns?"],
+        }
+    )
+    payload["scope"].update(
+        {
+            "market": "crypto perpetual futures",
+            "instrument_type": "perpetual",
+            "universe": "top 30 Binance USD-M",
+            "data_source": "/data/binance",
+            "bar_size": "5m",
+            "holding_horizons": ["30m"],
+            "target_task": "cross-sectional ranking",
+            "excluded_scope": ["spot"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        }
+    )
+    payload["qualification"]["summary"] = "Researchable."
+    for dimension in payload["qualification"]["dimensions"].values():
+        dimension["score"] = 3
+        dimension["evidence"] = ["present"]
+    payload["route_assessment"] = {
+        "candidate_routes": ["cross_sectional_factor", "time_series_signal"],
+        "recommended_route": "cross_sectional_factor",
+        "why_recommended": ["Ranking is the thesis."],
+        "why_not_other_routes": {"time_series_signal": ["Single-asset direction is secondary."]},
+        "route_risks": ["Short leg fragility."],
+        "route_decision_pending": False,
+    }
+    payload["admission_decision"] = {
+        "verdict": "ACCEPT_FOR_MANDATE",
+        "why": ["Scope is concrete."],
+        "kill_criteria": ["No monotonic buckets after costs."],
+        "required_reframe_actions": [],
+    }
+    _write_yaml(draft_dir / "mandate_admission.yaml", payload)
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+
+    assert detect_session_stage(lineage_root) == "mandate_freeze_confirmation_pending"
 
 
 def test_detect_session_stage_returns_idea_intake_when_gate_not_admitted(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "NEEDS_REFRAME",
-            "why": ["scope unclear"],
-            "approved_scope": {},
-            "required_reframe_actions": ["narrow universe"],
-            "rollback_target": "00_idea_intake",
-        },
-    )
+    _write_mandate_admission(lineage_root, accepted=False)
 
-    assert detect_session_stage(lineage_root) == "idea_intake_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_admission"
 
 
 def test_detect_session_stage_returns_pending_confirmation_when_admitted_but_not_approved(
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
+    _write_mandate_admission(lineage_root, freeze_confirmed=False)
 
-    assert detect_session_stage(lineage_root) == "idea_intake_confirmation_pending"
+    assert detect_session_stage(lineage_root) == "mandate_freeze_confirmation_pending"
 
 
 def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitly_approved(
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "mandate_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_MANDATE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_gate_verdict": "GO_TO_MANDATE",
-        },
-    )
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=True))
+    _write_mandate_admission(lineage_root, freeze_confirmed=True, transition_confirmed=True)
 
     assert detect_session_stage(lineage_root) == "mandate_author"
 
@@ -1156,35 +1316,11 @@ def test_detect_session_stage_returns_mandate_author_when_admitted_and_explicitl
 def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_mandate_admission(lineage_root, freeze_confirmed=False)
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "mandate_confirmation_pending"
+    assert status.current_stage == "mandate_freeze_confirmation_pending"
     assert status.current_route == "time_series_signal"
     assert status.next_action == (
         "Review all mandate freeze groups in qros-research-session, then reply 确认全部 "
@@ -1202,32 +1338,7 @@ def test_run_research_session_reports_next_freeze_group_when_draft_incomplete(tm
 def test_run_research_session_can_confirm_all_freeze_groups_without_stage_transition(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _freeze_draft(confirmed=False))
+    draft_dir = _write_mandate_admission(lineage_root, freeze_confirmed=False)
 
     status = run_research_session(
         outputs_root=outputs_root,
@@ -1235,12 +1346,12 @@ def test_run_research_session_can_confirm_all_freeze_groups_without_stage_transi
         confirm_all_freeze_groups=True,
     )
 
-    assert status.current_stage == "mandate_confirmation_pending"
+    assert status.current_stage == "mandate_freeze_confirmation_pending"
     assert status.next_action == (
         "Reply CONFIRM_MANDATE <lineage_id> in qros-research-session after reviewing the displayed contract."
     )
-    assert "00_idea_intake/mandate_freeze_draft.yaml" in status.artifacts_written
-    draft = _read_yaml(intake_dir / "mandate_freeze_draft.yaml")
+    assert "01_mandate/author/draft/mandate_freeze_draft.yaml" in status.artifacts_written
+    draft = _read_yaml(draft_dir / "mandate_freeze_draft.yaml")
     assert {name: group["confirmed"] for name, group in draft["groups"].items()} == {
         "research_intent": True,
         "scope_contract": True,
@@ -1252,37 +1363,14 @@ def test_run_research_session_can_confirm_all_freeze_groups_without_stage_transi
 def test_run_research_session_keeps_intake_open_when_route_assessment_is_missing(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_intake_transition_approval.yaml",
-        {
-            "lineage_id": "btc_leads_alts",
-            "decision": "CONFIRM_IDEA_INTAKE",
-            "approved_by": "tester",
-            "approved_at": "2026-03-25T10:00:00Z",
-            "source_stage": "idea_intake_interview",
-        },
-    )
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["qualified"],
-            "approved_scope": {"market": "binance perp"},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
-        },
-    )
-    _write_yaml(intake_dir / "scope_canvas.yaml", {"market": "binance perp"})
+    _write_mandate_admission(lineage_root, include_route=False)
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
-    assert status.current_stage == "idea_intake"
+    assert status.current_stage == "mandate_admission"
     assert status.current_route is None
-    assert status.gate_status == "IN_PROGRESS"
-    assert "route_assessment" in status.next_action
+    assert status.gate_status == "MANDATE_ADMISSION_IN_PROGRESS"
+    assert "recommended_route" in status.next_action or "route_assessment" in status.next_action
 
 
 def test_run_research_session_stops_at_intake_confirmation_pending_for_new_lineage(
@@ -1292,9 +1380,9 @@ def test_run_research_session_stops_at_intake_confirmation_pending_for_new_linea
 
     status = run_research_session(outputs_root=outputs_root, raw_idea="BTC leads ALTs")
 
-    assert status.current_stage == "idea_intake_confirmation_pending"
-    assert status.gate_status == "IDEA_INTAKE_PENDING_CONFIRMATION"
-    assert "Reply CONFIRM_IDEA_INTAKE <lineage_id> in qros-research-session" in status.next_action
+    assert status.current_stage == "mandate_admission"
+    assert status.gate_status == "MANDATE_ADMISSION_IN_PROGRESS"
+    assert "observation is required" in status.next_action
     assert status.lineage_mode == "fresh_start"
     assert "fresh lineage slug" in (status.lineage_selection_reason or "")
 
@@ -1321,7 +1409,7 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
     status = run_research_session(outputs_root=outputs_root, raw_idea="BTC leads ALTs")
 
     assert status.lineage_id == "btc_leads_alts"
-    assert status.current_stage == "idea_intake_confirmation_pending"
+    assert status.current_stage == "mandate_admission"
     assert status.lineage_mode == "resume_blocked_existing_slug"
     assert status.blocking_reason_code == "LINEAGE_RESUME_BLOCKED"
     assert "blocked implicit resume" in status.why_this_skill
@@ -1332,23 +1420,13 @@ def test_run_research_session_blocks_implicit_resume_for_existing_same_slug_raw_
 def test_run_research_session_explicit_lineage_id_resume_is_still_allowed(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
-    _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
-        {
-            "idea_id": "btc_leads_alts",
-            "verdict": "NEEDS_REFRAME",
-            "why": ["scope unclear"],
-            "approved_scope": {},
-        },
-    )
+    _write_mandate_admission(lineage_root, accepted=False)
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
     assert status.lineage_id == "btc_leads_alts"
     assert status.lineage_mode == "explicit_resume"
-    assert status.current_stage == "idea_intake_confirmation_pending"
+    assert status.current_stage == "mandate_admission"
 
 
 def test_detect_session_stage_returns_mandate_review_when_mandate_artifacts_exist(tmp_path: Path) -> None:

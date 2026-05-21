@@ -5,6 +5,8 @@ description: Use when a raw trading idea needs to be qualified before it is allo
 
 # Idea Intake Author
 
+> Legacy note: `idea_intake` is retired from the normal QROS first-stage path. Do not recommend this skill from `qros-research-session`. Use only for manual inspection of old lineages created before the mandate-admission merge.
+
 ## Purpose
 
 把原始 idea 压成 `00_idea_intake` 的正式产物，而不是直接写 mandate。

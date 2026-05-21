@@ -192,21 +192,23 @@ def scaffold_idea_intake(lineage_root: Path) -> Path:
     return intake_dir
 
 
-def build_mandate_from_intake(lineage_root: Path) -> Path:
+def build_mandate_from_admission(lineage_root: Path) -> Path:
     lineage_root = lineage_root.resolve()
-    intake_dir = lineage_root / "00_idea_intake"
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
     mandate_dir = lineage_root / "01_mandate"
     mandate_context = build_stage_context(mandate_dir)
     mandate_formal_dir = mandate_context["author_formal_dir"]
 
-    gate_decision = yaml.safe_load((intake_dir / "idea_gate_decision.yaml").read_text(encoding="utf-8"))
+    admission = yaml.safe_load((draft_dir / "mandate_admission.yaml").read_text(encoding="utf-8"))
+    if not isinstance(admission, dict):
+        raise ValueError("mandate_admission.yaml must contain a YAML mapping")
 
-    if gate_decision.get("verdict") != "GO_TO_MANDATE":
-        raise ValueError("idea_gate_decision verdict must be GO_TO_MANDATE before mandate build")
-    route_assessment = _require_route_assessment(gate_decision)
+    if admission.get("admission_decision", {}).get("verdict") != "ACCEPT_FOR_MANDATE":
+        raise ValueError("mandate_admission verdict must be ACCEPT_FOR_MANDATE before mandate build")
+    route_assessment = _require_route_assessment_from_admission(admission)
 
     mandate_formal_dir.mkdir(parents=True, exist_ok=True)
-    freeze_groups = _require_confirmed_freeze_groups(intake_dir)
+    freeze_groups = _require_confirmed_freeze_groups(draft_dir)
     research_intent = freeze_groups["research_intent"]["draft"]
     scope_contract = freeze_groups["scope_contract"]["draft"]
     data_contract = freeze_groups["data_contract"]["draft"]
@@ -268,10 +270,10 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     if not route_rationale:
         raise ValueError("confirmed mandate inputs missing: route_rationale")
     if research_route not in route_assessment["candidate_routes"]:
-        raise ValueError("confirmed mandate inputs research_route must be one of intake candidate_routes")
+        raise ValueError("confirmed mandate inputs research_route must be one of admission candidate_routes")
     rejected_routes = {route for route in route_assessment["candidate_routes"] if route != research_route}
     if set(excluded_routes) != rejected_routes:
-        raise ValueError("confirmed mandate inputs excluded_routes must match rejected intake candidate_routes")
+        raise ValueError("confirmed mandate inputs excluded_routes must match rejected admission candidate_routes")
     if research_route in excluded_routes:
         raise ValueError("confirmed mandate inputs excluded_routes cannot include research_route")
     if research_route == "cross_sectional_factor":
@@ -307,11 +309,11 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
             [
                 "# Mandate",
                 "",
-                f"Idea ID: {gate_decision.get('idea_id', lineage_root.name)}",
+                f"Lineage ID: {admission.get('lineage_id', lineage_root.name)}",
                 "",
                 "## 目标",
                 "",
-                "- 将已通过 qualification 的 intake 冻结为正式 mandate。",
+                "- 将已通过 mandate admission 的研究想法冻结为正式 mandate。",
                 "",
                 "## 研究意图",
                 "",
@@ -357,8 +359,8 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
                 "",
                 "## Gate 依据",
                 "",
-                "- idea_gate_decision.yaml verdict = GO_TO_MANDATE",
-                f"- Intake 推荐路线: {route_assessment['recommended_route']}",
+                "- mandate_admission.yaml verdict = ACCEPT_FOR_MANDATE",
+                f"- Admission 推荐路线: {route_assessment['recommended_route']}",
             ]
         )
         + "\n",
@@ -484,8 +486,12 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     return mandate_dir
 
 
-def _require_confirmed_freeze_groups(intake_dir: Path) -> dict[str, Any]:
-    draft_path = intake_dir / MANDATE_FREEZE_DRAFT_FILE
+def build_mandate_from_intake(lineage_root: Path) -> Path:
+    return build_mandate_from_admission(lineage_root)
+
+
+def _require_confirmed_freeze_groups(draft_dir: Path) -> dict[str, Any]:
+    draft_path = draft_dir / MANDATE_FREEZE_DRAFT_FILE
     return require_confirmed_freeze_groups(
         draft_path,
         MANDATE_FREEZE_GROUP_ORDER,
@@ -551,6 +557,39 @@ def _require_route_assessment(gate_decision: dict[str, Any]) -> dict[str, Any]:
     documented_rejections = {str(route).strip() for route in why_not_other_routes if str(route).strip()}
     if rejected_routes - documented_rejections:
         raise ValueError("idea_gate_decision route_assessment missing why_not_other_routes entries")
+    return route_assessment
+
+
+def _require_route_assessment_from_admission(admission: dict[str, Any]) -> dict[str, Any]:
+    route_assessment = admission.get("route_assessment")
+    if not isinstance(route_assessment, dict):
+        raise ValueError("mandate_admission missing route_assessment for ACCEPT_FOR_MANDATE")
+
+    recommended_route = _require_supported_route(
+        str(route_assessment.get("recommended_route", "")).strip(),
+        field_name="mandate_admission route_assessment recommended_route",
+    )
+    candidate_routes = _require_supported_route_list(
+        _string_list(route_assessment.get("candidate_routes", [])),
+        field_name="mandate_admission route_assessment candidate_routes",
+    )
+    why_recommended = _string_list(route_assessment.get("why_recommended", []))
+    why_not_other_routes = route_assessment.get("why_not_other_routes", {})
+
+    if not candidate_routes:
+        raise ValueError("mandate_admission route_assessment missing candidate_routes")
+    if len(candidate_routes) < 2:
+        raise ValueError("mandate_admission route_assessment candidate_routes must include at least two routes")
+    if recommended_route not in candidate_routes:
+        raise ValueError("mandate_admission route_assessment recommended_route must be in candidate_routes")
+    if not why_recommended:
+        raise ValueError("mandate_admission route_assessment missing why_recommended")
+    if not isinstance(why_not_other_routes, dict):
+        raise ValueError("mandate_admission route_assessment missing why_not_other_routes")
+    rejected_routes = {route for route in candidate_routes if route != recommended_route}
+    documented_rejections = {str(route).strip() for route in why_not_other_routes if str(route).strip()}
+    if rejected_routes - documented_rejections:
+        raise ValueError("mandate_admission route_assessment missing why_not_other_routes entries")
     return route_assessment
 
 

@@ -329,6 +329,10 @@ def main() -> int:
 
     if args.lineage_id is None and args.raw_idea is None:
         raise SystemExit("Either --lineage-id or --raw-idea must be provided")
+    if args.confirm_intake:
+        raise SystemExit(
+            "--confirm-intake has been retired; mandate admission now uses --confirm-mandate after freeze review"
+        )
     confirm_flags = [
         args.confirm_intake,
         args.confirm_mandate,
@@ -349,7 +353,7 @@ def main() -> int:
         outputs_root=args.outputs_root.resolve(),
         lineage_id=args.lineage_id,
         raw_idea=args.raw_idea,
-        idea_intake_decision="CONFIRM_IDEA_INTAKE" if args.confirm_intake else None,
+        idea_intake_decision=None,
         mandate_decision="CONFIRM_MANDATE" if args.confirm_mandate else None,
         data_ready_decision="CONFIRM_DATA_READY" if args.confirm_data_ready else None,
         signal_ready_decision="CONFIRM_SIGNAL_READY" if args.confirm_signal_ready else None,

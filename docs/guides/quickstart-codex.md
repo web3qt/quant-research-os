@@ -33,6 +33,8 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 
+新 QROS lineage 的第一站是 `mandate_admission`。QROS 不再为新研究线创建 `00_idea_intake/`；原 intake 资格评估、scope、route assessment 和 kill criteria 现在集中在 `01_mandate/author/draft/mandate_admission.yaml`。当 admission 被接受后，流程进入 `mandate_freeze_confirmation_pending`，用户只需要确认 mandate freeze。
+
 `qros-update` 同时适用于 Codex 和 Claude Code。你只需要在 active research repo 根目录输入 `qros-update`；它会自动识别当前 host，刷新全局 QROS 安装，并重建当前 repo 的 `./.qros/` runtime，默认跟踪最新稳定版本。
 
 如果你是框架开发者并且需要显式跟踪未发布主干，使用 `qros-update main`。
@@ -70,9 +72,9 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 Agent 应该做这些事：
 
 - 创建或恢复当前 lineage
-- 缺少 intake artifacts 时进行 scaffold
-- 对全新的 raw idea 先停在 `idea_intake_confirmation_pending`，补齐 observation、hypothesis、scope、data source、`bar_size` 和 kill criteria
-- intake 通过后进入 `mandate_confirmation_pending`，逐组确认 `research_intent`、`scope_contract`、`data_contract`、`execution_contract`
+- 缺少 `mandate_admission` draft 时进行 scaffold
+- 对全新的 raw idea 先停在 `mandate_admission`，补齐 observation、hypothesis、scope、data source、`bar_size`、route assessment 和 kill criteria
+- admission 通过后进入 `mandate_freeze_confirmation_pending`，逐组确认 `research_intent`、`scope_contract`、`data_contract`、`execution_contract`
 - `mandate` review closure 后先进入 `mandate_next_stage_confirmation_pending`，等显式 `CONFIRM_NEXT_STAGE` 后按 `research_route` 进入 `tss_*` 或 `csf_*` 阶段
 - 每个 route-specific stage 都要先冻结 grouped contracts，再由当前 active research repo 真实生成 formal artifacts，然后由 `qros-research-session` 显式确认并编排 review
 - 不得把空目录、placeholder 文件、contract-only markdown 或本仓库里的说明文档当成阶段完成

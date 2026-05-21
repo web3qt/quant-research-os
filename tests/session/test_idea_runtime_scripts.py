@@ -380,6 +380,85 @@ def test_build_mandate_from_intake_creates_mandate_artifacts(tmp_path: Path) -> 
     assert "Built mandate artifacts" in result.stdout
 
 
+def test_build_mandate_from_mandate_admission_draft(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "breakout_quality"
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    draft_dir.mkdir(parents=True)
+    _write_yaml(
+        draft_dir / "mandate_admission.yaml",
+        {
+            "lineage_id": "breakout_quality",
+            "raw_idea": "breakout quality",
+            "observation": "Clean breakouts may continue.",
+            "primary_hypothesis": "Volume-confirmed breakouts have relative strength.",
+            "counter_hypothesis": "The effect is shared beta.",
+            "research_questions": ["Does quality rank forecast forward returns?"],
+            "scope": {
+                "market": "crypto perpetual futures",
+                "instrument_type": "perpetual",
+                "universe": "top 30 Binance USD-M",
+                "data_source": "/data/binance",
+                "bar_size": "5m",
+                "holding_horizons": ["30m"],
+                "target_task": "cross-sectional ranking",
+                "excluded_scope": ["spot"],
+                "budget_days": 5,
+                "max_iterations": 3,
+            },
+            "qualification": {
+                "summary": "Researchable.",
+                "dimensions": {
+                    name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                    for name in [
+                        "observability",
+                        "mechanism_plausibility",
+                        "tradeability",
+                        "data_feasibility",
+                        "scoping_clarity",
+                        "distinctiveness",
+                    ]
+                },
+            },
+            "route_assessment": _route_assessment(),
+            "admission_decision": {
+                "verdict": "ACCEPT_FOR_MANDATE",
+                "why": ["Scope is concrete."],
+                "kill_criteria": ["No monotonic buckets after costs."],
+                "required_reframe_actions": [],
+            },
+        },
+    )
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    _write_yaml(
+        draft_dir / "mandate_transition_approval.yaml",
+        {
+            "lineage_id": "breakout_quality",
+            "decision": "CONFIRM_MANDATE",
+            "approved_by": "tester",
+            "approved_at": "2026-05-21T10:00:00Z",
+            "source_stage": "mandate_freeze_confirmation_pending",
+        },
+    )
+
+    ensure_stage_program(lineage_root, "mandate")
+    result = run(
+        [
+            sys.executable,
+            str(lineage_root / "program" / "mandate" / "run_stage.py"),
+            "--lineage-root",
+            str(lineage_root),
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    assert (formal_dir / "mandate.md").exists()
+    assert (formal_dir / "research_route.yaml").exists()
+
+
 def test_build_mandate_from_intake_requires_route_assessment_for_go_to_mandate(tmp_path: Path) -> None:
     repo_root = REPO_ROOT
     script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"

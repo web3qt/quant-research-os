@@ -11,6 +11,17 @@ from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.idea_runtime import scaffold_idea_intake
 
 
+def test_load_artifact_contract_supports_mandate_admission() -> None:
+    from runtime.tools.artifact_contract_runtime import load_artifact_contract
+
+    contract = load_artifact_contract("mandate_admission")
+
+    assert contract["schema_id"] == "mandate-admission-artifacts-v1"
+    assert contract["stage"] == "mandate_admission"
+    assert contract["stage_dir"] == "01_mandate/author/draft"
+    assert "mandate_admission.yaml" in contract["artifacts"]
+
+
 def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 

@@ -90,38 +90,65 @@ def test_validate_stage_artifacts_script_accepts_valid_mandate(tmp_path: Path) -
 
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_alt_transmission_v1"
-    intake_dir = lineage_root / "00_idea_intake"
-    intake_dir.mkdir(parents=True)
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    draft_dir.mkdir(parents=True)
+    route_assessment = _route_assessment()
+    route_assessment["route_decision_pending"] = False
     _write_yaml(
-        intake_dir / "idea_gate_decision.yaml",
+        draft_dir / "mandate_admission.yaml",
         {
-            "idea_id": "btc_alt_transmission_v1",
-            "verdict": "GO_TO_MANDATE",
-            "why": ["variables are observable"],
-            "route_assessment": _route_assessment(),
-            "approved_scope": {},
-            "required_reframe_actions": [],
-            "rollback_target": "00_idea_intake",
+            "lineage_id": "btc_alt_transmission_v1",
+            "raw_idea": "BTC leads ALTs",
+            "observation": "BTC shocks precede ALT reactions.",
+            "primary_hypothesis": "BTC leads price discovery.",
+            "counter_hypothesis": "Moves are shared beta.",
+            "research_questions": ["Do ALTs follow BTC after shocks?"],
+            "scope": {
+                "market": "Binance perpetual",
+                "data_source": "Binance UM futures klines",
+                "instrument_type": "perpetual",
+                "universe": "top liquidity alts",
+                "bar_size": "5m",
+                "holding_horizons": ["15m"],
+                "target_task": "event-driven relative return study",
+                "excluded_scope": [],
+                "budget_days": 10,
+                "max_iterations": 3,
+            },
+            "qualification": {
+                "summary": "Researchable.",
+                "dimensions": {
+                    name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                    for name in [
+                        "observability",
+                        "mechanism_plausibility",
+                        "tradeability",
+                        "data_feasibility",
+                        "scoping_clarity",
+                        "distinctiveness",
+                    ]
+                },
+            },
+            "route_assessment": route_assessment,
+            "admission_decision": {
+                "verdict": "ACCEPT_FOR_MANDATE",
+                "why": ["variables are observable"],
+                "kill_criteria": ["No edge after costs."],
+                "required_reframe_actions": [],
+            },
         },
     )
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
     _write_yaml(
-        intake_dir / "scope_canvas.yaml",
+        draft_dir / "mandate_transition_approval.yaml",
         {
-            "market": "Binance perpetual",
-            "data_source": "Binance UM futures klines",
-            "instrument_type": "perpetual",
-            "universe": "top liquidity alts",
-            "bar_size": "5m",
-            "holding_horizons": ["15m"],
-            "target_task": "event-driven relative return study",
-            "excluded_scope": [],
-            "budget_days": 10,
-            "max_iterations": 3,
+            "lineage_id": "btc_alt_transmission_v1",
+            "decision": "CONFIRM_MANDATE",
+            "approved_by": "tester",
+            "approved_at": "2026-05-21T10:00:00Z",
+            "source_stage": "mandate_freeze_confirmation_pending",
         },
     )
-    (intake_dir / "research_question_set.md").write_text("# Research Questions\n", encoding="utf-8")
-    (intake_dir / "qualification_scorecard.yaml").write_text("idea_id: btc_alt_transmission_v1\n", encoding="utf-8")
-    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
     ensure_stage_program(lineage_root, "mandate")
 
     build = run(

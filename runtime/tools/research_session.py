@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -176,6 +177,11 @@ from runtime.tools.idea_runtime import (
     _require_route_assessment,
     scaffold_idea_intake,
 )
+from runtime.tools.mandate_admission_runtime import (
+    admission_ready_for_freeze,
+    load_mandate_admission,
+    scaffold_mandate_admission,
+)
 from runtime.tools.freeze_contract_runtime import (
     confirm_all_freeze_groups,
     first_unconfirmed_or_invalid_group,
@@ -254,6 +260,8 @@ from runtime.tools.review_skillgen.context_inference import build_stage_context
 SessionStage = Literal[
     "idea_intake",
     "idea_intake_confirmation_pending",
+    "mandate_admission",
+    "mandate_freeze_confirmation_pending",
     "mandate_next_stage_confirmation_pending",
     "mandate_confirmation_pending",
     "mandate_author",
@@ -779,6 +787,8 @@ def _next_author_action_from_context(
 def _is_author_context_stage(current_stage: SessionStage) -> bool:
     if current_stage == "idea_intake":
         return True
+    if current_stage == "mandate_freeze_confirmation_pending":
+        return False
     if current_stage.endswith("_review_confirmation_pending") or current_stage.endswith("_next_stage_confirmation_pending"):
         return False
     return current_stage.endswith("_confirmation_pending") or current_stage.endswith("_author")
@@ -1003,6 +1013,8 @@ def _protected_state_blocked_status(
 STAGE_ACTIVE_SKILLS: dict[SessionStage, str] = {
     "idea_intake": "qros-idea-intake-author",
     "idea_intake_confirmation_pending": "qros-idea-intake-author",
+    "mandate_admission": "qros-research-session",
+    "mandate_freeze_confirmation_pending": "qros-research-session",
     "mandate_next_stage_confirmation_pending": "qros-research-session",
     "mandate_confirmation_pending": "qros-mandate-author",
     "mandate_author": "qros-mandate-author",
@@ -1267,6 +1279,12 @@ NEXT_STAGE_BY_BASE: dict[str, str | None] = {
 }
 
 FREEZE_DRAFT_STAGE_SPECS: dict[SessionStage, tuple[tuple[str, ...], str, tuple[str, ...], str]] = {
+    "mandate_freeze_confirmation_pending": (
+        ("01_mandate", "author", "draft"),
+        MANDATE_FREEZE_DRAFT_FILE,
+        tuple(MANDATE_FREEZE_GROUP_ORDER),
+        "mandate",
+    ),
     "mandate_confirmation_pending": (
         ("00_idea_intake",),
         MANDATE_FREEZE_DRAFT_FILE,
@@ -1389,7 +1407,8 @@ def slugify_idea(raw_idea: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", "_", raw_idea.strip().lower())
     normalized = normalized.strip("_")
     if not normalized:
-        raise ValueError("raw_idea must contain at least one alphanumeric character")
+        digest = hashlib.sha256(raw_idea.strip().encode("utf-8")).hexdigest()[:12]
+        return f"idea_{digest}"
     return normalized
 
 
@@ -1447,7 +1466,6 @@ def resolve_lineage_selection(outputs_root: Path, lineage_id: str | None, raw_id
 
 
 def detect_session_stage(lineage_root: Path) -> SessionStage:
-    intake_dir = lineage_root / "00_idea_intake"
     mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = lineage_root / "02_data_ready"
     signal_ready_dir = lineage_root / "03_signal_ready"
@@ -1632,30 +1650,27 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
             closure_complete=_mandate_closure_complete(mandate_dir),
         )
 
-    if not intake_dir.exists():
-        return "idea_intake"
+    mandate_draft_dir = mandate_dir / "author" / "draft"
+    mandate_admission_path = mandate_draft_dir / "mandate_admission.yaml"
+    mandate_freeze_path = mandate_draft_dir / MANDATE_FREEZE_DRAFT_FILE
 
-    intake_approval = read_idea_intake_transition_decision(lineage_root)
-    if intake_approval != "CONFIRM_IDEA_INTAKE":
-        return "idea_intake_confirmation_pending"
+    if not mandate_admission_path.exists():
+        return "mandate_admission"
 
-    gate_path = intake_dir / "idea_gate_decision.yaml"
-    if not gate_path.exists():
-        return "idea_intake"
+    admission_error = admission_ready_for_freeze(load_mandate_admission(lineage_root))
+    if admission_error is not None:
+        return "mandate_admission"
 
-    gate_decision = _read_yaml(gate_path)
-    if gate_decision.get("verdict") != "GO_TO_MANDATE":
-        return "idea_intake"
-    if _route_assessment_error(gate_decision) is not None:
-        return "idea_intake"
+    if not mandate_freeze_path.exists() or next_mandate_freeze_group(lineage_root) is not None:
+        return "mandate_freeze_confirmation_pending"
 
     approval_decision = read_mandate_transition_decision(lineage_root)
     if approval_decision == "CONFIRM_MANDATE" and next_mandate_freeze_group(lineage_root) is None:
         return "mandate_author"
     if approval_decision == "REFRAME":
-        return "idea_intake"
+        return "mandate_admission"
 
-    return "mandate_confirmation_pending"
+    return "mandate_freeze_confirmation_pending"
 
 
 def ensure_intake_scaffold(lineage_root: Path) -> list[str]:
@@ -1981,7 +1996,11 @@ def write_mandate_transition_decision(
     approval_path = _approval_path(lineage_root)
     approval_path.parent.mkdir(parents=True, exist_ok=True)
 
-    gate_decision = _read_yaml(approval_path.parent / "idea_gate_decision.yaml")
+    admission = _read_yaml(approval_path.parent / "mandate_admission.yaml")
+    admission_decision = admission.get("admission_decision", {})
+    source_verdict = (
+        admission_decision.get("verdict", "") if isinstance(admission_decision, dict) else ""
+    )
     approval_path.write_text(
         yaml.safe_dump(
             {
@@ -1989,7 +2008,8 @@ def write_mandate_transition_decision(
                 "decision": decision,
                 "approved_by": approved_by,
                 "approved_at": datetime.now(timezone.utc).isoformat(),
-                "source_gate_verdict": gate_decision.get("verdict", ""),
+                "source_stage": "mandate_freeze_confirmation_pending",
+                "source_gate_verdict": source_verdict,
             },
             sort_keys=False,
             allow_unicode=True,
@@ -2378,6 +2398,15 @@ def current_research_route(lineage_root: Path) -> str | None:
         if route_value in SUPPORTED_RESEARCH_ROUTES:
             return route_value
 
+    admission_path = lineage_root / "01_mandate" / "author" / "draft" / "mandate_admission.yaml"
+    if admission_path.exists():
+        admission_payload = _read_yaml(admission_path)
+        route_assessment = admission_payload.get("route_assessment", {})
+        if isinstance(route_assessment, dict):
+            route_value = str(route_assessment.get("recommended_route", "")).strip()
+            if route_value in SUPPORTED_RESEARCH_ROUTES:
+                return route_value
+
     gate_path = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
     if gate_path.exists():
         gate_payload = _read_yaml(gate_path)
@@ -2411,7 +2440,7 @@ def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
 
 
 def next_mandate_freeze_group(lineage_root: Path) -> str | None:
-    draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
+    draft_path = lineage_root / "01_mandate" / "author" / "draft" / MANDATE_FREEZE_DRAFT_FILE
     return first_unconfirmed_or_invalid_group(draft_path, MANDATE_FREEZE_GROUP_ORDER)
 
 
@@ -2689,6 +2718,8 @@ def _next_stage_confirmation_next_action(next_stage_base: str | None) -> str:
 
 def ensure_freeze_draft_for_stage(lineage_root: Path, current_stage: SessionStage) -> list[str]:
     # 批量确认前先确保当前 confirmation gate 的 draft skeleton 已落盘。
+    if current_stage == "mandate_freeze_confirmation_pending":
+        return scaffold_mandate_admission(lineage_root)
     if current_stage == "data_ready_confirmation_pending":
         return ensure_data_ready_scaffold(lineage_root)
     if current_stage == "csf_data_ready_confirmation_pending":
@@ -2913,7 +2944,7 @@ def _lineage_resume_blocked_status(*, selection: LineageSelection) -> SessionCon
         lineage_mode=selection.mode,
         lineage_selection_reason=selection.reason,
         current_orchestrator="qros-research-session",
-        current_stage="idea_intake_confirmation_pending",
+        current_stage="mandate_admission",
         current_route=None,
         stage_status="awaiting_lineage_selection",
         blocking_reason_code="LINEAGE_RESUME_BLOCKED",
@@ -3079,6 +3110,8 @@ def _blocking_reason(
     if requires_failure_handling:
         verdict = review_verdict or "a failure-class review result"
         return f"Normal progression is blocked by review verdict {verdict}."
+    if current_stage == "mandate_admission":
+        return "Mandate admission evidence is still incomplete."
     if current_stage == "idea_intake":
         return "Idea intake inputs or admission evidence are still incomplete."
     if current_stage.endswith("_review_confirmation_pending"):
@@ -3970,7 +4003,10 @@ def run_research_session(
             write_idea_intake_transition_decision(lineage_root, decision=idea_intake_decision)
         )
         current_stage = detect_session_stage(lineage_root)
-    if failure_package_status is None and mandate_decision is not None and current_stage == "mandate_confirmation_pending":
+    if failure_package_status is None and mandate_decision is not None and current_stage in {
+        "mandate_freeze_confirmation_pending",
+        "mandate_confirmation_pending",
+    }:
         validate_freeze_groups_for_stage_transition(lineage_root, current_stage)
         artifacts_written.append(
             write_mandate_transition_decision(lineage_root, decision=mandate_decision)
@@ -4071,8 +4107,8 @@ def run_research_session(
             artifacts_written.append(written)
         current_stage = detect_session_stage(lineage_root)
 
-    if failure_package_status is None and current_stage == "idea_intake":
-        artifacts_written.extend(ensure_intake_scaffold(lineage_root))
+    if failure_package_status is None and current_stage == "mandate_admission":
+        artifacts_written.extend(scaffold_mandate_admission(lineage_root, raw_idea=raw_idea or ""))
         current_stage = detect_session_stage(lineage_root)
 
     if failure_package_status is None and current_stage == "mandate_author":
@@ -4934,6 +4970,17 @@ def _tss_gate_status_and_next_action(lineage_root: Path, current_stage: SessionS
 
 def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage) -> tuple[str, str]:
     intake_gate = lineage_root / "00_idea_intake" / "idea_gate_decision.yaml"
+    if current_stage == "mandate_admission":
+        admission_path = lineage_root / "01_mandate" / "author" / "draft" / "mandate_admission.yaml"
+        if admission_path.exists():
+            admission_error = admission_ready_for_freeze(load_mandate_admission(lineage_root))
+            if admission_error is not None:
+                return "MANDATE_ADMISSION_IN_PROGRESS", admission_error
+        return (
+            "MANDATE_ADMISSION_IN_PROGRESS",
+            "Complete 01_mandate/author/draft/mandate_admission.yaml before mandate freeze confirmation.",
+        )
+
     if current_stage == "idea_intake":
         if intake_gate.exists():
             gate_payload = _read_yaml(intake_gate)
@@ -4974,7 +5021,7 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
             "Reply CONFIRM_IDEA_INTAKE <lineage_id> in qros-research-session after finishing the intake interview.",
         )
 
-    if current_stage == "mandate_confirmation_pending":
+    if current_stage in {"mandate_freeze_confirmation_pending", "mandate_confirmation_pending"}:
         next_group = next_mandate_freeze_group(lineage_root)
         if next_group is not None:
             return "GO_TO_MANDATE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("mandate")
@@ -5274,7 +5321,7 @@ def _idea_intake_approval_path(lineage_root: Path) -> Path:
 
 
 def _approval_path(lineage_root: Path) -> Path:
-    return lineage_root / "00_idea_intake" / MANDATE_TRANSITION_APPROVAL_FILE
+    return lineage_root / "01_mandate" / "author" / "draft" / MANDATE_TRANSITION_APPROVAL_FILE
 
 
 def _data_ready_approval_path(lineage_root: Path) -> Path:

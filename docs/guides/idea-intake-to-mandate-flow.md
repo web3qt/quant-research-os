@@ -1,4 +1,6 @@
-# 从 Idea Intake 到 Mandate 的流程
+# Mandate Admission 到 Mandate 的流程
+
+> Legacy note: 独立 `idea_intake -> mandate` 正常路径已退役。新 lineage 从 `mandate_admission` 开始，不再创建 `00_idea_intake/`。
 
 ## 目标
 
@@ -17,14 +19,18 @@
 
 ## 流程
 
-第一版流程固定为：
+当前流程固定为：
 
-`Idea -> Observation -> Hypothesis -> Qualification -> Mandate`
+`Idea -> Mandate Admission -> Mandate Freeze -> Mandate Author`
 
 落盘阶段为：
 
-- `00_idea_intake`
-- `01_mandate`
+- `01_mandate/author/draft/mandate_admission.yaml`
+- `01_mandate/author/draft/mandate_freeze_draft.yaml`
+- `01_mandate/author/draft/mandate_transition_approval.yaml`
+- `01_mandate/author/formal/*`
+
+`mandate_admission.yaml` 合并记录 raw idea、observation、hypotheses、scope、qualification、route assessment 和 admission decision。
 
 ## `00_idea_intake` 必备产物
 

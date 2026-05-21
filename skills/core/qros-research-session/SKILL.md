@@ -1,6 +1,6 @@
 ---
 name: qros-research-session
-description: Use when the user wants one orchestrated QROS conversation from idea_intake through mandate, time_series_signal TSS stages, or cross_sectional_factor CSF stages.
+description: Use when the user wants one orchestrated QROS conversation from mandate_admission through mandate, time_series_signal TSS stages, or cross_sectional_factor CSF stages.
 ---
 
 # QROS Research Session
@@ -22,8 +22,8 @@ description: Use when the user wants one orchestrated QROS conversation from ide
 
 第一版只覆盖：
 
-- `idea_intake`
-- `idea_intake_confirmation_pending`
+- `mandate_admission`
+- `mandate_freeze_confirmation_pending`
 - `mandate`
 - `mandate review`
 - `tss_data_ready`
@@ -231,11 +231,11 @@ For any author-eligible stage:
 
 1. Resolve or create the lineage
 2. Detect the current stage from disk
-3. Auto-scaffold `00_idea_intake/` when it does not exist
-4. For `idea_intake`, artifact shape 以 contract 为准：`contracts/artifacts/idea_intake_artifacts.yaml`
-5. After scaffold or before attempting `GO_TO_MANDATE`, run `qros-validate-stage --stage idea_intake`; if it fails, fix the artifact shape before continuing
-6. Drive `idea_intake` authoring with the same discipline as `qros-idea-intake-author`
-7. 对于一个全新的 raw idea，必须先停在 `idea_intake_confirmation_pending`，不得把用户第一句话直接当成完整 qualification 结论
+3. Auto-scaffold `01_mandate/author/draft/mandate_admission.yaml` and `01_mandate/author/draft/mandate_freeze_draft.yaml` when they do not exist
+4. `idea_intake` is retired from the ordinary user path; do not create `00_idea_intake/` for new lineages
+5. For `mandate_admission`, artifact shape 以 contract 为准：`contracts/artifacts/mandate_admission_artifacts.yaml`
+6. Drive admission inside `qros-research-session`; do not hand normal users to `qros-idea-intake-author`
+7. 对于一个全新的 raw idea，必须先停在 `mandate_admission`，不得把用户第一句话直接当成完整 admission 结论
 8. 如果当前入口是 `raw_idea` 且没有显式 `lineage_id`，不得无声恢复另一条旧 lineage；只有用户明确给出 `lineage_id` 或明确表达“继续那条线”时，才允许 resume
 9. 先显式确认 `observation`
 10. 再显式确认 `primary hypothesis` 与 `counter-hypothesis`
@@ -243,9 +243,9 @@ For any author-eligible stage:
 12. 再显式确认 `market`、`universe`、`target_task`
 13. 再显式确认 `data_source` 与 `bar_size`
 14. 再显式确认 `kill criteria` 或 `reframe` 条件
-15. 在这些 intake 关键项没有得到用户回答前，不得静默填写完整 `qualification_scorecard.yaml` 或直接给出 `GO_TO_MANDATE`
-16. Only after the intake interview is explicitly confirmed may the agent internally write the equivalent of `CONFIRM_IDEA_INTAKE`
-17. If the intake gate reaches `GO_TO_MANDATE`, stop at `mandate_confirmation_pending`
+15. 在这些 admission 关键项没有得到用户回答前，不得静默填写完整 `mandate_admission.yaml` 或直接给出 `ACCEPT_FOR_MANDATE`
+16. Only `admission_decision.verdict = ACCEPT_FOR_MANDATE` may advance to `mandate_freeze_confirmation_pending`
+17. If admission is accepted, stop at `mandate_freeze_confirmation_pending`
 18. Start a grouped mandate freeze conversation instead of silently writing `01_mandate`
 19. Confirm `research_intent`
 20. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
@@ -464,13 +464,13 @@ When the stage is `idea_intake`, the agent must ask explicitly before writing a 
 
 Do not treat the user's first raw-idea sentence as if all of these were already confirmed. Do not silently jump from a raw idea to a completed intake gate.
 
-When the stage is `idea_intake_confirmation_pending`, the agent must ask one explicit question after回显 intake summary:
+When the stage is `mandate_admission`, the agent must ask targeted questions until `mandate_admission.yaml` is complete enough for `ACCEPT_FOR_MANDATE`.
 
-- `是否确认以上 intake 访谈内容，可以进入正式 qualification？`
+- `是否接受这条研究想法进入 mandate freeze？`
 
-Do not write a real gate verdict before this explicit confirmation.
+Do not write `ACCEPT_FOR_MANDATE` before the admission evidence is complete.
 
-When the stage is `mandate_confirmation_pending`, the agent must ask explicitly:
+When the stage is `mandate_freeze_confirmation_pending`, the agent must ask explicitly:
 
 - `research_intent` 这一组冻结什么？
 - `scope_contract` 这一组冻结什么？
