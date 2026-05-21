@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -245,6 +246,64 @@ def test_repo_local_install_manifest_ignores_staging_dir_when_repo_root_is_insta
     assert manifest["source_git_dirty"] is False
     assert not any(".qros.tmp-" in line for line in manifest["source_git_status_short"])
     assert ".qros.tmp-" not in (repo_root / ".qros" / "uv.lock").read_text(encoding="utf-8")
+
+
+def test_repo_local_install_removes_stale_runtime_staging_dirs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    home_root = tmp_path / "home"
+    install_root.mkdir()
+    home_root.mkdir()
+    stale_staging = install_root / ".qros.tmp-aborted"
+    stale_staging.mkdir()
+    (stale_staging / "partial-file").write_text("interrupted install\n", encoding="utf-8")
+    monkeypatch.setenv("HOME", str(home_root))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    assert (install_root / ".qros").exists()
+    assert not stale_staging.exists()
+    assert not (install_root / ".qros.install.lock").exists()
+    assert not list(install_root.glob(".qros.tmp-*"))
+
+
+def test_repo_local_install_fails_closed_when_install_lock_is_active(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    home_root = tmp_path / "home"
+    install_root.mkdir()
+    home_root.mkdir()
+    (install_root / ".qros.install.lock").mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    with pytest.raises(InstallError, match="another QROS runtime install is already running"):
+        install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+
+def test_repo_local_install_recovers_stale_install_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    home_root = tmp_path / "home"
+    install_root.mkdir()
+    home_root.mkdir()
+    lock_dir = install_root / ".qros.install.lock"
+    lock_dir.mkdir()
+    old_timestamp = 1
+    monkeypatch.setenv("HOME", str(home_root))
+    monkeypatch.setattr(install_runtime, "QROS_INSTALL_LOCK_STALE_SECONDS", 0)
+    # Keep the lock mtime deterministic so the stale-lock branch is exercised even on fast filesystems.
+    os.utime(lock_dir, (old_timestamp, old_timestamp))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    assert (install_root / ".qros").exists()
+    assert not lock_dir.exists()
 
 
 def test_repo_local_install_manifest_keeps_tracked_changes_under_qros_tmp_like_path(

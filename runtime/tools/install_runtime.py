@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -49,10 +51,40 @@ RUNTIME_ASSETS = (
 REPO_LOCAL_RUNTIME_ASSETS = (
     RuntimeAsset(Path("runtime/bin"), Path("bin")),
 )
+QROS_INSTALL_LOCK_NAME = ".qros.install.lock"
+QROS_STAGING_MARKER_NAME = ".qros-staging.json"
+QROS_INSTALL_LOCK_STALE_SECONDS = 60 * 60 * 2
 
 
 class InstallError(RuntimeError):
     pass
+
+
+class _RepoLocalInstallLock:
+    def __init__(self, parent: Path) -> None:
+        self.path = parent / QROS_INSTALL_LOCK_NAME
+        self.acquired = False
+
+    def acquire(self) -> None:
+        while True:
+            try:
+                self.path.mkdir()
+            except FileExistsError:
+                if _qros_install_lock_is_stale(self.path):
+                    shutil.rmtree(self.path, ignore_errors=True)
+                    continue
+                raise InstallError(
+                    f"another QROS runtime install is already running for {self.path.parent}. "
+                    "Wait for it to finish, then rerun qros-update."
+                )
+            self.acquired = True
+            _write_qros_install_lock_owner(self.path)
+            return
+
+    def release(self) -> None:
+        if self.acquired and self.path.exists():
+            shutil.rmtree(self.path, ignore_errors=True)
+        self.acquired = False
 
 
 @dataclass(frozen=True)
@@ -284,60 +316,139 @@ def _install_repo_local_runtime(
     resolved_git_tag: str | None,
 ) -> list[str]:
     target.runtime_root.parent.mkdir(parents=True, exist_ok=True)
-    staging_root = Path(
-        tempfile.mkdtemp(
-            prefix=f"{target.runtime_root.name}.tmp-",
-            dir=target.runtime_root.parent,
-        )
-    ).resolve()
-    staging_target = InstallTarget(
-        mode=target.mode,
-        skills_root=target.skills_root,
-        runtime_root=staging_root,
-        manifest_path=staging_root / target.manifest_path.name,
-    )
-
+    install_lock = _RepoLocalInstallLock(target.runtime_root.parent)
+    install_lock.acquire()
     try:
-        runtime_written: list[str] = []
-        for asset in runtime_assets:
-            source = repo_root / asset.source_rel
-            destination = staging_target.runtime_root / asset.dest_rel
-            _copy_asset(source, destination)
-            runtime_written.extend(_collect_files(destination, root=staging_target.runtime_root))
+        _cleanup_qros_staging_dirs(parent=target.runtime_root.parent, runtime_name=target.runtime_root.name)
+        staging_root = Path(
+            tempfile.mkdtemp(
+                prefix=f"{target.runtime_root.name}.tmp-",
+                dir=target.runtime_root.parent,
+            )
+        ).resolve()
+        _write_qros_staging_marker(staging_root)
+        staging_target = InstallTarget(
+            mode=target.mode,
+            skills_root=target.skills_root,
+            runtime_root=staging_root,
+            manifest_path=staging_root / target.manifest_path.name,
+        )
 
         try:
-            staging_runtime_env = ensure_repo_local_uv_runtime(runtime_root=staging_target.runtime_root, repo_root=repo_root)
-        except UvRuntimeError as exc:
-            raise InstallError(str(exc)) from exc
+            runtime_written: list[str] = []
+            for asset in runtime_assets:
+                source = repo_root / asset.source_rel
+                destination = staging_target.runtime_root / asset.dest_rel
+                _copy_asset(source, destination)
+                runtime_written.extend(_collect_files(destination, root=staging_target.runtime_root))
 
-        runtime_env = _relocate_runtime_env_metadata(
-            staging_runtime_env,
-            from_root=staging_target.runtime_root,
-            to_root=target.runtime_root,
-        )
-        manifest = build_manifest(
-            repo_root=repo_root,
-            target=target,
-            installed_skills=installed_skills,
-            installed_runtime_files=sorted(runtime_written),
-            runtime_env=runtime_env,
-            host=host,
-            update_channel=update_channel,
-            requested_ref=requested_ref,
-            resolved_ref_type=resolved_ref_type,
-            resolved_git_ref=resolved_git_ref,
-            resolved_git_tag=resolved_git_tag,
-        )
-        staging_target.manifest_path.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
+            try:
+                staging_runtime_env = ensure_repo_local_uv_runtime(
+                    runtime_root=staging_target.runtime_root, repo_root=repo_root
+                )
+            except UvRuntimeError as exc:
+                raise InstallError(str(exc)) from exc
 
-        _replace_runtime_root(staging_root=staging_target.runtime_root, final_root=target.runtime_root)
-        return sorted(runtime_written)
+            runtime_env = _relocate_runtime_env_metadata(
+                staging_runtime_env,
+                from_root=staging_target.runtime_root,
+                to_root=target.runtime_root,
+            )
+            manifest = build_manifest(
+                repo_root=repo_root,
+                target=target,
+                installed_skills=installed_skills,
+                installed_runtime_files=sorted(runtime_written),
+                runtime_env=runtime_env,
+                host=host,
+                update_channel=update_channel,
+                requested_ref=requested_ref,
+                resolved_ref_type=resolved_ref_type,
+                resolved_git_ref=resolved_git_ref,
+                resolved_git_tag=resolved_git_tag,
+            )
+            staging_target.manifest_path.write_text(
+                json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+            _replace_runtime_root(staging_root=staging_target.runtime_root, final_root=target.runtime_root)
+            return sorted(runtime_written)
+        finally:
+            if staging_root.exists():
+                shutil.rmtree(staging_root)
     finally:
-        if staging_root.exists():
-            shutil.rmtree(staging_root)
+        install_lock.release()
+
+
+def _write_qros_install_lock_owner(lock_path: Path) -> None:
+    (lock_path / "owner.json").write_text(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "created_at": datetime.now(UTC).isoformat(),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def _qros_install_lock_is_stale(lock_path: Path) -> bool:
+    if time.time() - lock_path.stat().st_mtime > QROS_INSTALL_LOCK_STALE_SECONDS:
+        return True
+
+    owner_path = lock_path / "owner.json"
+    if not owner_path.exists():
+        return False
+
+    try:
+        owner = json.loads(owner_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+    pid = owner.get("pid")
+    return isinstance(pid, int) and not _pid_is_running(pid)
+
+
+def _pid_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _cleanup_qros_staging_dirs(*, parent: Path, runtime_name: str) -> None:
+    for path in parent.glob(f"{runtime_name}.tmp-*"):
+        if not path.is_dir():
+            continue
+        try:
+            shutil.rmtree(path)
+        except OSError as exc:
+            raise InstallError(f"unable to remove stale QROS staging directory: {path}") from exc
+
+
+def _write_qros_staging_marker(staging_root: Path) -> None:
+    (staging_root / QROS_STAGING_MARKER_NAME).write_text(
+        json.dumps(
+            {
+                "pid": os.getpid(),
+                "created_at": datetime.now(UTC).isoformat(),
+                "purpose": "qros repo-local runtime staging",
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _relocate_runtime_env_metadata(
@@ -589,7 +700,12 @@ def _is_qros_staging_status_line(line: str) -> bool:
     if not line.startswith("?? "):
         return False
     path = line[3:] if len(line) > 3 else ""
-    return path.startswith(".qros.tmp-") or "/.qros.tmp-" in path
+    return (
+        path == QROS_INSTALL_LOCK_NAME
+        or path.startswith(f"{QROS_INSTALL_LOCK_NAME}/")
+        or path.startswith(".qros.tmp-")
+        or "/.qros.tmp-" in path
+    )
 
 
 def _python_version() -> str:

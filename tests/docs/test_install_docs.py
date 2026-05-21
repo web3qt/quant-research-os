@@ -80,6 +80,9 @@ def test_install_docs_describe_uv_python312_repo_local_runtime() -> None:
     assert "Python 3.12" in installation
     assert "./.qros/uv.lock" in installation
     assert "runtime_lock_digest" in installation
+    assert ".qros.install.lock" in installation
+    assert ".qros.tmp-*" in installation
+    assert "自动清理这些陈旧 staging 目录" in installation
     assert "do not install dependencies as a side effect" in installation
     assert "QROS_PYTHON" in installation
     assert "uv python find 3.12" in installation

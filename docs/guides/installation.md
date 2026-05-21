@@ -153,6 +153,8 @@ test -d ./.qros
 
 `./.qros/` 拥有一套由 `uv` 管理的 Python runtime。`./.qros/.venv/bin/python` 必须是 Python 3.12；`./.qros/uv.lock` 是该 runtime 的 pinned dependency lock。`qros-update` / bootstrap 会使用 `uv` 创建或刷新这套 runtime。
 
+刷新 repo-local runtime 时，安装器会先在 active research repo 根目录拿 `.qros.install.lock`，再创建 `.qros.tmp-*` staging 目录，最后用原子 rename 替换正式 `./.qros/`。如果上一次 `qros-update` 被中断留下 `.qros.tmp-*`，下一次成功取得 install lock 后会先自动清理这些陈旧 staging 目录；如果检测到另一个更新仍在运行，会 fail closed 并要求稍后重试。
+
 普通命令不会偷偷安装依赖：`qros-session`、`qros-review`、`qros-progress`、diagnostics、preflight 和 validators do not install dependencies as a side effect。它们只选择已有 Python、验证 runtime lock，并在环境不满足要求时 fail closed。
 
 `install-manifest.json` 是 repo-local runtime 的来源证明。关键字段包括：
