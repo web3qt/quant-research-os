@@ -21,6 +21,12 @@ def _read_yaml(path: Path) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _write_review_eligibility(lineage_root: Path, payload: dict) -> None:
+    path = lineage_root / "review_eligibility.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
 def _stage_output_path(stage_dir: Path, name: str) -> Path:
     if name in {"latest_review_pack.yaml", "stage_gate_review.yaml", "stage_completion_certificate.yaml"}:
         path = stage_dir / "review" / "closure" / name
@@ -1191,6 +1197,60 @@ def test_run_research_session_reports_mandate_review_when_review_pending(tmp_pat
     assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
 
 
+def test_run_research_session_keeps_mandate_review_eligibility_block_out_of_failure_handler(
+    tmp_path: Path,
+) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    mandate_dir = lineage_root / "01_mandate"
+    mandate_dir.mkdir(parents=True)
+    for name in [
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (_stage_output_path(mandate_dir, name)).write_text("ok\n", encoding="utf-8")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "btc_leads_alts",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 6
+    assert "📍 Current stage: mandate_review_confirmation_pending" in result.stdout
+    assert "qros-stage-failure-handler" not in result.stdout
+    assert "🧯 Requires failure handling: False" in result.stdout
+
+
 def test_run_research_session_omits_stale_intake_open_risks_after_csf_route_activation(
     tmp_path: Path,
 ) -> None:
@@ -2077,6 +2137,82 @@ def test_run_research_session_reports_failure_routing_for_failed_test_review(tmp
     assert "🧨 Failure stage: test_evidence_review" in result.stdout
     assert "qros-stage-failure-handler" in result.stdout
     assert "backtest_ready_confirmation_pending" not in result.stdout
+
+
+def test_run_research_session_reports_review_eligible_csf_test_evidence_failure_handler_instead_of_review_confirmation_pending(
+    tmp_path: Path,
+) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "run_research_session.py"
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_review_blocked"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    stage_dir = lineage_root / "05_csf_test_evidence"
+    stage_dir.mkdir(parents=True)
+    for name in [
+        "rank_ic_timeseries.parquet",
+        "rank_ic_summary.json",
+        "bucket_returns.parquet",
+        "monotonicity_report.json",
+        "breadth_coverage_report.parquet",
+        "subperiod_stability_report.json",
+        "filter_condition_panel.parquet",
+        "target_strategy_condition_compare.parquet",
+        "gated_vs_ungated_summary.json",
+        "csf_test_gate_table.csv",
+        "csf_selected_variants_test.csv",
+        "csf_test_contract.md",
+        "csf_test_gate_decision.md",
+        "run_manifest.json",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ]:
+        (_stage_output_path(stage_dir, name)).write_text("ok\n", encoding="utf-8")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "csf_test_evidence",
+                "reason_code": "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+                "reason": "Canonical review eligibility blocked review entry for csf_test_evidence.",
+                "failure_reason_summary": "Canonical review eligibility requires failure handling for csf_test_evidence.",
+            }
+        },
+    )
+    write_fake_stage_provenance(lineage_root, "csf_test_evidence")
+
+    result = run(
+        [
+            sys.executable,
+            str(script_path),
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_review_blocked",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode == 8
+    assert "📍 Current stage: csf_test_evidence_review" in result.stdout
+    assert "csf_test_evidence_review_confirmation_pending" not in result.stdout
+    assert "🔨 Current active skill: qros-stage-failure-handler" in result.stdout
+    assert "🧪 Review verdict:" not in result.stdout
+    assert "🧯 Requires failure handling: True" in result.stdout
+    assert "🧨 Failure stage: csf_test_evidence" in result.stdout
 
 
 def test_run_research_session_reports_error_when_backtest_ready_lacks_real_engine_outputs(
