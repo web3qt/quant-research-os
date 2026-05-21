@@ -10,7 +10,7 @@
                 <mxCell id="3" value="Raw Idea&#xa;原始交易想法" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="120" y="220" width="220" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="4" value="Idea Intake&#xa;先问清问题，不先看结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="4" value="Mandate Admission&#xa;先问清问题，不先看结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="430" y="220" width="250" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="5" value="Mandate Freeze&#xa;冻结研究边界、时间窗、Universe、路线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
@@ -132,10 +132,10 @@
                 <mxCell id="2" value="QROS 当前已落地主流程图&#xa;First-Wave Runtime Boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
                     <mxGeometry x="1450" y="40" width="560" height="90" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" value="00 idea_intake&#xa;判断这个想法值不值得正式研究" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="3" value="mandate_admission&#xa;判断是否进入正式 mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="360" y="265" width="250" height="92" as="geometry"/>
                 </mxCell>
-                <mxCell id="4" value="00 mandate&#xa;冻结研究问题、边界和路线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="4" value="01_mandate&#xa;冻结研究问题、边界和路线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="690" y="265" width="250" height="92" as="geometry"/>
                 </mxCell>
                 <mxCell id="5" value="research_route" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontSize=15;fontStyle=1;" parent="1" vertex="1">

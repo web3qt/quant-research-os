@@ -12,7 +12,7 @@ tags: [excalidraw]
 ## Text Elements
 ← 返回流程总图 ^WJFMq4Tz
 
-① Idea Intake — 想法筛选与问题澄清 ^tUl94RyG
+① Mandate Admission — 想法筛选与问题澄清 ^tUl94RyG
 
 核心问题：这个想法，到底值不值得正式立项研究？ ^T2lxeeSA
 

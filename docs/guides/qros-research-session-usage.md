@@ -6,7 +6,7 @@
 
 用户不需要记多个命令，只要从这一个 skill 开始，让 QROS 判断当前 lineage 处在哪个阶段。
 
-当前第一阶段已经合并：新 lineage 从 `mandate_admission` 开始，不再创建 `00_idea_intake/`。旧 intake 职责现在写入 `01_mandate/author/draft/mandate_admission.yaml`；admission 通过后进入 `mandate_freeze_confirmation_pending`，第一道用户确认是 `CONFIRM_MANDATE`，写入 `01_mandate/author/draft/mandate_transition_approval.yaml`。
+当前第一阶段从 `mandate_admission` 开始。资格评估、scope、route assessment 和 kill criteria 写入 `01_mandate/author/draft/mandate_admission.yaml`；admission 通过后进入 `mandate_freeze_confirmation_pending`，第一道用户确认是 `CONFIRM_MANDATE`，写入 `01_mandate/author/draft/mandate_transition_approval.yaml`。
 
 如果你不熟悉阶段里的 grouped freeze 字段，可以把
 `docs/guides/stage-freeze-group-field-guide.md`
@@ -272,7 +272,7 @@ Lineage: btc_leads_alts
 🧠 Why now:
 - qualified
 ⚠ Open risks:
-- rollback_target remains 00_idea_intake
+- next-stage confirmation is still incomplete
 ```
 
 这里要区分三层语义：
@@ -389,7 +389,7 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 }
 ```
 
-`--confirm-intake` 已退役。现在第一道用户确认是 mandate freeze approval：
+第一道用户确认是 mandate freeze approval：
 
 ```bash
 ./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-mandate

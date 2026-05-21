@@ -133,7 +133,7 @@ $qros-update
 `qros-research-session` 是统一入口，推进到 `holdout_validation review` closure 为止。
 
 ```text
-00_idea_intake -> 01_mandate -> route selection
+mandate_admission -> mandate_freeze_confirmation_pending -> 01_mandate -> route selection
   ├─ time_series_signal
   │    -> 02_tss_data_ready
   │    -> 03_tss_signal_ready

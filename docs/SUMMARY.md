@@ -10,8 +10,7 @@
 ## 研究流程
 
 * [研究工作流 SOP](sop/main-flow/research_workflow_sop.md)
-* [Idea Intake SOP](sop/main-flow/00_idea_intake_sop_cn.md)
-* [Idea Intake 到 Mandate](guides/idea-intake-to-mandate-flow.md)
+* [Mandate Admission 到 Mandate](guides/mandate-admission-flow.md)
 * [研究 Session 使用](guides/qros-research-session-usage.md)
 * [Closure Artifact Writer](guides/closure-artifact-writer-usage.md)
 

@@ -232,9 +232,9 @@ For any author-eligible stage:
 1. Resolve or create the lineage
 2. Detect the current stage from disk
 3. Auto-scaffold `01_mandate/author/draft/mandate_admission.yaml` and `01_mandate/author/draft/mandate_freeze_draft.yaml` when they do not exist
-4. `idea_intake` is retired from the ordinary user path; do not create `00_idea_intake/` for new lineages
+4. New lineages start at `mandate_admission`; scaffold only the mandate admission draft set
 5. For `mandate_admission`, artifact shape 以 contract 为准：`contracts/artifacts/mandate_admission_artifacts.yaml`
-6. Drive admission inside `qros-research-session`; do not hand normal users to `qros-idea-intake-author`
+6. Drive admission inside `qros-research-session`; do not hand normal users to a separate first-stage author skill
 7. 对于一个全新的 raw idea，必须先停在 `mandate_admission`，不得把用户第一句话直接当成完整 admission 结论
 8. 如果当前入口是 `raw_idea` 且没有显式 `lineage_id`，不得无声恢复另一条旧 lineage；只有用户明确给出 `lineage_id` 或明确表达“继续那条线”时，才允许 resume
 9. 先显式确认 `observation`
@@ -352,7 +352,7 @@ For any author-eligible stage:
 Auto-act when:
 
 - creating a lineage slug
-- scaffolding `00_idea_intake/`
+- scaffolding `01_mandate/author/draft/mandate_admission.yaml` and `mandate_freeze_draft.yaml`
 - detecting the current stage
 - reporting current state
 - when a post-mandate author stage reports that the only remaining blocker is a missing lineage-local stage program, stop the normal flow and require Codex to explicitly author or refresh the lineage-local stage program in the current research repo; there is no silent auto-materialize path
@@ -453,7 +453,7 @@ When `research_route = time_series_signal` and the stage is `tss_holdout_validat
 Do not skip this question. Do not imply the transition already happened.
 Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `tss_holdout_validation`.
 
-When the stage is `idea_intake`, the agent must ask explicitly before writing a real qualification verdict:
+When the stage is `mandate_admission`, the agent must ask explicitly before writing an accepted admission verdict:
 
 - `observation` 到底是什么？
 - `primary hypothesis` 是什么？
@@ -462,7 +462,7 @@ When the stage is `idea_intake`, the agent must ask explicitly before writing a 
 - `data_source` 和 `bar_size` 是什么？
 - `kill criteria` 或 `reframe` 条件是什么？
 
-Do not treat the user's first raw-idea sentence as if all of these were already confirmed. Do not silently jump from a raw idea to a completed intake gate.
+Do not treat the user's first raw-idea sentence as if all of these were already confirmed. Do not silently jump from a raw idea to a completed mandate admission.
 
 When the stage is `mandate_admission`, the agent must ask targeted questions until `mandate_admission.yaml` is complete enough for `ACCEPT_FOR_MANDATE`.
 
@@ -654,7 +654,7 @@ Do not accept empty directories, placeholder artifacts, or contract-only docs as
 
 Use disk artifacts as the primary state:
 
-- `outputs/<lineage>/00_idea_intake/`
+- `outputs/<lineage>/01_mandate/author/draft/`
 - `outputs/<lineage>/01_mandate/`
 - `outputs/<lineage>/02_tss_data_ready/`
 - `outputs/<lineage>/03_tss_signal_ready/`
@@ -751,7 +751,6 @@ After each meaningful step, report:
 
 When writing or reviewing content, follow the same contracts as:
 
-- `qros-idea-intake-author`
 - `qros-mandate-author`
 - `qros-mandate-review`
 - `qros-tss-data-ready-author`

@@ -5,7 +5,7 @@ def test_readme_foregrounds_summary_role_priorities() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     combined = readme
 
-    assert "00_idea_intake -> 01_mandate" in combined
+    assert "mandate_admission -> mandate_freeze_confirmation_pending -> 01_mandate" in combined
     assert "02_tss_data_ready" in combined
     assert "07_tss_holdout_validation" in combined
     assert "cross_sectional_factor" in combined

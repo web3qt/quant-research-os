@@ -42,11 +42,10 @@ User message → QROS trigger detected?
 ## Available Skills
 
 ### Entry Point
-- **$qros-research-session** — Unified research session covering all stages from idea intake to TSS/CSF holdout validation
+- **$qros-research-session** — Unified research session covering all stages from mandate admission to TSS/CSF holdout validation
 - **$qros-progress** — Read-only lineage progress lookup for current stage, blocking gate, and next action
 
 ### Advanced Author Skills (debug/manual recovery)
-- **qros-idea-intake-author** — Structured idea qualification with hypothesis, counter-hypothesis, kill criteria
 - **qros-mandate-author** — Freeze research contract: scope, time split, parameter grid, execution stack
 - **qros-tss-data-ready-author** — TSS data foundation for `research_route = time_series_signal`
 - **qros-tss-signal-ready-author** — TSS signal/event schema and param identity
@@ -103,7 +102,7 @@ If you catch yourself doing any of these, STOP and follow the skill instead:
 
 | Red Flag | Correct Action |
 |----------|---------------|
-| Skipping intake interview to jump to mandate | Complete full idea_intake first |
+| Skipping mandate admission to jump to formal mandate | Complete `mandate_admission` first |
 | Writing test results before train_freeze | Freeze train thresholds first |
 | Silently modifying mandate after seeing signals | Open child lineage instead |
 | Treating empty directories as completed stage | Require actual materialized artifacts |

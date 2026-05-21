@@ -66,3 +66,41 @@ def test_docs_index_exists_and_points_to_current_truth_layers() -> None:
     assert "contracts/review/review_checklist_master.yaml" in content
     assert "docs/archive/plans/" in content
     assert "不是当前运行时真值" in content
+
+
+def test_active_docs_and_skills_use_mandate_admission_first_stage_terms() -> None:
+    checked_paths = [
+        Path("README.md"),
+        Path("docs/SUMMARY.md"),
+        Path("docs/README.md"),
+        Path("docs/README.codex.md"),
+        *sorted(Path("docs/guides").glob("*.md")),
+        *sorted(Path("docs/sop/main-flow").glob("*.md")),
+        *sorted(Path("docs/visuals").glob("*.drawio")),
+        *sorted(Path("docs/visuals/csf/image").glob("*.drawio")),
+        *sorted(Path("docs/visuals/csf/image").glob("*.excalidraw")),
+        *sorted(Path("docs/visuals/csf/image").glob("*.excalidraw.md")),
+        *sorted(Path("skills").glob("**/SKILL.md")),
+    ]
+    stale_tokens = [
+        "00_" + "idea" + "_intake",
+        "GO_TO_" + "MANDATE",
+        "mandate_" + "confirmation_pending",
+        "idea" + "_intake_confirmation_pending",
+        "CONFIRM_" + "IDEA_INTAKE",
+        "--confirm-" + "intake",
+        "qros-" + "idea" + "-intake-author",
+        "idea" + "_intake",
+        "Idea " + "Intake",
+        "00_" + "mandate",
+        "00 " + "mandate",
+    ]
+    offenders: list[str] = []
+
+    for path in checked_paths:
+        text = path.read_text(encoding="utf-8")
+        matches = [token for token in stale_tokens if token in text]
+        if matches:
+            offenders.append(f"{path}: {', '.join(matches)}")
+
+    assert not offenders, "Stale first-stage terms remain in active docs/skills:\n" + "\n".join(offenders)

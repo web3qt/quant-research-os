@@ -23,10 +23,10 @@
         <mxCell id="7" value="统一入口&#xa;qros-research-session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="450" y="130" width="180" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="8" value="00_idea_intake&#xa;观察 / 假设 / counter-hypothesis / kill criteria / qualification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="8" value="mandate_admission&#xa;观察 / 假设 / counter-hypothesis / kill criteria / qualification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="700" y="120" width="210" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="9" value="显式确认&#xa;GO_TO_MANDATE&#xa;+ mandate confirmation pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="9" value="显式确认&#xa;ACCEPT_FOR_MANDATE&#xa;+ mandate freeze pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="980" y="125" width="230" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="10" value="01_mandate&#xa;冻结研究边界、time split、universe、参数字典、route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=15;" vertex="1" parent="1">

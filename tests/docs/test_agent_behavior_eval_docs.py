@@ -19,8 +19,8 @@ def test_agent_behavior_eval_docs_list_mvp_cases() -> None:
 
     for case_id in (
         "naive_raw_idea_triggers_research_session",
-        "explicit_idea_intake_author_skill_first",
-        "partial_intake_does_not_go_to_mandate",
+        "raw_idea_starts_mandate_admission",
+        "partial_admission_does_not_freeze_mandate",
         "no_confirmation_no_mandate_formal_artifacts",
         "raw_idea_scaffold_passes_artifact_shape_validator",
     ):

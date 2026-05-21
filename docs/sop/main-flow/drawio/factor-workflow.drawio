@@ -8,7 +8,7 @@
         <mxCell id="2" value="BTC Shock -&gt; ALT 脆弱篮子&#xa;个人使用版研究流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=22;" vertex="1" parent="1">
           <mxGeometry x="1390" y="30" width="360" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="3" value="Phase A&#xa;Idea Intake" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+        <mxCell id="3" value="Phase A&#xa;Mandate Admission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=18;" vertex="1" parent="1">
           <mxGeometry x="120" y="140" width="180" height="70" as="geometry"/>
         </mxCell>
         <mxCell id="4" value="Phase B&#xa;Mandate And Route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontStyle=1;fontSize=18;" vertex="1" parent="1">
@@ -17,7 +17,7 @@
         <mxCell id="5" value="Raw Idea&#xa;BTC 显著 1m 下跌后&#xa;某些 ALT 在未来几根 1m K 更容易继续下跌" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="360" y="150" width="320" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="6" value="00_idea_intake&#xa;先问清问题&#xa;不先看结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+        <mxCell id="6" value="mandate_admission&#xa;先问清问题&#xa;不先看结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="760" y="155" width="200" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="7" value="1. Observation&#xa;BTC 1m shock -&gt; ALT 下几根 K 继续下跌？" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
@@ -44,7 +44,7 @@
         <mxCell id="14" value="idea_gate_decision" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#EA580C;fontStyle=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="720" y="470" width="180" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="15" value="GO_TO_MANDATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="15" value="ACCEPT_FOR_MANDATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="980" y="420" width="190" height="56" as="geometry"/>
         </mxCell>
         <mxCell id="16" value="NEEDS_REFRAME" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;fontStyle=1;" vertex="1" parent="1">

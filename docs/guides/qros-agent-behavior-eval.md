@@ -9,7 +9,7 @@
 - runtime status 是否停在预期 stage
 - 必要 artifact 是否存在
 - 禁止提前生成的 artifact 是否不存在
-- `qros-validate-stage` 对 `idea_intake` shape 是否通过
+- `qros-validate-stage` 对 `mandate_admission` / `mandate` shape 是否通过
 - `expected_events` 中声明的 validator / preflight / review 命令顺序是否出现
 
 ## 执行边界
@@ -58,8 +58,8 @@ python runtime/scripts/run_agent_behavior_eval.py \
 ## MVP 用例
 
 - `naive_raw_idea_triggers_research_session`
-- `explicit_idea_intake_author_skill_first`
-- `partial_intake_does_not_go_to_mandate`
+- `raw_idea_starts_mandate_admission`
+- `partial_admission_does_not_freeze_mandate`
 - `no_confirmation_no_mandate_formal_artifacts`
 - `raw_idea_scaffold_passes_artifact_shape_validator`
 

@@ -25,7 +25,8 @@
 
 当前第一阶段主流程覆盖：
 
-- `idea_intake`
+- `mandate_admission`
+- `mandate_freeze_confirmation_pending`
 - `mandate`
 - `data_ready`
 - `signal_ready`
@@ -110,6 +111,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 
 ## 文档规则
 
+- **硬性要求**：任何修改只要影响 `qros-research-session` stage flow、gate semantics、artifact contract、artifact path、CLI flag、recommended skill 或用户可见状态名，必须在同一个变更中同步更新 active docs / skills / SOP / diagrams / tests，直到文档表述与当前 runtime 和测试夹具一致；不得把“文档后续再补”作为完成状态。
 - 用户文档必须与当前 runtime 行为和测试夹具保持一致。
 - 解释 freeze groups 时，优先以用户在磁盘上真实会看到的 runtime-facing field shape 为准。
 - 如果文档在解释字段，优先做字段一一对应，而不是只写 stage-level 叙述。
@@ -131,6 +133,7 @@ codex --cd /Users/mac08/workspace/web3qt/quant-research-os
 
 - 相关验证命令已经实际运行。
 - 文档表述与当前 runtime 行为一致。
+- 已扫描并处理 active docs / skills / SOP / diagrams 中与本次 workflow 或 artifact contract 冲突的旧口径；若保留 legacy 表述，必须明确标注其只适用于旧 lineage 或 archived reference。
 - 最终报告里明确写出这次运行过的 focused tests / smoke / full-smoke。
 - 如果仍有缺口，要明确写出，尤其是某条 route 或某个 stage 只做了部分覆盖时。
 

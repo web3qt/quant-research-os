@@ -1,10 +1,10 @@
 <mxfile host="65bd71144e">
-    <diagram id="qros-intake-mandate-runtime" name="Idea Intake Runtime">
+    <diagram id="qros-mandate-admission-runtime" name="Mandate Admission Runtime">
         <mxGraphModel dx="1273" dy="425" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1900" math="0" post_holdout_observation="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="title" value="QROS 00 到 01 的 runtime 时序&#xa;idea_intake -&gt; mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
+                <mxCell id="title" value="QROS 第一阶段 runtime 时序&#xa;mandate_admission -&gt; mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F766E;fontColor=#FFFFFF;strokeColor=#115E59;fontStyle=1;fontSize=24;" parent="1" vertex="1">
                     <mxGeometry x="830" y="30" width="700" height="90" as="geometry"/>
                 </mxCell>
                 <mxCell id="subtitle" value="教学版：只保留关键时序。&#xa;`lineage program` 在 intake 不介入，从 mandate 开始才变成硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
@@ -34,13 +34,13 @@
                 <mxCell id="a1" value="命中统一入口，&#xa;调用 `qros-session`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="350" y="330" width="240" height="74" as="geometry"/>
                 </mxCell>
-                <mxCell id="s1" value="规则：brand-new raw idea&#xa;必须先走 `idea_intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="s1" value="规则：brand-new raw idea&#xa;必须先走 `mandate_admission`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="660" y="330" width="260" height="74" as="geometry"/>
                 </mxCell>
                 <mxCell id="r1" value="检测 / 创建 lineage，&#xa;判断当前 stage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="330" width="320" height="74" as="geometry"/>
                 </mxCell>
-                <mxCell id="o1" value="如果 `00_idea_intake/` 不存在，&#xa;先 scaffold intake 骨架" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="o1" value="如果 mandate admission draft 不存在，&#xa;先 scaffold draft 骨架" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="330" width="520" height="74" as="geometry"/>
                 </mxCell>
                 <mxCell id="p1" value="此时不介入。&#xa;intake 还没有 stage-program 硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
@@ -58,25 +58,25 @@
                 <mxCell id="s2" value="必须问清：&#xa;observation / hypothesis / route / data / kill criteria" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="660" y="710" width="260" height="94" as="geometry"/>
                 </mxCell>
-                <mxCell id="r2" value="没有 `CONFIRM_IDEA_INTAKE` 之前，&#xa;阶段保持 `idea_intake_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="r2" value="没有 `CONFIRM_MANDATE` 之前，&#xa;阶段保持 `mandate_freeze_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="710" width="320" height="94" as="geometry"/>
                 </mxCell>
-                <mxCell id="a3" value="3. agent 调 `--confirm-intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="a3" value="3. agent 收敛 admission draft" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="350" y="880" width="240" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="r3" value="写 intake approval artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="870" width="320" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="o3" value="`00_idea_intake/idea_intake_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="o3" value="`01_mandate/author/draft/mandate_admission.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="870" width="520" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="a4" value="4. 现在才正式补：&#xa;`qualification_scorecard.yaml`&#xa;`idea_gate_decision.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="350" y="1010" width="240" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="r4" value="如果 verdict 不是 `GO_TO_MANDATE`，&#xa;runtime 仍留在 `idea_intake`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="r4" value="如果 verdict 不是 `ACCEPT_FOR_MANDATE`，&#xa;runtime 仍留在 `mandate_admission`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="1010" width="320" height="90" as="geometry"/>
                 </mxCell>
-                <mxCell id="r5" value="只有 verdict = `GO_TO_MANDATE` 且 route assessment 合法，&#xa;才进入 `mandate_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="r5" value="只有 verdict = `ACCEPT_FOR_MANDATE` 且 route assessment 合法，&#xa;才进入 `mandate_freeze_confirmation_pending`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="1140" width="320" height="100" as="geometry"/>
                 </mxCell>
                 <mxCell id="o4" value="此时 outputs 的关键事实是：&#xa;interview 已确认，gate verdict 已写出。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
@@ -91,7 +91,7 @@
                 <mxCell id="s3" value="`qros-mandate-author` 驱动 4 组 freeze：&#xa;`research_intent` / `scope_contract` / `data_contract` / `execution_contract`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="660" y="1290" width="260" height="114" as="geometry"/>
                 </mxCell>
-                <mxCell id="o5" value="这时更新的还是桥接草稿：&#xa;`00_idea_intake/mandate_freeze_draft.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="o5" value="这时更新的是 mandate draft：&#xa;`01_mandate/author/draft/mandate_freeze_draft.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="1310" width="520" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="u4" value="6. 用户明确回答：&#xa;`是否确认进入 mandate？` -&gt; 是" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=14;" parent="1" vertex="1">
@@ -103,7 +103,7 @@
                 <mxCell id="r6" value="写 mandate approval，&#xa;检查所有 freeze group 是否已完成，&#xa;然后进入 `mandate_author`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="990" y="1460" width="320" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="o6" value="写入：&#xa;`00_idea_intake/mandate_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="o6" value="写入：&#xa;`01_mandate/author/draft/mandate_transition_approval.yaml`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="1470" width="520" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="a7" value="7. agent 触发&#xa;`build_mandate_from_intake()`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;" parent="1" vertex="1">
@@ -118,7 +118,7 @@
                 <mxCell id="p2" value="从 `mandate` 开始，`lineage-local stage program` 才是硬门。&#xa;后面阶段会要求 `outputs/&lt;lineage_id&gt;/program/...` + `program_execution_manifest.json`。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE7F3;strokeColor=#BE185D;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="1970" y="1600" width="480" height="110" as="geometry"/>
                 </mxCell>
-                <mxCell id="summary" value="一句话：`idea_intake` 阶段是 agent + skill 主导提问，runtime 负责 scaffold / 状态推进 / gate 检测；&#xa;而 `mandate` 之后，runtime 还会额外要求 stage program / provenance / outputs 的硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EEFC;strokeColor=#4A6FA5;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="summary" value="一句话：`mandate_admission` 阶段是 agent 主导提问，runtime 负责 scaffold / 状态推进 / gate 检测；&#xa;而 `mandate` 之后，runtime 还会额外要求 stage program / provenance / outputs 的硬门。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EEFC;strokeColor=#4A6FA5;fontSize=15;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="350" y="1735" width="2100" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#475569;" parent="1" source="u1" target="a1" edge="1">
@@ -421,7 +421,7 @@
                 <mxCell id="csf-sub" value="这页讲的不是阶段细节，而是：为什么 mandate review closure 之后，CSF 不能继续默认为 mainline。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=15;align=left;spacingLeft=10;spacingTop=8;" parent="1" vertex="1">
                     <mxGeometry x="350" y="150" width="1620" height="74" as="geometry"/>
                 </mxCell>
-                <mxCell id="csf-a" value="1. 先完成：&#xa;idea_intake -&gt; mandate -&gt; mandate review closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                <mxCell id="csf-a" value="1. 先完成：&#xa;mandate_admission -&gt; mandate -&gt; mandate review closure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontSize=16;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="300" y="300" width="420" height="90" as="geometry"/>
                 </mxCell>
                 <mxCell id="csf-b" value="2. runtime 不会直接跳到 data_ready author。&#xa;必须先进入 next-stage confirmation。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=15;" parent="1" vertex="1">

@@ -134,7 +134,7 @@ description: Use after stage-specific failure classification is complete, to run
 8. 策略频率、交易身份或 portfolio role 被实质重写
 
 **必须产出：**
-- 新的 `00_mandate`
+- 新的 `01_mandate`
 - 新的 `research_scope.md`
 - 新的 `artifact_catalog.md`
 - 新的 lineage id

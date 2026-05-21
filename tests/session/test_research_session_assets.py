@@ -108,9 +108,9 @@ def test_research_session_usage_doc_mentions_single_entry_flow() -> None:
     assert "launcher_review_ready_status" in content
     assert "review/review_cycle_trace.jsonl" in content
     assert "route_inheritance_contract.yaml" in content
-    assert "intake" in content.lower()
+    assert "admission" in content.lower()
     assert "kill criteria" in content
-    assert "`--confirm-intake` 已退役" in content
+    assert "第一道用户确认是 mandate freeze approval" in content
     assert "--confirm-all-freeze-groups" in content
     assert "freeze_digest_sha256" in content
     assert "missing_items" in content
@@ -242,16 +242,16 @@ def test_data_ready_author_skill_exists() -> None:
     assert "delivery_contract" in content
 
 
-def test_idea_intake_author_skill_requires_interview() -> None:
-    skill_file = skill_path("qros-idea-intake-author")
+def test_research_session_mandate_admission_requires_interview() -> None:
+    skill_file = skill_path("qros-research-session")
     content = skill_file.read_text(encoding="utf-8")
 
     assert skill_file.exists()
-    assert "intake" in content.lower()
+    assert "mandate_admission" in content
     assert "observation" in content
     assert "counter-hypothesis" in content or "counter_hypothesis" in content
     assert "kill criteria" in content
-    assert "不能只根据用户一句原始 idea" in content
+    assert "Do not treat the user's first raw-idea sentence as if all of these were already confirmed" in content
 
 
 def test_signal_ready_author_skill_exists() -> None:

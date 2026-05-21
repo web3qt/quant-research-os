@@ -40,7 +40,7 @@ description: Use when qros stage review verdicts are PASS FOR RETRY, RETRY, NO-G
 - `tss_backtest_ready` → `qros-backtest-failure`
 - `tss_holdout_validation` → `qros-holdout-failure`
 
-不覆盖：`idea_intake`、`mandate`
+不覆盖：`mandate_admission`、`mandate`
 
 ## Entry Conditions
 

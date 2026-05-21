@@ -33,7 +33,7 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 
 正常用户从这里开始，不需要先跑 `./.qros/bin/qros-session`。
 
-新 QROS lineage 的第一站是 `mandate_admission`。QROS 不再为新研究线创建 `00_idea_intake/`；原 intake 资格评估、scope、route assessment 和 kill criteria 现在集中在 `01_mandate/author/draft/mandate_admission.yaml`。当 admission 被接受后，流程进入 `mandate_freeze_confirmation_pending`，用户只需要确认 mandate freeze。
+新 QROS lineage 的第一站是 `mandate_admission`。资格评估、scope、route assessment 和 kill criteria 统一写入 `01_mandate/author/draft/mandate_admission.yaml`。当 admission 被接受后，流程进入 `mandate_freeze_confirmation_pending`，用户只需要确认 mandate freeze。
 
 `qros-update` 同时适用于 Codex 和 Claude Code。你只需要在 active research repo 根目录输入 `qros-update`；它会自动识别当前 host，刷新全局 QROS 安装，并重建当前 repo 的 `./.qros/` runtime，默认跟踪最新稳定版本。
 
@@ -51,7 +51,8 @@ Codex 会安装全局 QROS skills，初始化当前 research repo 的 `./.qros/`
 
 当前 QROS 的第一阶段主流程是：
 
-- `idea_intake`
+- `mandate_admission`
+- `mandate_freeze_confirmation_pending`
 - `mandate`
 - `mandate review`
 - `time_series_signal` route：

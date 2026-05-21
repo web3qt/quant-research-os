@@ -125,12 +125,12 @@ contamination_path: → backtest（研究范围偏差导致回测验证的是错
 
 | failure_class | 默认回退阶段 | 默认 formal decision |
 |---|---|---|
-| `EVIDENCE_ABSENT` | `03_train_freeze` 或 `00_mandate` | `RETRY` 或 `NO-GO` |
+| `EVIDENCE_ABSENT` | `03_train_freeze` 或 `01_mandate` | `RETRY` 或 `NO-GO` |
 | `EVIDENCE_FRAGILE` | `03_train_freeze` | `RETRY` 或 `NO-GO` |
-| `REGIME_SPECIFIC_FAIL` | `03_train_freeze` 或 `00_mandate` | `CHILD LINEAGE` 或 `NO-GO` |
-| `SELECTION_BIAS_FAIL` | `03_train_freeze` 或 `00_mandate` | `RETRY` 或 `CHILD LINEAGE` |
+| `REGIME_SPECIFIC_FAIL` | `03_train_freeze` 或 `01_mandate` | `CHILD LINEAGE` 或 `NO-GO` |
+| `SELECTION_BIAS_FAIL` | `03_train_freeze` 或 `01_mandate` | `RETRY` 或 `CHILD LINEAGE` |
 | `ARTIFACT_REPRO_FAIL` | `04_test_evidence` | `PASS FOR RETRY` 或 `RETRY` |
-| `SCOPE_DRIFT_FAIL` | `00_mandate` 或 child lineage | `CHILD LINEAGE` |
+| `SCOPE_DRIFT_FAIL` | `01_mandate` 或 child lineage | `CHILD LINEAGE` |
 
 ## Allowed / Forbidden Modifications
 

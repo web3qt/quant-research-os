@@ -18,7 +18,6 @@ REQUIRED_SUBSTRINGS = (
 SHARED_LANGUAGE_GUIDANCE_PATH = "docs/guides/qros-authoring-language-discipline.md"
 
 AUTHOR_SKILL_NAMES = (
-    "qros-idea-intake-author",
     "qros-mandate-author",
     "qros-data-ready-author",
     "qros-signal-ready-author",

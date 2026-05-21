@@ -117,18 +117,19 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 
 ## Working Rules
 
-1. 读取 `idea_gate_decision.yaml`
-2. 确认 verdict = `GO_TO_MANDATE`
-3. 先收敛并确认 `research_intent`
-4. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
-5. 再收敛并确认 `scope_contract`；核查 universe 是显式列表或可执行规则（见上）
-6. 再收敛并确认 `data_contract`
-7. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写
-8. 输出一份 grouped freeze summary
-9. 只有用户最终批准后，才生成正式 mandate artifacts
-10. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
-11. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`、`research_route.yaml`
-12. 验证每个机器可读产物都有 companion field documentation（见上）
-13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-14. 运行 `qros-validate-stage --stage mandate`
-15. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review
+1. 读取 `01_mandate/author/draft/mandate_admission.yaml`
+2. 确认 `admission_decision.verdict == ACCEPT_FOR_MANDATE`
+3. 读取已确认的 `mandate_freeze_draft.yaml` 与 `mandate_transition_approval.yaml`
+4. 先收敛并确认 `research_intent`
+5. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
+6. 再收敛并确认 `scope_contract`；核查 universe 是显式列表或可执行规则（见上）
+7. 再收敛并确认 `data_contract`
+8. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写
+9. 输出一份 grouped freeze summary
+10. 只有用户最终批准后，才生成正式 mandate artifacts
+11. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
+12. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`、`research_route.yaml`
+13. 验证每个机器可读产物都有 companion field documentation（见上）
+14. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+15. 运行 `qros-validate-stage --stage mandate`
+16. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review

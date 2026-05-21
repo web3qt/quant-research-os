@@ -135,10 +135,10 @@ contamination_path: → test_evidence, backtest, holdout（研究范围偏差导
 | `FREEZE_MISSING` | `03_train_freeze` | `RETRY` |
 | `FREEZE_AMBIGUOUS` | `03_train_freeze` | `PASS FOR RETRY` 或 `RETRY` |
 | `LEAKED_FREEZE_FAIL` | `02_signal_ready` 或更早 | `RETRY` |
-| `MULTIPLE_TESTING_FAIL` | `02_signal_ready` 或 `00_mandate` | `RETRY` 或 `CHILD LINEAGE` |
+| `MULTIPLE_TESTING_FAIL` | `02_signal_ready` 或 `01_mandate` | `RETRY` 或 `CHILD LINEAGE` |
 | `POST_FREEZE_DRIFT` | 最近一个合法 freeze checkpoint | `RETRY` |
 | `REPRO_FAIL` | `01_data_ready`、`02_signal_ready` 或 `03_train_freeze` | `RETRY` |
-| `SCOPE_FAIL` | `00_mandate` 或 child lineage | `CHILD LINEAGE` |
+| `SCOPE_FAIL` | `01_mandate` 或 child lineage | `CHILD LINEAGE` |
 
 ## Allowed / Forbidden Modifications
 

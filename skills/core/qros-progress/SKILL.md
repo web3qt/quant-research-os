@@ -37,7 +37,7 @@ description: Use when the user asks for latest QROS research progress, current l
 
 - 不写 artifact。
 - 不创建 lineage。
-- 不 scaffold `00_idea_intake/`。
+- 只读取当前状态；若需要 scaffold，由 `qros-research-session` 创建 mandate admission draft。
 - 不确认任何 transition。
 - 不把目录存在、placeholder 文件或 contract-only 文档说成 stage 已完成。
 - 不替代 `qros-research-session`、stage author skill、review skill 或 failure handling skill。

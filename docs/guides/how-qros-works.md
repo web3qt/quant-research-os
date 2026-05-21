@@ -56,20 +56,18 @@ sequenceDiagram
     A->>S: 读取行为规范
     A->>R: ./.qros/bin/qros-session --raw-idea "研究动量因子"
 
-    R->>D: 检查并初始化 outputs/ 目录与 intake scaffold
-    R-->>A: 返回状态面板<br/>📍 idea_intake_confirmation_pending<br/>▶ 确认 observation 和 hypothesis
+    R->>D: 检查并初始化 outputs/ 目录与 mandate admission draft
+    R-->>A: 返回状态面板<br/>📍 mandate_admission<br/>▶ 补齐 observation / hypothesis / scope / route
 
-    loop 分组确认循环
+    loop admission 补齐循环
         A->>U: "你的主要假说是什么？"
         U->>A: "BTC 领动高流动性 ALT"
-        A->>D: 写入 draft 产物
+        A->>D: 写入 01_mandate/author/draft/mandate_admission.yaml
     end
 
-    A->>R: --confirm-intake
-    R->>D: 校验 idea_brief.md、qualification_scorecard.yaml、idea_gate_decision.yaml
-    R-->>A: ✅ 推进到 mandate_confirmation_pending
+    R-->>A: ✅ admission accepted，进入 mandate_freeze_confirmation_pending
 
-    A->>U: "是否确认进入 mandate？"
+    A->>U: "是否确认冻结 mandate？"
     U->>A: "确认"
     A->>R: --confirm-mandate
     R->>D: 写入 mandate transition approval，并检查 mandate freeze group 是否已齐
@@ -184,9 +182,9 @@ graph TB
     end
 
     subgraph Hard["第二层：硬约束 (Python Runtime)"]
-        H1["idea_brief.md 存在？"]
-        H2["qualification_scorecard.yaml 存在？"]
-        H3["idea_gate_decision.yaml = GO_TO_MANDATE？"]
+        H1["mandate_admission.yaml 存在？"]
+        H2["admission_decision = ACCEPT_FOR_MANDATE？"]
+        H3["route_assessment 完整且 route_decision_pending=false？"]
         H4{"全部通过？"}
         H1 --> H2 --> H3 --> H4
         H4 -->|"否"| Block["blocking_reason_code =<br/>FREEZE_APPROVAL_MISSING"]
@@ -233,7 +231,7 @@ graph LR
 
 ---
 
-## 状态生命周期：从 idea_intake 到 route-specific holdout_validation
+## 状态生命周期：从 mandate_admission 到 route-specific holdout_validation
 
 当前 canonical 主流程不是无前缀的 `data_ready -> signal_ready -> ...`。
 `mandate` review 关闭后，QROS 会按 `research_route` 进入 route-specific 主线：
@@ -243,12 +241,10 @@ graph LR
 
 ```mermaid
 stateDiagram-v2
-    [*] --> idea_intake: 用户提出原始想法
+    [*] --> mandate_admission: 用户提出原始想法
 
-    idea_intake --> idea_intake_confirmation_pending: scaffold / draft ready
-    idea_intake_confirmation_pending --> mandate_confirmation_pending: CONFIRM_IDEA_INTAKE + GO_TO_MANDATE
-
-    mandate_confirmation_pending --> mandate_author: CONFIRM_MANDATE + freeze groups complete + digest valid
+    mandate_admission --> mandate_freeze_confirmation_pending: ACCEPT_FOR_MANDATE + admission evidence complete
+    mandate_freeze_confirmation_pending --> mandate_author: CONFIRM_MANDATE + freeze groups complete + digest valid
     mandate_author --> mandate_review_confirmation_pending: required outputs + provenance ready
     mandate_review_confirmation_pending --> mandate_review: CONFIRM_REVIEW / review started
     mandate_review --> mandate_next_stage_confirmation_pending: closure PASS

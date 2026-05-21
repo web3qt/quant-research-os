@@ -37,11 +37,11 @@ CHINESE_FIRST_HEADINGS = {
         "## 验证层级",
         "## 当前边界",
     ),
-    Path("docs/guides/idea-intake-to-mandate-flow.md"): (
-        "# 从 Idea Intake 到 Mandate 的流程",
+    Path("docs/guides/mandate-admission-flow.md"): (
+        "# Mandate Admission 到 Mandate 的流程",
         "## 目标",
         "## 流程",
-        "## Qualification 规则",
+        "## Admission 规则",
     ),
     Path("docs/guides/qros-review-shared-protocol.md"): (
         "# QROS 共享 Review 协议",
@@ -110,7 +110,7 @@ FORBIDDEN_ENGLISH_HEADINGS = (
     "# QROS Research Session Usage",
     "# QROS Agent Behavior Eval",
     "# QROS Verification Tiers",
-    "# Idea Intake To Mandate Flow",
+    "# " + "Idea " + "Intake To Mandate Flow",
     "# QROS Shared Review Protocol",
     "# Codex Stage Review Skill Usage",
     "# Closure Artifact Writer Usage",
