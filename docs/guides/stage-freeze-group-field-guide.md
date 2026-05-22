@@ -32,6 +32,30 @@
 
 ---
 
+## Preflight Contract Families
+
+freeze group 的职责不只是“把字段填完整”，还要把那些会在多个 reviewer lane 重复卡住的基础事实，尽量前移到 author / freeze confirmation 里先锁定。
+
+这类前移事实在当前口径下统一称为 preflight contract families：
+
+- `data_viability_contract`：当前 lineage 是否已经明确真实可用的数据来源、抽取对象和最小可交付数据底座；没有真实输入、只有 placeholder、demo 或口头计划时，必须先停在 author lane 修复。
+- `time_coverage_contract`：冻结的时间边界是否落在真实可用数据覆盖范围内；train/test/backtest/holdout 不能先冻结一个 reviewer 注定会发现越界的时间窗。
+- `route_viability_contract`：研究问题、任务定义和 `research_route` 是否一致；不能把明显的横截面问题先按时序路线推进，或反过来。
+- `expression_identity_contract`：当前阶段冻结的表达身份是否唯一且可追溯，例如 `portfolio_expression`、`baseline_signal`、`factor_id`、`param_id`、panel 主键和下游消费对象；不能让 reviewer 第一次发现“同名不同物”或“同物多名”。
+- `provenance_viability_contract`：formal artifacts 是否已经绑定真实输入、真实程序和 replay/provenance 线索；不能把来源不明、仅 synthetic/demo、或无法回放的包推进到 review。
+
+这些 contract family 的共同原则是：
+
+- reviewer 不是这些基础事实的第一发现点
+- reviewer lane 负责检查 stage-local gate、formal artifact 与结论是否成立，不负责替 author lane 做第一轮数据/路线/来源摸底
+- 如果上述事实在 freeze draft 阶段仍未明确，就应继续停在当前 author lane 或 next-stage confirmation，而不是先进入 review 再让 reviewer 兜底
+
+下文各 stage 的字段说明，默认都服从这个前提：先解决 common blockers，再进入 reviewer lanes。
+
+<br>
+
+---
+
 ## Mandate / 研究授权阶段
 
 ### `research_intent`
@@ -92,6 +116,16 @@
 | `artifact_contract_note` | 每阶段必须交什么正式产物 | 没有这个，阶段完成会变成主观判断 | 只写“需要报告” |
 | `crowding_capacity_note` | 后续容量和拥挤审计的基准说明 | backtest 阶段必须沿用同一基准 | 等到 backtest 才临时补 |
 
+### Mandate preflight 提醒
+
+在 `mandate` 里，最容易把 reviewer 变成第一发现点的 blocker，通常就是：
+
+- `route_viability_contract`：`research_question`、`target_task`、`route_assessment` 和 `research_route` 必须先对齐
+- `data_viability_contract`：`data_source` 与 `bar_size` 必须先明确到能支持后续真实抽数与 replay
+- `time_coverage_contract`：后续会消费的正式时间边界必须先确认没有超出真实数据覆盖
+
+如果这些事实还没锁定，就还不该进入 mandate review。
+
 <br>
 
 ---
@@ -150,6 +184,16 @@
 | `machine_artifacts` | 本阶段必须真实落盘的机器可读产物 | 没有它，就会出现“文档写完了就算完成” | 把 placeholder 文件也算进去 |
 | `consumer_stage` | 下一个正式消费这些产物的阶段 | 明确交付对象，防止多套输入并存 | 不写下游消费者 |
 | `frozen_inputs_note` | 下游必须复用这一批冻结对象的说明 | 防止 signal_ready 重新造一套输入 | 写成泛泛备注，没约束力 |
+
+### Data Ready preflight 提醒
+
+在 `data_ready` 里，author lane 应该先解决而不是留给 reviewer 的 common blockers，至少包括：
+
+- `data_viability_contract`：`aligned_bars/`、共享缓存、QC 证据和 formal machine artifacts 必须真实存在，不能是 placeholder
+- `time_coverage_contract`：`time_boundary`、覆盖率和基准腿时间范围必须与正式数据集一致
+- `provenance_viability_contract`：`run_manifest.json`、stage-local program snapshot、输入根目录和 replay 入口必须能解释这批产物从哪里来
+
+reviewer 到这一步看到的应该已经是“可 review 的正式数据底座”，而不是第一次替 author 判断这批数据到底能不能用、覆盖到哪、是否来自真实输入。
 
 <br>
 
@@ -465,6 +509,14 @@
 author build 完成后必须运行 `qros-validate-stage --stage csf_data_ready`，再进入 deterministic preflight。contract-first 的边界是：字段、类型、必需 artifact、parquet columns 和目录 shape 由 artifact contract 与 runtime validator 负责；本字段指南只解释为什么这些 freeze group 存在。
 
 `split_sample_adequacy_report.yaml` 是 `csf_data_ready` 阶段生成的 formal artifact，不是 mandate 阶段的新输入字段。它使用 `cross_section_snapshot` 作为样本单位，逐一记录 train/test/backtest/holdout 的 `split_sample_counts`、`minimum_required`、`adequacy` 和 `final_verdict`；任一 downstream split 低于最低截面快照数量时，preflight 必须直接 FAIL。
+
+这里的 deterministic preflight 不是 reviewer lane 的替代品，而是 reviewer 之前的基础门禁。至少要先锁定：
+
+- `route_viability_contract`：当前包仍然服务 `research_route = cross_sectional_factor`
+- `expression_identity_contract`：panel 主键、taxonomy 引用、eligibility 语义和共享层身份没有漂移
+- `provenance_viability_contract`：输入数据、构建程序和 formal artifacts 的来源可追溯
+
+如果这些事实仍靠 reviewer 第一次发现，就说明 author lane 没有把 common blockers 前移干净。
 
 #### `panel_contract`
 

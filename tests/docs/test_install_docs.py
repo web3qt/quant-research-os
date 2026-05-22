@@ -123,6 +123,34 @@ def test_install_docs_reference_stage_field_guide() -> None:
     assert "search_governance_contract" in guide
     assert "portfolio_contract" in guide
     assert "stability_contract" in guide
+    assert "data_viability_contract" in guide
+    assert "time_coverage_contract" in guide
+    assert "route_viability_contract" in guide
+    assert "expression_identity_contract" in guide
+    assert "provenance_viability_contract" in guide
+    assert "reviewer 不是这些基础事实的第一发现点" in guide
+
+
+def test_stage_author_skills_lock_preflight_and_reviewer_not_first_discovery_wording() -> None:
+    mandate_author = Path("skills/mandate/qros-mandate-author/SKILL.md").read_text(encoding="utf-8")
+    data_ready_author = Path("skills/data_ready/qros-data-ready-author/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    csf_data_ready_author = Path("skills/csf_data_ready/qros-csf-data-ready-author/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "作为 mandate freeze 前的 preflight 事实先锁定" in mandate_author
+    assert "reviewer 不是这些基础事实的第一发现点" in mandate_author
+
+    assert "作为进入 reviewer 之前的 preflight 事实先锁定" in data_ready_author
+    assert "reviewer 不是第一次发现" in data_ready_author
+    assert "这批数据是否真实可用、覆盖到哪、来自哪里" in data_ready_author
+
+    assert "作为进入 reviewer 之前的 preflight 事实先锁定" in csf_data_ready_author
+    assert "reviewer 不是第一次发现" in csf_data_ready_author
+    assert "这包是否还服务 CSF 路线、面板身份是否漂移、输入来源是否真实" in csf_data_ready_author
+    assert "deterministic preflight" in csf_data_ready_author
 
 
 def test_claude_code_bootstrap_docs_present() -> None:

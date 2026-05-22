@@ -8,6 +8,7 @@ import yaml
 
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
+from runtime.tools.research_preflight import compute_research_preflight
 from runtime.tools.review_skillgen.context_inference import build_stage_context
 
 
@@ -199,13 +200,12 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
     mandate_context = build_stage_context(mandate_dir)
     mandate_formal_dir = mandate_context["author_formal_dir"]
 
-    admission = yaml.safe_load((draft_dir / "mandate_admission.yaml").read_text(encoding="utf-8"))
-    if not isinstance(admission, dict):
-        raise ValueError("mandate_admission.yaml must contain a YAML mapping")
+    admission = _load_mandate_admission_or_intake(lineage_root, draft_dir)
 
     if admission.get("admission_decision", {}).get("verdict") != "ACCEPT_FOR_MANDATE":
         raise ValueError("mandate_admission verdict must be ACCEPT_FOR_MANDATE before mandate build")
     route_assessment = _require_route_assessment_from_admission(admission)
+    _validate_admission_preflight(admission)
 
     mandate_formal_dir.mkdir(parents=True, exist_ok=True)
     freeze_groups = _require_confirmed_freeze_groups(draft_dir)
@@ -303,6 +303,10 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
             raise ValueError(
                 "confirmed mandate inputs missing: group_taxonomy_reference for group_neutral cross_sectional_factor route"
             )
+    _validate_confirmed_time_coverage_preflight(
+        scope_contract=scope_contract,
+        data_contract=data_contract,
+    )
 
     (mandate_formal_dir / "mandate.md").write_text(
         "\n".join(
@@ -490,8 +494,148 @@ def build_mandate_from_intake(lineage_root: Path) -> Path:
     return build_mandate_from_admission(lineage_root)
 
 
+def _load_mandate_admission_or_intake(lineage_root: Path, draft_dir: Path) -> dict[str, Any]:
+    admission_path = draft_dir / "mandate_admission.yaml"
+    if admission_path.exists():
+        admission = yaml.safe_load(admission_path.read_text(encoding="utf-8"))
+        if not isinstance(admission, dict):
+            raise ValueError("mandate_admission.yaml must contain a YAML mapping")
+        return admission
+    return _synthesize_admission_from_intake(lineage_root)
+
+
+def _synthesize_admission_from_intake(lineage_root: Path) -> dict[str, Any]:
+    intake_dir = lineage_root / "00_idea_intake"
+    gate_payload = yaml.safe_load((intake_dir / "idea_gate_decision.yaml").read_text(encoding="utf-8"))
+    if not isinstance(gate_payload, dict):
+        raise ValueError("idea_gate_decision.yaml must contain a YAML mapping")
+    if gate_payload.get("verdict") != "GO_TO_MANDATE":
+        raise ValueError("idea_gate_decision verdict must be GO_TO_MANDATE before mandate build")
+
+    scope_canvas = yaml.safe_load((intake_dir / "scope_canvas.yaml").read_text(encoding="utf-8"))
+    if not isinstance(scope_canvas, dict):
+        scope_canvas = {}
+    framing = _load_intake_framing(intake_dir)
+
+    return {
+        "lineage_id": str(gate_payload.get("idea_id", lineage_root.name)).strip() or lineage_root.name,
+        "observation": framing["observation"],
+        "primary_hypothesis": framing["primary_hypothesis"],
+        "research_questions": framing["research_questions"],
+        "scope": scope_canvas,
+        "route_assessment": gate_payload.get("route_assessment", {}),
+        "admission_decision": {
+            "verdict": "ACCEPT_FOR_MANDATE",
+        },
+    }
+
+
+def _load_intake_framing(intake_dir: Path) -> dict[str, Any]:
+    observation = ""
+    primary_hypothesis = ""
+    research_questions: list[str] = []
+
+    observation_map_path = intake_dir / "observation_hypothesis_map.md"
+    if observation_map_path.exists():
+        sections = _parse_markdown_sections(observation_map_path.read_text(encoding="utf-8"))
+        observation = sections.get("观察", "")
+        primary_hypothesis = sections.get("主假设", "")
+
+    research_questions_path = intake_dir / "research_question_set.md"
+    if research_questions_path.exists():
+        research_questions = _parse_markdown_bullets(research_questions_path.read_text(encoding="utf-8"))
+
+    return {
+        "observation": observation,
+        "primary_hypothesis": primary_hypothesis,
+        "research_questions": research_questions,
+    }
+
+
+def _parse_markdown_sections(markdown_text: str) -> dict[str, str]:
+    sections: dict[str, list[str]] = {}
+    current_heading = ""
+    for raw_line in markdown_text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("## "):
+            current_heading = line[3:].strip()
+            sections.setdefault(current_heading, [])
+            continue
+        if not current_heading or not line or not line.startswith("- "):
+            continue
+        sections[current_heading].append(line[2:].strip())
+    return {
+        heading: " ".join(item for item in items if item)
+        for heading, items in sections.items()
+        if any(items)
+    }
+
+
+def _parse_markdown_bullets(markdown_text: str) -> list[str]:
+    bullets: list[str] = []
+    for raw_line in markdown_text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("- "):
+            bullet = line[2:].strip()
+            if bullet:
+                bullets.append(bullet)
+    return bullets
+
+
+def _validate_admission_preflight(admission: dict[str, Any]) -> None:
+    # mandate build 前先消费 admission 期已能确定的 preflight 事实，避免错误路线进入 formal mandate。
+    from runtime.tools.mandate_admission_runtime import admission_preflight_error
+
+    preflight_error = admission_preflight_error(admission)
+    if preflight_error is not None:
+        raise ValueError(preflight_error)
+
+
+def _validate_confirmed_time_coverage_preflight(
+    *,
+    scope_contract: dict[str, Any],
+    data_contract: dict[str, Any],
+) -> None:
+    # freeze 已锁定时间边界时，如果数据源能解析出真实库存，就在 build 前直接阻断越界窗口。
+    from runtime.tools.mandate_admission_runtime import discover_data_inventory_facts
+
+    time_boundary = _optional_string(scope_contract.get("time_boundary", ""))
+    if not time_boundary:
+        return
+
+    time_window = _parse_time_boundary(time_boundary)
+    if time_window is None:
+        raise ValueError("confirmed mandate inputs time_boundary must use 'YYYY-MM-DD/YYYY-MM-DD' or 'YYYY-MM-DD to YYYY-MM-DD'")
+
+    inventory_facts = discover_data_inventory_facts(data_contract.get("data_source", ""))
+    if not inventory_facts:
+        return
+
+    preflight_status = compute_research_preflight(
+        stage="mandate",
+        user_confirmed={
+            "research_route": "",
+            "bar_size": _optional_string(data_contract.get("bar_size", "")),
+            "train_start": time_window[0],
+            "holdout_end": time_window[1],
+        },
+        runtime_facts=inventory_facts,
+    )
+    if preflight_status.passable:
+        return
+    raise ValueError(
+        "time coverage preflight failed: "
+        f"{preflight_status.blocker_code}: {preflight_status.blocker_reason}"
+    )
+
+
 def _require_confirmed_freeze_groups(draft_dir: Path) -> dict[str, Any]:
     draft_path = draft_dir / MANDATE_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        lineage_root = draft_dir.parents[2]
+        intake_draft_path = lineage_root / "00_idea_intake" / MANDATE_FREEZE_DRAFT_FILE
+        if intake_draft_path.exists():
+            draft_path = intake_draft_path
     return require_confirmed_freeze_groups(
         draft_path,
         MANDATE_FREEZE_GROUP_ORDER,
@@ -627,6 +771,21 @@ def _optional_string(value: object) -> str:
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _parse_time_boundary(time_boundary: object) -> tuple[str, str] | None:
+    normalized = str(time_boundary or "").strip()
+    if not normalized:
+        return None
+    if "/" in normalized:
+        parts = [part.strip() for part in normalized.split("/", maxsplit=1)]
+    elif " to " in normalized:
+        parts = [part.strip() for part in normalized.split(" to ", maxsplit=1)]
+    else:
+        return None
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        return None
+    return parts[0], parts[1]
 
 
 def _validate_csf_portfolio_expression_role_pair(

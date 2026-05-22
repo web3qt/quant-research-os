@@ -68,6 +68,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 必须在当前研究仓真实生成可供下游消费的 `aligned_bars/`、共享缓存和相关证据
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
+- 必须把 `data_viability_contract`、`time_coverage_contract`、`provenance_viability_contract` 作为进入 reviewer 之前的 preflight 事实先锁定；reviewer 不是第一次发现“这批数据是否真实可用、覆盖到哪、来自哪里”的地方
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 必须把本阶段真实使用的数据处理程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 空目录、placeholder `parquet/csv/md`、只有口头或文档语义说明的产物都不能算正式完成
@@ -98,16 +99,16 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 ## Working Rules
 
 1. 确认 `01_mandate/stage_completion_certificate.yaml` 已存在
-2. 先收敛并确认 `extraction_contract`
+2. 先收敛并确认 `extraction_contract`，先把 `time_coverage_contract` 锁定，确保 `time_boundary` 与真实数据覆盖一致
 3. 再收敛并确认 `quality_semantics`；明确每种异常的处理语义（标记/保留，不静默填）
 4. 再收敛并确认 `universe_admission`；确认排除项已显式记录（即使为空）
 5. 再收敛并确认 `shared_derived_layer`
-6. 最后确认 `delivery_contract`
+6. 最后确认 `delivery_contract`，并把 `data_viability_contract` 锁定，确保 formal machine artifacts 不是 placeholder
 7. 明确当前 research repo 中由谁负责真实生成 `aligned_bars/`、rolling 缓存、coverage/QC 证据和 shared derived outputs
 8. 输出一份 grouped data_ready summary
 9. 只有用户最终批准后，才生成正式 `02_data_ready` artifacts
 10. 验证 `validation_report.md` 中所有覆盖异常已有解释
-11. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
+11. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录，并把 `provenance_viability_contract` 锁定
 12. 保存 `rebuild_data_ready.py` 或等价 stage-local 程序快照；若使用自定义程序，不得只引用 notebook 名称
 13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
 14. 若当前只能产出 skeleton 或 placeholder，必须明确判定为未完成，不得冒充 data_ready 完成

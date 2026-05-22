@@ -8,6 +8,7 @@ from runtime.tools.review_eligibility import compute_review_eligibility
 from runtime.tools.research_session import (
     STAGE_ACTIVE_SKILLS,
     _stage_base_name,
+    _research_preflight_blocker_status,
     _review_entry_can_route_failure,
     _review_confirmation_author_fix_runtime,
     assert_current_protected_review_state_intact,
@@ -95,7 +96,22 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
         requires_failure_handling = True
         failure_stage = failure_package_status.failure_stage
         failure_reason_summary = failure_package_status.failure_reason_summary
-    elif current_stage.endswith("_review_confirmation_pending"):
+    else:
+        research_preflight_status = _research_preflight_blocker_status(lineage_root, current_stage)
+        if research_preflight_status is not None:
+            gate_status = "OUTPUTS_INVALID"
+            next_action = str(
+                research_preflight_status.next_action
+                or research_preflight_status.blocker_reason
+                or next_action
+            )
+            blocking_reason_override = research_preflight_status.blocker_reason
+            runtime_stage_status_override = "awaiting_author_fix"
+            runtime_blocking_reason_code_override = (
+                research_preflight_status.blocker_code or "OUTPUTS_INVALID"
+            )
+            runtime_next_action_override = next_action
+    if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
         preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
             lineage_root=lineage_root,
             current_stage=current_stage,

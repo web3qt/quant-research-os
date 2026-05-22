@@ -53,6 +53,22 @@ def _write_test_parquet_rows(path: Path, rows: list[dict]) -> None:
     pq.write_table(pa.table(columns), path)
 
 
+def _write_data_inventory(data_root: Path, *, data_min_ts: str, data_max_ts: str) -> Path:
+    data_root.mkdir(parents=True, exist_ok=True)
+    (data_root / "data_inventory.json").write_text(
+        yaml.safe_dump(
+            {
+                "data_min_ts": data_min_ts,
+                "data_max_ts": data_max_ts,
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return data_root
+
+
 def _stage_output_path(stage_dir: Path, name: str) -> Path:
     if name in {"latest_review_pack.yaml", "stage_gate_review.yaml", "stage_completion_certificate.yaml"}:
         path = stage_dir / "review" / "closure" / name
@@ -2984,16 +3000,47 @@ def test_run_research_session_does_not_route_mandate_review_eligibility_block_in
         },
     )
 
-    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
-
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
 
+    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
     assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.stage_status == "awaiting_author_fix"
     assert status.current_skill == "qros-mandate-author"
+    assert status.gate_status == "OUTPUTS_INVALID"
+    assert status.blocking_reason_code == "OUTPUTS_INVALID"
     assert status.requires_failure_handling is False
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
-    assert status.gate_status != "FAILURE_HANDLING_REQUIRED"
+
+
+def test_run_research_session_stays_in_author_fix_when_data_viability_contract_fails(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "coverage_blocked_case"
+    _write_mandate_admission(lineage_root, accepted=True, include_route=True)
+    inventory_root = _write_data_inventory(
+        tmp_path / "inventory",
+        data_min_ts="2024-03-01",
+        data_max_ts="2024-12-31",
+    )
+    freeze_draft = _freeze_draft(confirmed=False)
+    freeze_draft["groups"]["scope_contract"]["draft"]["time_boundary"] = "2023-01-01/2026-03-01"
+    freeze_draft["groups"]["data_contract"]["draft"]["data_source"] = str(inventory_root)
+    _write_yaml(
+        lineage_root / "01_mandate" / "author" / "draft" / "mandate_freeze_draft.yaml",
+        freeze_draft,
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="coverage_blocked_case")
+
+    assert status.current_stage == "mandate_freeze_confirmation_pending"
+    assert status.stage_status == "awaiting_author_fix"
+    assert status.blocking_reason_code == "TIME_COVERAGE_OUT_OF_RANGE"
+    assert status.gate_status == "OUTPUTS_INVALID"
+    assert status.current_skill == "qros-research-session"
+    assert "Adjust train/test/backtest/holdout" in status.next_action
+    assert "review-ready" not in status.next_action.lower()
 
 
 def test_run_research_session_does_not_route_mandate_confirm_review_into_failure_handler_when_review_eligibility_truth_blocks(
