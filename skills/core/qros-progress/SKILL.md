@@ -68,7 +68,14 @@ description: Use when the user asks for latest QROS research progress, current l
 - `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED`，应在 latest failure package 写出 `failure_disposition.yaml`，只能选择 `NO_GO` 或 `CHILD_LINEAGE`。
 - `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`，原 lineage 仍不得重新进入普通 review / next-stage，应走 `qros-lineage-change-control` 或 child lineage。
 - `blocking_reason_code = STAGE_PROGRAM_MISSING`，应让 author lane 显式补 lineage-local stage program。
-- `blocking_reason_code = REVIEW_CONFIRMATION_REQUIRED`，应进入对应 review skill 的显式 review 流程。
+- `blocking_reason_code = REVIEW_CONFIRMATION_REQUIRED`，普通路径应继续 `qros-research-session` 完成显式 `CONFIRM_REVIEW`；不要把它解释成普通用户应直接跳进 stage-specific review skill。
 - `current_stage` 以 `_next_stage_confirmation_pending` 结尾，应继续 `qros-research-session` 完成下一阶段确认。
+
+另外要按 canonical review eligibility 解释状态：
+
+- hard gate fail 不是 review lane candidate；如果 runtime 仍在 semantic gate、deterministic preflight、failure package 或 failure disposition 上阻断，就不要把当前 stage 说成“只差 review”。
+- `*_review_confirmation_pending` 只适用于真正 review-eligible 的 stage；它不是“artifact 齐了”的泛用中间态。
+- 如果 `current_stage` 仍被投影成 `*_review_confirmation_pending`，但 `stage_status` / `blocking_reason_code` 已明确说明 blocked，应按 blocked 解读，而不是把它汇报成 review-ready。
+- `CHILD_LINEAGE` 仍然只是 formal failure/disposition 结果，不是普通 review / author lane 的可选分支。
 
 不要根据聊天记忆覆盖磁盘状态；磁盘和 runtime 输出是进度查询的事实来源。

@@ -145,6 +145,8 @@ When runtime status reports `blocking_reason_code = FAILURE_DISPOSITION_REQUIRED
 
 When runtime status reports `blocking_reason_code = FAILURE_DISPOSITION_RECORDED`, the original lineage remains blocked from ordinary review or next-stage progression. Continue only through `qros-lineage-change-control` or a child lineage path.
 
+Hard gate fail is not a review lane candidate. If runtime still reports semantic gate failure, deterministic preflight failure, failure-package ownership, or failure disposition ownership for the current stage, do not force `*_review_confirmation_pending`, do not enter review, and do not improvise a manual reviewer handoff.
+
 The automatic failure-routing trigger verdicts are:
 
 - `PASS FOR RETRY`
@@ -168,6 +170,7 @@ When `qros-review`, `qros-session`, or `qros-progress` reports a `recommended_sk
 
 - continue through that skill instead of inventing a shell command
 - keep `qros-research-session` as the active skill for `*_next_stage_confirmation_pending`
+- keep `qros-research-session` as the ordinary entry only for canonical review-eligible `*_review_confirmation_pending`; if runtime still projects `current_stage` as `*_review_confirmation_pending` while `stage_status` / `blocking_reason_code` say blocked, treat it as blocked and do not enter review
 - enter stage-specific author skills only after runtime state has reached the matching `*_confirmation_pending` or `*_author`
 - revalidate disk state before writing artifacts
 
@@ -203,7 +206,7 @@ For any author-eligible stage:
 ## Review Discipline
 
 - review 仍然需要人显式确认；普通入口里的显式动作是确认 `CONFIRM_REVIEW`，不是要求用户手动切换到某个 `qros-*-review` skill
-- 当前主会话推进到 `*_review_confirmation_pending` 后，必须完成 `review-ready` 自查并询问是否确认进入 review
+- 当前主会话推进到 `*_review_confirmation_pending` 后，必须完成 `review-ready` 自查并询问是否确认进入 review；这个 stage name 只适用于 runtime 已判定 review-eligible 的阶段。若 runtime 仍保留这个 `current_stage` 投影，但 `stage_status` / `blocking_reason_code` 已说明 blocked，应按 blocked 处理，不得继续 ordinary review lane
 - 用户确认后，`qros-research-session` 进入 `<stage>_review` lane，并在当前会话内部复用对应 stage-specific review 协议
 - review lane 必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
 - 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt
@@ -220,6 +223,8 @@ For any author-eligible stage:
 - `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
 - 当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这是 mandate-first / mandate-only rollout truth，对 reviewer lane 来说不是 optional check，而是进入 review 前的 mandatory reviewer-lane gate
 - 对其余 post-mandate `*_review_confirmation_pending`，当前 runtime 还没有统一强制这道 deterministic preflight；主 Agent 仍必须完成 `review-ready` 自查与 handoff 准备，但不要宣称这些阶段已经全量接入同一条 reviewer-lane gate
+- 如果 runtime 没有把当前 stage 放进 `*_review_confirmation_pending`，就说明当前 stage 还不是普通 review lane candidate；不要因为 artifacts 看起来“差不多齐了”就自行跳 review
+- 即使 runtime 仍把 `current_stage` 投影成 `*_review_confirmation_pending`，只要 `stage_status` / `blocking_reason_code` 已标明 blocked，也仍然不是 ordinary review-lane candidate
 - 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
@@ -259,35 +264,37 @@ For any author-eligible stage:
 28. When mandate artifacts are ready, stop at `mandate_review_confirmation_pending`
 29. 当 artifacts 已 review-ready 时，主会话停在 `mandate_review_confirmation_pending`，先要求显式 `CONFIRM_REVIEW`，不得无确认自动进入 `mandate_review`
 30. 在任何 stage 到达 `*_review_confirmation_pending` 时，先完成 Main-Agent Review Loop 里的 `review-ready` 自查与 handoff 准备，再由 `qros-research-session` 询问用户是否确认进入 review；确认后才在内部复用 stage-specific review 协议
-31. Confirm `extraction_contract`
-32. Confirm `quality_semantics`
-33. Confirm `universe_admission`
-34. Confirm `shared_derived_layer`
-35. Confirm `delivery_contract`
-36. For `data_ready`, ensure the active research repo actually materializes dense aligned data, shared caches, and QC or coverage evidence required by the stage contract
-37. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `data_ready` completion
-38. Show one final data_ready summary
-39. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
-40. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
-41. Drive data_ready completion with the same discipline as `qros-data-ready-author`
-42. When data_ready artifacts are ready, stop at `data_ready_review_confirmation_pending`
-43. 当 artifacts 已 review-ready 时，主会话停在 `data_ready_review_confirmation_pending`，先要求显式 `CONFIRM_REVIEW`，不得无确认自动进入 `data_ready_review`
-44. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再通过 `qros-research-session` 重新进入 review confirmation / review lane
-45. Confirm `signal_expression`
-46. Confirm `param_identity`
-47. Confirm `time_semantics`
-48. Confirm `signal_schema`
-49. Confirm `delivery_contract`
-50. For `signal_ready`, ensure the active research repo actually materializes baseline signal timeseries, param manifests and coverage evidence required by the stage contract
-48. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `signal_ready` completion
-49. Show one final signal_ready summary
-50. Ask the user one explicit question: `是否按以上内容冻结 signal_ready？`
-51. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_SIGNAL_READY` and freeze signal_ready artifacts
-52. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
-53. When signal_ready artifacts are ready, move into signal_ready review
-54. Reuse the same gate discipline as `qros-signal-ready-review`
-55. 在 `signal_ready review` 中不得复用上一轮 stale receipt / result；author outputs 变化后必须重开 review cycle
-55. After `signal_ready review` closure, enter `train_freeze_confirmation_pending`
+31. `*_review_confirmation_pending` 只适用于真正 review-eligible 的 stage；hard gate fail、preflight fail、failure package 接管或 failure disposition 接管时，canonical rule 下不得进入这个状态
+32. 当前 runtime 在部分 blocked case 里可能仍把 `current_stage` 投影成 `*_review_confirmation_pending`；若 `stage_status` / `blocking_reason_code` 已标明 blocked，必须按 blocked 处理，不得进入 ordinary review lane
+32. Confirm `extraction_contract`
+33. Confirm `quality_semantics`
+34. Confirm `universe_admission`
+35. Confirm `shared_derived_layer`
+36. Confirm `delivery_contract`
+37. For `data_ready`, ensure the active research repo actually materializes dense aligned data, shared caches, and QC or coverage evidence required by the stage contract
+38. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `data_ready` completion
+39. Show one final data_ready summary
+40. Ask the user one explicit question: `是否按以上内容冻结 data_ready？`
+41. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_DATA_READY` and freeze data_ready artifacts
+42. Drive data_ready completion with the same discipline as `qros-data-ready-author`
+43. When data_ready artifacts are ready, the ordinary path remains `data_ready_review_confirmation_pending`
+44. 当 artifacts 已经满足当前 runtime 所要求的 review-entry 前提时，主会话仍先停在 `data_ready_review_confirmation_pending`，要求显式 `CONFIRM_REVIEW`；不得无确认自动进入 `data_ready_review`
+45. 若 review verdict 是 `FIX_REQUIRED`，必须显式回 author lane 修复并刷新 `author/formal/*`，再通过 `qros-research-session` 重新进入 review confirmation / review lane
+46. Confirm `signal_expression`
+47. Confirm `param_identity`
+48. Confirm `time_semantics`
+49. Confirm `signal_schema`
+50. Confirm `delivery_contract`
+51. For `signal_ready`, ensure the active research repo actually materializes baseline signal timeseries, param manifests and coverage evidence required by the stage contract
+52. Never treat empty directories, placeholder files, or contract-only markdown as sufficient `signal_ready` completion
+53. Show one final signal_ready summary
+54. Ask the user one explicit question: `是否按以上内容冻结 signal_ready？`
+55. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_SIGNAL_READY` and freeze signal_ready artifacts
+56. Drive signal_ready completion with the same discipline as `qros-signal-ready-author`
+57. When signal_ready artifacts are ready, the ordinary path remains `signal_ready_review_confirmation_pending`; enter review only after explicit `CONFIRM_REVIEW` and only when runtime status still treats the stage as review-eligible
+58. Reuse the same gate discipline as `qros-signal-ready-review`
+59. 在 `signal_ready review` 中不得复用上一轮 stale receipt / result；author outputs 变化后必须重开 review cycle
+60. Only after a PASS-like `signal_ready review` closure and runtime handoff should the session enter `train_freeze_confirmation_pending`
 56. Confirm `window_contract`
 57. Confirm `threshold_contract`
 58. Confirm `quality_filters`
@@ -299,9 +306,9 @@ For any author-eligible stage:
 64. Ask the user one explicit question: `是否按以上内容冻结 train_freeze？`
 65. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TRAIN_FREEZE` and freeze train artifacts
 66. Drive train_freeze completion with the same discipline as `qros-train-freeze-author`
-67. When train_freeze artifacts are ready, move into train_freeze review
+67. When train_freeze artifacts are ready, the ordinary path remains `train_freeze_review_confirmation_pending`; enter review only after explicit `CONFIRM_REVIEW` and only while runtime still treats the stage as review-eligible
 68. Reuse the same gate discipline as `qros-train-freeze-review`
-69. After `train_freeze review` closure, enter `test_evidence_confirmation_pending`
+69. Only after a PASS-like `train_freeze review` closure and runtime handoff should the session enter `test_evidence_confirmation_pending`
 70. Confirm `window_contract`
 71. Confirm `formal_gate_contract`
 72. Confirm `admissibility_contract`
@@ -313,10 +320,10 @@ For any author-eligible stage:
 78. Ask the user one explicit question: `是否按以上内容冻结 test_evidence？`
 79. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_TEST_EVIDENCE` and freeze test_evidence artifacts
 80. Drive test_evidence completion with the same discipline as `qros-test-evidence-author`
-81. When test_evidence artifacts are ready, move into test_evidence review
+81. When test_evidence artifacts are ready, the ordinary path remains `test_evidence_review_confirmation_pending`; enter review only after explicit `CONFIRM_REVIEW` and only while runtime still treats the stage as review-eligible
 82. Reuse the same gate discipline as `qros-test-evidence-review`
 83. 在 `test_evidence review` 里若 reviewer 指出缺 artifact / stale scope，主 Agent 必须先修正 handoff 与 formal outputs，再重新提交 review
-83. After `test_evidence review` closure, enter `backtest_ready_confirmation_pending`
+84. Only after a PASS-like `test_evidence review` closure and runtime handoff should the session enter `backtest_ready_confirmation_pending`
 84. Confirm `execution_policy`
 85. Confirm `portfolio_policy`
 86. Confirm `risk_overlay`
@@ -328,10 +335,10 @@ For any author-eligible stage:
 92. Ask the user one explicit question: `是否按以上内容冻结 backtest_ready？`
 93. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_BACKTEST_READY` and freeze backtest_ready artifacts
 94. Drive backtest_ready completion with the same discipline as `qros-backtest-ready-author`
-95. When backtest_ready artifacts are ready, move into backtest_ready review
+95. When backtest_ready artifacts are ready, the ordinary path remains `backtest_ready_review_confirmation_pending`; enter review only after explicit `CONFIRM_REVIEW` and only while runtime still treats the stage as review-eligible
 96. Reuse the same gate discipline as `qros-backtest-ready-review`
 97. 在 `backtest_ready review` 与 `holdout_validation review` 里，主 Agent 只在已经能清楚说明“这轮 reviewer 该审什么”时才允许发起 review
-97. After `backtest_ready review` closure, enter `holdout_validation_confirmation_pending`
+98. Only after a PASS-like `backtest_ready review` closure and runtime handoff should the session enter `holdout_validation_confirmation_pending`
 98. Confirm `window_contract`
 99. Confirm `reuse_contract`
 100. Confirm `drift_audit`
@@ -343,9 +350,9 @@ For any author-eligible stage:
 106. Ask the user one explicit question: `是否按以上内容冻结 holdout_validation？`
 107. Only after a clear affirmative reply may the agent internally write the equivalent of `CONFIRM_HOLDOUT_VALIDATION` and freeze holdout_validation artifacts
 108. Drive holdout_validation completion with the same discipline as `qros-holdout-validation-author`
-109. When holdout_validation artifacts are ready, move into holdout_validation review
+109. When holdout_validation artifacts are ready, the ordinary path remains `holdout_validation_review_confirmation_pending`; enter review only after explicit `CONFIRM_REVIEW` and only while runtime still treats the stage as review-eligible
 110. Reuse the same gate discipline as `qros-holdout-validation-review`
-111. Stop after `holdout_validation review`; treat it as the terminal stage for the current single-entry flow
+111. Stop only after a PASS-like `holdout_validation review` closure and final runtime handoff; treat it as the terminal stage for the current single-entry flow
 
 ## Auto vs Ask
 
