@@ -4,6 +4,8 @@ import importlib
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from runtime.tools.artifact_contract_runtime import ArtifactContractError, load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
 from runtime.tools.csf_data_ready_contract_runtime import validate_csf_data_ready_semantics
@@ -11,6 +13,7 @@ from runtime.tools.csf_holdout_validation_contract_runtime import validate_csf_h
 from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_ready_semantics
 from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
 from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
+from runtime.tools.mandate_admission_runtime import assess_time_coverage_preflight
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.artifact_realism import check_machine_artifact_realism
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
@@ -68,6 +71,19 @@ def run_review_preflight(
         required_provenance_paths=["program_execution_manifest.json"],
         allow_missing_state=True,
     )
+
+    # 当前 rollout 只对 mandate 接入 research preflight blocker fail-closed；
+    # reviewer lane 不负责重做 author 已知的首轮发现，已阻断就直接失败返回。
+    research_preflight_findings = _check_research_preflight_blockers(stage, stage_dir)
+    if research_preflight_findings:
+        return {
+            "stage": stage,
+            "lineage_id": context["lineage_id"],
+            "content_findings": research_preflight_findings,
+            "upstream_binding_findings": [],
+            "research_preflight_findings": research_preflight_findings,
+            "status": "FAIL",
+        }
     stage_checks = checklist.get("stages", {}).get(stage, {"checks": []})
     stage_content_checks, upstream_binding_checks = _split_structural_checks(
         stage_contract.get("structural_gate_checks", [])
@@ -103,8 +119,50 @@ def run_review_preflight(
         "lineage_id": context["lineage_id"],
         "content_findings": content_findings,
         "upstream_binding_findings": upstream_findings,
+        "research_preflight_findings": [],
         "status": "PASS" if not content_findings and not upstream_findings else "FAIL",
     }
+
+
+def _check_research_preflight_blockers(stage: str, stage_dir: Path) -> list[str]:
+    if stage != "mandate":
+        return []
+
+    draft_path = stage_dir / "author" / "draft" / "mandate_freeze_draft.yaml"
+    if not draft_path.exists():
+        return []
+
+    payload = _load_yaml_dict(draft_path)
+    groups = payload.get("groups", {})
+    if not isinstance(groups, dict):
+        return []
+
+    scope_group = groups.get("scope_contract", {})
+    data_group = groups.get("data_contract", {})
+    if not isinstance(scope_group, dict) or not isinstance(data_group, dict):
+        return []
+
+    scope_contract = scope_group.get("draft", {})
+    data_contract = data_group.get("draft", {})
+    if not isinstance(scope_contract, dict) or not isinstance(data_contract, dict):
+        return []
+
+    preflight_status = assess_time_coverage_preflight(
+        data_source=data_contract.get("data_source", ""),
+        time_boundary=scope_contract.get("time_boundary", ""),
+    )
+    if preflight_status is None or preflight_status.passable:
+        return []
+
+    summary = f"{preflight_status.blocker_code}: {preflight_status.blocker_reason}"
+    if preflight_status.next_action:
+        summary = f"{summary} {preflight_status.next_action}"
+    return [summary]
+
+
+def _load_yaml_dict(path: Path) -> dict[str, Any]:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
 
 
 def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[str]:
