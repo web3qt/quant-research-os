@@ -75,6 +75,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 必须在当前 research repo 里真实生成 `date x asset` 面板、覆盖证据和共享派生层
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
+- 必须把 `route_viability_contract`、`expression_identity_contract`、`provenance_viability_contract` 作为进入 reviewer 之前的 preflight 事实先锁定；reviewer 不是第一次发现“这包是否还服务 CSF 路线、面板身份是否漂移、输入来源是否真实”的地方
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
 - 必须把本阶段真实使用的面板构建程序保存到 stage 目录，并登记到 `run_manifest.json`
 - 不得产出任何时序主线措辞、预测 horizon 口径或单资产触发语义
@@ -107,9 +108,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 ## Working Rules
 
 1. 确认 `01_mandate/stage_completion_certificate.yaml` 已存在
-2. 先收敛并确认 `panel_contract`
+2. 先收敛并确认 `panel_contract`，先把 `expression_identity_contract` 锁定，确保 panel 主键与时间键身份唯一
 3. 再收敛并确认 `taxonomy_contract`
-4. 再收敛并确认 `eligibility_contract`
+4. 再收敛并确认 `eligibility_contract`，并确认 `route_viability_contract` 仍与 `research_route = cross_sectional_factor` 一致
 5. 再收敛并确认 `shared_feature_base`
 6. 最后确认 `delivery_contract`
 7. 明确当前 research repo 中由谁负责真实生成 `panel_manifest.json`、覆盖证据和共享派生层
@@ -120,5 +121,5 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 12. 生成 `split_sample_adequacy_report.yaml`，并确认 `final_verdict = PASS`
 13. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
 14. 运行 `qros-validate-stage --stage csf_data_ready`
-15. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过
+15. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过，并把 `provenance_viability_contract` 锁定
 16. 若当前只能产出 skeleton、placeholder 或 split 样本不足，必须明确判定为未完成，不得冒充 csf_data_ready 完成

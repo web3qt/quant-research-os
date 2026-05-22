@@ -63,6 +63,7 @@ description: Use when mandate admission has passed and must be frozen into forma
 - 必须冻结研究主问题、scope、时间切分、参数边界和实现栈
 - 必须先确认 `data_source` 与 `bar_size`，再冻结 mandate
 - 必须先确认 `route_assessment`，再冻结 `research_route`
+- 必须把 `data_viability_contract`、`time_coverage_contract`、`route_viability_contract` 作为 mandate freeze 前的 preflight 事实先锁定；reviewer 不是这些基础事实的第一发现点
 - `research_route` 第一版只允许 `time_series_signal` 与 `cross_sectional_factor`
 - 必须写清 `excluded_routes` 与 `route_rationale`
 - 必须写清 success / failure / budget / excluded scope
@@ -121,10 +122,10 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 2. 确认 `admission_decision.verdict == ACCEPT_FOR_MANDATE`
 3. 读取已确认的 `mandate_freeze_draft.yaml` 与 `mandate_transition_approval.yaml`
 4. 先收敛并确认 `research_intent`
-5. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`
+5. 在 `research_intent` 中确认 `route_assessment`、`research_route`、`excluded_routes`，先把 `route_viability_contract` 锁定，不得把“这题到底该走哪条 route”留给 reviewer
 6. 再收敛并确认 `scope_contract`；核查 universe 是显式列表或可执行规则（见上）
-7. 再收敛并确认 `data_contract`
-8. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写
+7. 再收敛并确认 `data_contract`，先把 `data_viability_contract` 锁定，确保 `data_source` / `bar_size` / 真实可抽取性已经明确
+8. 再收敛并确认 `execution_contract`；核查容量/拥挤审计基准已写清、non_rust_exceptions 已填写，并先把 `time_coverage_contract` 锁定，确保冻结时间边界不会等 reviewer 才第一次发现越界
 9. 输出一份 grouped freeze summary
 10. 只有用户最终批准后，才生成正式 mandate artifacts
 11. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
