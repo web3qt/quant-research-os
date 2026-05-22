@@ -226,8 +226,9 @@ def test_qros_session_temp_repo_smoke_reaches_mandate_review_gate(tmp_path: Path
     payload = json.loads(review_result.stdout)
     assert payload["current_stage"] == "mandate_review_confirmation_pending"
     assert payload["current_skill"] == "qros-mandate-author"
+    assert payload["stage_status"] == "awaiting_author_fix"
     assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
-    assert payload["gate_status"] == "REVIEW_CONFIRMATION_PENDING"
+    assert payload["gate_status"] == "OUTPUTS_INVALID"
     assert "qros-mandate-author" in payload["next_action"]
     assert "review entry" in payload["next_action"]
     assert not (lineage_root / "01_mandate" / "review" / "request" / "adversarial_review_request.yaml").exists()

@@ -2998,12 +2998,23 @@ def test_run_research_session_does_not_route_mandate_review_eligibility_block_in
 
 def test_run_research_session_does_not_route_mandate_confirm_review_into_failure_handler_when_review_eligibility_truth_blocks(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     stage_dir = lineage_root / "01_mandate"
 
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    monkeypatch.setattr(
+        "runtime.tools.research_session._review_entry_preflight_payload",
+        lambda **kwargs: {
+            "stage": "mandate",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        },
+    )
     _write_review_eligibility(
         lineage_root,
         {
@@ -3028,6 +3039,48 @@ def test_run_research_session_does_not_route_mandate_confirm_review_into_failure
     assert status.failure_stage is None
     assert status.failure_reason_summary is None
     assert not (stage_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
+
+
+def test_detect_session_stage_keeps_blocked_mandate_review_pending_even_with_confirm_review_approval(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+    _write_yaml(
+        stage_dir / "author" / "draft" / "review_transition_approval.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "decision": "CONFIRM_REVIEW",
+            "approved_by": "tester",
+            "approved_at": "2026-05-22T10:00:00Z",
+            "source_stage": "mandate_review_confirmation_pending",
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.current_skill == "qros-mandate-author"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(

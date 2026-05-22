@@ -10,6 +10,7 @@ import yaml
 
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
+from tests.helpers.lineage_program_support import write_fake_stage_provenance
 
 
 def _touch_lineage(outputs_root: Path, lineage_id: str, filename: str = "marker.txt") -> Path:
@@ -331,7 +332,7 @@ def test_progress_non_failure_review_blocker_preserves_author_fix_skill_handoff(
     assert payload["gate_status"] == "OUTPUTS_INVALID"
     assert payload["current_skill"] == "qros-csf-test-evidence-author"
     assert payload["recommended_skill"] == "qros-csf-test-evidence-author"
-    assert payload["blocking_reason_code"] == "AUTHOR_OUTPUTS_INVALID"
+    assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
     assert payload["blocking_reason"] == "Author outputs must be repaired before review entry."
     assert payload["requires_failure_handling"] is False
 
@@ -367,3 +368,98 @@ def test_progress_real_review_eligibility_failure_handler_normalizes_failure_sta
     assert payload["next_action"] == (
         "Enter failure handling for csf_test_evidence via qros-stage-failure-handler"
     )
+
+
+def test_progress_blocked_mandate_review_stays_in_author_fix_lane(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "blocked_mandate_case")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "mandate_review_confirmation_pending",
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="blocked_mandate_case")
+
+    assert payload["current_stage"] == "mandate_review_confirmation_pending"
+    assert payload["stage_status"] == "awaiting_author_fix"
+    assert payload["gate_status"] == "OUTPUTS_INVALID"
+    assert payload["current_skill"] == "qros-mandate-author"
+    assert payload["recommended_skill"] == "qros-mandate-author"
+    assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
+    assert payload["blocking_reason"] == "Canonical review eligibility blocked mandate review entry."
+    assert payload["requires_failure_handling"] is False
+    assert payload["failure_stage"] is None
+    assert payload["failure_reason_summary"] is None
+
+
+def test_progress_mandate_preflight_failure_keeps_outputs_invalid_when_review_eligibility_is_absent(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "preflight_priority_case")
+    mandate_dir = lineage_root / "01_mandate" / "author" / "formal"
+    mandate_dir.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "mandate.md",
+        "research_scope.md",
+        "research_route.yaml",
+        "time_split.json",
+        "parameter_grid.yaml",
+        "run_config.toml",
+        "artifact_catalog.md",
+        "field_dictionary.md",
+    ):
+        (mandate_dir / name).write_text("ok\n", encoding="utf-8")
+    (mandate_dir / "research_route.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "research_route": "time_series_signal",
+                "excluded_routes": ["cross_sectional_factor"],
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    (mandate_dir / "time_split.json").write_text(
+        json.dumps(
+            {
+                "train": "",
+                "test": "",
+                "backtest": "",
+                "holdout": "",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (mandate_dir / "parameter_grid.yaml").write_text(
+        yaml.safe_dump({"parameters": []}, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="preflight_priority_case")
+
+    assert payload["current_stage"] == "mandate_review_confirmation_pending"
+    assert payload["stage_status"] == "awaiting_author_fix"
+    assert payload["gate_status"] == "OUTPUTS_INVALID"
+    assert payload["current_skill"] == "qros-mandate-author"
+    assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
+    assert "time_split.json" in (payload["blocking_reason"] or "")

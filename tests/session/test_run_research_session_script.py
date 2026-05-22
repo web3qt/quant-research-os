@@ -1565,7 +1565,11 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: data_ready_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-data-ready-author" in confirm_result.stdout
 
     result = run(
         [
@@ -1582,8 +1586,10 @@ def test_run_research_session_builds_data_ready_only_after_explicit_confirmation
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: data_ready_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "02_data_ready", "data_contract.md")).exists()
     assert "Data Ready Reflection:" not in result.stdout
 
@@ -1726,7 +1732,11 @@ def test_run_research_session_builds_signal_ready_only_after_explicit_confirmati
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: signal_ready_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-signal-ready-author" in confirm_result.stdout
 
     result = run(
         [
@@ -1743,8 +1753,10 @@ def test_run_research_session_builds_signal_ready_only_after_explicit_confirmati
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: signal_ready_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "03_signal_ready", "signal_contract.md")).exists()
 
 
@@ -1864,7 +1876,11 @@ def test_run_research_session_builds_train_freeze_only_after_explicit_confirmati
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: train_freeze_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-train-freeze-author" in confirm_result.stdout
 
     result = run(
         [
@@ -1881,8 +1897,10 @@ def test_run_research_session_builds_train_freeze_only_after_explicit_confirmati
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: train_freeze_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "04_train_freeze", "train_thresholds.json")).exists()
 
 
@@ -2019,7 +2037,11 @@ def test_run_research_session_builds_test_evidence_only_after_explicit_confirmat
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: test_evidence_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-test-evidence-author" in confirm_result.stdout
 
     result = run(
         [
@@ -2036,8 +2058,10 @@ def test_run_research_session_builds_test_evidence_only_after_explicit_confirmat
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: test_evidence_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "05_test_evidence", "frozen_spec.json")).exists()
 
 
@@ -2377,7 +2401,11 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: backtest_ready_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-backtest-ready-author" in confirm_result.stdout
 
     result = run(
         [
@@ -2394,8 +2422,10 @@ def test_run_research_session_builds_backtest_ready_only_after_explicit_confirma
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: backtest_ready_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "06_backtest", "engine_compare.csv")).exists()
 
 
@@ -2517,7 +2547,11 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
         cwd=repo_root,
     )
 
-    assert confirm_result.returncode == 7
+    assert confirm_result.returncode == 6
+    assert "📍 Current stage: holdout_validation_review_confirmation_pending" in confirm_result.stdout
+    assert "Stage status: awaiting_author_fix" in confirm_result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in confirm_result.stdout
+    assert "qros-holdout-validation-author" in confirm_result.stdout
 
     result = run(
         [
@@ -2534,6 +2568,8 @@ def test_run_research_session_builds_holdout_validation_only_after_explicit_conf
         cwd=repo_root,
     )
 
-    assert result.returncode == 7
+    assert result.returncode == 6
     assert "📍 Current stage: holdout_validation_review_confirmation_pending" in result.stdout
+    assert "Stage status: awaiting_author_fix" in result.stdout
+    assert "Blocking reason code: OUTPUTS_INVALID" in result.stdout
     assert (_stage_output_path(lineage_root / "07_holdout", "holdout_run_manifest.json")).exists()
