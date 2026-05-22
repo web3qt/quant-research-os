@@ -7,6 +7,7 @@ import yaml
 
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.idea_runtime import _blank_mandate_freeze_draft
+from runtime.tools.research_preflight import ResearchPreflightStatus, compute_research_preflight
 
 
 QUALIFICATION_DIMENSIONS = (
@@ -17,6 +18,10 @@ QUALIFICATION_DIMENSIONS = (
     "scoping_clarity",
     "distinctiveness",
 )
+SUPPORTED_RESEARCH_ROUTES = {
+    "time_series_signal",
+    "cross_sectional_factor",
+}
 
 
 def _dump_yaml(path: Path, payload: dict[str, Any]) -> None:
@@ -138,6 +143,184 @@ def admission_ready_for_freeze(payload: dict[str, Any]) -> str | None:
         if isinstance(score, bool) or not isinstance(score, int) or score <= 0:
             return f"qualification.dimensions.{name}.score must be positive"
     return None
+
+
+def admission_preflight_error(payload: dict[str, Any]) -> str | None:
+    route_error = _assess_route_viability(payload)
+    if route_error is not None:
+        return route_error
+
+    scope = payload.get("scope")
+    if not isinstance(scope, dict):
+        return None
+
+    preflight = assess_time_coverage_preflight(
+        data_source=scope.get("data_source", ""),
+        time_boundary=scope.get("time_boundary", ""),
+    )
+    if preflight is None or preflight.passable:
+        return None
+    return (
+        f"time coverage preflight failed: {preflight.blocker_code}: "
+        f"{preflight.blocker_reason}"
+    )
+
+
+def assess_time_coverage_preflight(
+    *,
+    data_source: object,
+    time_boundary: object,
+) -> ResearchPreflightStatus | None:
+    boundary = _parse_time_boundary(time_boundary)
+    if boundary is None:
+        return None
+
+    inventory_facts = discover_data_inventory_facts(data_source)
+    if not inventory_facts:
+        return None
+
+    return compute_research_preflight(
+        stage="mandate",
+        user_confirmed={
+            "research_route": "",
+            "bar_size": "",
+            "train_start": boundary[0],
+            "holdout_end": boundary[1],
+        },
+        runtime_facts=inventory_facts,
+    )
+
+
+def discover_data_inventory_facts(data_source: object) -> dict[str, str]:
+    data_source_path = _as_existing_path(data_source)
+    if data_source_path is None:
+        return {}
+
+    candidate_paths = [data_source_path] if data_source_path.is_file() else [
+        data_source_path / "data_inventory.json",
+        data_source_path / "data_inventory.yaml",
+        data_source_path / "data_inventory.yml",
+        data_source_path / "dataset_manifest.json",
+        data_source_path / "dataset_manifest.yaml",
+        data_source_path / "dataset_manifest.yml",
+    ]
+    for candidate_path in candidate_paths:
+        if not candidate_path.exists() or not candidate_path.is_file():
+            continue
+        payload = yaml.safe_load(candidate_path.read_text(encoding="utf-8"))
+        facts = _extract_inventory_facts(payload)
+        if facts:
+            return facts
+    return {}
+
+
+def _assess_route_viability(payload: dict[str, Any]) -> str | None:
+    observation = str(payload.get("observation", "")).strip()
+    primary_hypothesis = str(payload.get("primary_hypothesis", "")).strip()
+    research_questions = payload.get("research_questions", [])
+    route_assessment = payload.get("route_assessment")
+    scope = payload.get("scope")
+    target_task = scope.get("target_task", "") if isinstance(scope, dict) else ""
+
+    if not isinstance(route_assessment, dict):
+        return None
+
+    recommended_route = str(route_assessment.get("recommended_route", "")).strip()
+    if recommended_route not in SUPPORTED_RESEARCH_ROUTES:
+        return None
+
+    expected_route = _infer_expected_route(
+        observation=observation,
+        primary_hypothesis=primary_hypothesis,
+        research_questions=research_questions,
+        target_task=target_task,
+    )
+    if expected_route is None or recommended_route == expected_route:
+        return None
+    return (
+        "route_assessment.recommended_route "
+        f"{recommended_route} conflicts with clearly {expected_route} problem framing"
+    )
+
+
+def _infer_expected_route(
+    *,
+    observation: object,
+    primary_hypothesis: object,
+    research_questions: object,
+    target_task: object,
+) -> str | None:
+    framing_parts = [
+        str(observation or "").strip(),
+        str(primary_hypothesis or "").strip(),
+        str(target_task or "").strip(),
+    ]
+    if isinstance(research_questions, list):
+        framing_parts.extend(str(item).strip() for item in research_questions if str(item).strip())
+    framing = " ".join(framing_parts).lower()
+    cross_sectional_markers = (
+        "cross-sectional",
+        "cross sectional",
+        "cross-asset",
+        "cross asset",
+        "relative return",
+        "relative returns",
+        "rank all assets",
+        "rank assets",
+        "ranking",
+        "rank forecast",
+    )
+    if any(marker in framing for marker in cross_sectional_markers):
+        return "cross_sectional_factor"
+    return None
+
+
+def _parse_time_boundary(time_boundary: object) -> tuple[str, str] | None:
+    normalized = str(time_boundary or "").strip()
+    if not normalized:
+        return None
+    if "/" in normalized:
+        parts = [part.strip() for part in normalized.split("/", maxsplit=1)]
+    elif " to " in normalized:
+        parts = [part.strip() for part in normalized.split(" to ", maxsplit=1)]
+    else:
+        return None
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        return None
+    return parts[0], parts[1]
+
+
+def _as_existing_path(value: object) -> Path | None:
+    normalized = str(value or "").strip()
+    if not normalized:
+        return None
+    candidate = Path(normalized).expanduser()
+    if candidate.exists():
+        return candidate
+    return None
+
+
+def _extract_inventory_facts(payload: Any) -> dict[str, str]:
+    candidates: list[Any] = [payload]
+    if isinstance(payload, dict):
+        candidates.extend(
+            [
+                payload.get("coverage"),
+                payload.get("time_coverage"),
+                payload.get("inventory"),
+            ]
+        )
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        data_min_ts = str(candidate.get("data_min_ts", "")).strip()
+        data_max_ts = str(candidate.get("data_max_ts", "")).strip()
+        if data_min_ts and data_max_ts:
+            return {
+                "data_min_ts": data_min_ts,
+                "data_max_ts": data_max_ts,
+            }
+    return {}
 
 
 def _get_path(payload: dict[str, Any], path: str) -> Any:

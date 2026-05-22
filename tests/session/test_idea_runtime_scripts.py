@@ -13,6 +13,22 @@ def _write_yaml(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
+def _write_data_inventory(data_root: Path, *, data_min_ts: str, data_max_ts: str) -> Path:
+    data_root.mkdir(parents=True, exist_ok=True)
+    (data_root / "data_inventory.json").write_text(
+        yaml.safe_dump(
+            {
+                "data_min_ts": data_min_ts,
+                "data_max_ts": data_max_ts,
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return data_root
+
+
 def _route_assessment(
     *,
     candidate_routes: list[str] | None = None,
@@ -885,6 +901,250 @@ def test_build_mandate_from_intake_requires_confirmed_data_source_and_bar_size(t
     assert result.returncode != 0
     assert "data_source" in result.stderr
     assert "bar_size" in result.stderr
+
+
+def test_build_mandate_from_intake_rejects_route_when_problem_is_clearly_cross_sectional(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "breakout_quality_v1"
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    draft_dir.mkdir(parents=True)
+
+    _write_yaml(
+        draft_dir / "mandate_admission.yaml",
+        {
+            "lineage_id": "breakout_quality_v1",
+            "raw_idea": "rank breakout quality",
+            "observation": "Breakout quality might matter around rebalance windows.",
+            "primary_hypothesis": "Cross-asset breakout quality predicts relative winners.",
+            "counter_hypothesis": "The move is only shared market beta.",
+            "research_questions": ["Does breakout quality rank forecast relative returns?"],
+            "scope": {
+                "market": "crypto perpetual futures",
+                "instrument_type": "perpetual",
+                "universe": "top 30 Binance USD-M",
+                "data_source": "/data/binance",
+                "bar_size": "5m",
+                "holding_horizons": ["30m"],
+                "target_task": "breakout follow-through study",
+                "excluded_scope": ["spot"],
+                "budget_days": 5,
+                "max_iterations": 3,
+            },
+            "qualification": {
+                "summary": "Researchable.",
+                "dimensions": {
+                    name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                    for name in [
+                        "observability",
+                        "mechanism_plausibility",
+                        "tradeability",
+                        "data_feasibility",
+                        "scoping_clarity",
+                        "distinctiveness",
+                    ]
+                },
+            },
+            "route_assessment": _route_assessment(
+                recommended_route="time_series_signal",
+                why_not_other_routes={
+                    "cross_sectional_factor": ["Single-asset direction is the wrong framing for this rank problem."]
+                },
+            ),
+            "admission_decision": {
+                "verdict": "ACCEPT_FOR_MANDATE",
+                "why": ["Scope is concrete."],
+                "kill_criteria": ["No rank spread after costs."],
+                "required_reframe_actions": [],
+            },
+        },
+    )
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    _write_yaml(
+        draft_dir / "mandate_transition_approval.yaml",
+        {
+            "lineage_id": "breakout_quality_v1",
+            "decision": "CONFIRM_MANDATE",
+            "approved_by": "tester",
+            "approved_at": "2026-05-21T10:00:00Z",
+            "source_stage": "mandate_freeze_confirmation_pending",
+        },
+    )
+    ensure_stage_program(lineage_root, "mandate")
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "route_assessment" in result.stderr
+    assert "cross_sectional_factor" in result.stderr
+
+
+def test_build_mandate_from_intake_fallback_rejects_route_when_intake_framing_is_clearly_cross_sectional(
+    tmp_path: Path,
+) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "breakout_quality_v1"
+    intake_dir = lineage_root / "00_idea_intake"
+    intake_dir.mkdir(parents=True)
+
+    _write_yaml(
+        intake_dir / "idea_gate_decision.yaml",
+        {
+            "idea_id": "breakout_quality_v1",
+            "verdict": "GO_TO_MANDATE",
+            "why": ["variables are observable"],
+            "route_assessment": _route_assessment(
+                recommended_route="time_series_signal",
+                why_not_other_routes={
+                    "cross_sectional_factor": ["Single-asset direction is the wrong framing for this rank problem."]
+                },
+            ),
+            "approved_scope": {
+                "market": "crypto perpetual futures",
+                "data_source": "/data/binance",
+                "universe": "top 30 Binance USD-M",
+                "bar_size": "5m",
+                "target_task": "breakout follow-through study",
+            },
+            "required_reframe_actions": [],
+            "rollback_target": "00_idea_intake",
+        },
+    )
+    _write_yaml(
+        intake_dir / "scope_canvas.yaml",
+        {
+            "market": "crypto perpetual futures",
+            "instrument_type": "perpetual",
+            "universe": "top 30 Binance USD-M",
+            "data_source": "/data/binance",
+            "bar_size": "5m",
+            "holding_horizons": ["30m"],
+            "target_task": "breakout follow-through study",
+            "excluded_scope": ["spot"],
+            "budget_days": 5,
+            "max_iterations": 3,
+        },
+    )
+    (intake_dir / "observation_hypothesis_map.md").write_text(
+        "# Observation Hypothesis Map\n\n"
+        "## 观察\n\n"
+        "- Breakout quality might matter around rebalance windows.\n\n"
+        "## 主假设\n\n"
+        "- Cross-asset breakout quality predicts relative winners.\n\n"
+        "## 对立假设\n\n"
+        "- The move is only shared market beta.\n",
+        encoding="utf-8",
+    )
+    (intake_dir / "research_question_set.md").write_text(
+        "# Research Questions\n\n- Does breakout quality rank forecast relative returns?\n",
+        encoding="utf-8",
+    )
+    _write_yaml(intake_dir / "mandate_freeze_draft.yaml", _mandate_freeze_draft(confirmed=True))
+    ensure_stage_program(lineage_root, "mandate")
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "route_assessment" in result.stderr
+    assert "cross_sectional_factor" in result.stderr
+
+
+def test_build_mandate_from_intake_rejects_time_window_outside_real_data_inventory(tmp_path: Path) -> None:
+    repo_root = REPO_ROOT
+    script_path = repo_root / "runtime" / "scripts" / "build_mandate_from_intake.py"
+    lineage_root = tmp_path / "outputs" / "breakout_quality_v1"
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    draft_dir.mkdir(parents=True)
+    data_root = _write_data_inventory(
+        tmp_path / "real-data",
+        data_min_ts="2024-03-01",
+        data_max_ts="2024-12-31",
+    )
+
+    _write_yaml(
+        draft_dir / "mandate_admission.yaml",
+        {
+            "lineage_id": "breakout_quality_v1",
+            "raw_idea": "rank breakout quality",
+            "observation": "rank all assets by breakout quality every rebalance",
+            "primary_hypothesis": "Cross-asset breakout quality predicts relative winners.",
+            "counter_hypothesis": "The move is only shared market beta.",
+            "research_questions": ["Does breakout quality rank forecast relative returns?"],
+            "scope": {
+                "market": "crypto perpetual futures",
+                "instrument_type": "perpetual",
+                "universe": "top 30 Binance USD-M",
+                "data_source": str(data_root),
+                "bar_size": "5m",
+                "holding_horizons": ["30m"],
+                "target_task": "cross-sectional ranking",
+                "excluded_scope": ["spot"],
+                "budget_days": 5,
+                "max_iterations": 3,
+                "time_boundary": "2023-01-01/2026-03-01",
+            },
+            "qualification": {
+                "summary": "Researchable.",
+                "dimensions": {
+                    name: {"score": 3, "evidence": ["present"], "uncertainty": [], "kill_reason": []}
+                    for name in [
+                        "observability",
+                        "mechanism_plausibility",
+                        "tradeability",
+                        "data_feasibility",
+                        "scoping_clarity",
+                        "distinctiveness",
+                    ]
+                },
+            },
+            "route_assessment": _route_assessment(),
+            "admission_decision": {
+                "verdict": "ACCEPT_FOR_MANDATE",
+                "why": ["Scope is concrete."],
+                "kill_criteria": ["No rank spread after costs."],
+                "required_reframe_actions": [],
+            },
+        },
+    )
+    draft_payload = _mandate_freeze_draft(confirmed=True)
+    draft_payload["groups"]["data_contract"]["draft"]["data_source"] = str(data_root)
+    draft_payload["groups"]["scope_contract"]["draft"]["time_boundary"] = "2023-01-01/2026-03-01"
+    _write_yaml(draft_dir / "mandate_freeze_draft.yaml", draft_payload)
+    _write_yaml(
+        draft_dir / "mandate_transition_approval.yaml",
+        {
+            "lineage_id": "breakout_quality_v1",
+            "decision": "CONFIRM_MANDATE",
+            "approved_by": "tester",
+            "approved_at": "2026-05-21T10:00:00Z",
+            "source_stage": "mandate_freeze_confirmation_pending",
+        },
+    )
+    ensure_stage_program(lineage_root, "mandate")
+
+    result = run(
+        [sys.executable, str(script_path), "--lineage-root", str(lineage_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+
+    assert result.returncode != 0
+    assert "time coverage" in result.stderr.lower()
 
 
 def test_build_data_ready_from_mandate_creates_data_ready_artifacts(tmp_path: Path) -> None:
