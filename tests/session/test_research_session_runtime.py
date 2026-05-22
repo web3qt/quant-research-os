@@ -38,6 +38,12 @@ def _read_yaml(path: Path) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _write_review_eligibility(lineage_root: Path, payload: dict) -> None:
+    path = lineage_root / "review_eligibility.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
 def _write_test_parquet_rows(path: Path, rows: list[dict]) -> None:
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -2678,6 +2684,93 @@ def test_run_research_session_does_not_write_review_confirmation_when_failure_di
     assert not (backtest_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
 
 
+def test_detect_session_stage_review_eligible_csf_test_evidence_failure_handler_blocks_review_confirmation_pending(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_review_blocked"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    stage_dir = lineage_root / "05_csf_test_evidence"
+    _write_minimal_stage_outputs(stage_dir, stage="csf_test_evidence")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "csf_test_evidence",
+                "reason_code": "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+                "reason": "Canonical review eligibility blocked review entry for csf_test_evidence.",
+                "failure_reason_summary": "Canonical review eligibility requires failure handling for csf_test_evidence.",
+            }
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "csf_test_evidence_review"
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="csf_review_blocked")
+
+    assert status.current_stage == "csf_test_evidence_review"
+    assert status.stage_status == "blocked_requires_failure_handling"
+    assert status.blocking_reason_code == "FAILURE_HANDLER_REQUIRED"
+    assert status.current_skill == "qros-stage-failure-handler"
+    assert status.gate_status == "FAILURE_HANDLING_REQUIRED"
+    assert status.requires_failure_handling is True
+    assert status.review_verdict is None
+    assert status.failure_stage == "csf_test_evidence"
+    assert status.failure_reason_summary == "Canonical review eligibility requires failure handling for csf_test_evidence."
+
+
+def test_run_research_session_review_eligible_csf_test_evidence_failure_handler_does_not_write_review_confirmation(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_review_blocked"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "factor_structure": "single_factor",
+            "portfolio_expression": "long_short_market_neutral",
+            "neutralization_policy": "group_neutral",
+        },
+    )
+    stage_dir = lineage_root / "05_csf_test_evidence"
+    _write_minimal_stage_outputs(stage_dir, stage="csf_test_evidence")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "csf_test_evidence",
+                "reason_code": "CSF_TEST_EVIDENCE_FAILURE_HANDLER_REQUIRED",
+                "reason": "Canonical review eligibility blocked review entry for csf_test_evidence.",
+                "failure_reason_summary": "Canonical review eligibility requires failure handling for csf_test_evidence.",
+            }
+        },
+    )
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="csf_review_blocked",
+        review_decision="CONFIRM_REVIEW",
+    )
+
+    assert status.current_stage == "csf_test_evidence_review"
+    assert status.current_skill == "qros-stage-failure-handler"
+    assert status.review_verdict is None
+    assert not (stage_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
+
+
 def test_run_research_session_keeps_disposed_failure_from_reentering_review(
     tmp_path: Path,
 ) -> None:
@@ -2869,6 +2962,125 @@ def test_run_research_session_does_not_route_mandate_review_into_failure_handler
     assert status.gate_status == "ADVERSARIAL_REVIEW_PENDING"
     assert "qros-mandate-review" in status.next_action
     assert "review/final_review.yaml" in status.next_action
+
+
+def test_run_research_session_does_not_route_mandate_review_eligibility_block_into_failure_handler(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.current_skill == "qros-mandate-author"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
+    assert status.gate_status != "FAILURE_HANDLING_REQUIRED"
+
+
+def test_run_research_session_does_not_route_mandate_confirm_review_into_failure_handler_when_review_eligibility_truth_blocks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    monkeypatch.setattr(
+        "runtime.tools.research_session._review_entry_preflight_payload",
+        lambda **kwargs: {
+            "stage": "mandate",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        },
+    )
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+
+    status = run_research_session(
+        outputs_root=outputs_root,
+        lineage_id="btc_leads_alts",
+        review_decision="CONFIRM_REVIEW",
+    )
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.current_skill == "qros-mandate-author"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
+    assert not (stage_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
+
+
+def test_detect_session_stage_keeps_blocked_mandate_review_pending_even_with_confirm_review_approval(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_review_eligibility(
+        lineage_root,
+        {
+            "failure_package": {
+                "stage": "mandate",
+                "reason_code": "MANDATE_REVIEW_BLOCKED",
+                "reason": "Canonical review eligibility blocked mandate review entry.",
+                "failure_reason_summary": "Canonical review eligibility blocked mandate review entry.",
+            }
+        },
+    )
+    _write_yaml(
+        stage_dir / "author" / "draft" / "review_transition_approval.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "decision": "CONFIRM_REVIEW",
+            "approved_by": "tester",
+            "approved_at": "2026-05-22T10:00:00Z",
+            "source_stage": "mandate_review_confirmation_pending",
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "mandate_review_confirmation_pending"
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id="btc_leads_alts")
+
+    assert status.current_stage == "mandate_review_confirmation_pending"
+    assert status.current_skill == "qros-mandate-author"
+    assert status.requires_failure_handling is False
+    assert status.failure_stage is None
+    assert status.failure_reason_summary is None
 
 
 def test_run_research_session_exposes_author_fix_substate_for_fix_required_review(

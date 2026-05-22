@@ -4,7 +4,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
+from runtime.tools.review_eligibility import compute_review_eligibility
 from runtime.tools.research_session import (
+    STAGE_ACTIVE_SKILLS,
+    _stage_base_name,
+    _review_entry_can_route_failure,
+    _review_confirmation_author_fix_runtime,
     assert_current_protected_review_state_intact,
     _gate_status_and_next_action,
     _latest_failure_package_runtime_status,
@@ -71,6 +76,15 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
         _latest_review_failure_status(lineage_root)
     )
     failure_package_status = _latest_failure_package_runtime_status(lineage_root)
+    current_skill_override = failure_package_status.current_skill if failure_package_status else None
+    why_this_skill_override = failure_package_status.why_this_skill if failure_package_status else None
+    blocking_reason_override = failure_package_status.blocking_reason if failure_package_status else None
+    resume_hint_override = failure_package_status.resume_hint if failure_package_status else None
+    runtime_stage_status_override = failure_package_status.stage_status if failure_package_status else None
+    runtime_blocking_reason_code_override = (
+        failure_package_status.blocking_reason_code if failure_package_status else None
+    )
+    runtime_next_action_override = failure_package_status.next_action if failure_package_status else None
     if requires_failure_handling and failure_stage is not None:
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
@@ -81,6 +95,57 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
         requires_failure_handling = True
         failure_stage = failure_package_status.failure_stage
         failure_reason_summary = failure_package_status.failure_reason_summary
+    elif current_stage.endswith("_review_confirmation_pending"):
+        preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+        )
+        if preflight_already_blocked:
+            gate_status = "OUTPUTS_INVALID"
+            next_action = preflight_next_action or next_action
+            blocking_reason_override = preflight_blocking_reason
+        else:
+            review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
+            eligibility = compute_review_eligibility(
+                lineage_root=lineage_root,
+                current_stage=current_stage,
+                review_skill=review_skill,
+            )
+            if not eligibility.eligible_for_review:
+                can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
+                requires_failure_handling = (
+                    eligibility.requires_failure_handling and can_route_failure
+                )
+                failure_stage = (
+                    _stage_base_name(str(eligibility.failure_stage))
+                    if requires_failure_handling and eligibility.failure_stage is not None
+                    else None
+                )
+                failure_reason_summary = (
+                    eligibility.failure_reason_summary if requires_failure_handling else None
+                )
+                blocking_reason_override = eligibility.blocking_reason
+                if requires_failure_handling:
+                    runtime_blocking_reason_code_override = eligibility.blocking_reason_code
+                    gate_status = "FAILURE_HANDLING_REQUIRED"
+                    next_action = (
+                        f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
+                    )
+                    current_skill_override = "qros-stage-failure-handler"
+                    runtime_stage_status_override = "blocked_requires_failure_handling"
+                    runtime_next_action_override = next_action
+                else:
+                    gate_status = "OUTPUTS_INVALID"
+                    next_action = str(
+                        eligibility.blocking_reason
+                        or "Resolve canonical review eligibility blockers before entering review."
+                    )
+                    # 普通 review eligibility 阻塞应保持 author-fix / OUTPUTS_INVALID 语义。
+                    runtime_blocking_reason_code_override = "OUTPUTS_INVALID"
+                    runtime_stage_status_override = "awaiting_author_fix"
+                    runtime_next_action_override = next_action
 
     why_now, open_risks = session_transition_summary(lineage_root, current_stage)
     route_contract = current_route_contract(lineage_root)
@@ -104,15 +169,13 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
-        current_skill=failure_package_status.current_skill if failure_package_status else None,
-        why_this_skill=failure_package_status.why_this_skill if failure_package_status else None,
-        blocking_reason=failure_package_status.blocking_reason if failure_package_status else None,
-        resume_hint=failure_package_status.resume_hint if failure_package_status else None,
-        runtime_stage_status_override=failure_package_status.stage_status if failure_package_status else None,
-        runtime_blocking_reason_code_override=(
-            failure_package_status.blocking_reason_code if failure_package_status else None
-        ),
-        runtime_next_action_override=failure_package_status.next_action if failure_package_status else None,
+        current_skill=current_skill_override,
+        why_this_skill=why_this_skill_override,
+        blocking_reason=blocking_reason_override,
+        resume_hint=resume_hint_override,
+        runtime_stage_status_override=runtime_stage_status_override,
+        runtime_blocking_reason_code_override=runtime_blocking_reason_code_override,
+        runtime_next_action_override=runtime_next_action_override,
     )
 
 

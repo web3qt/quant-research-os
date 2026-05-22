@@ -17,6 +17,8 @@ description: Codex review skill for CSF Test Evidence stage verification.
 
 若命令失败，必须停止；不得继续 review，不得启动 reviewer，不得运行 `qros-review-cycle prepare`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
 
+`csf_test_evidence` 只有在 canonical review eligibility 已成立时，才是 review lane candidate。若当前 lineage 仍被 `ARTIFACT-CONTRACT-001`、`CSF-TEST-SEMANTIC-001`、failure package、`FAILURE_DISPOSITION_REQUIRED` 或 `FAILURE_DISPOSITION_RECORDED` 阻断，就不是 `review_confirmation_pending` 的合法候选，必须先回 author-fix、failure handling 或 formal disposition。即使当前 runtime 仍把 `current_stage` 投影成 `csf_test_evidence_review_confirmation_pending`，只要 `stage_status` / `blocking_reason_code` 已标明 blocked，也必须按 blocked 处理，而不是按 review-ready 处理。
+
 ## 共享审查协议
 
 执行本 stage review 前，必须先阅读并遵守 `docs/guides/qros-review-shared-protocol.md`。
@@ -74,6 +76,7 @@ reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 - 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage csf_test_evidence`，并通过 deterministic preflight
 - preflight 中的 `ARTIFACT-CONTRACT-001` 与 `CSF-TEST-SEMANTIC-001` 都是 review 前阻断项
 - preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险
+- `CHILD LINEAGE` 仍然只是 formal failure/disposition 结果；不要把它当成普通 reviewer 建议分支，或在没有 failure package / disposition 记录时非正式触发
 
 ## 共用输入
 

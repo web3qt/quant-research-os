@@ -350,7 +350,7 @@ def test_ensure_runtime_review_result_rejects_non_list_raw_finding_fields_before
             request_payload=request_payload,
             receipt_payload=receipt_payload,
             review_loop_outcome="FIX_REQUIRED",
-            blocking_findings="Reviewer found a blocker.",
+            blocking_findings=123,
         ),
     )
 
@@ -368,7 +368,88 @@ def test_ensure_runtime_review_result_rejects_non_list_raw_finding_fields_before
         )
 
     assert str(raw_path) in str(exc_info.value)
-    assert "blocking_findings must be a list of strings" in str(exc_info.value)
+    assert "blocking_findings" in str(exc_info.value)
+    assert raw_path.exists()
+    assert not (stage_dir / "review" / "result" / "adversarial_review_result.yaml").exists()
+    assert not (stage_dir / "review" / "result" / "review_findings.yaml").exists()
+
+
+def test_ensure_runtime_review_result_normalizes_alias_outcome_and_string_findings_before_writing_result(
+    tmp_path: Path,
+) -> None:
+    stage_dir = _prepare_mandate_review_case(tmp_path)
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    receipt_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
+    )
+    _write_yaml(
+        stage_dir / "review" / "result" / "reviewer_findings.raw.yaml",
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            review_loop_outcome="PASS_WITH_RESERVATIONS",
+            blocking_findings="",
+            reservation_findings="watch liquidity drift",
+            info_findings="shape ok",
+        ),
+    )
+
+    payload = ensure_runtime_review_result(
+        review_result_dir=stage_dir / "review" / "result",
+        request_payload=request_payload,
+        receipt_payload=receipt_payload,
+        runtime_identity=ReviewerRuntimeIdentity(
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        ),
+    )
+
+    assert payload["review_loop_outcome"] == "CLOSURE_READY_CONDITIONAL_PASS"
+    assert payload["blocking_findings"] == []
+    assert payload["reservation_findings"] == ["watch liquidity drift"]
+    assert payload["info_findings"] == ["shape ok"]
+
+
+def test_ensure_runtime_review_result_rejects_mixed_type_findings_lists_before_writing_result(
+    tmp_path: Path,
+) -> None:
+    stage_dir = _prepare_mandate_review_case(tmp_path)
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    receipt_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
+    )
+    raw_path = stage_dir / "review" / "result" / "reviewer_findings.raw.yaml"
+    _write_yaml(
+        raw_path,
+        _raw_findings_payload(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            review_loop_outcome="PASS",
+            blocking_findings=[123, True, None],
+        ),
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        ensure_runtime_review_result(
+            review_result_dir=stage_dir / "review" / "result",
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+    assert str(raw_path) in str(exc_info.value)
+    assert "blocking_findings" in str(exc_info.value)
     assert raw_path.exists()
     assert not (stage_dir / "review" / "result" / "adversarial_review_result.yaml").exists()
     assert not (stage_dir / "review" / "result" / "review_findings.yaml").exists()

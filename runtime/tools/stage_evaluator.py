@@ -13,11 +13,17 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
     FIX_REQUIRED_OUTCOME,
     REVIEWER_RECEIPT_FILENAME,
+    load_adversarial_review_request,
     load_adversarial_review_result,
     load_reviewer_receipt,
 )
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
+from runtime.tools.review_skillgen.review_runtime_state import (
+    compute_author_materialization_digest_fresh,
+    load_review_runtime_state,
+    review_runtime_state_path,
+)
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
     load_reviewer_write_scope_audit,
@@ -702,6 +708,40 @@ def _review_blocking_and_warnings(stage_dir: Path) -> tuple[list[str], list[str]
     return _dedupe(blocking), _dedupe(warnings)
 
 
+def _review_cycle_digest_stale_reason(stage_dir: Path, spec: StageEvaluatorSpec) -> str | None:
+    request_path = _review_request_path(stage_dir)
+    if not request_path.exists():
+        return None
+
+    request_payload = load_adversarial_review_request(request_path)
+    bound_digests = {
+        digest.strip()
+        for digest in (
+            request_payload.get("bound_author_materialization_digest"),
+            (
+                load_review_runtime_state(review_runtime_state_path(stage_dir)).get("review_bound_author_digest")
+                if review_runtime_state_path(stage_dir).exists()
+                else None
+            ),
+        )
+        if isinstance(digest, str) and digest.strip()
+    }
+    if not bound_digests:
+        return None
+
+    current_digest = compute_author_materialization_digest_fresh(
+        artifact_root=_artifact_root(stage_dir, spec),
+        required_outputs=spec.required_outputs,
+        required_provenance_paths=("program_execution_manifest.json",),
+    )
+    if any(bound_digest != current_digest for bound_digest in bound_digests):
+        return (
+            "author/formal outputs or provenance digest changed after adversarial_review_request.yaml was issued; "
+            "review cycle is stale"
+        )
+    return None
+
+
 def _evaluate_idea_intake(stage_dir: Path, lineage_root: Path, spec: StageEvaluatorSpec) -> dict[str, Any]:
     required = _required_outputs_checked(stage_dir, spec)
     gate_payload = _read_yaml_if_present(stage_dir / "idea_gate_decision.yaml")
@@ -779,7 +819,7 @@ def _evaluate_reviewable_stage(stage_dir: Path, lineage_root: Path, spec: StageE
     blocking.extend(review_blocking)
     blocking = _dedupe(blocking)
     review_summary = _review_summary(stage_dir, reviewable=True)
-    stale_reason = review_cycle_stale_reason(
+    stale_reason = _review_cycle_digest_stale_reason(stage_dir, spec) or review_cycle_stale_reason(
         stage_dir,
         artifact_root=_artifact_root(stage_dir, spec),
         required_outputs=spec.required_outputs,

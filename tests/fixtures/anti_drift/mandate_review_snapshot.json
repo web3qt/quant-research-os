@@ -1,6 +1,6 @@
 {
   "fixture_id": "mandate-review-replay",
-  "input_digest": "9876de06118cf831e5a2f52008eea3282be3b788554912575648a255181c13cc",
+  "input_digest": "1795bc5d477bd981e6c7db603dbe6178d075dd7dc84f93c4333c700a50863840",
   "snapshot_version": "v1",
   "schema_version": "workflow_stage_gates@v1",
   "lineage_mode": "explicit_resume",
@@ -8,7 +8,7 @@
   "route_skill": "qros-mandate-author",
   "stage_id": "mandate",
   "session_stage": "mandate_review_confirmation_pending",
-  "formal_decision": "REVIEW_CONFIRMATION_PENDING",
+  "formal_decision": "OUTPUTS_INVALID",
   "required_artifacts": [
     "mandate.md",
     "research_scope.md",

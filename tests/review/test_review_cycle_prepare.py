@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 from subprocess import run
 import sys
@@ -16,6 +17,36 @@ from runtime.tools.review_session_runtime import (
 )
 from runtime.tools.review_skillgen.review_engine import ReviewRuntimeConfigurationError
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import current_unexpected_result_files
+
+
+def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_paths: list[str]) -> None:
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    manifest_path = stage_dir / request_payload["handoff_manifest_path"]
+    manifest_payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+
+    for payload in (request_payload, manifest_payload):
+        payload["required_artifact_paths"] = list(required_artifact_paths)
+        payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+        payload["launcher_checked_artifact_paths"] = list(required_artifact_paths)
+        payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+        payload["launcher_handoff_context_paths"] = [
+            path for path in ("artifact_catalog.md", "field_dictionary.md", "run_manifest.json") if path in required_artifact_paths
+        ]
+        payload["stage_content_artifact_paths"] = []
+        payload["stage_content_provenance_paths"] = []
+        payload["upstream_binding_artifact_paths"] = []
+        payload["upstream_binding_provenance_paths"] = []
+
+    manifest_text = yaml.safe_dump(manifest_payload, sort_keys=False, allow_unicode=True)
+    manifest_path.write_text(manifest_text, encoding="utf-8")
+    request_payload["handoff_manifest_digest"] = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
+    request_payload["bound_author_materialization_digest"] = review_session_runtime.compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_artifact_paths,
+        required_provenance_paths=("program_execution_manifest.json",),
+    )
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def test_review_cycle_prepare_script_emits_handoff_prompt(tmp_path: Path) -> None:
@@ -114,6 +145,122 @@ def test_prepare_writes_stage_contract_context_files(tmp_path: Path) -> None:
     assert (request_dir / "stage_contract_context.md").exists()
     assert "stage_contract_context.yaml" in payload["reviewer_handoff_prompt"]
     assert "stage_contract_context.md" in payload["reviewer_handoff_prompt"]
+
+
+def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_without_runtime_state(
+    tmp_path: Path,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    start_review_cycle(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="codex-mandate-reviewer",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-1",
+    )
+    (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
+    (stage_dir / "author" / "formal" / "mandate.md").write_text("changed after prepare\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="is stale"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={
+                "stage_dir": stage_dir,
+                "lineage_root": lineage_root,
+            },
+            reviewer_identity="codex-mandate-reviewer",
+            reviewer_session_id="review-session-2",
+            launcher_session_id="launcher-session-2",
+            launcher_thread_id="launcher-thread-2",
+            reviewer_agent_id="reviewer-child-2",
+            host="codex",
+        )
+
+
+def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is_old(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    start_review_cycle(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="codex-mandate-reviewer",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-1",
+    )
+    (stage_dir / "author" / "formal" / "mandate.md").write_text("changed after prepare\n", encoding="utf-8")
+
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    state_path = stage_dir / "review" / "state" / "review_runtime_state.yaml"
+    state_payload = yaml.safe_load(state_path.read_text(encoding="utf-8"))
+    state_payload["review_bound_author_digest"] = "manually-diverged-current-digest"
+    state_path.write_text(yaml.safe_dump(state_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="is stale"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={
+                "stage_dir": stage_dir,
+                "lineage_root": lineage_root,
+            },
+            reviewer_identity="codex-mandate-reviewer",
+            reviewer_session_id="review-session-2",
+            launcher_session_id="launcher-session-2",
+            launcher_thread_id="launcher-thread-2",
+            reviewer_agent_id="reviewer-child-2",
+            host="codex",
+        )
+
+
+def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_output(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    start_review_cycle(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="codex-mandate-reviewer",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-1",
+    )
+    _rewrite_active_request_to_old_subset(
+        stage_dir,
+        required_artifact_paths=[
+            "mandate.md",
+            "research_scope.md",
+            "research_route.yaml",
+            "time_split.json",
+            "parameter_grid.yaml",
+            "run_config.toml",
+            "artifact_catalog.md",
+        ],
+    )
+    (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
+    (stage_dir / "author" / "formal" / "field_dictionary.md").write_text("changed later-added truth\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="is stale"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={
+                "stage_dir": stage_dir,
+                "lineage_root": lineage_root,
+            },
+            reviewer_identity="codex-mandate-reviewer",
+            reviewer_session_id="review-session-2",
+            launcher_session_id="launcher-session-2",
+            launcher_thread_id="launcher-thread-2",
+            reviewer_agent_id="reviewer-child-2",
+            host="codex",
+        )
 
 
 def test_qros_review_cycle_wrapper_exists() -> None:

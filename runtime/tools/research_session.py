@@ -223,6 +223,7 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     load_review_runtime_state,
     review_runtime_state_path,
 )
+from runtime.tools.review_eligibility import compute_review_eligibility
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
     load_reviewer_write_scope_audit,
@@ -3285,6 +3286,26 @@ def _program_spec_for_session_stage(current_stage: SessionStage) -> StageProgram
     return SESSION_STAGE_PROGRAM_SPECS.get(_stage_base_name(current_stage))
 
 
+def _review_confirmation_author_fix_runtime(
+    *,
+    lineage_root: Path,
+    current_stage: SessionStage,
+    review_verdict: str | None,
+    requires_failure_handling: bool,
+) -> tuple[bool, str | None, str | None]:
+    if not current_stage.endswith("_review_confirmation_pending"):
+        return False, None, None
+    runtime_state, _, _, _, _, _, runtime_blocking_reason, runtime_next_action = _program_runtime_status(
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        review_verdict=review_verdict,
+        requires_failure_handling=requires_failure_handling,
+    )
+    if runtime_state != "awaiting_author_fix":
+        return False, None, None
+    return True, runtime_blocking_reason, runtime_next_action
+
+
 def _stage_dir_for_session_stage(lineage_root: Path, current_stage: SessionStage) -> Path | None:
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
@@ -4080,7 +4101,11 @@ def run_research_session(
             lineage_root=lineage_root,
             current_stage=current_stage,
         )
-        if not _review_entry_preflight_findings(preflight_payload):
+        preflight_findings = _review_entry_preflight_findings(preflight_payload)
+        if not preflight_findings and not _review_transition_is_blocked(
+            lineage_root,
+            current_stage=current_stage,
+        ):
             written = write_review_transition_decision(
                 lineage_root,
                 current_stage=current_stage,
@@ -4263,6 +4288,20 @@ def run_research_session(
     review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
         _latest_review_failure_status(lineage_root)
     )
+    current_skill_override = failure_package_status.current_skill if failure_package_status else None
+    why_this_skill_override = failure_package_status.why_this_skill if failure_package_status else None
+    blocking_reason_override = failure_package_status.blocking_reason if failure_package_status else None
+    resume_hint_override = failure_package_status.resume_hint if failure_package_status else None
+    runtime_stage_status_override = failure_package_status.stage_status if failure_package_status else None
+    runtime_blocking_reason_code_override = (
+        failure_package_status.blocking_reason_code if failure_package_status else None
+    )
+    runtime_next_action_override = failure_package_status.next_action if failure_package_status else None
+    review_entry_failure = _review_entry_failure_status(lineage_root, current_stage)
+    if review_entry_failure is not None:
+        review_verdict, requires_failure_handling, failure_stage, failure_reason_summary = (
+            review_entry_failure
+        )
     if requires_failure_handling and failure_stage is not None:
         gate_status = "FAILURE_HANDLING_REQUIRED"
         next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
@@ -4273,6 +4312,40 @@ def run_research_session(
         requires_failure_handling = True
         failure_stage = failure_package_status.failure_stage
         failure_reason_summary = failure_package_status.failure_reason_summary
+    elif current_stage.endswith("_review_confirmation_pending"):
+        preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+        )
+        if preflight_already_blocked:
+            gate_status = "OUTPUTS_INVALID"
+            next_action = preflight_next_action or next_action
+            blocking_reason_override = preflight_blocking_reason
+        else:
+            review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
+            eligibility = compute_review_eligibility(
+                lineage_root=lineage_root,
+                current_stage=current_stage,
+                review_skill=review_skill,
+            )
+            if not eligibility.eligible_for_review:
+                can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
+                if not (eligibility.requires_failure_handling and can_route_failure):
+                    requires_failure_handling = False
+                    failure_stage = None
+                    failure_reason_summary = None
+                    gate_status = "OUTPUTS_INVALID"
+                    next_action = str(
+                        eligibility.blocking_reason
+                        or "Resolve canonical review eligibility blockers before entering review."
+                    )
+                    blocking_reason_override = eligibility.blocking_reason
+                    # 普通 review eligibility 缺口仍属于作者修复语义，不应投影成 failure-style code。
+                    runtime_blocking_reason_code_override = "OUTPUTS_INVALID"
+                    runtime_stage_status_override = "awaiting_author_fix"
+                    runtime_next_action_override = next_action
     why_now, open_risks = session_transition_summary(lineage_root, current_stage)
     current_route = current_research_route(lineage_root)
     route_contract = current_route_contract(lineage_root)
@@ -4296,15 +4369,13 @@ def run_research_session(
         requires_failure_handling=requires_failure_handling,
         failure_stage=failure_stage,
         failure_reason_summary=failure_reason_summary,
-        current_skill=failure_package_status.current_skill if failure_package_status else None,
-        why_this_skill=failure_package_status.why_this_skill if failure_package_status else None,
-        blocking_reason=failure_package_status.blocking_reason if failure_package_status else None,
-        resume_hint=failure_package_status.resume_hint if failure_package_status else None,
-        runtime_stage_status_override=failure_package_status.stage_status if failure_package_status else None,
-        runtime_blocking_reason_code_override=(
-            failure_package_status.blocking_reason_code if failure_package_status else None
-        ),
-        runtime_next_action_override=failure_package_status.next_action if failure_package_status else None,
+        current_skill=current_skill_override,
+        why_this_skill=why_this_skill_override,
+        blocking_reason=blocking_reason_override,
+        resume_hint=resume_hint_override,
+        runtime_stage_status_override=runtime_stage_status_override,
+        runtime_blocking_reason_code_override=runtime_blocking_reason_code_override,
+        runtime_next_action_override=runtime_next_action_override,
         continue_mode=continue_mode,
     )
 
@@ -4584,11 +4655,91 @@ def _review_or_post_review_stage(
 ) -> SessionStage:
     if closure_complete:
         return _post_review_completion_stage(lineage_root, stage_base=stage_base)
-    if read_review_transition_decision(lineage_root, stage_base=stage_base) == "CONFIRM_REVIEW":
-        return f"{stage_base}_review"  # type: ignore[return-value]
-    if _review_has_started(stage_dir):
+    review_started = _review_has_started(stage_dir)
+    if not review_started:
+        eligibility = _review_entry_eligibility(lineage_root, stage_base=stage_base)
+        if (
+            _review_entry_can_route_failure(stage_base)
+            and not eligibility.eligible_for_review
+            and eligibility.requires_failure_handling
+        ):
+            return f"{stage_base}_review"  # type: ignore[return-value]
+        if not eligibility.eligible_for_review:
+            return f"{stage_base}_review_confirmation_pending"  # type: ignore[return-value]
+        if read_review_transition_decision(lineage_root, stage_base=stage_base) == "CONFIRM_REVIEW":
+            return f"{stage_base}_review"  # type: ignore[return-value]
+    if review_started:
         return f"{stage_base}_review"  # type: ignore[return-value]
     return f"{stage_base}_review_confirmation_pending"  # type: ignore[return-value]
+
+
+def _review_entry_eligibility(lineage_root: Path, *, stage_base: str):
+    current_stage = f"{stage_base}_review_confirmation_pending"
+    review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
+    return compute_review_eligibility(
+        lineage_root=lineage_root,
+        current_stage=current_stage,
+        review_skill=review_skill,
+    )
+
+
+def _review_entry_can_route_failure(stage_base: str) -> bool:
+    return stage_base != "mandate"
+
+
+def _review_transition_is_blocked(
+    lineage_root: Path,
+    *,
+    current_stage: SessionStage,
+) -> bool:
+    if not current_stage.endswith("_review_confirmation_pending"):
+        return False
+    stage_base = _stage_base_name(current_stage)
+    eligibility = _review_entry_eligibility(lineage_root, stage_base=stage_base)
+    return not eligibility.eligible_for_review
+
+
+def _normalize_review_failure_stage_name(stage_name: str) -> str:
+    normalized = stage_name
+    for suffix in ("_review_confirmation_pending", "_review"):
+        if normalized.endswith(suffix):
+            return normalized.removesuffix(suffix)
+    return normalized
+
+
+def _review_entry_failure_status(
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> tuple[str | None, bool, str | None, str | None] | None:
+    if not (
+        current_stage.endswith("_review_confirmation_pending") or current_stage.endswith("_review")
+    ):
+        return None
+    stage_dir = _stage_dir_for_session_stage(lineage_root, current_stage)
+    if stage_dir is None or _review_has_started(stage_dir) or _review_closure_complete(stage_dir):
+        return None
+
+    stage_base = _stage_base_name(current_stage)
+    if not _review_entry_can_route_failure(stage_base):
+        return None
+    eligibility = _review_entry_eligibility(lineage_root, stage_base=stage_base)
+    if eligibility.eligible_for_review or not eligibility.requires_failure_handling:
+        return None
+
+    failure_stage = _normalize_review_failure_stage_name(str(eligibility.failure_stage or stage_base))
+    if failure_stage != stage_base:
+        return None
+
+    return (
+        None,
+        True,
+        failure_stage,
+        str(
+            eligibility.failure_reason_summary
+            or eligibility.blocking_reason
+            or f"Canonical review eligibility requires failure handling for {stage_base}."
+        ),
+    )
 
 
 def _review_has_started(stage_dir: Path) -> bool:
