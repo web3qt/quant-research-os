@@ -29,6 +29,8 @@ from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     validate_reviewer_write_scope_audit,
 )
 from runtime.tools.review_skillgen.review_result_writer import ensure_runtime_review_result
+from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest_fresh
+from runtime.tools.stage_evaluator import STAGE_EVALUATOR_SPECS
 
 
 _FINAL_REVIEW_OUTCOME_BY_VERDICT = {
@@ -41,7 +43,31 @@ _FINAL_REVIEW_OUTCOME_BY_VERDICT = {
 }
 
 
+def _current_required_outputs_truth(request_payload: dict[str, Any]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    spec = STAGE_EVALUATOR_SPECS.get(request_payload["stage"])
+    if spec is None:
+        return tuple(request_payload["required_artifact_paths"]), tuple(request_payload["required_provenance_paths"])
+    return tuple(spec.required_outputs), ("program_execution_manifest.json",)
+
+
+def _validate_bound_author_digest(request_payload: dict[str, Any], review_request_dir: Path) -> None:
+    bound_author_digest = request_payload.get("bound_author_materialization_digest")
+    if not isinstance(bound_author_digest, str) or not bound_author_digest.strip():
+        return
+
+    current_required_outputs, current_required_provenance_paths = _current_required_outputs_truth(request_payload)
+    current_author_digest = compute_author_materialization_digest_fresh(
+        artifact_root=review_request_dir.parent.parent / "author" / "formal",
+        required_outputs=current_required_outputs,
+        required_provenance_paths=current_required_provenance_paths,
+    )
+    if current_author_digest != bound_author_digest:
+        raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: author digest drifted after prepare")
+
+
 def _validate_stage_contract_context(request_payload: dict[str, Any], review_request_dir: Path) -> None:
+    _validate_bound_author_digest(request_payload, review_request_dir)
+
     context_relpath = request_payload.get("stage_contract_context_yaml_path")
     if not isinstance(context_relpath, str) or not context_relpath.strip():
         return

@@ -32,7 +32,7 @@ from runtime.tools.review_skillgen.review_engine import (
 from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
-    compute_author_materialization_digest,
+    compute_author_materialization_digest_fresh,
     load_review_runtime_state,
     review_runtime_state_path,
     write_review_runtime_state,
@@ -61,7 +61,7 @@ def _stage_dir_for_context(*, cwd: Path | None, explicit_context: dict[str, Any]
 
 
 def _current_author_digest(stage_dir: Path, spec) -> str:
-    return compute_author_materialization_digest(
+    return compute_author_materialization_digest_fresh(
         artifact_root=_author_formal_dir(stage_dir),
         required_outputs=spec.required_outputs,
         required_provenance_paths=("program_execution_manifest.json",),
@@ -76,21 +76,35 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
     request_payload = load_adversarial_review_request(request_path)
     state_path = review_runtime_state_path(stage_dir)
     state_payload = load_review_runtime_state(state_path) if state_path.exists() else None
-    bound_digest = state_payload.get("review_bound_author_digest") if state_payload else None
-    if bound_digest is None:
-        bound_digest = current_digest
+    bound_digests = {
+        digest.strip()
+        for digest in (
+            state_payload.get("review_bound_author_digest") if state_payload else None,
+            request_payload.get("bound_author_materialization_digest"),
+        )
+        if isinstance(digest, str) and digest.strip()
+    }
+    if not bound_digests:
+        bound_digests = {current_digest}
 
     closure_exists = (_review_closure_path(stage_dir, "stage_completion_certificate.yaml")).exists()
     proof_chain_error = _review_proof_chain_error(stage_dir)
-    if bound_digest == current_digest and not closure_exists and proof_chain_error is None:
+    has_old_bound_digest = any(bound_digest != current_digest for bound_digest in bound_digests)
+    # 只要任一绑定 digest 已经落后当前 author materialization，就必须按 stale 处理。
+    if has_old_bound_digest or proof_chain_error is not None:
+        raise ValueError(
+            f"review cycle {request_payload['review_cycle_id']} is stale; "
+            "run qros-review-cycle reset --archive-stale-cycle first, then prepare a fresh reviewer run"
+        )
+
+    if current_digest in bound_digests and len(bound_digests) == 1 and not closure_exists and proof_chain_error is None:
         raise ValueError(
             f"active review cycle {request_payload['review_cycle_id']} is still in progress; "
             "start a new review only after it closes or the author package changes"
         )
 
-    reason = "stale" if bound_digest != current_digest or proof_chain_error is not None else "superseded"
     raise ValueError(
-        f"review cycle {request_payload['review_cycle_id']} is {reason}; "
+        f"review cycle {request_payload['review_cycle_id']} is superseded; "
         "run qros-review-cycle reset --archive-stale-cycle first, then prepare a fresh reviewer run"
     )
 
@@ -190,12 +204,8 @@ def _prepare_review_cycle(
 
     existing_request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     if existing_request_path.exists():
-        existing_request_payload = load_adversarial_review_request(existing_request_path)
-        current_digest = compute_author_materialization_digest(
-            artifact_root=_author_formal_dir(stage_dir),
-            required_outputs=existing_request_payload["required_artifact_paths"],
-            required_provenance_paths=existing_request_payload["required_provenance_paths"],
-        )
+        load_adversarial_review_request(existing_request_path)
+        current_digest = _current_author_digest(stage_dir, spec)
     else:
         current_digest = _current_author_digest(stage_dir, spec)
     archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=current_digest)
@@ -213,11 +223,7 @@ def _prepare_review_cycle(
         program_hash=provenance.get("program_hash") if isinstance(provenance.get("program_hash"), str) else None,
         stage_invoked_at=provenance.get("invoked_at") if isinstance(provenance.get("invoked_at"), str) else None,
     )
-    current_digest = compute_author_materialization_digest(
-        artifact_root=_author_formal_dir(stage_dir),
-        required_outputs=request_payload["required_artifact_paths"],
-        required_provenance_paths=request_payload["required_provenance_paths"],
-    )
+    current_digest = _current_author_digest(stage_dir, spec)
     request_dir = stage_dir / "review" / "request"
     context_payload = build_stage_contract_context(
         stage_id=spec.stage_id,

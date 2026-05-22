@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -7,7 +8,10 @@ from subprocess import run
 import sys
 
 import pytest
+import yaml
 
+from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest_fresh
+from runtime.tools.review_session_runtime import start_review_cycle
 from runtime.tools.stage_evaluator import (
     STAGE_EVALUATOR_FILENAME,
     STAGE_EVALUATOR_RESULTS_FILENAME,
@@ -18,6 +22,7 @@ from runtime.tools.stage_evaluator import (
 )
 from tests.helpers.repo_paths import REPO_ROOT
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
+from tests.review.test_start_review_session import _prepare_mandate_stage
 from tests.session.test_research_session_runtime import (
     _write_adversarial_review_request,
     _write_adversarial_review_result,
@@ -26,6 +31,36 @@ from tests.session.test_research_session_runtime import (
     _write_minimal_stage_outputs,
 )
 from runtime.tools.research_session import run_research_session
+
+
+def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_paths: list[str]) -> None:
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    manifest_path = stage_dir / request_payload["handoff_manifest_path"]
+    manifest_payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+
+    for payload in (request_payload, manifest_payload):
+        payload["required_artifact_paths"] = list(required_artifact_paths)
+        payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+        payload["launcher_checked_artifact_paths"] = list(required_artifact_paths)
+        payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+        payload["launcher_handoff_context_paths"] = [
+            path for path in ("artifact_catalog.md", "field_dictionary.md", "run_manifest.json") if path in required_artifact_paths
+        ]
+        payload["stage_content_artifact_paths"] = []
+        payload["stage_content_provenance_paths"] = []
+        payload["upstream_binding_artifact_paths"] = []
+        payload["upstream_binding_provenance_paths"] = []
+
+    manifest_text = yaml.safe_dump(manifest_payload, sort_keys=False, allow_unicode=True)
+    manifest_path.write_text(manifest_text, encoding="utf-8")
+    request_payload["handoff_manifest_digest"] = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
+    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=required_artifact_paths,
+        required_provenance_paths=("program_execution_manifest.json",),
+    )
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def test_evaluate_stage_reports_review_confirmation_pending_before_review_starts(tmp_path: Path) -> None:
@@ -51,6 +86,18 @@ def test_write_stage_evaluator_artifacts_writes_current_and_ledger_for_passed_st
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=["mandate.md", "research_scope.md"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -133,6 +180,18 @@ def test_stage_evaluator_matches_runtime_for_fix_required_review_state(tmp_path:
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=["mandate.md", "research_scope.md"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -158,6 +217,18 @@ def test_stage_evaluator_matches_runtime_for_review_audit_pending_state(tmp_path
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
+    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
+    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=["mandate.md", "research_scope.md"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -237,6 +308,72 @@ def test_stage_evaluator_invalidates_stale_review_cycle_after_author_output_chan
     assert evaluator["pass"] is False
     assert evaluator["can_progress"] is False
     assert "stale" in evaluator["reason"].lower()
+    assert session.blocking_reason_code is not None
+    blocking_reason = (session.blocking_reason or "").lower()
+    assert "stale" in blocking_reason or "digest" in blocking_reason
+
+
+def test_stage_evaluator_session_first_detects_digest_drift_even_when_request_mtime_is_preserved(
+    tmp_path: Path,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    outputs_root = lineage_root.parent
+    start_review_cycle(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+    )
+
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_stat = request_path.stat()
+    mandate_path = stage_dir / "author" / "formal" / "mandate.md"
+    mandate_path.write_text("changed after review without mtime drift\n", encoding="utf-8")
+    os.utime(mandate_path, ns=(request_stat.st_atime_ns, request_stat.st_mtime_ns))
+
+    session = run_research_session(outputs_root=outputs_root, lineage_id="topic_a")
+    evaluator = evaluate_stage(stage_dir, lineage_root=lineage_root)
+
     assert session.current_stage == "mandate_review"
-    assert session.blocking_reason_code == "ADVERSARIAL_REVIEW_PENDING"
-    assert "stale" in (session.blocking_reason or "").lower()
+    assert session.blocking_reason_code == "REVIEW_STATE_PROJECTION_DRIFT"
+    assert "digest" in (session.blocking_reason or "").lower()
+    assert evaluator["status"] == "review_pending"
+    assert evaluator["pass"] is False
+    assert evaluator["can_progress"] is False
+    assert "stale" in evaluator["reason"].lower()
+
+
+def test_stage_evaluator_detects_stale_digest_drift_in_now_required_output_omitted_by_old_request(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "topic_a"
+    stage_dir = lineage_root / "01_mandate"
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    write_fake_stage_provenance(lineage_root, "mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _rewrite_active_request_to_old_subset(
+        stage_dir,
+        required_artifact_paths=[
+            "mandate.md",
+            "research_scope.md",
+            "research_route.yaml",
+            "time_split.json",
+            "parameter_grid.yaml",
+            "run_config.toml",
+            "artifact_catalog.md",
+        ],
+    )
+    state_path = stage_dir / "review" / "state" / "review_runtime_state.yaml"
+    if state_path.exists():
+        state_path.unlink()
+    (stage_dir / "author" / "formal" / "field_dictionary.md").write_text("changed later-added truth\n", encoding="utf-8")
+
+    evaluator = evaluate_stage(stage_dir, lineage_root=lineage_root)
+
+    assert evaluator["status"] == "review_pending"
+    assert evaluator["pass"] is False
+    assert evaluator["can_progress"] is False
+    assert "stale" in evaluator["reason"].lower()
