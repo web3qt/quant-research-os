@@ -27,6 +27,22 @@ def _write_review_eligibility(lineage_root: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def _write_data_inventory(data_root: Path, *, data_min_ts: str, data_max_ts: str) -> Path:
+    data_root.mkdir(parents=True, exist_ok=True)
+    (data_root / "data_inventory.json").write_text(
+        yaml.safe_dump(
+            {
+                "data_min_ts": data_min_ts,
+                "data_max_ts": data_max_ts,
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return data_root
+
+
 def _write_failure_post_retry_decision(lineage_root: Path) -> None:
     package_dir = (
         lineage_root
@@ -463,3 +479,129 @@ def test_progress_mandate_preflight_failure_keeps_outputs_invalid_when_review_el
     assert payload["current_skill"] == "qros-mandate-author"
     assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
     assert "time_split.json" in (payload["blocking_reason"] or "")
+
+
+def test_qros_progress_projects_data_viability_blocker_without_saying_review_ready(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "coverage_blocked_case")
+    draft_dir = lineage_root / "01_mandate" / "author" / "draft"
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    inventory_root = _write_data_inventory(
+        tmp_path / "inventory",
+        data_min_ts="2024-03-01",
+        data_max_ts="2024-12-31",
+    )
+    (draft_dir / "mandate_admission.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "lineage_id": lineage_root.name,
+                "raw_idea": "BTC leads ALTs",
+                "observation": "BTC shocks precede ALT reactions.",
+                "primary_hypothesis": "BTC leads price discovery.",
+                "counter_hypothesis": "Moves are shared beta.",
+                "research_questions": ["Do ALTs follow BTC after shocks?"],
+                "scope": {
+                    "market": "binance perp",
+                    "instrument_type": "perpetual",
+                    "universe": "high liquidity alts",
+                    "data_source": "binance um futures klines",
+                    "bar_size": "5m",
+                    "holding_horizons": ["15m", "30m"],
+                    "target_task": "event-driven relative return study",
+                    "excluded_scope": ["low liquidity tails"],
+                    "budget_days": 5,
+                    "max_iterations": 3,
+                },
+                "qualification": {
+                    "summary": "Researchable.",
+                    "dimensions": {
+                        name: {
+                            "score": 3,
+                            "evidence": ["present"],
+                            "uncertainty": [],
+                            "kill_reason": [],
+                        }
+                        for name in (
+                            "observability",
+                            "mechanism_plausibility",
+                            "tradeability",
+                            "data_feasibility",
+                            "scoping_clarity",
+                            "distinctiveness",
+                        )
+                    },
+                },
+                "route_assessment": {
+                    "candidate_routes": ["time_series_signal", "cross_sectional_factor"],
+                    "recommended_route": "time_series_signal",
+                    "why_recommended": ["Single-asset direction is the main expression."],
+                    "why_not_other_routes": {
+                        "cross_sectional_factor": ["Cross-asset sorting is secondary."]
+                    },
+                    "route_risks": ["Universe breadth may be limited."],
+                    "route_decision_pending": False,
+                },
+                "admission_decision": {
+                    "verdict": "ACCEPT_FOR_MANDATE",
+                    "why": ["Scope is concrete."],
+                    "kill_criteria": ["No edge after costs."],
+                    "required_reframe_actions": [],
+                },
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    (draft_dir / "mandate_freeze_draft.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "groups": {
+                    "research_intent": {
+                        "confirmed": False,
+                        "draft": {
+                            "research_question": "q",
+                            "research_route": "time_series_signal",
+                            "excluded_routes": ["cross_sectional_factor"],
+                            "route_rationale": [
+                                "Single-asset direction is the primary expression."
+                            ],
+                        },
+                    },
+                    "scope_contract": {
+                        "confirmed": False,
+                        "draft": {
+                            "market": "binance perp",
+                            "time_boundary": "2023-01-01/2026-03-01",
+                        },
+                    },
+                    "data_contract": {
+                        "confirmed": False,
+                        "draft": {
+                            "data_source": str(inventory_root),
+                            "bar_size": "5m",
+                        },
+                    },
+                    "execution_contract": {
+                        "confirmed": False,
+                        "draft": {"time_split_note": "frozen"},
+                    },
+                }
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id="coverage_blocked_case")
+
+    assert payload["current_stage"] == "mandate_freeze_confirmation_pending"
+    assert payload["stage_status"] == "awaiting_author_fix"
+    assert payload["gate_status"] == "OUTPUTS_INVALID"
+    assert payload["blocking_reason_code"] == "TIME_COVERAGE_OUT_OF_RANGE"
+    assert payload["current_skill"] == "qros-research-session"
+    assert "Adjust train/test/backtest/holdout" in payload["next_action"]
+    assert "review-ready" not in payload["next_action"].lower()

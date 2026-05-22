@@ -179,9 +179,11 @@ from runtime.tools.idea_runtime import (
 )
 from runtime.tools.mandate_admission_runtime import (
     admission_ready_for_freeze,
+    assess_time_coverage_preflight,
     load_mandate_admission,
     scaffold_mandate_admission,
 )
+from runtime.tools.research_preflight import ResearchPreflightStatus
 from runtime.tools.freeze_contract_runtime import (
     confirm_all_freeze_groups,
     first_unconfirmed_or_invalid_group,
@@ -2440,6 +2442,41 @@ def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
     }
 
 
+def _research_preflight_blocker_status(
+    lineage_root: Path,
+    current_stage: SessionStage,
+) -> ResearchPreflightStatus | None:
+    if current_stage not in {"mandate_freeze_confirmation_pending", "mandate_author"}:
+        return None
+
+    draft_path = lineage_root / "01_mandate" / "author" / "draft" / MANDATE_FREEZE_DRAFT_FILE
+    if not draft_path.exists():
+        return None
+
+    payload = _read_yaml(draft_path)
+    groups = payload.get("groups", {})
+    if not isinstance(groups, dict):
+        return None
+
+    scope_group = groups.get("scope_contract", {})
+    data_group = groups.get("data_contract", {})
+    if not isinstance(scope_group, dict) or not isinstance(data_group, dict):
+        return None
+
+    scope_contract = scope_group.get("draft", {})
+    data_contract = data_group.get("draft", {})
+    if not isinstance(scope_contract, dict) or not isinstance(data_contract, dict):
+        return None
+
+    preflight_status = assess_time_coverage_preflight(
+        data_source=data_contract.get("data_source", ""),
+        time_boundary=scope_contract.get("time_boundary", ""),
+    )
+    if preflight_status is None or preflight_status.passable:
+        return None
+    return preflight_status
+
+
 def next_mandate_freeze_group(lineage_root: Path) -> str | None:
     draft_path = lineage_root / "01_mandate" / "author" / "draft" / MANDATE_FREEZE_DRAFT_FILE
     return first_unconfirmed_or_invalid_group(draft_path, MANDATE_FREEZE_GROUP_ORDER)
@@ -4312,7 +4349,22 @@ def run_research_session(
         requires_failure_handling = True
         failure_stage = failure_package_status.failure_stage
         failure_reason_summary = failure_package_status.failure_reason_summary
-    elif current_stage.endswith("_review_confirmation_pending"):
+    else:
+        research_preflight_status = _research_preflight_blocker_status(lineage_root, current_stage)
+        if research_preflight_status is not None:
+            gate_status = "OUTPUTS_INVALID"
+            next_action = str(
+                research_preflight_status.next_action
+                or research_preflight_status.blocker_reason
+                or next_action
+            )
+            blocking_reason_override = research_preflight_status.blocker_reason
+            runtime_stage_status_override = "awaiting_author_fix"
+            runtime_blocking_reason_code_override = (
+                research_preflight_status.blocker_code or "OUTPUTS_INVALID"
+            )
+            runtime_next_action_override = next_action
+    if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
         preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
             lineage_root=lineage_root,
             current_stage=current_stage,
@@ -5173,6 +5225,12 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         )
 
     if current_stage in {"mandate_freeze_confirmation_pending", "mandate_confirmation_pending"}:
+        preflight_status = _research_preflight_blocker_status(lineage_root, current_stage)
+        if preflight_status is not None:
+            return (
+                "OUTPUTS_INVALID",
+                str(preflight_status.next_action or preflight_status.blocker_reason or ""),
+            )
         next_group = next_mandate_freeze_group(lineage_root)
         if next_group is not None:
             return "GO_TO_MANDATE_PENDING_CONFIRMATION", _all_freeze_groups_next_action("mandate")
@@ -5182,6 +5240,12 @@ def _gate_status_and_next_action(lineage_root: Path, current_stage: SessionStage
         return "GO_TO_MANDATE_PENDING_CONFIRMATION", _confirmation_next_action("CONFIRM_MANDATE")
 
     if current_stage == "mandate_author":
+        preflight_status = _research_preflight_blocker_status(lineage_root, current_stage)
+        if preflight_status is not None:
+            return (
+                "OUTPUTS_INVALID",
+                str(preflight_status.next_action or preflight_status.blocker_reason or ""),
+            )
         return "GO_TO_MANDATE_CONFIRMED", "Freeze mandate artifacts"
 
     if current_stage == "mandate_review":

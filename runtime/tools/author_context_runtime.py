@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from runtime.tools.artifact_contract_runtime import ARTIFACT_CONTRACTS
 from runtime.tools.data_ready_runtime import DATA_READY_FREEZE_GROUP_ORDER
 from runtime.tools.backtest_runtime import BACKTEST_READY_GROUP_ORDER
@@ -14,6 +16,7 @@ from runtime.tools.csf_test_evidence_runtime import CSF_TEST_EVIDENCE_GROUP_ORDE
 from runtime.tools.csf_train_runtime import CSF_TRAIN_FREEZE_GROUP_ORDER
 from runtime.tools.holdout_runtime import HOLDOUT_VALIDATION_GROUP_ORDER
 from runtime.tools.idea_runtime import MANDATE_FREEZE_GROUP_ORDER
+from runtime.tools.mandate_admission_runtime import assess_time_coverage_preflight
 from runtime.tools.review_skillgen.loaders import load_gate_schema
 from runtime.tools.review_skillgen.review_engine import GATES_PATH, ROOT
 from runtime.tools.signal_ready_runtime import SIGNAL_READY_FREEZE_GROUP_ORDER
@@ -181,6 +184,50 @@ def _truth_for_stage(stage_id: str) -> dict[str, Any]:
     }
 
 
+def _read_yaml(path: Path) -> dict[str, Any]:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
+
+
+def _research_preflight_truth(stage_id: str, review_cycle_stage_dir: Path) -> dict[str, Any] | None:
+    if stage_id != "mandate":
+        return None
+
+    draft_path = review_cycle_stage_dir / "author" / "draft" / "mandate_freeze_draft.yaml"
+    if not draft_path.exists():
+        return None
+
+    payload = _read_yaml(draft_path)
+    groups = payload.get("groups", {})
+    if not isinstance(groups, dict):
+        return None
+
+    scope_group = groups.get("scope_contract", {})
+    data_group = groups.get("data_contract", {})
+    if not isinstance(scope_group, dict) or not isinstance(data_group, dict):
+        return None
+
+    scope_contract = scope_group.get("draft", {})
+    data_contract = data_group.get("draft", {})
+    if not isinstance(scope_contract, dict) or not isinstance(data_contract, dict):
+        return None
+
+    preflight_status = assess_time_coverage_preflight(
+        data_source=data_contract.get("data_source", ""),
+        time_boundary=scope_contract.get("time_boundary", ""),
+    )
+    if preflight_status is None:
+        return None
+
+    return {
+        "passable": preflight_status.passable,
+        "blocker_family": preflight_status.blocker_family,
+        "blocker_code": preflight_status.blocker_code,
+        "blocker_reason": preflight_status.blocker_reason,
+        "next_action": preflight_status.next_action,
+    }
+
+
 def _guidance_for_stage(stage_id: str) -> dict[str, Any]:
     author_focus = [
         "Confirm unresolved freeze groups before build.",
@@ -216,13 +263,17 @@ def build_stage_author_context(
     review_cycle_stage_dir: Path,
 ) -> dict[str, Any]:
     stage_contract = _gate_stage_contract(stage_id)
+    truth = _truth_for_stage(stage_id)
+    research_preflight = _research_preflight_truth(stage_id, review_cycle_stage_dir)
+    if research_preflight is not None:
+        truth["research_preflight"] = research_preflight
     return {
         "lineage_id": lineage_id,
         "stage_id": stage_id,
         "stage_name": stage_contract["stage_name"],
         "route": route,
         "current_stage": current_stage,
-        "truth": _truth_for_stage(stage_id),
+        "truth": truth,
         "orchestration": _default_orchestration_for_stage(stage_id),
         "guidance": _guidance_for_stage(stage_id),
         "stage_dir": str(review_cycle_stage_dir),
