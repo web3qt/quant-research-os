@@ -33,7 +33,12 @@ from tests.session.test_research_session_runtime import (
 from runtime.tools.research_session import run_research_session
 
 
-def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_paths: list[str]) -> None:
+def _rewrite_active_request_to_old_subset(
+    stage_dir: Path,
+    *,
+    required_artifact_paths: list[str],
+    rewrite_bound_digest: bool = True,
+) -> None:
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
     manifest_path = stage_dir / request_payload["handoff_manifest_path"]
@@ -55,11 +60,12 @@ def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_
     manifest_text = yaml.safe_dump(manifest_payload, sort_keys=False, allow_unicode=True)
     manifest_path.write_text(manifest_text, encoding="utf-8")
     request_payload["handoff_manifest_digest"] = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
-    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
-        artifact_root=stage_dir / "author" / "formal",
-        required_outputs=required_artifact_paths,
-        required_provenance_paths=("program_execution_manifest.json",),
-    )
+    if rewrite_bound_digest:
+        request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
+            artifact_root=stage_dir / "author" / "formal",
+            required_outputs=required_artifact_paths,
+            required_provenance_paths=("program_execution_manifest.json",),
+        )
     request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
@@ -86,18 +92,14 @@ def test_write_stage_evaluator_artifacts_writes_current_and_ledger_for_passed_st
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
-    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
-    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
-        artifact_root=stage_dir / "author" / "formal",
-        required_outputs=["mandate.md", "research_scope.md"],
-        required_provenance_paths=["program_execution_manifest.json"],
+    _rewrite_active_request_to_old_subset(
+        stage_dir,
+        required_artifact_paths=[
+            "mandate.md",
+            "research_scope.md",
+        ],
+        rewrite_bound_digest=False,
     )
-    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -180,18 +182,14 @@ def test_stage_evaluator_matches_runtime_for_fix_required_review_state(tmp_path:
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
-    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
-    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
-        artifact_root=stage_dir / "author" / "formal",
-        required_outputs=["mandate.md", "research_scope.md"],
-        required_provenance_paths=["program_execution_manifest.json"],
+    _rewrite_active_request_to_old_subset(
+        stage_dir,
+        required_artifact_paths=[
+            "mandate.md",
+            "research_scope.md",
+        ],
+        rewrite_bound_digest=False,
     )
-    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -217,18 +215,14 @@ def test_stage_evaluator_matches_runtime_for_review_audit_pending_state(tmp_path
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
-    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
-    request_payload["required_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["required_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["launcher_checked_artifact_paths"] = ["mandate.md", "research_scope.md"]
-    request_payload["launcher_checked_provenance_paths"] = ["program_execution_manifest.json"]
-    request_payload["bound_author_materialization_digest"] = compute_author_materialization_digest_fresh(
-        artifact_root=stage_dir / "author" / "formal",
-        required_outputs=["mandate.md", "research_scope.md"],
-        required_provenance_paths=["program_execution_manifest.json"],
+    _rewrite_active_request_to_old_subset(
+        stage_dir,
+        required_artifact_paths=[
+            "mandate.md",
+            "research_scope.md",
+        ],
+        rewrite_bound_digest=False,
     )
-    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
