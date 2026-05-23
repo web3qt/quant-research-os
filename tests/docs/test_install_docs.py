@@ -142,6 +142,9 @@ def test_stage_author_skills_lock_preflight_and_reviewer_not_first_discovery_wor
 
     assert "作为 mandate freeze 前的 preflight 事实先锁定" in mandate_author
     assert "reviewer 不是这些基础事实的第一发现点" in mandate_author
+    assert "deterministic review-entry preflight" in mandate_author
+    assert "artifact contract validation" in mandate_author
+    assert "mandate semantic validation" in mandate_author
 
     assert "作为进入 reviewer 之前的 preflight 事实先锁定" in data_ready_author
     assert "reviewer 不是第一次发现" in data_ready_author

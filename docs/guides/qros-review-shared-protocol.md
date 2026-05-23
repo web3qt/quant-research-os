@@ -52,7 +52,7 @@ review 必须由**人显式确认**。普通路径中的显式动作由 `qros-re
 
 只有 canonical review-eligible 的 stage 才允许进入 review lane。hard gate fail、deterministic preflight fail、failure package 已接管，或已经处于 `FAILURE_DISPOSITION_REQUIRED` / `FAILURE_DISPOSITION_RECORDED` 的 stage，都不是 ordinary review-lane candidate；`review_confirmation_pending` 不能被当作“artifact 齐了就默认进入 review”的通用槽位。若当前 runtime 仍把 `current_stage` 投影成 `*_review_confirmation_pending`，但同时用 `stage_status` / `blocking_reason_code` 标明 blocked，应以后者为准，把它当作 blocked stage，而不是 review-ready 证明。
 
-当前 rollout 里，只有 mandate review lane 已接入这条 upstream research preflight blocker fail-closed 规则。例如 mandate 冻结窗口超出真实数据覆盖时，`review_preflight` 必须直接返回 `FAIL` payload，并把 blocker 暴露为 `research_preflight_findings`；同时它也必须落到现有 findings 通道，避免旧 launcher/聚合方看到一个没有原因的 fail。reviewer lane 不负责把这种已知 blocker 再做成第一轮发现式审查。
+当前 rollout 里，只有 mandate review lane 已强制接入 deterministic review-entry preflight。这道 preflight 会先做 artifact contract validation、mandate semantic validation、stage program provenance、thin wrapper program gate、placeholder / fake machine artifact gate，并继续覆盖已接入的 upstream research preflight blocker。例如 mandate 冻结窗口超出真实数据覆盖时，`review_preflight` 必须直接返回 `FAIL` payload，并把 blocker 暴露为 `research_preflight_findings`；同时它也必须落到现有 findings 通道，避免旧 launcher/聚合方看到一个没有原因的 fail。reviewer lane 不负责把这类已知 blocker 再做成第一轮发现式审查。
 
 不过这条 blocker 不得盖过 protected review-state drift。只要 `REVIEW_STATE_PROJECTION_DRIFT` 存在，shared preflight 仍必须先按 drift fail-closed，而不是先回 research blocker。
 
@@ -65,7 +65,7 @@ review 必须由**人显式确认**。普通路径中的显式动作由 `qros-re
 - reviewer 子代理正常只写 `review/final_review.yaml`
 - ordinary review path no longer uses receipt-bound raw findings or a closer command
 - 主线程在 reviewer 完成后只读取 `review/final_review.yaml` 并推进状态
-- 对于当前 mandate-only rollout 已接入的 research preflight blocker，launcher 必须在 reviewer 启动前就停下；不得把这类 blocker 重新包装成 reviewer 的第一轮发现任务
+- 对于当前 mandate-only rollout 已接入的 artifact contract validation、mandate semantic validation 与 research preflight blocker，launcher 必须在 reviewer 启动前就停下；不得把这类 blocker 重新包装成 reviewer 的第一轮发现任务
 
 ## Launcher Review-Ready / 修复循环
 

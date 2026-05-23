@@ -712,10 +712,37 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
     text_fixtures: dict[str, str] = {}
     if stage == "mandate":
         text_fixtures = {
+            "mandate.md": "\n".join(
+                [
+                    "# Mandate",
+                    "## 目标",
+                    "## 研究意图",
+                    "## 路线理由",
+                    "## 成功标准",
+                    "## 失败标准",
+                    "## 已冻结执行输入",
+                    "## 执行合同",
+                    "## Gate 依据",
+                ]
+            )
+            + "\n",
+            "research_scope.md": "# Research Scope\n",
             "research_route.yaml": yaml.safe_dump(
                 {
                     "research_route": "time_series_signal",
+                    "factor_role": "",
+                    "factor_structure": "",
+                    "portfolio_expression": "",
+                    "neutralization_policy": "",
+                    "target_strategy_reference": "",
+                    "group_taxonomy_reference": "",
                     "excluded_routes": ["cross_sectional_factor"],
+                    "route_rationale": ["Single-asset direction is the primary expression."],
+                    "route_change_policy": {
+                        "before_downstream_freeze": "rollback_to_mandate",
+                        "after_downstream_freeze": "child_lineage",
+                    },
+                    "route_contract_version": "v1",
                 },
                 sort_keys=False,
                 allow_unicode=True,
@@ -727,6 +754,8 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                     "backtest": "2024-07-01/2024-09-30",
                     "holdout": "2024-10-01/2024-12-31",
                     "bar_size": "5m",
+                    "holding_horizons": ["15m"],
+                    "policy_note": "locked",
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -739,11 +768,27 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                             "param_id": "shock_threshold_bp",
                             "values": [30, 50],
                         }
-                    ]
+                    ],
+                    "note": "locked parameter family",
                 },
                 sort_keys=False,
                 allow_unicode=True,
             ),
+            "run_config.toml": "\n".join(
+                [
+                    'stage = "mandate"',
+                    f'lineage_id = "{stage_dir.parent.name}"',
+                    'market = "binance perp"',
+                    'universe = "high liquidity alts"',
+                    'target_task = "event-driven relative return study"',
+                    'data_source = "binance um futures klines"',
+                    'bar_size = "5m"',
+                    "non_rust_exceptions = []",
+                ]
+            )
+            + "\n",
+            "artifact_catalog.md": "# 产物清单\n",
+            "field_dictionary.md": "# 字段字典\n",
         }
     if stage == "csf_data_ready":
         text_fixtures = {

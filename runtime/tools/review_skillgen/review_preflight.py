@@ -14,6 +14,7 @@ from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_
 from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
 from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
 from runtime.tools.mandate_admission_runtime import assess_time_coverage_preflight
+from runtime.tools.mandate_contract_runtime import validate_mandate_semantics
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.artifact_realism import check_machine_artifact_realism
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
@@ -179,6 +180,7 @@ def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[s
 
 def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
     if stage not in {
+        "mandate",
         "csf_data_ready",
         "csf_signal_ready",
         "csf_train_freeze",
@@ -201,6 +203,9 @@ def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:
 
 
 def _check_stage_semantics(stage: str, author_formal_dir: Path, lineage_root: Path) -> list[str]:
+    if stage == "mandate":
+        result = validate_mandate_semantics(author_formal_dir)
+        return [f"MANDATE-SEMANTIC-001: {error}" for error in result.errors]
     if stage == "csf_data_ready":
         result = validate_csf_data_ready_semantics(author_formal_dir)
         return [f"CSF-DATA-SEMANTIC-001: {error}" for error in result.errors]

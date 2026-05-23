@@ -74,7 +74,9 @@ description: Use when mandate admission has passed and must be frozen into forma
 - `contracts/artifacts/mandate_artifacts.yaml` 是 `01_mandate/author/formal` 的字段真值层
 - 不得把 SKILL.md 作为字段真值；skill 只负责执行顺序、freeze 访谈和 runtime 调用
 - 生成正式 mandate artifacts 后，必须运行 `qros-validate-stage --stage mandate`
+- 进入 review 前必须运行 deterministic review-entry preflight；该 preflight 至少覆盖 artifact contract validation、mandate semantic validation、stage program provenance 与 placeholder / fake machine artifact gate
 - validator 不通过，不得进入 mandate review
+- preflight 不通过，不得宣布 artifacts 已 review-ready，也不得把 reviewer 当成首轮缺件或字段校验器
 
 - 若本阶段需要新增或修改代码，必须为关键逻辑、阶段门禁、分支判断和易误解流程补充清晰、简短、面向维护者的中文注释；不要求逐行注释，也不要求回填历史代码。
 - 语言规则统一遵守 `docs/guides/qros-authoring-language-discipline.md`，不要在本 skill 内再发明例外口径。
@@ -134,3 +136,5 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 14. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
 15. 运行 `qros-validate-stage --stage mandate`
 16. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review
+17. 运行 deterministic review-entry preflight / `qros-review-preflight`
+18. preflight 不通过时，修复 formal artifacts 与 stage program provenance；不得进入 mandate review

@@ -12,6 +12,8 @@ def test_qros_research_session_usage_explains_codex_authored_stage_program_bound
     assert "preflight" in content
     assert "`mandate_review_confirmation_pending`" in content
     assert "mandate-first / mandate-only" in content
+    assert "artifact contract validation" in content
+    assert "mandate semantic validation" in content
     assert "optional hygiene check" in content
     assert "继续覆盖所有 post-mandate `*_review_confirmation_pending`" not in content
     assert "当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight" in content
@@ -34,6 +36,8 @@ def test_review_shared_protocol_requires_preflight_to_block_fake_programs_and_ar
     assert "placeholder" in content
     assert "fake" in content
     assert "reviewer lane" in content
+    assert "artifact contract validation" in content
+    assert "mandate semantic validation" in content
 
 
 def test_qros_verification_tiers_marks_stage_program_boundary_change_as_full_smoke() -> None:
@@ -61,5 +65,7 @@ def test_qros_research_session_skill_removes_post_mandate_auto_materialize_path(
     assert "`mandate_review_confirmation_pending`" in content
     assert "mandate-first / mandate-only" in content
     assert "mandatory reviewer-lane gate" in content
+    assert "artifact contract validation" in content
+    assert "mandate semantic validation" in content
     assert "如需要 deterministic 预检" not in content
     assert "继续向所有 post-mandate `*_review_confirmation_pending` 扩展" not in content

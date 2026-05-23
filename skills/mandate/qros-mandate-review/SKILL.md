@@ -71,6 +71,9 @@ reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 - 如果上一轮 `review/final_review.yaml` 的 verdict 是 `FIX_REQUIRED`，主线程必须先读取 `review/final_review.yaml`，只在 author lane 修复，再显式重新进入本 stage review skill
 - 如果你发现 handoff scope 过期、必需输出缺失、machine-readable artifacts 只是 placeholder，应该明确写成 blocking findings / `FIX_REQUIRED`，而不是替主线程猜测或补齐上下文
 - 进入 reviewer lane 前必须先完成 deterministic review-ready 自查；若 preflight 有 blocking finding，必须先修 author outputs。
+- `contracts/artifacts/mandate_artifacts.yaml` 是 `01_mandate/author/formal` 的 artifact shape 真值；reviewer 不应从本 skill 正文重建字段清单
+- mandate review-entry preflight 必须覆盖 artifact contract validation 与 mandate semantic validation；`ARTIFACT-CONTRACT-001` / `MANDATE-SEMANTIC-001` 属于进入 reviewer 前的 blocking finding
+- preflight 已覆盖缺文件、字段 shape、route 依赖、bar_size 绑定、stage program provenance、placeholder / fake machine artifact 等机械约束；reviewer 继续审研究问题、路线选择、时间切分和 residual risk 是否成立
 
 ## 共用输入
 

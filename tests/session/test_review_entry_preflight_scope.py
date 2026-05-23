@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import pytest
 
@@ -48,6 +49,10 @@ def _write_required_author_outputs(lineage_root: Path, current_stage: str) -> Pa
         else:
             output_path.mkdir(parents=True, exist_ok=True)
     write_fake_stage_provenance(lineage_root, current_stage.removesuffix("_review_confirmation_pending"))
+    (lineage_root / "review_eligibility.json").write_text(
+        json.dumps({"semantic_gate": {"status": "pass"}}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return author_formal_dir.parent.parent
 
 
