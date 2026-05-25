@@ -33,6 +33,7 @@ from runtime.tools.research_session import (
     slugify_idea,
     summarize_session_status,
 )
+from runtime.tools.stage_evaluator import STAGE_EVALUATOR_SPECS
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -355,6 +356,8 @@ def _write_adversarial_review_request(
     author_identity: str = "test-agent",
     author_session_id: str = "test-session",
 ) -> None:
+    evaluator_spec = STAGE_EVALUATOR_SPECS.get(stage_dir.name)
+    required_artifact_paths = list(evaluator_spec.required_outputs) if evaluator_spec is not None else []
     request_payload = ensure_adversarial_review_request(
         stage_dir,
         lineage_id=stage_dir.parent.name,
@@ -363,7 +366,7 @@ def _write_adversarial_review_request(
         author_session_id=author_session_id,
         required_program_dir=program_dir,
         required_program_entrypoint="run_stage.py",
-        required_artifact_paths=[],
+        required_artifact_paths=required_artifact_paths,
         required_provenance_paths=["program_execution_manifest.json"],
         program_hash="test-hash",
     )
@@ -457,8 +460,8 @@ def _write_adversarial_review_result(
             "reviewed_lineage_root": request_payload["lineage_root"],
             "reviewed_stage_dir": request_payload["stage_dir"],
             "hard_gate_findings_acknowledged": True,
-            "reviewed_artifact_paths": ["artifact_catalog.md"],
-            "reviewed_provenance_paths": ["program_execution_manifest.json"],
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
+            "reviewed_provenance_paths": request_payload["required_provenance_paths"],
             "blocking_findings": [],
             "reservation_findings": [],
             "info_findings": [],
@@ -476,7 +479,7 @@ def _write_adversarial_review_result(
             "stage_id": stage,
             "reviewer_identity": "reviewer-agent",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewed_artifact_paths": [],
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
             "reviewed_program_path": f"{program_dir}/run_stage.py",
             "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
             "reviewed_program_digest": request_payload["author_program_hash"],
@@ -3386,7 +3389,7 @@ def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
             "stage_id": "mandate",
             "reviewer_identity": "reviewer-agent",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewed_artifact_paths": [],
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
             "reviewed_program_path": "program/mandate/run_stage.py",
             "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
             "reviewed_program_digest": request_payload["author_program_hash"],
