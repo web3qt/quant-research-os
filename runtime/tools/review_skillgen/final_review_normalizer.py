@@ -1,3 +1,12 @@
+"""Normalize parsed raw final_review.yaml payloads before legacy validation.
+
+This boundary intentionally accepts reviewer-authored raw YAML before
+``load_final_review()`` applies its legacy semantic shape checks, so allowed
+non-semantic differences such as mapping finding objects can be normalized.
+Task 4 callers that need mapping findings must use this normalizer directly on
+raw YAML payloads instead of pre-validating through ``load_final_review()``.
+"""
+
 from __future__ import annotations
 
 import json
@@ -7,6 +16,7 @@ from typing import Any
 
 import yaml
 
+from runtime.tools.review_skillgen.adversarial_review_contract import ALLOWED_FINAL_REVIEW_VERDICTS
 from runtime.tools.review_skillgen.review_scope import normalize_review_path, normalize_review_paths
 
 
@@ -91,11 +101,31 @@ def _optional_rollback_stage(payload: dict[str, Any]) -> str | None:
     raise ValueError(f"{FORBIDDEN_FINAL_REVIEW_NORMALIZATION}: rollback_stage must be a string when provided")
 
 
+def _required_verdict(payload: dict[str, Any]) -> str:
+    verdict = _required_string(payload, "verdict")
+    if verdict not in ALLOWED_FINAL_REVIEW_VERDICTS:
+        raise ValueError(f"{FORBIDDEN_FINAL_REVIEW_NORMALIZATION}: unsupported verdict {verdict!r}")
+    return verdict
+
+
 def normalize_final_review_payload(
     final_review_payload: dict[str, Any],
     request_payload: dict[str, Any],
     receipt_payload: dict[str, Any],
 ) -> dict[str, Any]:
+    request_review_cycle_id = _required_runtime_string(
+        request_payload,
+        "review_cycle_id",
+        source_name="adversarial_review_request.yaml",
+    )
+    receipt_review_cycle_id = _required_runtime_string(
+        receipt_payload,
+        "review_cycle_id",
+        source_name="reviewer_receipt.yaml",
+    )
+    if receipt_review_cycle_id != request_review_cycle_id:
+        raise ValueError("review_cycle_id does not match reviewer_receipt.yaml")
+
     request_lineage_id = _required_runtime_string(
         request_payload,
         "lineage_id",
@@ -140,11 +170,7 @@ def normalize_final_review_payload(
         raise ValueError("reviewed_artifact_paths do not match active request scope")
 
     return {
-        "review_cycle_id": _required_runtime_string(
-            request_payload,
-            "review_cycle_id",
-            source_name="adversarial_review_request.yaml",
-        ),
+        "review_cycle_id": request_review_cycle_id,
         "lineage_id": request_lineage_id,
         "stage_id": request_stage,
         "author_identity": _required_runtime_string(
@@ -178,7 +204,7 @@ def normalize_final_review_payload(
         "reviewed_program_path": expected_program_path,
         "reviewed_artifact_digest": _required_string(final_review_payload, "reviewed_artifact_digest"),
         "reviewed_program_digest": _required_string(final_review_payload, "reviewed_program_digest"),
-        "verdict": _required_string(final_review_payload, "verdict"),
+        "verdict": _required_verdict(final_review_payload),
         "review_summary": _required_string(final_review_payload, "review_summary"),
         "blocking_findings": _string_list(final_review_payload.get("blocking_findings"), key="blocking_findings"),
         "reservation_findings": _string_list(final_review_payload.get("reservation_findings"), key="reservation_findings"),

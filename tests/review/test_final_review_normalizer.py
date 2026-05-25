@@ -102,6 +102,22 @@ def test_normalize_final_review_rejects_unbound_reviewer_agent() -> None:
         normalize_final_review_payload(final_review, _request(), _receipt())
 
 
+def test_normalize_final_review_rejects_unsupported_verdict() -> None:
+    final_review = _final_review()
+    final_review["verdict"] = "APPROVED"
+
+    with pytest.raises(ValueError, match=f"{FORBIDDEN_FINAL_REVIEW_NORMALIZATION}: unsupported verdict"):
+        normalize_final_review_payload(final_review, _request(), _receipt())
+
+
+def test_normalize_final_review_rejects_receipt_review_cycle_mismatch() -> None:
+    receipt = _receipt()
+    receipt["review_cycle_id"] = "review-cycle-002"
+
+    with pytest.raises(ValueError, match="review_cycle_id does not match reviewer_receipt.yaml"):
+        normalize_final_review_payload(_final_review(), _request(), receipt)
+
+
 def test_normalize_final_review_rejects_scope_mismatch() -> None:
     final_review = _final_review()
     final_review["reviewed_artifact_paths"] = ["factor_manifest.yaml", "factor_panel.parquet"]
