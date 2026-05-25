@@ -17,6 +17,39 @@ from runtime.tools.review_skillgen.review_runtime_state import compute_author_ma
 from tests.review.test_start_review_session import _prepare_mandate_stage
 
 
+def _final_review_payload(
+    request_payload: dict,
+    *,
+    reviewed_artifact_paths: list[str] | None = None,
+    reservation_findings: list | None = None,
+    rollback_stage: str | None = None,
+) -> dict:
+    return {
+        "lineage_id": request_payload["lineage_id"],
+        "stage_id": request_payload["stage"],
+        "reviewer_identity": "reviewer-agent",
+        "reviewer_agent_id": "reviewer-child-agent",
+        "reviewed_artifact_paths": reviewed_artifact_paths
+        if reviewed_artifact_paths is not None
+        else request_payload["stage_content_artifact_paths"],
+        "reviewed_program_path": (
+            f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
+        ),
+        "reviewed_artifact_digest": "artifact-digest",
+        "reviewed_program_digest": "program-digest",
+        "verdict": "PASS",
+        "review_summary": "looks good",
+        "blocking_findings": [],
+        "reservation_findings": reservation_findings if reservation_findings is not None else [],
+        "info_findings": [],
+        "residual_risks": [],
+        "allowed_modifications": [],
+        "rollback_stage": rollback_stage,
+        "downstream_permissions": [],
+        "recommended_next_action": "advance",
+    }
+
+
 def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_paths: list[str]) -> None:
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
@@ -45,6 +78,96 @@ def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_
         required_provenance_paths=("program_execution_manifest.json",),
     )
     request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def test_protocol_validator_rejects_final_review_without_receipt(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_payload = load_adversarial_review_request(request_dir / "adversarial_review_request.yaml")
+    (request_dir / "reviewer_receipt.yaml").unlink()
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(_final_review_payload(request_payload), sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_UNBOUND"):
+        load_and_validate_protocol(
+            review_request_dir=request_dir,
+            review_result_dir=result_dir,
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+
+def test_protocol_validator_projects_final_review_using_receipt_execution_mode(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_payload = load_adversarial_review_request(request_dir / "adversarial_review_request.yaml")
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(
+            _final_review_payload(
+                request_payload,
+                reviewed_artifact_paths=list(reversed(request_payload["stage_content_artifact_paths"])),
+                reservation_findings=[{"id": "I1", "text": "object finding"}],
+                rollback_stage="",
+            ),
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+
+    payload = load_and_validate_protocol(
+        review_request_dir=request_dir,
+        review_result_dir=result_dir,
+        request_loader=load_adversarial_review_request,
+        receipt_loader=load_reviewer_receipt,
+        runtime_identity=ReviewerRuntimeIdentity(
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        ),
+    )
+
+    assert payload["receipt_payload"]["execution_mode"] == "spawned_agent"
+    assert payload["review_result"]["reviewer_execution_mode"] == "spawned_agent"
+    assert payload["review_result"]["reservation_findings"] == ['{"id":"I1","text":"object finding"}']
+    assert (stage_dir / "review" / "result" / "final_review.normalized.yaml").exists()
 
 
 def test_protocol_validator_rejects_stale_stage_contract_context(tmp_path: Path) -> None:
