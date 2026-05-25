@@ -212,6 +212,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     validate_receipt_contract,
     validate_result_contract,
 )
+from runtime.tools.review_skillgen.final_review_normalizer import normalize_final_review_payload
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
@@ -648,6 +649,26 @@ TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
 ]
 ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
+REVIEW_PROTOCOL_STATUS_MAP: dict[str, tuple[str, str]] = {
+    "REVIEWER_UNBOUND": ("reviewer_unbound", "REVIEWER_UNBOUND"),
+    "REVIEW_CONTRACT_CONTEXT_STALE": ("author_outputs_stale", "AUTHOR_OUTPUTS_STALE"),
+    "review cycle is stale": ("author_outputs_stale", "AUTHOR_OUTPUTS_STALE"),
+    "reviewed_artifact_paths do not match active request scope": (
+        "review_scope_mismatch",
+        "REVIEW_SCOPE_MISMATCH",
+    ),
+    "FORBIDDEN_FINAL_REVIEW_NORMALIZATION": ("review_format_invalid", "REVIEW_FORMAT_INVALID"),
+    "REVIEWER_WRITE_SCOPE_VIOLATION": ("reviewer_scope_violation", "REVIEWER_SCOPE_VIOLATION"),
+}
+REVIEW_VERDICT_BY_OUTCOME = {
+    "CLOSURE_READY_PASS": "PASS",
+    "CLOSURE_READY_CONDITIONAL_PASS": "CONDITIONAL PASS",
+    "FIX_REQUIRED": FIX_REQUIRED_OUTCOME,
+    "CLOSURE_READY_PASS_FOR_RETRY": "PASS FOR RETRY",
+    "CLOSURE_READY_RETRY": "RETRY",
+    "CLOSURE_READY_NO_GO": "NO-GO",
+    "CLOSURE_READY_CHILD_LINEAGE": "CHILD LINEAGE",
+}
 SESSION_STAGE_RUNTIME_SUFFIXES = (
     "_next_stage_confirmation_pending",
     "_review_confirmation_pending",
@@ -3506,7 +3527,38 @@ def _load_final_review_if_present(stage_dir: Path) -> dict | None:
     final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
     if not final_review_path.exists():
         return None
-    return load_final_review(final_review_path)
+    try:
+        return load_final_review(final_review_path)
+    except Exception:
+        # 兼容 protocol-first 路径：避免 legacy loader 因 finding shape 直接阻断状态投影。
+        payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return payload
+    return None
+
+
+def _review_protocol_status(error: str | None) -> tuple[str, str] | None:
+    if not error:
+        return None
+    for marker, status_pair in REVIEW_PROTOCOL_STATUS_MAP.items():
+        if marker in error:
+            return status_pair
+    return None
+
+
+def _load_effective_review_result(stage_dir: Path) -> dict | None:
+    final_review = _load_final_review_if_present(stage_dir)
+    if isinstance(final_review, dict) and isinstance(final_review.get("verdict"), str):
+        return final_review
+
+    result_payload = _load_adversarial_review_result_if_present(stage_dir)
+    if not isinstance(result_payload, dict):
+        return None
+    outcome = result_payload.get("review_loop_outcome")
+    verdict = REVIEW_VERDICT_BY_OUTCOME.get(outcome) if isinstance(outcome, str) else None
+    if verdict is None:
+        return None
+    return {"verdict": verdict}
 
 
 def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
@@ -3536,6 +3588,8 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
     receipt_path = _review_receipt_path(stage_dir)
     result_path = _review_result_path(stage_dir)
     if not receipt_path.exists():
+        if (stage_dir / "review" / FINAL_REVIEW_FILENAME).exists():
+            return "REVIEWER_UNBOUND: review/final_review.yaml exists without active reviewer_receipt.yaml"
         if result_path.exists():
             return f"{REVIEWER_RECEIPT_FILENAME} is missing"
         return None
@@ -3544,18 +3598,6 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         validate_receipt_contract(
             request_payload=request_payload,
             receipt_payload=receipt_payload,
-        )
-    except Exception as exc:
-        return str(exc)
-
-    if not result_path.exists():
-        return None
-    try:
-        result_payload = load_adversarial_review_result(result_path)
-        validate_result_contract(
-            request_payload=request_payload,
-            receipt_payload=receipt_payload,
-            result_payload=result_payload,
         )
     except Exception as exc:
         return str(exc)
@@ -3576,6 +3618,31 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         )
         if stale_reason is not None:
             return stale_reason
+
+    if not result_path.exists():
+        final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
+        if final_review_path.exists():
+            try:
+                raw_payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
+                if not isinstance(raw_payload, dict):
+                    return "review/final_review.yaml must load to a mapping"
+                normalize_final_review_payload(
+                    final_review_payload=raw_payload,
+                    request_payload=request_payload,
+                    receipt_payload=receipt_payload,
+                )
+            except Exception as exc:
+                return str(exc)
+        return None
+    try:
+        result_payload = load_adversarial_review_result(result_path)
+        validate_result_contract(
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+            result_payload=result_payload,
+        )
+    except Exception as exc:
+        return str(exc)
     return None
 
 
@@ -3667,7 +3734,7 @@ def _review_substate(
 ) -> tuple[str, str, str, str]:
     request_path = _review_request_path(stage_dir)
     review_receipt = _load_reviewer_receipt_if_present(stage_dir)
-    review_result = _load_final_review_if_present(stage_dir)
+    review_result = _load_effective_review_result(stage_dir)
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
@@ -3688,6 +3755,15 @@ def _review_substate(
             f"Enter {review_skill} in the current session; launch a reviewer agent and then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_receipt is None and proof_chain_error is not None:
+        protocol_status = _review_protocol_status(proof_chain_error)
+        if protocol_status is not None:
+            stage_status, blocking_reason_code = protocol_status
+            return (
+                stage_status,
+                blocking_reason_code,
+                f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
+                f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+            )
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (
                 "awaiting_adversarial_review",
@@ -3703,6 +3779,15 @@ def _review_substate(
         )
     if review_result is None:
         if review_receipt is not None and proof_chain_error is not None:
+            protocol_status = _review_protocol_status(proof_chain_error)
+            if protocol_status is not None:
+                stage_status, blocking_reason_code = protocol_status
+                return (
+                    stage_status,
+                    blocking_reason_code,
+                    f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
+                    f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+                )
             return (
                 "awaiting_adversarial_review",
                 "ADVERSARIAL_REVIEW_PENDING",
@@ -3724,6 +3809,15 @@ def _review_substate(
             f"Enter {review_skill} in the current session, launch the reviewer, then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if proof_chain_error is not None:
+        protocol_status = _review_protocol_status(proof_chain_error)
+        if protocol_status is not None:
+            stage_status, blocking_reason_code = protocol_status
+            return (
+                stage_status,
+                blocking_reason_code,
+                f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
+                f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+            )
         return (
             "awaiting_adversarial_review",
             "ADVERSARIAL_REVIEW_PENDING",
@@ -3735,7 +3829,7 @@ def _review_substate(
             "awaiting_author_fix",
             "AUTHOR_FIX_REQUIRED",
             f"{stage_base} received fixable adversarial review findings and must return to the author lane before closure.",
-            f"Read review/{FINAL_REVIEW_FILENAME}, then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh reviewer cycle.",
+            f"Read review/{FINAL_REVIEW_FILENAME} (and review_findings.yaml / review/result/reviewer_findings.raw.yaml when present), then explicitly resume {author_skill}, refresh author/formal outputs, and later re-enter {review_skill} for a fresh reviewer cycle.",
         )
     if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
         return (
@@ -3749,7 +3843,7 @@ def _review_substate(
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_PENDING",
             f"{stage_base} has a closure-ready review result, but {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} is still missing.",
-            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base}, then continue qros-research-session to finish deterministic closure artifacts.",
+            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None:
         return (
@@ -5014,7 +5108,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         return "REVIEW_PENDING", "Complete the review workflow."
     request_exists = _review_request_path(stage_dir).exists()
     receipt_exists = _review_receipt_path(stage_dir).exists()
-    review_result = _load_final_review_if_present(stage_dir)
+    review_result = _load_effective_review_result(stage_dir)
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
@@ -5064,7 +5158,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if review_result["verdict"] == FIX_REQUIRED_OUTCOME:
         return (
             "AUTHOR_FIX_REQUIRED",
-            f"Read review/{FINAL_REVIEW_FILENAME}, explicitly resume the author lane, refresh author/formal outputs, then re-enter {review_skill} for a fresh reviewer cycle.",
+            f"Read review/{FINAL_REVIEW_FILENAME} (and review_findings.yaml / review/result/reviewer_findings.raw.yaml when present), explicitly resume the author lane, refresh author/formal outputs, then re-enter {review_skill} for a fresh reviewer cycle.",
         )
     if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
         return (
@@ -5074,7 +5168,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     if review_audit is None:
         return (
             "REVIEW_AUDIT_PENDING",
-            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {_stage_base_name(current_stage)}, then continue qros-research-session to finish deterministic closure artifacts.",
+            f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {_stage_base_name(current_stage)} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None or review_audit["audit_status"] != "PASS":
         return (
