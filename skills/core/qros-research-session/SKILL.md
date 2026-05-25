@@ -215,7 +215,8 @@ For any author-eligible stage:
 - reviewer 子代理不得修改 `author/formal/*`
 - 当前主线程不得自己撰写 `review/final_review.yaml`
 - reviewer 正常只写 `review/final_review.yaml`
-- 当前主线程只能读取 `review/final_review.yaml`，再按 runtime state 推进 author-fix、failure handling、next-stage confirmation 或 deterministic closure artifacts
+- ordinary final review 是 strict receipt-bound：active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context
+- 当前主线程必须读取 `review/final_review.yaml`，并先完成 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit 校验；通过后才可投影 `review/result/adversarial_review_result.yaml`、closure、author-fix、next-stage confirmation 或 failure handling
 
 ## Main-Agent Review Loop
 

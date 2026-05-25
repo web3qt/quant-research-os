@@ -39,7 +39,7 @@ description: Codex review skill for TSS Signal Ready stage verification.
 - reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
 - reviewer 子代理只允许写入 `review/final_review.yaml`
 - reviewer 子代理不得修改 `author/formal/*`
-- reviewer 子代理完成后，主线程读取 `review/final_review.yaml` 并按 verdict 推进 author-fix、next-stage confirmation 或 failure handling
+- reviewer 子代理完成后，主线程读取 `review/final_review.yaml`，并先完成 active `reviewer_receipt.yaml`、normalized request scope、author materialization digest freshness、final-review normalization 和 reviewer write-scope audit 校验；通过后才可投影 `review/result/adversarial_review_result.yaml`，并进入 author-fix、next-stage confirmation、failure handling 或 deterministic closure
 
 reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 
@@ -100,5 +100,5 @@ These files are the review-cycle-local rendering of current contracts and curren
 3. 运行 `./.qros/bin/qros-review-cycle prepare` 写出 active request / handoff / receipt，并复用输出的 reviewer handoff prompt
 4. 用 `send_input` 向 reviewer 子代理交付 request / handoff 与 `stage_contract_context.*`
 5. 等待 reviewer 子代理只写 `review/final_review.yaml`
-6. 主线程读取 `review/final_review.yaml`
+6. 主线程读取 `review/final_review.yaml` 并完成 receipt / scope / digest / normalization / write-scope audit 校验
 7. 以 `stage_contract_context.*`、request scope 和 final verdict 解释当前 stage 的 review 结果，并交回 runtime/session 继续 author-fix、failure handling、next-stage confirmation 或 deterministic closure

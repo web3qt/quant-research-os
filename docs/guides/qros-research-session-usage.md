@@ -158,6 +158,8 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 
 这两份文件是当前 review cycle 对 current contracts 和 current author outputs 的本地渲染。reviewer 应优先读取它们，而不是从生成 skill 正文重建 stage truth。generated review skills 在这里更接近 workflow entrypoints，不是 stage truth source。
 
+ordinary final review 是 strict receipt-bound。active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context；`review/final_review.yaml` 单独存在并不构成 closure proof。主线程 / runtime 必须先校验 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit，才可投影 `review/result/adversarial_review_result.yaml`、closure、author-fix、next-stage confirmation 或 failure handling。
+
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 
 现在这层自查还会被压成 request / handoff contract：
@@ -193,7 +195,7 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 3. 刷新 `author/formal/*` 与 review request scope
 4. 通过 `qros-research-session` 重新进入 review confirmation / review lane，起一个新的 reviewer cycle
 
-普通 reviewer 子代理只写 `review/final_review.yaml`。`review/result/adversarial_review_result.yaml` 与 `review/result/review_findings.yaml` 是 runtime/session 后续投影或兼容恢复时的产物；不要让 reviewer 子代理直接写这些文件，也不要复用旧投影来证明新的 author outputs。
+普通 reviewer 子代理只写 `review/final_review.yaml`。`review/result/adversarial_review_result.yaml`、`review/result/review_findings.yaml` 与 `review/result/reviewer_write_scope_audit.yaml` 是 runtime/session 后续投影、审计或兼容恢复时的产物；不要让 reviewer 子代理直接写这些文件，也不要复用旧投影来证明新的 author outputs。
 
 author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs。
 
@@ -464,6 +466,7 @@ Mandate freeze 不是只冻结大方向。当前 `mandate` 合同会要求 agent
 - 一个 active review cycle 只认一个 reviewer child
 - reviewer child 只读 `review/request/*` 和 `author/formal/*`
 - reviewer child 只写 `review/final_review.yaml`
+- 主 Agent / runtime 必须先校验 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit，才能投影 deterministic result / audit / closure 或推进后续状态
 - 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
 <br>
@@ -616,6 +619,11 @@ session runtime 会按下面这个顺序检查磁盘状态：
 - `awaiting_reviewer_write_scope_audit`：closure-ready final review 已存在，但 runtime/session 还没完成 audit / closure
 - `awaiting_author_fix`：reviewer 给出 `FIX_REQUIRED`，必须显式回 author lane 修复
 - `awaiting_review_closure`：reviewer 已给出 closure-ready final verdict，等待 runtime/session 写正式 closure artifacts
+- `reviewer_unbound`：`review/final_review.yaml` 没有 active `reviewer_receipt.yaml`，或 reviewer identity / session / execution 绑定不一致
+- `review_format_invalid`：`review/final_review.yaml` 缺必填字段、verdict 非法，或无法完成 final review normalization
+- `review_scope_mismatch`：final review 声称审查的 scope 与 active normalized request scope 不一致
+- `author_outputs_stale`：当前 author outputs 的 materialization digest 已不同于 prepare / receipt 绑定的 digest
+- `reviewer_scope_violation`：reviewer write-scope audit 发现 reviewer 越权写入 `review/final_review.yaml` 之外的文件
 
 也就是说，单独运行 closure engine 已经不再构成有效 review；必须先有 adversarial reviewer 结果，并且 reviewer 不能与 author 是同一身份。author lane 与 reviewer 子代理之间的切换也必须是显式的，不再由 author 主会话静默自审。
 
