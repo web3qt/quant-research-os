@@ -11,6 +11,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     FINAL_REVIEW_FILENAME,
     FIX_REQUIRED_OUTCOME,
     REVIEWER_RECEIPT_FILENAME,
+    RUNTIME_LAUNCHER_OWNER,
     validate_receipt_against_request,
     validate_result_against_request,
 )
@@ -140,6 +141,11 @@ def _project_final_review_result(
     return review_result
 
 
+def _validate_final_review_reviewer_is_bound_reviewer(receipt_payload: dict[str, Any]) -> None:
+    if receipt_payload["requested_reviewer_identity"] == RUNTIME_LAUNCHER_OWNER:
+        raise ValueError("REVIEWER_UNBOUND: launcher identity cannot be reviewer for final review")
+
+
 def load_and_validate_protocol(
     *,
     review_request_dir: Path,
@@ -167,6 +173,7 @@ def load_and_validate_protocol(
             receipt_payload=receipt_payload,
             runtime_identity=runtime_identity,
         )
+        _validate_final_review_reviewer_is_bound_reviewer(receipt_payload)
 
         raw_payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
         if not isinstance(raw_payload, dict):

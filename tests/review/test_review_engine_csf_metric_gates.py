@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
@@ -197,7 +198,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
     _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", raw_findings_payload)
 
 
-def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(tmp_path: Path) -> None:
+def test_protocol_validator_rejects_final_review_without_receipt_raw_or_closer(tmp_path: Path) -> None:
     stage_dir = _prepare_csf_stage(
         tmp_path,
         stage_key="csf_signal_ready",
@@ -268,22 +269,19 @@ def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(t
         },
     )
 
-    payload = load_and_validate_protocol(
-        review_request_dir=stage_dir / "review" / "request",
-        review_result_dir=stage_dir / "review" / "result",
-        request_loader=load_adversarial_review_request,
-        receipt_loader=load_reviewer_receipt,
-        runtime_identity=ReviewerRuntimeIdentity(
-            reviewer_identity="reviewer-agent",
-            reviewer_role="reviewer",
-            reviewer_session_id="review-session",
-            reviewer_mode="adversarial",
-        ),
-    )
-
-    assert payload["receipt_payload"] == {}
-    assert payload["audit_payload"] == {}
-    assert payload["review_result"]["review_loop_outcome"] == "CLOSURE_READY_CONDITIONAL_PASS"
+    with pytest.raises(ValueError, match="REVIEWER_UNBOUND"):
+        load_and_validate_protocol(
+            review_request_dir=stage_dir / "review" / "request",
+            review_result_dir=stage_dir / "review" / "result",
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
 
 
 def test_run_stage_review_blocks_csf_test_evidence_when_rank_ic_is_non_positive(tmp_path: Path) -> None:

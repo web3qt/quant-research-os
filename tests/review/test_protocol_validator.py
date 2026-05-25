@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from runtime.tools.review_skillgen.adversarial_review_contract import (
+    RUNTIME_LAUNCHER_OWNER,
     ReviewerRuntimeIdentity,
     load_adversarial_review_request,
     load_reviewer_receipt,
@@ -119,6 +120,52 @@ def test_protocol_validator_rejects_final_review_without_receipt(tmp_path: Path)
         )
 
 
+def test_protocol_validator_rejects_launcher_identity_as_final_review_reviewer(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_payload = load_adversarial_review_request(request_dir / "adversarial_review_request.yaml")
+
+    receipt_path = request_dir / "reviewer_receipt.yaml"
+    receipt_payload = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
+    receipt_payload["requested_reviewer_identity"] = RUNTIME_LAUNCHER_OWNER
+    receipt_path.write_text(yaml.safe_dump(receipt_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    final_review_payload = _final_review_payload(request_payload)
+    final_review_payload["reviewer_identity"] = RUNTIME_LAUNCHER_OWNER
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(final_review_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="REVIEWER_UNBOUND: launcher identity cannot be reviewer"):
+        load_and_validate_protocol(
+            review_request_dir=request_dir,
+            review_result_dir=result_dir,
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity=RUNTIME_LAUNCHER_OWNER,
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+
 def test_protocol_validator_projects_final_review_using_receipt_execution_mode(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
     prepare_review_cycle_for_handoff(
@@ -167,7 +214,14 @@ def test_protocol_validator_projects_final_review_using_receipt_execution_mode(t
     assert payload["receipt_payload"]["execution_mode"] == "spawned_agent"
     assert payload["review_result"]["reviewer_execution_mode"] == "spawned_agent"
     assert payload["review_result"]["reservation_findings"] == ['{"id":"I1","text":"object finding"}']
-    assert (stage_dir / "review" / "result" / "final_review.normalized.yaml").exists()
+    normalized_path = stage_dir / "review" / "result" / "final_review.normalized.yaml"
+    assert normalized_path.exists()
+    normalized_payload = yaml.safe_load(normalized_path.read_text(encoding="utf-8"))
+    assert normalized_payload["reviewer_identity"] == "reviewer-agent"
+    assert normalized_payload["reviewer_session_id"] == "review-session"
+    assert normalized_payload["reviewer_agent_id"] == "reviewer-child-agent"
+    assert normalized_payload["reviewer_execution_mode"] == "spawned_agent"
+    assert normalized_payload["reservation_findings"] == ['{"id":"I1","text":"object finding"}']
 
 
 def test_protocol_validator_rejects_stale_stage_contract_context(tmp_path: Path) -> None:
