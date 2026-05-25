@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import PurePosixPath
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Iterable
 
 
 def normalize_review_path(path: str) -> str:
-    raw = str(path).strip().replace("\\", "/")
+    if not isinstance(path, str):
+        raise ValueError("review path must be a string")
+
+    raw = path.strip()
     if not raw:
         raise ValueError("review path must be non-empty")
+
+    windows_path = PureWindowsPath(raw)
+    if windows_path.drive or windows_path.root:
+        raise ValueError("review path must be relative")
+
+    raw = raw.replace("\\", "/")
     if raw.startswith("/"):
         raise ValueError("review path must be relative")
     normalized = PurePosixPath(raw).as_posix().rstrip("/")
