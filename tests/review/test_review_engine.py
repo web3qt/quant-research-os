@@ -323,6 +323,39 @@ def test_run_stage_review_projects_final_review_and_runs_audit(tmp_path: Path) -
     assert audit_payload["audit_status"] == "PASS"
     assert audit_payload["unexpected_result_files"] == []
     assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+    closure_payload = yaml.safe_load(
+        (stage_dir / "review" / "closure" / "stage_gate_review.yaml").read_text(encoding="utf-8")
+    )
+    assert closure_payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+
+
+def test_run_stage_review_final_review_fix_required_runs_audit(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir, verdict="FIX_REQUIRED")
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_path = stage_dir / "review" / "result" / "adversarial_review_result.yaml"
+    normalized_path = stage_dir / "review" / "result" / "final_review.normalized.yaml"
+    audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
+    audit_payload = yaml.safe_load(audit_path.read_text(encoding="utf-8"))
+
+    assert payload["review_loop_outcome"] == "FIX_REQUIRED"
+    assert payload["final_verdict"] is None
+    assert result_path.exists()
+    assert normalized_path.exists()
+    assert audit_path.exists()
+    assert audit_payload["audit_status"] == "PASS"
+    assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+    assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:
