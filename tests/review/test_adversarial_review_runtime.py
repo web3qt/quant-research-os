@@ -460,13 +460,13 @@ def test_review_cycle_binds_request_receipt_and_handoff_to_canonical_context(tmp
     handoff_prompt = payload["reviewer_handoff_prompt"]
     assert "Launcher boundary:" in handoff_prompt
     assert "The current/main conversation is the launcher, not the reviewer." in handoff_prompt
-    assert "Do not write reviewer_findings.raw.yaml from the launcher conversation." in handoff_prompt
+    assert "Do not write review/final_review.yaml from the launcher conversation." in handoff_prompt
     assert "Send this handoff to an independent reviewer/subagent." in handoff_prompt
     assert f"Active research repo root: {expected_context['project_root']}" in handoff_prompt
     assert f"Lineage root: {expected_context['lineage_root']}" in handoff_prompt
     assert f"Stage dir: {expected_context['stage_dir']}" in handoff_prompt
     assert (
-        "The QROS governance repo is not the active research repo unless the canonical paths above point there."
+        "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there."
         in handoff_prompt
     )
 
