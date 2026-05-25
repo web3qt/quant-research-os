@@ -422,7 +422,7 @@ def _write_adversarial_review_result(
             "reviewed_lineage_root": request_payload["lineage_root"],
             "reviewed_stage_dir": request_payload["stage_dir"],
             "hard_gate_findings_acknowledged": True,
-            "reviewed_artifact_paths": [],
+            "reviewed_artifact_paths": ["artifact_catalog.md"],
             "reviewed_provenance_paths": ["program_execution_manifest.json"],
             "blocking_findings": [],
             "reservation_findings": [],
@@ -441,7 +441,7 @@ def _write_adversarial_review_result(
             "stage_id": stage,
             "reviewer_identity": "reviewer-agent",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewed_artifact_paths": ["artifact_catalog.md"],
+            "reviewed_artifact_paths": [],
             "reviewed_program_path": f"{program_dir}/run_stage.py",
             "reviewed_artifact_digest": "sha256:test-artifact-digest",
             "reviewed_program_digest": "sha256:test-program-digest",
@@ -3322,7 +3322,7 @@ def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
             "stage_id": "mandate",
             "reviewer_identity": "reviewer-agent",
             "reviewer_agent_id": "reviewer-child-agent",
-            "reviewed_artifact_paths": ["artifact_catalog.md"],
+            "reviewed_artifact_paths": [],
             "reviewed_program_path": "program/mandate/run_stage.py",
             "reviewed_artifact_digest": "sha256:test-artifact-digest",
             "reviewed_program_digest": "sha256:test-program-digest",
@@ -3341,8 +3341,8 @@ def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
 
-    assert status.stage_status == "review_scope_mismatch"
-    assert status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+    assert status.stage_status == "awaiting_reviewer_write_scope_audit"
+    assert status.blocking_reason_code == "REVIEW_AUDIT_PENDING"
 
 
 def test_summarize_session_status_contains_required_fields(tmp_path: Path) -> None:

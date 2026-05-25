@@ -3624,27 +3624,31 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         if stale_reason is not None:
             return stale_reason
 
+    final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
+    if final_review_path.exists():
+        try:
+            raw_content = final_review_path.read_text(encoding="utf-8")
+        except Exception as exc:
+            return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
+        try:
+            raw_payload = yaml.safe_load(raw_content)
+        except Exception as exc:
+            return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
+        if not isinstance(raw_payload, dict):
+            return "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: review/final_review.yaml must load to a mapping"
+        try:
+            normalize_final_review_payload(
+                final_review_payload=raw_payload,
+                request_payload=request_payload,
+                receipt_payload=receipt_payload,
+            )
+        except Exception as exc:
+            error = str(exc)
+            if "FORBIDDEN_FINAL_REVIEW_NORMALIZATION" in error:
+                return error
+            return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {error}"
+
     if not result_path.exists():
-        final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
-        if final_review_path.exists():
-            try:
-                raw_content = final_review_path.read_text(encoding="utf-8")
-            except Exception as exc:
-                return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
-            try:
-                raw_payload = yaml.safe_load(raw_content)
-            except Exception as exc:
-                return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
-            if not isinstance(raw_payload, dict):
-                return "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: review/final_review.yaml must load to a mapping"
-            try:
-                normalize_final_review_payload(
-                    final_review_payload=raw_payload,
-                    request_payload=request_payload,
-                    receipt_payload=receipt_payload,
-                )
-            except Exception as exc:
-                return str(exc)
         return None
     try:
         result_payload = load_adversarial_review_result(result_path)

@@ -271,7 +271,7 @@ def test_stage_evaluator_rejects_result_file_added_after_pass_audit(tmp_path: Pa
     assert evaluator["can_progress"] is False
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in evaluator["reason"]
     assert session.current_stage == "mandate_review"
-    assert session.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert session.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (session.blocking_reason or "")
 
 
