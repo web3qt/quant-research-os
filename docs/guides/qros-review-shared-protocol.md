@@ -63,9 +63,9 @@ review 必须由**人显式确认**。普通路径中的显式动作由 `qros-re
 - launcher 主线程不得直接写 closure artifacts
 - reviewer 子代理不得修改 `author/formal/*`
 - reviewer 子代理正常只写 `review/final_review.yaml`
-- ordinary review path 不再使用 receipt-bound raw findings 或 closer command，但 final review closure 仍是 strict receipt-bound
+- ordinary final review 是 strict receipt-bound；`review/final_review.yaml` 单独存在不构成 closure proof
 - active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context
-- 主线程 / runtime 在 reviewer 完成后读取 `review/final_review.yaml`，并先校验 receipt、normalized scope、author digest freshness、final review normalization 与 reviewer write-scope audit；通过后才可投影 `review/result/adversarial_review_result.yaml`、closure、author-fix、next-stage confirmation 或 failure handling
+- 主线程 / runtime 在 reviewer 完成后读取 `review/final_review.yaml`，先校验 receipt、normalized scope、author digest freshness 与 final review normalization；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling
 - 对于当前 mandate-only rollout 已接入的 artifact contract validation、mandate semantic validation 与 research preflight blocker，launcher 必须在 reviewer 启动前就停下；不得把这类 blocker 重新包装成 reviewer 的第一轮发现任务
 
 ## Launcher Review-Ready / 修复循环

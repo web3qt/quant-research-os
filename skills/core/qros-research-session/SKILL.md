@@ -210,13 +210,13 @@ For any author-eligible stage:
 - 用户确认后，`qros-research-session` 进入 `<stage>_review` lane，并在当前会话内部复用对应 stage-specific review 协议
 - review lane 必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
 - 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt
-- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许读取 `review/request/*`、`author/formal/*`，以及 active request 指定的 `required_program_dir` / `required_program_entrypoint` 所需的 stage program source
 - reviewer 子代理只允许写入 `review/final_review.yaml`
 - reviewer 子代理不得修改 `author/formal/*`
 - 当前主线程不得自己撰写 `review/final_review.yaml`
 - reviewer 正常只写 `review/final_review.yaml`
 - ordinary final review 是 strict receipt-bound：active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context
-- 当前主线程必须读取 `review/final_review.yaml`，并先完成 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit 校验；通过后才可投影 `review/result/adversarial_review_result.yaml`、closure、author-fix、next-stage confirmation 或 failure handling
+- 当前主线程必须读取 `review/final_review.yaml`，先完成 receipt、normalized scope、author digest freshness 与 final review normalization 校验；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling
 
 ## Main-Agent Review Loop
 

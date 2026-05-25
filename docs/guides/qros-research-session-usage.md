@@ -158,7 +158,7 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 
 这两份文件是当前 review cycle 对 current contracts 和 current author outputs 的本地渲染。reviewer 应优先读取它们，而不是从生成 skill 正文重建 stage truth。generated review skills 在这里更接近 workflow entrypoints，不是 stage truth source。
 
-ordinary final review 是 strict receipt-bound。active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context；`review/final_review.yaml` 单独存在并不构成 closure proof。主线程 / runtime 必须先校验 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit，才可投影 `review/result/adversarial_review_result.yaml`、closure、author-fix、next-stage confirmation 或 failure handling。
+ordinary final review 是 strict receipt-bound。active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context；`review/final_review.yaml` 单独存在并不构成 closure proof。主线程 / runtime 必须先校验 receipt、normalized scope、author digest freshness 与 final review normalization；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling。
 
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 

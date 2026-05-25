@@ -17,8 +17,6 @@ description: Codex review skill for CSF Test Evidence stage verification.
 
 若命令失败，必须停止；不得继续 review，不得启动 reviewer，不得运行 `qros-review-cycle prepare`。按输出中的 `qros-research-session --lineage-id ...` 恢复 runtime state 后再重进本 skill。
 
-`csf_test_evidence` 只有在 canonical review eligibility 已成立时，才是 review lane candidate。若当前 lineage 仍被 `ARTIFACT-CONTRACT-001`、`CSF-TEST-SEMANTIC-001`、failure package、`FAILURE_DISPOSITION_REQUIRED` 或 `FAILURE_DISPOSITION_RECORDED` 阻断，就不是 `review_confirmation_pending` 的合法候选，必须先回 author-fix、failure handling 或 formal disposition。即使当前 runtime 仍把 `current_stage` 投影成 `csf_test_evidence_review_confirmation_pending`，只要 `stage_status` / `blocking_reason_code` 已标明 blocked，也必须按 blocked 处理，而不是按 review-ready 处理。
-
 ## 共享审查协议
 
 执行本 stage review 前，必须先阅读并遵守 `docs/guides/qros-review-shared-protocol.md`。
@@ -38,10 +36,10 @@ description: Codex review skill for CSF Test Evidence stage verification.
 - reviewer 子代理创建后，主线程优先运行 `./.qros/bin/qros-review-cycle prepare --reviewer-agent-id <child_agent_id> --reviewer-id <reviewer_identity> --reviewer-session-id <child_agent_id> --host codex`
 - `qros-review-cycle prepare` 负责注册 active review cycle，写出 `review/request/*` 与 `reviewer_receipt.yaml`，并输出 reviewer handoff prompt
 - 主线程随后必须用 `send_input` 把 request / handoff manifest / `stage_contract_context.yaml` / `stage_contract_context.md` 交给 reviewer 子代理
-- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许读取 `review/request/*`、`author/formal/*`，以及 active request 指定的 `required_program_dir` / `required_program_entrypoint` 所需的 stage program source
 - reviewer 子代理只允许写入 `review/final_review.yaml`
 - reviewer 子代理不得修改 `author/formal/*`
-- reviewer 子代理完成后，主线程读取 `review/final_review.yaml`，并先完成 active `reviewer_receipt.yaml`、normalized request scope、author materialization digest freshness、final-review normalization 和 reviewer write-scope audit 校验；通过后才可投影 `review/result/adversarial_review_result.yaml`，并进入 author-fix、next-stage confirmation、failure handling 或 deterministic closure
+- reviewer 子代理完成后，主线程读取 `review/final_review.yaml`，先校验 active `reviewer_receipt.yaml`、normalized request scope、author materialization digest freshness 与 final-review normalization；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可进入 author-fix、next-stage confirmation、failure handling 或 deterministic closure
 
 reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 
@@ -76,7 +74,6 @@ reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 - 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage csf_test_evidence`，并通过 deterministic preflight
 - preflight 中的 `ARTIFACT-CONTRACT-001` 与 `CSF-TEST-SEMANTIC-001` 都是 review 前阻断项
 - preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险
-- `CHILD LINEAGE` 仍然只是 formal failure/disposition 结果；不要把它当成普通 reviewer 建议分支，或在没有 failure package / disposition 记录时非正式触发
 
 ## 共用输入
 
@@ -103,5 +100,5 @@ These files are the review-cycle-local rendering of current contracts and curren
 3. 运行 `./.qros/bin/qros-review-cycle prepare` 写出 active request / handoff / receipt，并复用输出的 reviewer handoff prompt
 4. 用 `send_input` 向 reviewer 子代理交付 request / handoff 与 `stage_contract_context.*`
 5. 等待 reviewer 子代理只写 `review/final_review.yaml`
-6. 主线程读取 `review/final_review.yaml` 并完成 receipt / scope / digest / normalization / write-scope audit 校验
+6. 主线程读取 `review/final_review.yaml`，先完成 receipt / scope / digest / normalization 校验；随后投影 canonical result 并完成 write-scope audit
 7. 以 `stage_contract_context.*`、request scope 和 final verdict 解释当前 stage 的 review 结果，并交回 runtime/session 继续 author-fix、failure handling、next-stage confirmation 或 deterministic closure
