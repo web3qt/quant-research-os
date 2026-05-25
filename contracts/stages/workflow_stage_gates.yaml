@@ -443,8 +443,10 @@ stages:
       - cross_section_coverage.parquet
       - split_sample_adequacy_report.yaml
       - eligibility_base_mask.parquet
-      - shared_feature_base/
+      - shared_feature_base
+      - asset_taxonomy_snapshot.parquet
       - csf_data_contract.md
+      - csf_data_ready_gate_decision.md
       - run_manifest.json
       - rebuild_csf_data_ready.py
       - artifact_catalog.md
