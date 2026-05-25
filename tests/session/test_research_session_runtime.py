@@ -3263,6 +3263,28 @@ def test_run_research_session_reports_reviewer_unbound_for_bare_final_review(
 
     assert status.stage_status == "reviewer_unbound"
     assert status.blocking_reason_code == "REVIEWER_UNBOUND"
+    assert status.review_state == "review_in_progress"
+
+
+def test_run_research_session_reports_review_format_invalid_for_malformed_final_review(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        "lineage_id: [unterminated\n",
+        encoding="utf-8",
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "review_format_invalid"
+    assert status.blocking_reason_code == "REVIEW_FORMAT_INVALID"
 
 
 def test_run_research_session_reports_author_outputs_stale_after_prepare(

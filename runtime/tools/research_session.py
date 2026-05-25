@@ -3399,6 +3399,8 @@ def _review_state_snapshot(
         )
     except Exception:
         request_payload = {}
+    proof_chain_error = _review_proof_chain_error(stage_dir)
+    proof_chain_status = _review_protocol_status(proof_chain_error)
     review_result = _load_final_review_if_present(stage_dir)
     certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
     closure_written_at = (
@@ -3418,7 +3420,7 @@ def _review_state_snapshot(
     review_state = "review_not_started"
     if request_payload:
         review_state = "review_in_progress"
-    if review_result:
+    if review_result and proof_chain_status is None:
         if review_result.get("verdict") == FIX_REQUIRED_OUTCOME:
             review_state = "awaiting_author_fix"
         elif review_result.get("verdict") in NON_ADVANCING_COMPLETION_STATUSES:
@@ -3530,10 +3532,13 @@ def _load_final_review_if_present(stage_dir: Path) -> dict | None:
     try:
         return load_final_review(final_review_path)
     except Exception:
-        # 兼容 protocol-first 路径：避免 legacy loader 因 finding shape 直接阻断状态投影。
-        payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
-        if isinstance(payload, dict):
-            return payload
+        try:
+            # 兼容 protocol-first 路径：避免 legacy loader 因 finding shape 直接阻断状态投影。
+            payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                return payload
+        except Exception:
+            return None
     return None
 
 
@@ -3623,9 +3628,16 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
         if final_review_path.exists():
             try:
-                raw_payload = yaml.safe_load(final_review_path.read_text(encoding="utf-8"))
-                if not isinstance(raw_payload, dict):
-                    return "review/final_review.yaml must load to a mapping"
+                raw_content = final_review_path.read_text(encoding="utf-8")
+            except Exception as exc:
+                return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
+            try:
+                raw_payload = yaml.safe_load(raw_content)
+            except Exception as exc:
+                return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {exc}"
+            if not isinstance(raw_payload, dict):
+                return "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: review/final_review.yaml must load to a mapping"
+            try:
                 normalize_final_review_payload(
                     final_review_payload=raw_payload,
                     request_payload=request_payload,
