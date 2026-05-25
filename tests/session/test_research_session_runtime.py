@@ -3340,6 +3340,34 @@ def test_run_research_session_reports_author_outputs_stale_after_prepare(
     assert status.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
 
 
+@pytest.mark.parametrize(
+    "removed_field",
+    ["bound_author_materialization_digest", "stage_contract_context_yaml_path"],
+)
+def test_run_research_session_reports_stale_request_context_before_final_review(
+    tmp_path: Path,
+    removed_field: str,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload.pop(removed_field, None)
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "author_outputs_stale"
+    assert status.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+    assert status.gate_status == "AUTHOR_OUTPUTS_STALE"
+    assert status.review_state == "review_in_progress"
+
+
 def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
     tmp_path: Path,
 ) -> None:

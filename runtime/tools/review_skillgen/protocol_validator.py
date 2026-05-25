@@ -102,6 +102,10 @@ def _validate_stage_contract_context(request_payload: dict[str, Any], review_req
             raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: stage contract context digest changed after prepare")
 
 
+def validate_active_review_request_context(request_payload: dict[str, Any], review_request_dir: Path) -> None:
+    _validate_stage_contract_context(request_payload, review_request_dir)
+
+
 def _project_final_review_result(
     *,
     request_payload: dict[str, Any],
@@ -173,7 +177,7 @@ def load_and_validate_protocol(
         if not receipt_path.exists():
             raise ValueError("REVIEWER_UNBOUND: review/final_review.yaml exists without active reviewer_receipt.yaml")
 
-        _validate_stage_contract_context(request_payload, review_request_dir)
+        validate_active_review_request_context(request_payload, review_request_dir)
         receipt_payload = receipt_loader(receipt_path)
         validate_receipt_against_request(
             request_payload=request_payload,
@@ -219,7 +223,7 @@ def load_and_validate_protocol(
             "audit_payload": {},
         }
 
-    _validate_stage_contract_context(request_payload, review_request_dir)
+    validate_active_review_request_context(request_payload, review_request_dir)
     receipt_payload = receipt_loader(receipt_path)
     validate_receipt_against_request(
         request_payload=request_payload,

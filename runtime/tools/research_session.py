@@ -216,6 +216,7 @@ from runtime.tools.review_skillgen.final_review_normalizer import (
     normalize_final_review_payload,
     validate_final_review_digest_bindings,
 )
+from runtime.tools.review_skillgen.protocol_validator import validate_active_review_request_context
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
@@ -3590,6 +3591,10 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
 
     try:
         request_payload = load_adversarial_review_request(request_path)
+    except Exception as exc:
+        return str(exc)
+    try:
+        validate_active_review_request_context(request_payload, request_path.parent)
     except Exception as exc:
         return str(exc)
 
