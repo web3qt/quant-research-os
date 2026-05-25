@@ -3846,6 +3846,15 @@ def _review_substate(
             f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None:
+        protocol_status = _review_protocol_status(audit_error)
+        if protocol_status is not None:
+            stage_status, blocking_reason_code = protocol_status
+            return (
+                stage_status,
+                blocking_reason_code,
+                f"{stage_base} has a reviewer write-scope audit problem: {audit_error}",
+                f"Discard the invalid review cycle, explicitly resume the author lane if needed, then re-enter {review_skill} for a fresh reviewer child cycle.",
+            )
         return (
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_FAILED",

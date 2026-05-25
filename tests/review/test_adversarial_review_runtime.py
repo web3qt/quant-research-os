@@ -1188,8 +1188,8 @@ def test_run_research_session_rejects_result_file_added_after_pass_audit(tmp_pat
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_review_stale_pass_audit")
 
     assert status.current_stage == "test_evidence_review"
-    assert status.stage_status == "awaiting_reviewer_write_scope_audit"
-    assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert status.stage_status == "reviewer_scope_violation"
+    assert status.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (status.blocking_reason or "")
 
 
