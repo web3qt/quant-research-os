@@ -20,6 +20,7 @@ from runtime.tools.review_skillgen.closure_models import build_review_payload
 from runtime.tools.review_skillgen.closure_writer import write_closure_artifacts
 from runtime.tools.review_skillgen.review_cycle_trace import append_review_cycle_event
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
+from runtime.tools.review_skillgen.final_review_normalizer import NORMALIZED_FINAL_REVIEW_FILENAME
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
 from runtime.tools.review_skillgen.review_findings import load_review_findings_if_present
 from runtime.tools.review_skillgen.protocol_validator import load_and_validate_protocol
@@ -36,6 +37,10 @@ from runtime.tools.review_skillgen.stage_content_gate import (
     check_structural_gates,
 )
 from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    validate_reviewer_write_scope_audit,
+)
 from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 
 
@@ -477,6 +482,7 @@ def _write_canonical_review_result(
     residual_risks: list[str],
     hard_gate_downgrade_detected: bool,
 ) -> dict[str, Any]:
+    review_result_dir.mkdir(parents=True, exist_ok=True)
     canonical = dict(review_result)
     canonical["final_verdict"] = final_verdict
     canonical["review_loop_outcome"] = review_loop_outcome
@@ -801,6 +807,19 @@ def run_stage_review(
         residual_risks=residual_risks,
         hard_gate_downgrade_detected=hard_gate_downgrade_detected,
     )
+    if receipt_payload:
+        normalized_final_review_path = review_result_dir / NORMALIZED_FINAL_REVIEW_FILENAME
+        if normalized_final_review_path.exists():
+            # canonical result 已经承接 final_review 投影，closure audit 前移除中间态产物。
+            normalized_final_review_path.unlink()
+        audit_payload = run_reviewer_write_scope_audit(stage_dir)
+        validate_reviewer_write_scope_audit(
+            receipt_payload=receipt_payload,
+            audit_payload=audit_payload,
+            stage_dir=stage_dir,
+        )
+        common_payload["reviewer_write_scope_audit"] = audit_payload
+
     payload = build_review_payload(
         lineage_id=lineage_id,
         stage=stage,

@@ -186,6 +186,45 @@ def _write_reviewer_receipt(
     )
 
 
+def _write_final_review(
+    stage_dir: Path,
+    *,
+    verdict: str = "PASS",
+    reviewer_identity: str = "reviewer-agent",
+    reviewer_agent_id: str = "reviewer-child-agent",
+) -> None:
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    reviewed_artifact_paths = sorted(request_payload["required_artifact_paths"], reverse=True)
+    reviewed_program_path = (
+        Path(request_payload["required_program_dir"]) / request_payload["required_program_entrypoint"]
+    ).as_posix()
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": request_payload["lineage_id"],
+            "stage_id": request_payload["stage"],
+            "reviewer_identity": reviewer_identity,
+            "reviewer_agent_id": reviewer_agent_id,
+            "reviewed_artifact_paths": reviewed_artifact_paths,
+            "reviewed_program_path": reviewed_program_path,
+            "reviewed_artifact_digest": "dummy-reviewed-artifact-digest",
+            "reviewed_program_digest": "dummy-reviewed-program-digest",
+            "verdict": verdict,
+            "review_summary": "Final review projected from reviewer-authored closure.",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "advance",
+        },
+    )
+
+
 def _write_review_result(
     stage_dir: Path,
     *,
@@ -252,6 +291,33 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert [event["event_type"] for event in trace_events].count("write_scope_audit_completed") >= 1
     assert trace_events[-1]["final_verdict"] == "PASS"
     assert trace_events[-1]["closure_written"] is True
+
+
+def test_run_stage_review_projects_final_review_and_runs_audit(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir)
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
+    )
+    audit_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").read_text(encoding="utf-8")
+    )
+
+    assert payload["final_verdict"] == "PASS"
+    assert result_payload["reviewer_execution_mode"] == "spawned_agent"
+    assert audit_payload["audit_status"] == "PASS"
+    assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:
