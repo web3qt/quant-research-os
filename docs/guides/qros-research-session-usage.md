@@ -464,9 +464,9 @@ Mandate freeze 不是只冻结大方向。当前 `mandate` 合同会要求 agent
 正常 review 主路径还应保持一个简单纪律：
 
 - 一个 active review cycle 只认一个 reviewer child
-- reviewer child 只读 `review/request/*` 和 `author/formal/*`
+- reviewer child 只读 `review/request/*`、`author/formal/*`，以及 active request 指定的 `required_program_dir` / `required_program_entrypoint` 所需的 stage program source
 - reviewer child 只写 `review/final_review.yaml`
-- 主 Agent / runtime 必须先校验 receipt、normalized scope、author digest freshness、final review normalization 和 reviewer write-scope audit，才能投影 deterministic result / audit / closure 或推进后续状态
+- 主 Agent / runtime 必须先校验 receipt、normalized scope、author digest freshness 与 final review normalization；随后投影 deterministic result 并运行 reviewer write-scope audit；audit 通过后才能写 closure artifacts 或推进后续状态
 - 主 Agent 只在自己已经能清楚说出“这轮 reviewer 要验证哪些 formal gate、哪些 outputs 已经准备好”时才发起 review
 
 <br>
