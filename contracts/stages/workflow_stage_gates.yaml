@@ -457,10 +457,13 @@ stages:
       - cross_section_coverage.parquet
       - split_sample_adequacy_report.yaml
       - eligibility_base_mask.parquet
+      - shared_feature_base
+      - asset_taxonomy_snapshot.parquet
       - run_manifest.json
       - rebuild_csf_data_ready.py
     human_artifacts:
       - csf_data_contract.md
+      - csf_data_ready_gate_decision.md
       - artifact_catalog.md
       - field_dictionary.md
     formal_gate:

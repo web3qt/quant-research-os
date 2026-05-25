@@ -50,6 +50,20 @@ def test_csf_data_ready_gate_required_outputs_match_stage_spec() -> None:
     assert normalize_review_paths(gate_outputs) == normalize_review_paths(spec_outputs)
 
 
+def test_csf_data_ready_required_outputs_are_classified_artifacts() -> None:
+    from runtime.tools.review_skillgen.loaders import load_gate_schema
+    from runtime.tools.review_skillgen.review_engine import GATES_PATH
+    from runtime.tools.review_skillgen.review_scope import normalize_review_paths
+
+    gates = load_gate_schema(GATES_PATH)
+    gate = gates["stages"]["csf_data_ready"]
+
+    required_outputs = set(normalize_review_paths(gate["required_outputs"]))
+    classified_artifacts = set(normalize_review_paths(gate["machine_artifacts"] + gate["human_artifacts"]))
+
+    assert required_outputs <= classified_artifacts
+
+
 def _write_required_author_outputs(lineage_root: Path, current_stage: str) -> Path:
     spec = SESSION_STAGE_PROGRAM_SPECS[current_stage.removesuffix("_review_confirmation_pending")]
     author_formal_dir = lineage_root / spec.stage_dir_name / "author" / "formal"
