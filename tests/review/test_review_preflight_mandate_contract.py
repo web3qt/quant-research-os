@@ -71,3 +71,35 @@ def test_review_preflight_blocks_mandate_when_route_dependency_is_invalid(tmp_pa
     assert any("MANDATE-SEMANTIC-001" in item for item in payload["content_findings"])
     assert any("target_strategy_reference is required" in item for item in payload["content_findings"])
     assert any("group_taxonomy_reference is required" in item for item in payload["content_findings"])
+
+
+def test_review_preflight_blocks_mandate_when_execution_timing_policy_is_ambiguous(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    time_split_path = _formal_dir(stage_dir) / "time_split.json"
+    time_split = json.loads(time_split_path.read_text(encoding="utf-8"))
+    time_split["execution_timing_policy"] = "Use open_time bars directly."
+    time_split_path.write_text(json.dumps(time_split, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    payload = run_review_preflight(explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root})
+
+    assert payload["status"] == "FAIL"
+    assert any("MANDATE-SEMANTIC-001" in item for item in payload["content_findings"])
+    assert any("completed-bar features and next-bar/rebalance execution" in item for item in payload["content_findings"])
+
+
+def test_review_preflight_blocks_mandate_when_parameter_search_exceeds_budget(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    parameter_grid_path = _formal_dir(stage_dir) / "parameter_grid.yaml"
+    parameter_grid = _load_yaml(parameter_grid_path)
+    parameter_grid["parameters"] = [
+        {"name": "lookback", "values": [1, 2, 3, 4]},
+        {"name": "threshold", "values": [1, 2, 3, 4]},
+    ]
+    parameter_grid["search_budget"]["max_grid_combinations"] = 8
+    _write_yaml(parameter_grid_path, parameter_grid)
+
+    payload = run_review_preflight(explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root})
+
+    assert payload["status"] == "FAIL"
+    assert any("MANDATE-SEMANTIC-001" in item for item in payload["content_findings"])
+    assert any("parameter value grid exceeds search_budget.max_grid_combinations" in item for item in payload["content_findings"])

@@ -395,6 +395,8 @@ python runtime/scripts/run_verification_tier.py --tier full-smoke
 ./.qros/bin/qros-session --lineage-id <lineage_id> --confirm-mandate
 ```
 
+Mandate freeze 不是只冻结大方向。当前 `mandate` 合同会要求 agent 在 formal artifacts 中同步冻结执行时点、rolling lookback 预热、参数搜索预算、调仓频率与 label horizon 的语义边界，以及下游必须物化的字段映射和基准套件合同。缺少这些字段时，`qros-validate-stage --stage mandate` 或 mandate review-entry preflight 会在 reviewer 之前阻断。
+
 当当前状态是某个 `*_confirmation_pending` freeze gate 时，文本面板会展示全部 `Freeze groups` 及其 confirmed/pending 状态。agent 可以一次回显全部 group draft；如果用户看完后回复 `确认全部`，可以用下面的命令批量标记当前 draft 的所有 groups 已确认：
 
 ```bash

@@ -23,9 +23,9 @@
     "csf_data_ready"
   ],
   "blocking_reasons": [
-    "mandate author outputs failed deterministic review preflight: STAGE_PROGRAM_INVALID: Missing stage_program.yaml in program/mandate; Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 26 more)"
+    "mandate author outputs failed deterministic review preflight: STAGE_PROGRAM_INVALID: Missing stage_program.yaml in program/mandate; Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 27 more)"
   ],
-  "lineage_transition": "Run qros-mandate-author to repair author/formal outputs before review entry. Preflight findings: STAGE_PROGRAM_INVALID: Missing stage_program.yaml in program/mandate; Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 26 more)",
+  "lineage_transition": "Run qros-mandate-author to repair author/formal outputs before review entry. Preflight findings: STAGE_PROGRAM_INVALID: Missing stage_program.yaml in program/mandate; Missing required global evidence: run_manifest.json or repro_manifest.json; MANDATE-STRUCT-001: structural gate evaluation failed for time_split.json: Expecting value: line 1 column 1 (char 0) (and 27 more)",
   "evidence_refs": [
     "runtime/tools/anti_drift_scenarios_mainline.py::mandate_review"
   ],

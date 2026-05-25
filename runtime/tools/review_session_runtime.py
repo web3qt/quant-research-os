@@ -204,8 +204,12 @@ def _prepare_review_cycle(
 
     existing_request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     if existing_request_path.exists():
-        load_adversarial_review_request(existing_request_path)
-        current_digest = _current_author_digest(stage_dir, spec)
+        existing_request = load_adversarial_review_request(existing_request_path)
+        current_digest = compute_author_materialization_digest_fresh(
+            artifact_root=_author_formal_dir(stage_dir),
+            required_outputs=existing_request["required_artifact_paths"],
+            required_provenance_paths=existing_request["required_provenance_paths"],
+        )
     else:
         current_digest = _current_author_digest(stage_dir, spec)
     archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=current_digest)
@@ -223,7 +227,13 @@ def _prepare_review_cycle(
         program_hash=provenance.get("program_hash") if isinstance(provenance.get("program_hash"), str) else None,
         stage_invoked_at=provenance.get("invoked_at") if isinstance(provenance.get("invoked_at"), str) else None,
     )
-    current_digest = _current_author_digest(stage_dir, spec)
+    # request payload 会规范化 artifact path 顺序；绑定 digest 必须使用落盘 request 的顺序，
+    # 否则同一组文件会因为顺序不同被 protocol validator 误判为 stale。
+    current_digest = compute_author_materialization_digest_fresh(
+        artifact_root=_author_formal_dir(stage_dir),
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
     request_dir = stage_dir / "review" / "request"
     context_payload = build_stage_contract_context(
         stage_id=spec.stage_id,

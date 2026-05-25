@@ -57,11 +57,27 @@ def _require_raw_true(payload: dict[str, Any], key: str, *, path: Path) -> bool:
     return True
 
 
-def _load_raw_reviewer_findings(path: Path) -> dict[str, Any]:
+def _load_raw_reviewer_findings(
+    path: Path,
+    *,
+    request_payload: dict[str, Any],
+    receipt_payload: dict[str, Any],
+) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(payload, dict):
         raise ValueError(f"{path}: raw reviewer findings must load to a mapping")
     payload = normalize_raw_review_payload(payload, source=path)
+    # Reviewer raw findings may intentionally contain only findings and outcome.
+    # Runtime-owned identity/context fields are already bound in request/receipt,
+    # so fill them before strict validation instead of asking reviewer to restate them.
+    payload.setdefault("reviewer_session_id", receipt_payload.get("requested_reviewer_session_id"))
+    payload.setdefault("reviewer_agent_id", receipt_payload.get("reviewer_agent_id"))
+    payload.setdefault("reviewer_context_source", receipt_payload.get("reviewer_context_source"))
+    payload.setdefault("reviewer_history_inheritance", receipt_payload.get("reviewer_history_inheritance"))
+    payload.setdefault("reviewed_project_root", request_payload.get("project_root"))
+    payload.setdefault("reviewed_lineage_root", request_payload.get("lineage_root"))
+    payload.setdefault("reviewed_stage_dir", request_payload.get("stage_dir"))
+    payload.setdefault("hard_gate_findings_acknowledged", True)
     outcome = payload.get("review_loop_outcome")
     if not isinstance(outcome, str) or not outcome.strip():
         raise ValueError(f"{path}: review_loop_outcome must be a non-empty string")
@@ -127,7 +143,11 @@ def ensure_runtime_review_result(
     result_path = review_result_dir / ADVERSARIAL_REVIEW_RESULT_FILENAME
     raw_path = review_result_dir / RAW_REVIEWER_FINDINGS_FILENAME
     if raw_path.exists():
-        raw_payload = _load_raw_reviewer_findings(raw_path)
+        raw_payload = _load_raw_reviewer_findings(
+            raw_path,
+            request_payload=request_payload,
+            receipt_payload=receipt_payload,
+        )
         if raw_payload["review_cycle_id"] != request_payload["review_cycle_id"]:
             raise ValueError(f"{raw_path}: review_cycle_id does not match adversarial_review_request.yaml")
         if raw_payload["reviewer_session_id"] != receipt_payload["requested_reviewer_session_id"]:

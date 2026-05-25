@@ -31,6 +31,14 @@ admission 通过不等于 mandate 已完成。只有用户确认 freeze，并且
 
 mandate formal artifacts 的字段真值层是 `contracts/artifacts/mandate_artifacts.yaml`。`qros-mandate-author` 只能把已确认的 admission 与 freeze draft 物化为正式产物，不得自行发明字段或跳过 validation。
 
+Mandate 现在还会把几类常见研究坑前移成 machine-readable guardrail：
+
+- `time_split.json.execution_timing_policy` 必须说明信号只使用已完成 bar，执行发生在下一 bar 或下一调仓点，避免把 `open_time` 所在 bar 的收盘信息用于同一 bar 下单。
+- `time_split.json.feature_warmup_policy` 必须说明 rolling lookback 预热规则，下游阶段要计算每个 split 的 `effective_feature_start` 并排除预热未完成样本。
+- `parameter_grid.yaml.search_budget` 必须给出最大参数组合数并要求 staged freeze，防止一次性搜索完整策略组合。
+- `parameter_grid.yaml.rebalance_horizon_policy` 必须说明调仓频率与 label / holding horizon 的区别。
+- `run_config.toml.downstream_required_artifacts` 必须要求后续阶段物化 `raw_to_canonical_field_map` 与 `benchmark_suite_contract`，让字段映射和基准定义不再只停留在文字说明里。
+
 最小验证命令：
 
 ```bash

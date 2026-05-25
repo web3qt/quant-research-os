@@ -78,10 +78,27 @@ def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
         },
     )
     (stage_dir / "time_split.json").write_text(
-        '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m","holding_horizons":["15m"],"policy_note":"locked"}\n',
+        (
+            '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m",'
+            '"holding_horizons":["15m"],"policy_note":"locked",'
+            '"execution_timing_policy":"Features use only completed bars and execution happens on the next bar.",'
+            '"feature_warmup_policy":"Use lookback warm-up to compute the effective sample start."}\n'
+        ),
         encoding="utf-8",
     )
-    _write_yaml(stage_dir / "parameter_grid.yaml", {"parameters": [], "note": "locked parameter family"})
+    _write_yaml(
+        stage_dir / "parameter_grid.yaml",
+        {
+            "parameters": [],
+            "note": "locked parameter family",
+            "search_budget": {
+                "max_grid_combinations": 16,
+                "staged_freeze_required": True,
+                "budget_policy": "Freeze core signal before overlays.",
+            },
+            "rebalance_horizon_policy": "Rebalance cadence is execution timing, not a label horizon.",
+        },
+    )
     (stage_dir / "run_config.toml").write_text(
         "\n".join(
             [
@@ -93,6 +110,7 @@ def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
                 'data_source = "Binance UM futures klines"',
                 'bar_size = "5m"',
                 "non_rust_exceptions = []",
+                'downstream_required_artifacts = ["raw_to_canonical_field_map", "benchmark_suite_contract"]',
             ]
         )
         + "\n",
@@ -956,7 +974,12 @@ def test_validate_stage_artifacts_reports_json_type_mismatch(tmp_path: Path) -> 
     stage_dir.mkdir()
     _write_minimal_valid_mandate_formal(stage_dir)
     (stage_dir / "time_split.json").write_text(
-        '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m","holding_horizons":"15m","policy_note":"locked"}\n',
+        (
+            '{"train":"","test":"","backtest":"","holdout":"","bar_size":"5m",'
+            '"holding_horizons":"15m","policy_note":"locked",'
+            '"execution_timing_policy":"Features use only completed bars and execution happens on the next bar.",'
+            '"feature_warmup_policy":"Use lookback warm-up to compute the effective sample start."}\n'
+        ),
         encoding="utf-8",
     )
 
@@ -1005,6 +1028,12 @@ def test_validate_stage_artifacts_accepts_list_of_maps(tmp_path: Path) -> None:
         {
             "parameters": [{"name": "lookback", "type": "integer", "min": 5, "max": 60, "step": 5}],
             "note": "locked parameter family",
+            "search_budget": {
+                "max_grid_combinations": 16,
+                "staged_freeze_required": True,
+                "budget_policy": "Freeze core signal before overlays.",
+            },
+            "rebalance_horizon_policy": "Rebalance cadence is execution timing, not a label horizon.",
         },
     )
 

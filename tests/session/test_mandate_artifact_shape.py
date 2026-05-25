@@ -98,7 +98,17 @@ def test_generated_mandate_machine_shapes_match_contract(tmp_path: Path) -> None
     ]
 
     time_split = json.loads((formal_dir / "time_split.json").read_text(encoding="utf-8"))
-    assert list(time_split) == ["train", "test", "backtest", "holdout", "bar_size", "holding_horizons", "policy_note"]
+    assert list(time_split) == [
+        "train",
+        "test",
+        "backtest",
+        "holdout",
+        "bar_size",
+        "holding_horizons",
+        "policy_note",
+        "execution_timing_policy",
+        "feature_warmup_policy",
+    ]
 
     run_config = tomllib.loads((formal_dir / "run_config.toml").read_text(encoding="utf-8"))
     assert list(run_config) == [
@@ -110,8 +120,13 @@ def test_generated_mandate_machine_shapes_match_contract(tmp_path: Path) -> None
         "data_source",
         "bar_size",
         "non_rust_exceptions",
+        "downstream_required_artifacts",
     ]
     assert run_config["non_rust_exceptions"] == []
+    assert run_config["downstream_required_artifacts"] == [
+        "raw_to_canonical_field_map",
+        "benchmark_suite_contract",
+    ]
 
 
 def test_generated_mandate_passes_artifact_shape_validator(tmp_path: Path) -> None:

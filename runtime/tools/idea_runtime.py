@@ -353,12 +353,17 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
                 f"- 持有窗口: {', '.join(holding_horizons)}",
                 f"- 时间戳语义: {timestamp_semantics}",
                 f"- 无前视护栏: {no_lookahead_guardrail}",
+                "- 执行时点策略: signal 只能使用已完成 bar，执行必须发生在下一 bar 或下一调仓点。",
+                "- 预热策略: 下游必须按最大 rolling lookback 计算 effective_feature_start，并排除 warm-up 未完成样本。",
                 "",
                 "## 执行合同",
                 "",
                 f"- 时间切分策略: {time_split_note}",
                 f"- 参数边界策略: {parameter_boundary_note}",
+                "- 搜索预算策略: 默认 `max_grid_combinations=128` 且要求 staged freeze；先验证核心信号，再逐步加入 sizing / overlay。",
+                "- 调仓 / horizon 边界: rebalance interval 是执行节奏；除非也列入 holding_horizons，否则不得作为 label horizon。",
                 f"- 产物合同: {artifact_contract_note}",
+                "- 下游必需治理产物: `raw_to_canonical_field_map` 与 `benchmark_suite_contract`。",
                 f"- 拥挤度 / 容量说明: {crowding_capacity_note}",
                 "",
                 "## Gate 依据",
@@ -419,6 +424,14 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
                 "bar_size": bar_size,
                 "holding_horizons": holding_horizons,
                 "policy_note": time_split_note,
+                "execution_timing_policy": (
+                    "Signals may use only fully completed bars through the decision timestamp; "
+                    "execution must occur on the next bar or next scheduled rebalance after features are materialized."
+                ),
+                "feature_warmup_policy": (
+                    "Downstream stages must compute effective_feature_start from each split start plus the maximum "
+                    "required lookback, and exclude rows before rolling lookback warm-up is complete."
+                ),
             },
             indent=2,
             ensure_ascii=False,
@@ -431,6 +444,15 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
         {
             "parameters": [],
             "note": "在 mandate qualification 完成后补正式参数候选。",
+            "search_budget": {
+                "max_grid_combinations": 128,
+                "staged_freeze_required": True,
+                "budget_policy": "先冻结核心信号参数，再分阶段加入 sizing / overlay；不得一次性搜索完整策略组合。",
+            },
+            "rebalance_horizon_policy": (
+                "rebalance_interval 只声明执行节奏；除非同一周期也出现在 holding_horizons，"
+                "不得把它解释为预测或标签 horizon。"
+            ),
         },
     )
     (mandate_formal_dir / "run_config.toml").write_text(
@@ -444,6 +466,7 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
                 f'data_source = "{data_source}"',
                 f'bar_size = "{bar_size}"',
                 "non_rust_exceptions = []",
+                'downstream_required_artifacts = ["raw_to_canonical_field_map", "benchmark_suite_contract"]',
             ]
         )
         + "\n",
@@ -476,6 +499,11 @@ def build_mandate_from_admission(lineage_root: Path) -> Path:
                 f"- `data_source`: 本 mandate 冻结的上游数据来源，当前为 `{data_source}`。",
                 f"- `bar_size`: 本 mandate 冻结的研究粒度，当前为 `{bar_size}`。",
                 f"- `holding_horizons`: 本 mandate 冻结的持有窗口，当前为 `{holding_horizons}`。",
+                "- `execution_timing_policy`: 信号只能使用已完成 bar；执行必须延迟到下一 bar 或下一调仓点。",
+                "- `feature_warmup_policy`: 下游必须按最大 rolling lookback 计算有效样本起点，并排除预热未完成行。",
+                "- `search_budget`: 参数搜索预算与分阶段冻结要求，防止一次性搜索完整策略组合。",
+                "- `rebalance_horizon_policy`: 调仓频率与预测 / 持有 horizon 的语义边界。",
+                "- `downstream_required_artifacts`: 下游必须物化 raw-to-canonical 字段映射与 benchmark suite contract。",
                 f"- `artifact_contract`: {artifact_contract_note}",
                 f"- `no_lookahead_guardrail`: {no_lookahead_guardrail}",
                 "",

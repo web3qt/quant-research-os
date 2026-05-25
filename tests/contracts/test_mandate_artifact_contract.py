@@ -87,6 +87,8 @@ def test_mandate_contract_locks_time_split_and_run_config_shape() -> None:
         "bar_size",
         "holding_horizons",
         "policy_note",
+        "execution_timing_policy",
+        "feature_warmup_policy",
     }
 
     assert run_config["type"] == "toml"
@@ -99,6 +101,7 @@ def test_mandate_contract_locks_time_split_and_run_config_shape() -> None:
         "data_source",
         "bar_size",
         "non_rust_exceptions",
+        "downstream_required_artifacts",
     }
 
     stage_field = next(field for field in run_config["fields"] if field["path"] == "stage")
@@ -111,7 +114,15 @@ def test_mandate_contract_locks_parameter_grid_shape() -> None:
     parameter_grid = _artifact(contract, "parameter_grid.yaml")
 
     assert parameter_grid["type"] == "yaml"
-    assert _field_paths(parameter_grid) == {"parameters", "note"}
+    assert _field_paths(parameter_grid) == {
+        "parameters",
+        "note",
+        "search_budget",
+        "search_budget.max_grid_combinations",
+        "search_budget.staged_freeze_required",
+        "search_budget.budget_policy",
+        "rebalance_horizon_policy",
+    }
     parameters_field = next(field for field in parameter_grid["fields"] if field["path"] == "parameters")
     assert parameters_field["type"] == "list[map]"
 

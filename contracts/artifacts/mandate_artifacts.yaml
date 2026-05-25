@@ -117,6 +117,12 @@ artifacts:
       - path: policy_note
         description: 记录时间切分政策说明，用于解释窗口选择和不可回看约束。
         type: string
+      - path: execution_timing_policy
+        description: 声明信号时间戳与执行时间的关系，防止把 open_time 所在 bar 的收盘信息用于同一 bar 下单。
+        type: string
+      - path: feature_warmup_policy
+        description: 声明 rolling lookback 的预热处理方式，要求下游计算每个 split 的有效样本起点。
+        type: string
 
   parameter_grid.yaml:
     type: yaml
@@ -127,6 +133,21 @@ artifacts:
         type: list[map]
       - path: note
         description: 记录补充说明，用于解释该配置中不能结构化表达的约束。
+        type: string
+      - path: search_budget
+        description: 记录允许参数搜索预算，用于阻断组合爆炸和隐性过拟合。
+        type: map
+      - path: search_budget.max_grid_combinations
+        description: 允许 train_freeze 枚举的最大参数组合数量。
+        type: integer
+      - path: search_budget.staged_freeze_required
+        description: 是否要求按组件分阶段冻结，而不是一次性搜索完整策略。
+        type: boolean
+      - path: search_budget.budget_policy
+        description: 搜索预算和分阶段冻结的解释。
+        type: string
+      - path: rebalance_horizon_policy
+        description: 说明调仓频率与预测/持有 horizon 的关系，防止把 execution cadence 混作 label horizon。
         type: string
 
   run_config.toml:
@@ -158,6 +179,9 @@ artifacts:
         type: string
       - path: non_rust_exceptions
         description: 列出允许非 Rust 实现的例外项，用于约束执行程序边界。
+        type: list[string]
+      - path: downstream_required_artifacts
+        description: 列出 mandate 要求下游阶段正式物化的关键治理产物。
         type: list[string]
 
   artifact_catalog.md:

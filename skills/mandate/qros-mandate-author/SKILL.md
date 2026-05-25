@@ -64,6 +64,9 @@ description: Use when mandate admission has passed and must be frozen into forma
 - 必须先确认 `data_source` 与 `bar_size`，再冻结 mandate
 - 必须先确认 `route_assessment`，再冻结 `research_route`
 - 必须把 `data_viability_contract`、`time_coverage_contract`、`route_viability_contract` 作为 mandate freeze 前的 preflight 事实先锁定；reviewer 不是这些基础事实的第一发现点
+- `time_split.json` 必须冻结 `execution_timing_policy` 与 `feature_warmup_policy`：信号只能使用已完成 bar，执行必须延迟到下一 bar / 下一调仓点；rolling lookback 必须计算每个 split 的有效样本起点，预热未完成样本不得进入证据。
+- `parameter_grid.yaml` 必须冻结 `search_budget` 与 `rebalance_horizon_policy`：参数组合数量不得超过预算，且必须分阶段冻结核心信号、sizing 与 overlay；调仓频率不得被静默解释为 label / holding horizon。
+- `run_config.toml` 必须通过 `downstream_required_artifacts` 要求后续阶段正式物化 `raw_to_canonical_field_map` 与 `benchmark_suite_contract`。
 - `research_route` 第一版只允许 `time_series_signal` 与 `cross_sectional_factor`
 - 必须写清 `excluded_routes` 与 `route_rationale`
 - 必须写清 success / failure / budget / excluded scope
@@ -132,9 +135,10 @@ companion 说明不存在或只有裸字段名，**不得**宣布 mandate 完成
 10. 只有用户最终批准后，才生成正式 mandate artifacts
 11. 将 confirmed freeze groups 压成 `mandate.md`、`research_scope.md`
 12. 生成 `time_split.json`、`parameter_grid.yaml`、`run_config.toml`、`research_route.yaml`
-13. 验证每个机器可读产物都有 companion field documentation（见上）
-14. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-15. 运行 `qros-validate-stage --stage mandate`
-16. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review
-17. 运行 deterministic review-entry preflight / `qros-review-preflight`
-18. preflight 不通过时，修复 formal artifacts 与 stage program provenance；不得进入 mandate review
+13. 验证 `time_split.json` 包含 execution timing / warm-up policy，`parameter_grid.yaml` 包含 search budget / rebalance-horizon policy，`run_config.toml` 包含 downstream required artifacts
+14. 验证每个机器可读产物都有 companion field documentation（见上）
+15. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+16. 运行 `qros-validate-stage --stage mandate`
+17. validator 不通过时，修复 formal artifacts；不得宣布 mandate 完成或进入 review
+18. 运行 deterministic review-entry preflight / `qros-review-preflight`
+19. preflight 不通过时，修复 formal artifacts 与 stage program provenance；不得进入 mandate review

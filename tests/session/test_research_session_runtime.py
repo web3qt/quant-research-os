@@ -756,6 +756,10 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                     "bar_size": "5m",
                     "holding_horizons": ["15m"],
                     "policy_note": "locked",
+                    "execution_timing_policy": (
+                        "Features use only completed bars and execution happens on the next bar."
+                    ),
+                    "feature_warmup_policy": "Use lookback warm-up to compute the effective sample start.",
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -770,6 +774,12 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                         }
                     ],
                     "note": "locked parameter family",
+                    "search_budget": {
+                        "max_grid_combinations": 16,
+                        "staged_freeze_required": True,
+                        "budget_policy": "Freeze core signal before overlays.",
+                    },
+                    "rebalance_horizon_policy": "Rebalance cadence is execution timing, not a label horizon.",
                 },
                 sort_keys=False,
                 allow_unicode=True,
@@ -784,6 +794,7 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
                     'data_source = "binance um futures klines"',
                     'bar_size = "5m"',
                     "non_rust_exceptions = []",
+                    'downstream_required_artifacts = ["raw_to_canonical_field_map", "benchmark_suite_contract"]',
                 ]
             )
             + "\n",
