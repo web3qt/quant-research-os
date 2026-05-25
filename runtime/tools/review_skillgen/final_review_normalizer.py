@@ -223,6 +223,33 @@ def normalize_final_review_payload(
     }
 
 
+def validate_final_review_digest_bindings(
+    *,
+    normalized_final_review: dict[str, Any],
+    request_payload: dict[str, Any],
+) -> None:
+    bound_author_digest = request_payload.get("bound_author_materialization_digest")
+    if not isinstance(bound_author_digest, str) or not bound_author_digest.strip():
+        raise ValueError(
+            "REVIEW_CONTRACT_CONTEXT_STALE: active request is missing "
+            "bound_author_materialization_digest; rerun qros-review-cycle prepare"
+        )
+    if normalized_final_review.get("reviewed_artifact_digest") != bound_author_digest:
+        raise ValueError(
+            "REVIEW_CONTRACT_CONTEXT_STALE: reviewed_artifact_digest does not match "
+            "bound_author_materialization_digest"
+        )
+
+    author_program_hash = request_payload.get("author_program_hash")
+    if not isinstance(author_program_hash, str) or not author_program_hash.strip():
+        raise ValueError(
+            "REVIEW_CONTRACT_CONTEXT_STALE: active request is missing author_program_hash; "
+            "rerun qros-review-cycle prepare"
+        )
+    if normalized_final_review.get("reviewed_program_digest") != author_program_hash:
+        raise ValueError("REVIEW_CONTRACT_CONTEXT_STALE: reviewed_program_digest does not match author_program_hash")
+
+
 def write_normalized_final_review(
     stage_dir: str | Path,
     final_review_payload: dict[str, Any],

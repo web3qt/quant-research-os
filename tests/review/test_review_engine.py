@@ -12,6 +12,12 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
+)
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 
 
@@ -78,9 +84,10 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
         "run_config.toml",
         "artifact_catalog.md",
         "field_dictionary.md",
+        "run_manifest.json",
     ]
     required_provenance_paths = ["program_execution_manifest.json"]
-    launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
+    launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md", "run_manifest.json"]
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
     review_context = {
         "project_root": str(stage_dir.parent.parent.parent.resolve()),
@@ -103,6 +110,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "permitted_input_roots": ["review/request", "author/formal"],
             "permitted_output_roots": ["review/result"],
             "required_result_write_root": "review/result",
+            "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
@@ -129,6 +137,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
             "required_result_write_root": "review/result",
+            "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
@@ -136,6 +145,30 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             **review_context,
         },
     )
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    context_payload = build_stage_contract_context(
+        stage_id=request_payload["stage"],
+        lineage_id=request_payload["lineage_id"],
+        review_cycle_id=request_payload["review_cycle_id"],
+        author_materialization_digest=author_digest,
+        review_cycle_stage_dir=stage_dir,
+    )
+    context_yaml_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(render_stage_contract_context_markdown(context_payload), encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = author_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def _handoff_manifest_digest(stage_dir: Path) -> str:
@@ -209,8 +242,8 @@ def _write_final_review(
             "reviewer_agent_id": reviewer_agent_id,
             "reviewed_artifact_paths": reviewed_artifact_paths,
             "reviewed_program_path": reviewed_program_path,
-            "reviewed_artifact_digest": "dummy-reviewed-artifact-digest",
-            "reviewed_program_digest": "dummy-reviewed-program-digest",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
             "verdict": verdict,
             "review_summary": "Final review projected from reviewer-authored closure.",
             "blocking_findings": [],

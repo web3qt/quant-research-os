@@ -340,7 +340,6 @@ def test_review_cycle_reset_script_archives_stale_cycle(tmp_path: Path) -> None:
 
 def test_review_cycle_validate_script_reports_preflight_status(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    (stage_dir / "author" / "formal" / "run_config.toml").write_text("version = 1\n", encoding="utf-8")
     script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
 
     result = run(

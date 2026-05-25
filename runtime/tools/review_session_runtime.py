@@ -335,6 +335,16 @@ def _reviewer_handoff_prompt(
     receipt_payload = payload["receipt_payload"]
     stage_contract_context_yaml_path = request_payload.get("stage_contract_context_yaml_path")
     stage_contract_context_md_path = request_payload.get("stage_contract_context_md_path")
+    expected_artifact_digest = request_payload.get("bound_author_materialization_digest", "<artifact digest>")
+    expected_program_digest = request_payload.get("author_program_hash", "<program digest>")
+    required_program_dir = request_payload.get("required_program_dir")
+    required_program_entrypoint = request_payload.get("required_program_entrypoint")
+    if isinstance(required_program_dir, str) and isinstance(required_program_entrypoint, str):
+        reviewed_program_path = (Path(required_program_dir) / required_program_entrypoint).as_posix()
+        program_read_scope = f"{required_program_dir}/{required_program_entrypoint} and any stage program source it imports"
+    else:
+        reviewed_program_path = "<relative path>"
+        program_read_scope = "active request stage program source"
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
         "",
@@ -381,6 +391,7 @@ def _reviewer_handoff_prompt(
         "Permitted reads only:",
         f"- {request_root}/*",
         f"- {author_root}/*",
+        f"- {program_read_scope}",
         "",
         "Read these generated contract context files before evaluating stage truth:",
         f"- {_display_path(stage_dir / stage_contract_context_yaml_path, display_root=display_root) if isinstance(stage_contract_context_yaml_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_YAML_FILENAME}",
@@ -396,9 +407,9 @@ def _reviewer_handoff_prompt(
         f"reviewer_identity: {reviewer_identity}",
         f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
         "reviewed_artifact_paths: [<relative paths under author/formal>]",
-        "reviewed_program_path: <relative path>",
-        "reviewed_artifact_digest: <artifact digest>",
-        "reviewed_program_digest: <program digest>",
+        f"reviewed_program_path: {reviewed_program_path}",
+        f"reviewed_artifact_digest: {expected_artifact_digest}",
+        f"reviewed_program_digest: {expected_program_digest}",
         "verdict: one of PASS, CONDITIONAL PASS, FIX_REQUIRED, RETRY, NO-GO, CHILD LINEAGE",
         "review_summary: <single sentence>",
         "blocking_findings: []",

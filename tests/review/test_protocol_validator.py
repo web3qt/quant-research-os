@@ -36,8 +36,8 @@ def _final_review_payload(
         "reviewed_program_path": (
             f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
         ),
-        "reviewed_artifact_digest": "artifact-digest",
-        "reviewed_program_digest": "program-digest",
+        "reviewed_artifact_digest": request_payload.get("bound_author_materialization_digest", "artifact-digest"),
+        "reviewed_program_digest": request_payload.get("author_program_hash", "program-digest"),
         "verdict": "PASS",
         "review_summary": "looks good",
         "blocking_findings": [],
@@ -224,6 +224,127 @@ def test_protocol_validator_projects_final_review_using_receipt_execution_mode(t
     assert normalized_payload["reservation_findings"] == ['{"id":"I1","text":"object finding"}']
 
 
+def test_protocol_validator_rejects_final_review_without_bound_author_digest(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_path = request_dir / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload.pop("bound_author_materialization_digest", None)
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(_final_review_payload(request_payload), sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="missing bound_author_materialization_digest"):
+        load_and_validate_protocol(
+            review_request_dir=request_dir,
+            review_result_dir=result_dir,
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+
+def test_protocol_validator_rejects_final_review_digest_mismatch(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_payload = load_adversarial_review_request(request_dir / "adversarial_review_request.yaml")
+    final_review_payload = _final_review_payload(request_payload)
+    final_review_payload["reviewed_artifact_digest"] = "wrong-artifact-digest"
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(final_review_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="reviewed_artifact_digest does not match"):
+        load_and_validate_protocol(
+            review_request_dir=request_dir,
+            review_result_dir=result_dir,
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+
+def test_protocol_validator_rejects_final_review_program_digest_mismatch(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    prepare_review_cycle_for_handoff(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session",
+        launcher_session_id="launcher-session",
+        launcher_thread_id="launcher-thread",
+        reviewer_agent_id="reviewer-child-agent",
+        host="codex",
+    )
+
+    request_dir = stage_dir / "review" / "request"
+    result_dir = stage_dir / "review" / "result"
+    request_payload = load_adversarial_review_request(request_dir / "adversarial_review_request.yaml")
+    final_review_payload = _final_review_payload(request_payload)
+    final_review_payload["reviewed_program_digest"] = "wrong-program-digest"
+    (stage_dir / "review" / "final_review.yaml").write_text(
+        yaml.safe_dump(final_review_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="reviewed_program_digest does not match"):
+        load_and_validate_protocol(
+            review_request_dir=request_dir,
+            review_result_dir=result_dir,
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
+
+
 def test_protocol_validator_rejects_stale_stage_contract_context(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
     prepare_review_cycle_for_handoff(
@@ -257,8 +378,8 @@ def test_protocol_validator_rejects_stale_stage_contract_context(tmp_path: Path)
         "reviewed_program_path": (
             f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
         ),
-        "reviewed_artifact_digest": "artifact-digest",
-        "reviewed_program_digest": "program-digest",
+        "reviewed_artifact_digest": request_payload.get("bound_author_materialization_digest", "artifact-digest"),
+        "reviewed_program_digest": request_payload.get("author_program_hash", "program-digest"),
         "verdict": "PASS",
         "review_summary": "looks good",
         "blocking_findings": [],
@@ -320,8 +441,8 @@ def test_protocol_validator_rejects_stale_cycle_when_current_author_digest_drift
         "reviewed_program_path": (
             f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
         ),
-        "reviewed_artifact_digest": "artifact-digest",
-        "reviewed_program_digest": "program-digest",
+        "reviewed_artifact_digest": request_payload.get("bound_author_materialization_digest", "artifact-digest"),
+        "reviewed_program_digest": request_payload.get("author_program_hash", "program-digest"),
         "verdict": "PASS",
         "review_summary": "looks good",
         "blocking_findings": [],
@@ -390,8 +511,8 @@ def test_protocol_validator_rejects_digest_drift_even_without_stage_contract_con
         "reviewed_program_path": (
             f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
         ),
-        "reviewed_artifact_digest": "artifact-digest",
-        "reviewed_program_digest": "program-digest",
+        "reviewed_artifact_digest": request_payload.get("bound_author_materialization_digest", "artifact-digest"),
+        "reviewed_program_digest": request_payload.get("author_program_hash", "program-digest"),
         "verdict": "PASS",
         "review_summary": "looks good",
         "blocking_findings": [],
@@ -466,8 +587,8 @@ def test_protocol_validator_rejects_digest_drift_in_now_required_output_omitted_
         "reviewed_program_path": (
             f"{request_payload['required_program_dir']}/{request_payload['required_program_entrypoint']}"
         ),
-        "reviewed_artifact_digest": "artifact-digest",
-        "reviewed_program_digest": "program-digest",
+        "reviewed_artifact_digest": request_payload.get("bound_author_materialization_digest", "artifact-digest"),
+        "reviewed_program_digest": request_payload.get("author_program_hash", "program-digest"),
         "verdict": "PASS",
         "review_summary": "looks good",
         "blocking_findings": [],

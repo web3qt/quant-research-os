@@ -212,7 +212,10 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     validate_receipt_contract,
     validate_result_contract,
 )
-from runtime.tools.review_skillgen.final_review_normalizer import normalize_final_review_payload
+from runtime.tools.review_skillgen.final_review_normalizer import (
+    normalize_final_review_payload,
+    validate_final_review_digest_bindings,
+)
 from runtime.tools.review_skillgen.review_engine import run_stage_review
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
@@ -3420,7 +3423,7 @@ def _review_state_snapshot(
     review_state = "review_not_started"
     if request_payload:
         review_state = "review_in_progress"
-    if review_result and proof_chain_status is None:
+    if review_result and proof_chain_error is None:
         if review_result.get("verdict") == FIX_REQUIRED_OUTCOME:
             review_state = "awaiting_author_fix"
         elif review_result.get("verdict") in NON_ADVANCING_COMPLETION_STATUSES:
@@ -3637,7 +3640,7 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
         if not isinstance(raw_payload, dict):
             return "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: review/final_review.yaml must load to a mapping"
         try:
-            normalize_final_review_payload(
+            normalized_final_review = normalize_final_review_payload(
                 final_review_payload=raw_payload,
                 request_payload=request_payload,
                 receipt_payload=receipt_payload,
@@ -3647,6 +3650,13 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
             if "FORBIDDEN_FINAL_REVIEW_NORMALIZATION" in error:
                 return error
             return f"FORBIDDEN_FINAL_REVIEW_NORMALIZATION: {error}"
+        try:
+            validate_final_review_digest_bindings(
+                normalized_final_review=normalized_final_review,
+                request_payload=request_payload,
+            )
+        except Exception as exc:
+            return str(exc)
 
     if not result_path.exists():
         return None
@@ -5142,6 +5152,13 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
             "ADVERSARIAL_REVIEW_PENDING",
             f"Enter {review_skill} in the current session; launch a reviewer and wait for review/{FINAL_REVIEW_FILENAME}.",
         )
+    if proof_chain_error is not None:
+        protocol_status = _review_protocol_status(proof_chain_error)
+        if protocol_status is not None:
+            return (
+                protocol_status[1],
+                f"Repair the active review proof chain for {_stage_base_name(current_stage)}: {proof_chain_error}",
+            )
     if not receipt_exists and proof_chain_error is not None:
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (

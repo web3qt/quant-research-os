@@ -17,6 +17,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 )
 from runtime.tools.review_skillgen.final_review_normalizer import (
     normalize_final_review_payload,
+    validate_final_review_digest_bindings,
     write_normalized_final_review,
 )
 from runtime.tools.review_skillgen.review_scope_builder import (
@@ -53,7 +54,10 @@ def _current_required_outputs_truth(request_payload: dict[str, Any]) -> tuple[tu
 def _validate_bound_author_digest(request_payload: dict[str, Any], review_request_dir: Path) -> None:
     bound_author_digest = request_payload.get("bound_author_materialization_digest")
     if not isinstance(bound_author_digest, str) or not bound_author_digest.strip():
-        return
+        raise ValueError(
+            "REVIEW_CONTRACT_CONTEXT_STALE: active request is missing "
+            "bound_author_materialization_digest; rerun qros-review-cycle prepare"
+        )
 
     current_required_outputs, current_required_provenance_paths = _current_required_outputs_truth(request_payload)
     current_author_digest = compute_author_materialization_digest_fresh(
@@ -70,7 +74,10 @@ def _validate_stage_contract_context(request_payload: dict[str, Any], review_req
 
     context_relpath = request_payload.get("stage_contract_context_yaml_path")
     if not isinstance(context_relpath, str) or not context_relpath.strip():
-        return
+        raise ValueError(
+            "REVIEW_CONTRACT_CONTEXT_STALE: active request is missing stage_contract_context_yaml_path; "
+            "rerun qros-review-cycle prepare"
+        )
 
     context_path = review_request_dir.parent.parent / context_relpath
     if not context_path.exists():
@@ -161,12 +168,12 @@ def load_and_validate_protocol(
     stage_dir = review_request_dir.parent.parent
 
     request_payload = request_loader(request_path)
-    _validate_stage_contract_context(request_payload, review_request_dir)
     final_review_path = stage_dir / "review" / FINAL_REVIEW_FILENAME
     if final_review_path.exists():
         if not receipt_path.exists():
             raise ValueError("REVIEWER_UNBOUND: review/final_review.yaml exists without active reviewer_receipt.yaml")
 
+        _validate_stage_contract_context(request_payload, review_request_dir)
         receipt_payload = receipt_loader(receipt_path)
         validate_receipt_against_request(
             request_payload=request_payload,
@@ -182,6 +189,10 @@ def load_and_validate_protocol(
             final_review_payload=raw_payload,
             request_payload=request_payload,
             receipt_payload=receipt_payload,
+        )
+        validate_final_review_digest_bindings(
+            normalized_final_review=normalized_final_review,
+            request_payload=request_payload,
         )
         write_normalized_final_review(
             stage_dir=stage_dir,
@@ -208,6 +219,7 @@ def load_and_validate_protocol(
             "audit_payload": {},
         }
 
+    _validate_stage_contract_context(request_payload, review_request_dir)
     receipt_payload = receipt_loader(receipt_path)
     validate_receipt_against_request(
         request_payload=request_payload,

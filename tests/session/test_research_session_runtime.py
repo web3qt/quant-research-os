@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -10,6 +11,13 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
+)
+from runtime.tools.review_skillgen.review_runtime_state import compute_author_materialization_digest_fresh
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import run_reviewer_write_scope_audit
 from runtime.tools.mandate_admission_runtime import (
@@ -347,7 +355,7 @@ def _write_adversarial_review_request(
     author_identity: str = "test-agent",
     author_session_id: str = "test-session",
 ) -> None:
-    ensure_adversarial_review_request(
+    request_payload = ensure_adversarial_review_request(
         stage_dir,
         lineage_id=stage_dir.parent.name,
         stage=stage,
@@ -357,6 +365,33 @@ def _write_adversarial_review_request(
         required_program_entrypoint="run_stage.py",
         required_artifact_paths=[],
         required_provenance_paths=["program_execution_manifest.json"],
+        program_hash="test-hash",
+    )
+    request_dir = stage_dir / "review" / "request"
+    bound_digest = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    context_payload = build_stage_contract_context(
+        stage_id=stage,
+        lineage_id=stage_dir.parent.name,
+        review_cycle_id=request_payload["review_cycle_id"],
+        author_materialization_digest=bound_digest,
+        review_cycle_stage_dir=stage_dir,
+    )
+    context_yaml_path = request_dir / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = request_dir / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(render_stage_contract_context_markdown(context_payload), encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = bound_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    (request_dir / "adversarial_review_request.yaml").write_text(
+        yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
     )
 
 
@@ -443,8 +478,8 @@ def _write_adversarial_review_result(
             "reviewer_agent_id": "reviewer-child-agent",
             "reviewed_artifact_paths": [],
             "reviewed_program_path": f"{program_dir}/run_stage.py",
-            "reviewed_artifact_digest": "sha256:test-artifact-digest",
-            "reviewed_program_digest": "sha256:test-program-digest",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
             "verdict": final_review_verdict,
             "review_summary": "test review fixture",
             "blocking_findings": [],
@@ -3315,6 +3350,7 @@ def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
     _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
     _write_yaml(
         stage_dir / "review" / "final_review.yaml",
         {
@@ -3324,8 +3360,8 @@ def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
             "reviewer_agent_id": "reviewer-child-agent",
             "reviewed_artifact_paths": [],
             "reviewed_program_path": "program/mandate/run_stage.py",
-            "reviewed_artifact_digest": "sha256:test-artifact-digest",
-            "reviewed_program_digest": "sha256:test-program-digest",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
             "verdict": "PASS",
             "review_summary": "test review fixture",
             "blocking_findings": [],
