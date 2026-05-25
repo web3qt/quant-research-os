@@ -14,6 +14,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_result,
     load_reviewer_receipt,
 )
+from runtime.tools.review_skillgen.final_review_normalizer import NORMALIZED_FINAL_REVIEW_FILENAME
 from runtime.tools.review_skillgen.review_cycle_trace import (
     REVIEW_CYCLE_TRACE_FILENAME,
     append_review_cycle_event,
@@ -27,6 +28,7 @@ REVIEW_RESULT_ROOT = Path("review/result")
 REVIEW_FINAL_REVIEW_PATH = Path("review") / FINAL_REVIEW_FILENAME
 ALLOWED_RESULT_FILENAMES = {
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    NORMALIZED_FINAL_REVIEW_FILENAME,
     RAW_REVIEWER_FINDINGS_FILENAME,
     "review_findings.yaml",
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,

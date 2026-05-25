@@ -310,13 +310,18 @@ def test_run_stage_review_projects_final_review_and_runs_audit(tmp_path: Path) -
     result_payload = yaml.safe_load(
         (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
     )
+    normalized_path = stage_dir / "review" / "result" / "final_review.normalized.yaml"
+    assert normalized_path.exists()
+    normalized_payload = yaml.safe_load(normalized_path.read_text(encoding="utf-8"))
     audit_payload = yaml.safe_load(
         (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").read_text(encoding="utf-8")
     )
 
     assert payload["final_verdict"] == "PASS"
     assert result_payload["reviewer_execution_mode"] == "spawned_agent"
+    assert "review_summary" in normalized_payload
     assert audit_payload["audit_status"] == "PASS"
+    assert audit_payload["unexpected_result_files"] == []
     assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
 
 
