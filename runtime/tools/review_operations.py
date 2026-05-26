@@ -40,6 +40,81 @@ class ReviewOperationSnapshot:
     recommended_skill: str | None
 
 
+@dataclass(frozen=True)
+class RecommendedReviewOperation:
+    operation: str
+    blocking_reason_code: str | None
+    blocking_reason: str
+
+
+def classify_review_operation(
+    *,
+    proof_chain_error: str | None,
+    review_verdict: str | None,
+    audit_error: str | None,
+    preflight_blocked: bool,
+) -> RecommendedReviewOperation:
+    if preflight_blocked:
+        return RecommendedReviewOperation(
+            operation=OP_AUTHOR_FIX_REQUIRED_BEFORE_REVIEW,
+            blocking_reason_code="OUTPUTS_INVALID",
+            blocking_reason="Deterministic review-ready preflight failed before reviewer launch.",
+        )
+    if proof_chain_error:
+        if "REVIEW_CONTRACT_CONTEXT_STALE" in proof_chain_error or "author digest" in proof_chain_error.lower():
+            return RecommendedReviewOperation(
+                operation=OP_REQUEST_REFRESH_REQUIRED,
+                blocking_reason_code="AUTHOR_OUTPUTS_STALE",
+                blocking_reason=proof_chain_error,
+            )
+        if "reviewed_artifact_paths do not match" in proof_chain_error or "review scope" in proof_chain_error.lower():
+            return RecommendedReviewOperation(
+                operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
+                blocking_reason_code="REVIEW_SCOPE_MISMATCH",
+                blocking_reason=proof_chain_error,
+            )
+        if "FORBIDDEN_FINAL_REVIEW_NORMALIZATION" in proof_chain_error:
+            return RecommendedReviewOperation(
+                operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
+                blocking_reason_code="REVIEW_FORMAT_INVALID",
+                blocking_reason=proof_chain_error,
+            )
+        return RecommendedReviewOperation(
+            operation=OP_REQUEST_REFRESH_REQUIRED,
+            blocking_reason_code="ADVERSARIAL_REVIEW_PENDING",
+            blocking_reason=proof_chain_error,
+        )
+    if audit_error:
+        return RecommendedReviewOperation(
+            operation=OP_REVIEWER_RESTART_REQUIRED,
+            blocking_reason_code="REVIEWER_SCOPE_VIOLATION",
+            blocking_reason=audit_error,
+        )
+    if review_verdict == "FIX_REQUIRED":
+        return RecommendedReviewOperation(
+            operation=OP_AUTHOR_FIX_REQUIRED,
+            blocking_reason_code="AUTHOR_FIX_REQUIRED",
+            blocking_reason="Reviewer requested author fixes before closure.",
+        )
+    if review_verdict in {"RETRY", "NO-GO", "CHILD LINEAGE"}:
+        return RecommendedReviewOperation(
+            operation=OP_FAILURE_HANDLING_REQUIRED,
+            blocking_reason_code="FAILURE_HANDLING_REQUIRED",
+            blocking_reason=f"Review verdict {review_verdict} requires formal failure handling.",
+        )
+    if review_verdict in {"PASS", "CONDITIONAL PASS"}:
+        return RecommendedReviewOperation(
+            operation=OP_NEXT_STAGE_CONFIRMATION_REQUIRED,
+            blocking_reason_code="NEXT_STAGE_CONFIRMATION_REQUIRED",
+            blocking_reason="Review passed and closure may proceed to next-stage confirmation after audit.",
+        )
+    return RecommendedReviewOperation(
+        operation=OP_REVIEW_NOT_STARTED,
+        blocking_reason_code=None,
+        blocking_reason="No active review operation is blocking this stage.",
+    )
+
+
 def build_review_operations_snapshot(
     *,
     lineage_root: Path,
