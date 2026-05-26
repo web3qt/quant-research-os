@@ -14,6 +14,7 @@ from runtime.tools.review_operations import (
     REVIEW_READY_AUTHOR_FIX_REQUIRED,
     REVIEW_READY_FAILURE_HANDLING_REQUIRED,
     REVIEW_READY_READY_TO_LAUNCH,
+    REVIEW_READY_REQUEST_REFRESH_REQUIRED,
     ReviewOperationSnapshot,
     build_review_operations_snapshot,
     classify_review_operation,
@@ -235,3 +236,17 @@ def test_map_review_ready_preflight_payload_blocks_failure_handling_for_failure_
 
     assert result.status == REVIEW_READY_FAILURE_HANDLING_REQUIRED
     assert result.blocking_reason_code == "FAILURE_DISPOSITION_REQUIRED"
+
+
+def test_map_review_ready_preflight_payload_blocks_request_refresh_for_stale_context() -> None:
+    result = map_review_ready_preflight_payload(
+        {
+            "status": "FAIL",
+            "content_findings": ["REVIEW_CONTRACT_CONTEXT_STALE: author digest drifted after prepare"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+    )
+
+    assert result.status == REVIEW_READY_REQUEST_REFRESH_REQUIRED
+    assert result.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
