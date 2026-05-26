@@ -3371,6 +3371,69 @@ def test_run_research_session_reports_stale_request_context_before_final_review(
     assert status.review_state == "review_in_progress"
 
 
+def test_run_research_session_reports_request_refresh_operation_for_stale_active_request(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    request_payload.pop("bound_author_materialization_digest", None)
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+    assert "Refresh" in status.next_action or "refresh" in status.next_action
+    assert "review proof chain" in (status.blocking_reason or "")
+
+
+def test_run_research_session_reports_final_review_rewrite_for_scope_mismatch(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": [],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "scope mismatch fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "rewrite final review",
+        },
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+    assert "rewrite" in status.next_action.lower() or "final_review.yaml" in status.next_action
+
+
 def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
     tmp_path: Path,
 ) -> None:

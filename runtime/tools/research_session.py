@@ -218,6 +218,12 @@ from runtime.tools.review_skillgen.final_review_normalizer import (
 )
 from runtime.tools.review_skillgen.protocol_validator import validate_active_review_request_context
 from runtime.tools.review_skillgen.review_engine import run_stage_review
+from runtime.tools.review_operations import (
+    OP_FINAL_REVIEW_REWRITE_REQUIRED,
+    OP_REQUEST_REFRESH_REQUIRED,
+    OP_REVIEWER_RESTART_REQUIRED,
+    classify_review_operation,
+)
 from runtime.tools.review_skillgen.review_freshness import review_cycle_stale_reason
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.review_skillgen.protected_state_guard import (
@@ -3577,6 +3583,25 @@ def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
     return load_reviewer_write_scope_audit(audit_path)
 
 
+def _review_operation_next_action(
+    *,
+    operation: str,
+    stage_base: str,
+    review_skill: str,
+) -> str:
+    if operation == OP_REQUEST_REFRESH_REQUIRED:
+        return (
+            f"Refresh the active review request and handoff for {stage_base}, "
+            f"then relaunch a reviewer through {review_skill}."
+        )
+    if operation == OP_FINAL_REVIEW_REWRITE_REQUIRED:
+        return (
+            f"Ask the bound reviewer to rewrite review/{FINAL_REVIEW_FILENAME} against the active request scope, "
+            f"then rerun {review_skill}."
+        )
+    return f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}."
+
+
 def _load_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
     receipt_path = _review_receipt_path(stage_dir)
     if not receipt_path.exists():
@@ -3769,6 +3794,12 @@ def _review_substate(
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
+    operation = classify_review_operation(
+        proof_chain_error=proof_chain_error,
+        review_verdict=review_result.get("verdict") if isinstance(review_result, dict) else None,
+        audit_error=audit_error,
+        preflight_blocked=False,
+    )
     stage_base = _stage_base_name(current_stage)
     author_skill = STAGE_ACTIVE_SKILLS.get(f"{stage_base}_author", "qros-research-session")
     review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-research-session")
@@ -3792,8 +3823,12 @@ def _review_substate(
             return (
                 stage_status,
                 blocking_reason_code,
-                f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
-                f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+                f"{stage_base} review proof chain is invalid: {proof_chain_error}",
+                _review_operation_next_action(
+                    operation=operation.operation,
+                    stage_base=stage_base,
+                    review_skill=review_skill,
+                ),
             )
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
             return (
@@ -3816,8 +3851,12 @@ def _review_substate(
                 return (
                     stage_status,
                     blocking_reason_code,
-                    f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
-                    f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+                    f"{stage_base} review proof chain is invalid: {proof_chain_error}",
+                    _review_operation_next_action(
+                        operation=operation.operation,
+                        stage_base=stage_base,
+                        review_skill=review_skill,
+                    ),
                 )
             return (
                 "awaiting_adversarial_review",
@@ -3846,8 +3885,12 @@ def _review_substate(
             return (
                 stage_status,
                 blocking_reason_code,
-                f"{stage_base} reviewer proof chain is invalid: {proof_chain_error}",
-                f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}.",
+                f"{stage_base} review proof chain is invalid: {proof_chain_error}",
+                _review_operation_next_action(
+                    operation=operation.operation,
+                    stage_base=stage_base,
+                    review_skill=review_skill,
+                ),
             )
         return (
             "awaiting_adversarial_review",
@@ -3878,6 +3921,13 @@ def _review_substate(
         )
     if audit_error is not None:
         protocol_status = _review_protocol_status(audit_error)
+        if operation.operation == OP_REVIEWER_RESTART_REQUIRED:
+            return (
+                "reviewer_scope_violation",
+                "REVIEWER_SCOPE_VIOLATION",
+                f"{stage_base} reviewer write-scope audit failed: {audit_error}",
+                f"Invalidate this reviewer cycle and launch a fresh reviewer through {review_skill}; do not reuse the old verdict.",
+            )
         if protocol_status is not None:
             stage_status, blocking_reason_code = protocol_status
             return (
@@ -5152,6 +5202,12 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
     review_audit = _load_reviewer_write_scope_audit_if_present(stage_dir)
     proof_chain_error = _review_proof_chain_error(stage_dir)
     audit_error = _review_write_scope_audit_error(stage_dir)
+    operation = classify_review_operation(
+        proof_chain_error=proof_chain_error,
+        review_verdict=review_result.get("verdict") if isinstance(review_result, dict) else None,
+        audit_error=audit_error,
+        preflight_blocked=False,
+    )
     if not request_exists:
         return (
             "ADVERSARIAL_REVIEW_PENDING",
@@ -5162,7 +5218,11 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         if protocol_status is not None:
             return (
                 protocol_status[1],
-                f"Repair the active review proof chain for {_stage_base_name(current_stage)}: {proof_chain_error}",
+                _review_operation_next_action(
+                    operation=operation.operation,
+                    stage_base=_stage_base_name(current_stage),
+                    review_skill=review_skill,
+                ),
             )
     if not receipt_exists and proof_chain_error is not None:
         if REVIEWER_RECEIPT_FILENAME in proof_chain_error:
@@ -5217,7 +5277,17 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
             "REVIEW_AUDIT_PENDING",
             f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {_stage_base_name(current_stage)} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",
         )
-    if audit_error is not None or review_audit["audit_status"] != "PASS":
+    if audit_error is not None:
+        if operation.operation == OP_REVIEWER_RESTART_REQUIRED:
+            return (
+                "REVIEWER_SCOPE_VIOLATION",
+                f"Invalidate this reviewer cycle and launch a fresh reviewer through {review_skill}; do not reuse the old verdict.",
+            )
+        return (
+            "REVIEW_AUDIT_FAILED",
+            f"Reviewer write-scope audit failed; inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} and discard the invalid review cycle.",
+        )
+    if review_audit["audit_status"] != "PASS":
         return (
             "REVIEW_AUDIT_FAILED",
             f"Reviewer write-scope audit failed; inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} and discard the invalid review cycle.",
