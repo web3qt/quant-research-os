@@ -1,7 +1,11 @@
 from pathlib import Path
 
+import yaml
+
 from runtime.tools import review_session_runtime
+from runtime.tools.review_session_runtime import prepare_review_cycle_for_handoff
 from tests.helpers.skill_test_utils import skill_path
+from tests.review.test_start_review_session import _prepare_mandate_stage
 
 
 def test_research_session_skill_exists_and_covers_first_wave_flow() -> None:
@@ -173,6 +177,10 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
     monkeypatch.setattr(review_session_runtime, "start_review_cycle", lambda **_: payload)
     handoff = review_session_runtime.prepare_review_cycle_for_handoff(
         cwd=Path("/tmp/repo"),
+        explicit_context={
+            "stage_dir": Path(payload["stage_dir"]),
+            "lineage_root": Path(payload["lineage_root"]),
+        },
         reviewer_identity="qros-csf-data-ready-reviewer",
         reviewer_session_id="reviewer-session",
         launcher_session_id="launcher-session",
@@ -194,6 +202,32 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
     assert "reviewer_findings.raw.yaml" not in handoff_prompt
     assert "reviewed_artifact_paths: [<relative paths under author/formal>]" in handoff_prompt
     assert "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there." in handoff_prompt
+
+
+def test_review_handoff_lists_exact_expected_final_review_bindings(tmp_path: Path) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    payload = prepare_review_cycle_for_handoff(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="codex-mandate-reviewer",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-1",
+        host="codex",
+    )
+
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    prompt = payload["reviewer_handoff_prompt"]
+
+    assert "Do not infer review truth from prior chat" in prompt
+    assert f"reviewed_artifact_digest: {request_payload['bound_author_materialization_digest']}" in prompt
+    assert f"reviewed_program_digest: {request_payload['author_program_hash']}" in prompt
+    assert "review/request/stage_contract_context.yaml" in prompt
+    assert "review/request/stage_contract_context.md" in prompt
+    assert "review/final_review.yaml" in prompt
+    assert "review/result/adversarial_review_result.yaml" not in prompt
 
 
 def test_session_skill_documents_stage_author_context_as_author_truth_entrypoint() -> None:

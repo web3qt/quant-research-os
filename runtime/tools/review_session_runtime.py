@@ -17,6 +17,7 @@ from runtime.tools.research_session import (
 )
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    FINAL_REVIEW_FILENAME,
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
@@ -350,7 +351,6 @@ def _reviewer_handoff_prompt(
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
     author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
     review_root = _display_path(stage_dir / "review", display_root=display_root)
-    final_review_path = _display_path(stage_dir / "review" / "final_review.yaml", display_root=display_root)
     request_payload = payload["request_payload"]
     receipt_payload = payload["receipt_payload"]
     stage_contract_context_yaml_path = request_payload.get("stage_contract_context_yaml_path")
@@ -367,6 +367,7 @@ def _reviewer_handoff_prompt(
         program_read_scope = "active request stage program source"
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
+        "Do not infer review truth from prior chat. This handoff, review/request/*, author/formal/*, and the active stage program source are the review inputs.",
         "",
         "Launcher boundary:",
         "- The current/main conversation is the launcher, not the reviewer.",
@@ -417,8 +418,8 @@ def _reviewer_handoff_prompt(
         f"- {_display_path(stage_dir / stage_contract_context_yaml_path, display_root=display_root) if isinstance(stage_contract_context_yaml_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_YAML_FILENAME}",
         f"- {_display_path(stage_dir / stage_contract_context_md_path, display_root=display_root) if isinstance(stage_contract_context_md_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_MD_FILENAME}",
         "",
-        "Permitted write only:",
-        f"- {final_review_path}",
+        "Write exactly one reviewer-owned file:",
+        f"- {stage_dir.name}/review/{FINAL_REVIEW_FILENAME}",
         "",
         "Write exactly one canonical machine-readable review artifact.",
         "Required final review schema:",
