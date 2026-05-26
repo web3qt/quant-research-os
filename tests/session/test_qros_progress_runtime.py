@@ -11,6 +11,7 @@ import yaml
 
 import runtime.tools.progress_runtime as progress_runtime_module
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
+from runtime.tools.research_session import run_research_session
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from tests.session.test_research_session_runtime import (
@@ -284,9 +285,10 @@ def test_progress_reports_same_review_scope_mismatch_as_session(tmp_path: Path) 
     )
 
     payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+    session_status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
 
-    assert payload["blocking_reason_code"] == "REVIEW_SCOPE_MISMATCH"
-    assert payload["stage_status"] == "review_scope_mismatch"
+    assert payload["blocking_reason_code"] == session_status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+    assert payload["stage_status"] == session_status.stage_status == "review_scope_mismatch"
 
 
 def test_progress_preserves_built_review_operation_code_before_eligibility_override(
