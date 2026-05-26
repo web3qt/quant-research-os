@@ -63,6 +63,7 @@ def classify_review_operation(
     if proof_chain_error:
         normalized_error = proof_chain_error.lower()
         scope_mismatch_phrases = (
+            "reviewed_program_path does not match active request program",
             "reviewed_program_path does not match active request scope",
             "reviewed_program_digest does not match active request scope",
             "reviewed_artifact_digest does not match active request scope",

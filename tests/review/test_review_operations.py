@@ -67,7 +67,7 @@ def test_classify_review_operation_maps_bound_author_digest_to_request_refresh()
 @pytest.mark.parametrize(
     "proof_chain_error",
     [
-        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_path does not match active request scope",
+        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_path does not match active request program",
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_digest does not match active request scope",
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_digest does not match active request scope",
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths do not match active request scope",
