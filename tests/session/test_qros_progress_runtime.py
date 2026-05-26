@@ -1,16 +1,27 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+import pytest
 import yaml
 
+import runtime.tools.progress_runtime as progress_runtime_module
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
+from runtime.tools.research_session import run_research_session
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
+from tests.session.test_research_session_runtime import (
+    _review_request_payload,
+    _write_adversarial_review_request,
+    _write_minimal_stage_outputs,
+    _write_reviewer_receipt,
+    _write_yaml,
+)
 
 
 def _touch_lineage(outputs_root: Path, lineage_id: str, filename: str = "marker.txt") -> Path:
@@ -241,6 +252,111 @@ def test_progress_payload_exposes_skill_first_direct_handoff(tmp_path: Path) -> 
     assert "qros-resume" not in payload["next_action"]
 
 
+def test_progress_reports_same_review_scope_mismatch_as_session(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": [],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "scope mismatch fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "rewrite final review",
+        },
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+    session_status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert payload["blocking_reason_code"] == session_status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+    assert payload["stage_status"] == session_status.stage_status == "review_scope_mismatch"
+
+
+@pytest.mark.parametrize(
+    "protected_code",
+    sorted(progress_runtime_module.PROTECTED_REVIEW_BLOCKING_REASON_CODES),
+)
+def test_progress_preserves_built_review_operation_code_before_eligibility_override(
+    protected_code: str,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "built_scope_mismatch_case")
+    (lineage_root / "01_mandate").mkdir(parents=True)
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "mandate_review_confirmation_pending",
+    )
+
+    eligibility_called = False
+    original_summarize = progress_runtime_module.summarize_session_status
+
+    def summarize_with_candidate_review_operation(**kwargs):
+        status = original_summarize(**kwargs)
+        if eligibility_called:
+            return status
+        return replace(
+            status,
+            stage_status=protected_code.lower(),
+            blocking_reason_code=protected_code,
+            blocking_reason="reviewed_artifact_paths do not match active request scope",
+            next_action="Rewrite review/final_review.yaml against the active request.",
+        )
+
+    def ineligible_author_output_blocker(**kwargs) -> ReviewEligibilityStatus:
+        nonlocal eligibility_called
+        eligibility_called = True
+        return ReviewEligibilityStatus(
+            eligible_for_review=False,
+            blocking_reason_code="AUTHOR_OUTPUTS_INVALID",
+            blocking_reason="Author outputs must be repaired before review entry.",
+            review_blocking_surface="semantic_gate",
+            authorized_review_skill=None,
+            requires_failure_handling=False,
+            failure_stage=None,
+            failure_reason_summary=None,
+        )
+
+    monkeypatch.setattr(
+        progress_runtime_module,
+        "summarize_session_status",
+        summarize_with_candidate_review_operation,
+    )
+    monkeypatch.setattr(
+        progress_runtime_module,
+        "compute_review_eligibility",
+        ineligible_author_output_blocker,
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert eligibility_called is False
+    assert payload["current_stage"] == "mandate_review_confirmation_pending"
+    assert payload["blocking_reason_code"] == protected_code
+    assert payload["stage_status"] == protected_code.lower()
+
+
 def test_progress_status_payload_surfaces_failure_disposition_gate(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = _touch_lineage(outputs_root, "btc_alt_k")
@@ -326,6 +442,19 @@ def test_progress_non_failure_review_blocker_preserves_author_fix_skill_handoff(
         "runtime.tools.progress_runtime.detect_session_stage",
         lambda root: "csf_test_evidence_review_confirmation_pending",
     )
+    summarize_call_count = 0
+    original_summarize = progress_runtime_module.summarize_session_status
+
+    def count_summarize_calls(**kwargs):
+        nonlocal summarize_call_count
+        summarize_call_count += 1
+        return original_summarize(**kwargs)
+
+    monkeypatch.setattr(
+        progress_runtime_module,
+        "summarize_session_status",
+        count_summarize_calls,
+    )
     monkeypatch.setattr(
         "runtime.tools.progress_runtime.compute_review_eligibility",
         lambda **kwargs: ReviewEligibilityStatus(
@@ -351,6 +480,7 @@ def test_progress_non_failure_review_blocker_preserves_author_fix_skill_handoff(
     assert payload["blocking_reason_code"] == "OUTPUTS_INVALID"
     assert payload["blocking_reason"] == "Author outputs must be repaired before review entry."
     assert payload["requires_failure_handling"] is False
+    assert summarize_call_count == 1
 
 
 def test_progress_real_review_eligibility_failure_handler_normalizes_failure_stage_name(

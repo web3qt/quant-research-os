@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -23,11 +24,18 @@ from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_t
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
     compute_author_materialization_digest,
+    compute_author_materialization_digest_fresh,
     write_review_runtime_state,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
+)
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
 )
 from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
 from tests.runtime.test_tss_test_evidence_runtime import (
@@ -101,10 +109,11 @@ def _write_adversarial_review_request(
     stage_key: str = "mandate",
     author_identity: str = "test-agent",
     author_session_id: str = "test-session",
+    allow_synthetic_context: bool = False,
 ) -> None:
     review_spec = _program_spec_for_session_stage(f"{stage_key}_review")
     assert review_spec is not None
-    ensure_adversarial_review_request(
+    request_payload = ensure_adversarial_review_request(
         stage_dir,
         lineage_id=stage_dir.parent.name,
         stage=review_spec.stage_id,
@@ -116,6 +125,50 @@ def _write_adversarial_review_request(
         required_provenance_paths=["program_execution_manifest.json"],
         program_hash="test-hash",
         stage_invoked_at="2026-04-03T00:00:00+00:00",
+    )
+    request_dir = stage_dir / "review" / "request"
+    bound_digest = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    try:
+        context_payload = build_stage_contract_context(
+            stage_id=review_spec.stage_id,
+            lineage_id=stage_dir.parent.name,
+            review_cycle_id=request_payload["review_cycle_id"],
+            author_materialization_digest=bound_digest,
+            review_cycle_stage_dir=stage_dir,
+        )
+        context_md_text = render_stage_contract_context_markdown(context_payload)
+    except ValueError as exc:
+        if "REVIEW_CONTRACT_CONTEXT_MISSING" not in str(exc) or not allow_synthetic_context:
+            raise
+        context_payload = {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": review_spec.stage_id,
+            "review_cycle_id": request_payload["review_cycle_id"],
+            "stage_dir": str(stage_dir),
+            "author_materialization_digest": bound_digest,
+            "contract_sources": {},
+            "reviewer_focus": ["Review current stage formal package credibility."],
+        }
+        context_md_text = (
+            f"# {review_spec.stage_id} Review Context\n\n"
+            "This fixture context binds the active request to current author outputs.\n"
+        )
+    context_yaml_path = request_dir / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = request_dir / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(context_md_text, encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = bound_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    (request_dir / "adversarial_review_request.yaml").write_text(
+        yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
     )
 
 
@@ -460,13 +513,13 @@ def test_review_cycle_binds_request_receipt_and_handoff_to_canonical_context(tmp
     handoff_prompt = payload["reviewer_handoff_prompt"]
     assert "Launcher boundary:" in handoff_prompt
     assert "The current/main conversation is the launcher, not the reviewer." in handoff_prompt
-    assert "Do not write reviewer_findings.raw.yaml from the launcher conversation." in handoff_prompt
+    assert "Do not write review/final_review.yaml from the launcher conversation." in handoff_prompt
     assert "Send this handoff to an independent reviewer/subagent." in handoff_prompt
     assert f"Active research repo root: {expected_context['project_root']}" in handoff_prompt
     assert f"Lineage root: {expected_context['lineage_root']}" in handoff_prompt
     assert f"Stage dir: {expected_context['stage_dir']}" in handoff_prompt
     assert (
-        "The QROS governance repo is not the active research repo unless the canonical paths above point there."
+        "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there."
         in handoff_prompt
     )
 
@@ -1053,7 +1106,11 @@ def test_run_research_session_reports_awaiting_adversarial_review_with_route_par
         stage_key=stage_key,
         stage_dir_name=stage_dir_name,
     )
-    _write_adversarial_review_request(stage_dir, stage_key=stage_key)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key=stage_key,
+        allow_synthetic_context=stage_key == "test_evidence",
+    )
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
 
@@ -1098,7 +1155,11 @@ def test_run_research_session_routes_fix_required_back_to_author_with_route_pari
         stage_key=stage_key,
         stage_dir_name=stage_dir_name,
     )
-    _write_adversarial_review_request(stage_dir, stage_key=stage_key)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key=stage_key,
+        allow_synthetic_context=stage_key == "test_evidence",
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1124,7 +1185,11 @@ def test_run_research_session_waits_for_reviewer_child_after_receipt(tmp_path: P
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir, reviewer_agent_id="reviewer-child-agent")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_reviewer_wait_case")
@@ -1143,7 +1208,11 @@ def test_run_research_session_waits_for_reviewer_write_scope_audit_before_closur
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1169,7 +1238,11 @@ def test_run_research_session_rejects_result_file_added_after_pass_audit(tmp_pat
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1188,8 +1261,8 @@ def test_run_research_session_rejects_result_file_added_after_pass_audit(tmp_pat
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_review_stale_pass_audit")
 
     assert status.current_stage == "test_evidence_review"
-    assert status.stage_status == "awaiting_reviewer_write_scope_audit"
-    assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert status.stage_status == "reviewer_scope_violation"
+    assert status.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (status.blocking_reason or "")
 
 
@@ -1200,7 +1273,11 @@ def test_run_research_session_keeps_review_pending_when_result_exists_without_re
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="test_evidence",
@@ -1225,7 +1302,11 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_yaml(
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
@@ -1268,7 +1349,11 @@ def test_run_research_session_keeps_review_pending_when_request_handoff_is_inval
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
     request_payload["launcher_checked_artifact_paths"] = []
@@ -1290,7 +1375,11 @@ def test_run_research_session_invalidates_stale_review_cycle_after_author_output
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,

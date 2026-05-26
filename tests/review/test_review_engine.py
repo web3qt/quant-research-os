@@ -12,6 +12,12 @@ from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
 )
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
+)
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 
 
@@ -78,9 +84,10 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
         "run_config.toml",
         "artifact_catalog.md",
         "field_dictionary.md",
+        "run_manifest.json",
     ]
     required_provenance_paths = ["program_execution_manifest.json"]
-    launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md"]
+    launcher_handoff_context_paths = ["artifact_catalog.md", "field_dictionary.md", "run_manifest.json"]
     handoff_manifest_path = stage_dir / "review" / "request" / "reviewer_handoff_manifest.yaml"
     review_context = {
         "project_root": str(stage_dir.parent.parent.parent.resolve()),
@@ -101,8 +108,10 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
             "permitted_input_roots": ["review/request", "author/formal"],
-            "permitted_output_roots": ["review/result"],
+            "permitted_output_roots": ["review/final_review.yaml"],
+            "required_reviewer_write_path": "review/final_review.yaml",
             "required_result_write_root": "review/result",
+            "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
@@ -128,7 +137,9 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "required_reviewer_mode": "adversarial",
             "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
+            "required_reviewer_write_path": "review/final_review.yaml",
             "required_result_write_root": "review/result",
+            "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
             "launcher_checked_artifact_paths": required_artifact_paths,
             "launcher_checked_provenance_paths": required_provenance_paths,
@@ -136,6 +147,30 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             **review_context,
         },
     )
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    context_payload = build_stage_contract_context(
+        stage_id=request_payload["stage"],
+        lineage_id=request_payload["lineage_id"],
+        review_cycle_id=request_payload["review_cycle_id"],
+        author_materialization_digest=author_digest,
+        review_cycle_stage_dir=stage_dir,
+    )
+    context_yaml_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(render_stage_contract_context_markdown(context_payload), encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = author_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def _handoff_manifest_digest(stage_dir: Path) -> str:
@@ -183,6 +218,45 @@ def _write_reviewer_receipt(
         review_cycle_id=receipt["review_cycle_id"],
         launcher_thread_id=receipt["launcher_thread_id"],
         reviewer_agent_id=receipt["reviewer_agent_id"],
+    )
+
+
+def _write_final_review(
+    stage_dir: Path,
+    *,
+    verdict: str = "PASS",
+    reviewer_identity: str = "reviewer-agent",
+    reviewer_agent_id: str = "reviewer-child-agent",
+) -> None:
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    reviewed_artifact_paths = sorted(request_payload["required_artifact_paths"], reverse=True)
+    reviewed_program_path = (
+        Path(request_payload["required_program_dir"]) / request_payload["required_program_entrypoint"]
+    ).as_posix()
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": request_payload["lineage_id"],
+            "stage_id": request_payload["stage"],
+            "reviewer_identity": reviewer_identity,
+            "reviewer_agent_id": reviewer_agent_id,
+            "reviewed_artifact_paths": reviewed_artifact_paths,
+            "reviewed_program_path": reviewed_program_path,
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": verdict,
+            "review_summary": "Final review projected from reviewer-authored closure.",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "advance",
+        },
     )
 
 
@@ -252,6 +326,96 @@ def test_run_stage_review_pass_path(tmp_path: Path) -> None:
     assert [event["event_type"] for event in trace_events].count("write_scope_audit_completed") >= 1
     assert trace_events[-1]["final_verdict"] == "PASS"
     assert trace_events[-1]["closure_written"] is True
+
+
+def test_run_stage_review_projects_final_review_and_runs_audit(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir)
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "adversarial_review_result.yaml").read_text(encoding="utf-8")
+    )
+    normalized_path = stage_dir / "review" / "result" / "final_review.normalized.yaml"
+    assert normalized_path.exists()
+    normalized_payload = yaml.safe_load(normalized_path.read_text(encoding="utf-8"))
+    audit_payload = yaml.safe_load(
+        (stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml").read_text(encoding="utf-8")
+    )
+
+    assert payload["final_verdict"] == "PASS"
+    assert result_payload["reviewer_execution_mode"] == "spawned_agent"
+    assert "review_summary" in normalized_payload
+    assert audit_payload["audit_status"] == "PASS"
+    assert audit_payload["unexpected_result_files"] == []
+    assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+    closure_payload = yaml.safe_load(
+        (stage_dir / "review" / "closure" / "stage_gate_review.yaml").read_text(encoding="utf-8")
+    )
+    assert closure_payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+
+
+def test_run_stage_review_final_review_fix_required_runs_audit(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir, verdict="FIX_REQUIRED")
+
+    payload = run_stage_review(
+        cwd=stage_dir,
+        reviewer_identity="reviewer-agent",
+        reviewer_role="reviewer",
+        reviewer_session_id="review-session",
+        reviewer_mode="adversarial",
+    )
+
+    result_path = stage_dir / "review" / "result" / "adversarial_review_result.yaml"
+    normalized_path = stage_dir / "review" / "result" / "final_review.normalized.yaml"
+    audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
+    audit_payload = yaml.safe_load(audit_path.read_text(encoding="utf-8"))
+
+    assert payload["review_loop_outcome"] == "FIX_REQUIRED"
+    assert payload["final_verdict"] is None
+    assert result_path.exists()
+    assert normalized_path.exists()
+    assert audit_path.exists()
+    assert audit_payload["audit_status"] == "PASS"
+    assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+
+
+def test_run_stage_review_rejects_preexisting_runtime_result_projection(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        {"review_cycle_id": "reviewer-created"},
+    )
+
+    try:
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        )
+    except ValueError as exc:
+        assert "REVIEWER_WRITE_SCOPE_VIOLATION" in str(exc)
+        assert "review/result is runtime-owned" in str(exc)
+    else:
+        raise AssertionError("expected pre-existing review/result projection to fail closed")
+    assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
 
 
 def test_run_stage_review_downgrades_to_retry_when_required_output_missing(tmp_path: Path) -> None:

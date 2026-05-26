@@ -385,6 +385,6 @@ def test_session_routes_fix_required_and_retry_differently_from_final_review(tmp
         assert retry_status["current_stage"] == "csf_train_freeze_review"
         assert retry_status["current_skill"] == "qros-stage-failure-handler"
         assert retry_status["review_state"] == "review_blocked_failure_handling"
-        assert retry_status["blocking_reason_code"] == "FAILURE_HANDLER_REQUIRED"
+        assert retry_status["blocking_reason_code"] == "FAILURE_HANDLING_REQUIRED"
         assert "failure" in retry_status["next_action"]
         assert "author" not in retry_status["next_action"]

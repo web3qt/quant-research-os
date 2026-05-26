@@ -210,29 +210,34 @@ For any author-eligible stage:
 - 用户确认后，`qros-research-session` 进入 `<stage>_review` lane，并在当前会话内部复用对应 stage-specific review 协议
 - review lane 必须用 `spawn_agent` 拉起**独立 reviewer 子代理**
 - 当前会话随后必须优先运行 `./.qros/bin/qros-review-cycle prepare` 注册 active review cycle、写出 `review/request/*`，并复用它输出的 reviewer handoff prompt
-- reviewer 子代理只允许读取 `review/request/*` 与 `author/formal/*`
+- reviewer 子代理只允许读取 `review/request/*`、`author/formal/*`，以及 active request 指定的 `required_program_dir` / `required_program_entrypoint` 所需的 stage program source
 - reviewer 子代理只允许写入 `review/final_review.yaml`
 - reviewer 子代理不得修改 `author/formal/*`
 - 当前主线程不得自己撰写 `review/final_review.yaml`
 - reviewer 正常只写 `review/final_review.yaml`
-- 当前主线程只能读取 `review/final_review.yaml`，再按 runtime state 推进 author-fix、failure handling、next-stage confirmation 或 deterministic closure artifacts
+- ordinary final review 是 strict receipt-bound：active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context
+- 当前主线程必须读取 `review/final_review.yaml`，先完成 receipt、normalized scope、author digest freshness 与 final review normalization 校验；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling
 
 ## Main-Agent Review Loop
 
 - 在 author lane 交给独立 reviewer 子代理之前，主 Agent 必须先做一次 `review-ready` 自查；不要把 reviewer 当成第一轮缺件检查器
 - `review-ready` 自查至少覆盖：当前 stage 必需 outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 可读取且不是 placeholder
-- 当前 runtime 只在 `mandate_review_confirmation_pending` 强制跑 deterministic review-entry preflight；这是 mandate-first / mandate-only rollout truth，对 reviewer lane 来说不是 optional check，而是进入 review 前的 mandatory reviewer-lane gate
-- 这道 mandate preflight 覆盖 artifact contract validation、mandate semantic validation、stage program provenance、placeholder / fake machine artifact gate，以及已接入的 time coverage research blocker
-- 如果这道 mandate preflight 已经失败，`review_preflight` 现在会直接返回 `FAIL`；time coverage blocker 会同时暴露为 `research_preflight_findings` 与现有 findings 通道，artifact contract / semantic blocker 会进入现有 findings 通道；不要再把 reviewer 当成第一轮发现入口
+- 当前 runtime 会在 `mandate_review_confirmation_pending`、`data_ready_review_confirmation_pending`、`csf_data_ready_review_confirmation_pending` 和 `tss_data_ready_review_confirmation_pending` 强制跑 deterministic review-entry preflight；对这些 reviewer lane 来说，这不是 optional check，而是进入 review 前的 mandatory reviewer-lane gate
+- 这道 preflight 覆盖 artifact contract validation、stage semantic validation、stage program provenance、placeholder / fake machine artifact gate，以及已接入的 research / upstream binding blocker
+- 如果这道 preflight 已经失败，`review_preflight` 现在会直接返回 `FAIL`；research blocker 会同时暴露为 `research_preflight_findings` 与现有 findings 通道，artifact contract / semantic / binding blocker 会进入现有 findings 通道；不要再把 reviewer 当成第一轮发现入口
 - 但这条 research blocker 不能盖过 protected review-state drift；只要 runtime state 已经触发 `REVIEW_STATE_PROJECTION_DRIFT`，就必须先按 drift fail-closed
-- 对其余 post-mandate `*_review_confirmation_pending`，当前 runtime 还没有统一强制这道 deterministic preflight；主 Agent 仍必须完成 `review-ready` 自查与 handoff 准备，但不要宣称这些阶段已经全量接入同一条 reviewer-lane gate
+- 对其余 post-data-ready `*_review_confirmation_pending`，当前 runtime 还没有统一强制这道 deterministic preflight；主 Agent 仍必须完成 `review-ready` 自查与 handoff 准备，但不要宣称这些阶段已经全量接入同一条 reviewer-lane gate
 - 如果 runtime 没有把当前 stage 放进 `*_review_confirmation_pending`，就说明当前 stage 还不是普通 review lane candidate；不要因为 artifacts 看起来“差不多齐了”就自行跳 review
 - 即使 runtime 仍把 `current_stage` 投影成 `*_review_confirmation_pending`，只要 `stage_status` / `blocking_reason_code` 已标明 blocked，也仍然不是 ordinary review-lane candidate
 - 发起 review 前，主 Agent 必须明确 handoff：这轮声称已完成的 outputs、希望 reviewer 验证的 formal gate、已知限制 / 未决假设 / 重点风险；不得盲交 reviewer
 - 当前 request / handoff 里还必须冻结 `launcher_review_ready_status`、`launcher_checked_artifact_paths`、`launcher_checked_provenance_paths`、`launcher_handoff_context_paths`
 - 当前 request 还会拆分 `stage_content_*` 与 `upstream_binding_*` scope：reviewer 只负责 stage-local 内容审查；上游绑定由 deterministic validator 负责
-- 当前 mandate-only rollout 下的 artifact contract、mandate semantic validation 与 upstream research preflight blocker 都属于 launcher/runtime 先行收口的范围，不属于 reviewer 的第一轮发现职责
+- 当前 review-entry preflight rollout 下的 artifact contract、stage semantic validation、stage program provenance 与 research/upstream binding blocker 都属于 launcher/runtime 先行收口的范围，不属于 reviewer 的第一轮发现职责
 - 一个 active review cycle 只允许一个 reviewer child；旧 cycle 未解决前，不得再并发起第二个 reviewer child
+- `AUTHOR_FIX_REQUIRED_BEFORE_REVIEW` means deterministic review-ready preflight failed; do not launch reviewer.
+- `REQUEST_REFRESH_REQUIRED` means active request/handoff must be refreshed before reviewer work continues.
+- `FINAL_REVIEW_REWRITE_REQUIRED` means the bound reviewer must rewrite `review/final_review.yaml`.
+- `REVIEWER_RESTART_REQUIRED` means the current reviewer cycle is invalid and a new cycle is required.
 - 若 `review/final_review.yaml` 的 `verdict = FIX_REQUIRED`，主 Agent 必须先阅读 `review/final_review.yaml`，回 author lane 修复，再刷新 `author/formal/*` 与 request scope 后通过 `qros-research-session` 重新进入 review confirmation / review lane
 - author outputs 一旦变化，旧的 receipt / result / audit 就只能当历史记录，不能继续拿来证明新的 author outputs
 

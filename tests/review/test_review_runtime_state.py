@@ -180,6 +180,28 @@ def test_compute_author_materialization_digest_reuses_unchanged_file_digest_cach
     assert (stage_dir / "review" / "state" / "materialization_digest_ledger.yaml").exists()
 
 
+def test_compute_author_materialization_digest_cached_path_is_order_insensitive(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "02_csf_data_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    for name in ("panel_manifest.json", "run_manifest.json", "program_execution_manifest.json"):
+        (formal_dir / name).write_text(f"{name}: ok\n", encoding="utf-8")
+
+    first = review_runtime_state.compute_author_materialization_digest(
+        artifact_root=formal_dir,
+        required_outputs=["panel_manifest.json", "run_manifest.json"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    second = review_runtime_state.compute_author_materialization_digest(
+        artifact_root=formal_dir,
+        required_outputs=["run_manifest.json", "panel_manifest.json"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+
+    assert second == first
+    assert (stage_dir / "review" / "state" / "materialization_digest_ledger.yaml").exists()
+
+
 def test_compute_author_materialization_digest_fresh_bypasses_corrupt_cache(
     tmp_path: Path,
 ) -> None:
@@ -206,3 +228,24 @@ def test_compute_author_materialization_digest_fresh_bypasses_corrupt_cache(
 
     assert fresh == cached
     assert "0" * 64 in ledger_path.read_text(encoding="utf-8")
+
+
+def test_author_materialization_digest_is_order_insensitive(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "02_csf_data_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    for name in ("panel_manifest.json", "run_manifest.json", "program_execution_manifest.json"):
+        (formal_dir / name).write_text(f"{name}: ok\n", encoding="utf-8")
+
+    first = review_runtime_state.compute_author_materialization_digest_fresh(
+        artifact_root=formal_dir,
+        required_outputs=["panel_manifest.json", "run_manifest.json"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+    second = review_runtime_state.compute_author_materialization_digest_fresh(
+        artifact_root=formal_dir,
+        required_outputs=["run_manifest.json", "panel_manifest.json"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+
+    assert second == first

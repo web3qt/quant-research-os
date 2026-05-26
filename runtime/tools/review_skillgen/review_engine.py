@@ -36,6 +36,10 @@ from runtime.tools.review_skillgen.stage_content_gate import (
     check_structural_gates,
 )
 from runtime.tools.review_skillgen.upstream_binding_validator import validate_upstream_bindings
+from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
+    run_reviewer_write_scope_audit,
+    validate_reviewer_write_scope_audit,
+)
 from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 
 
@@ -477,6 +481,7 @@ def _write_canonical_review_result(
     residual_risks: list[str],
     hard_gate_downgrade_detected: bool,
 ) -> dict[str, Any]:
+    review_result_dir.mkdir(parents=True, exist_ok=True)
     canonical = dict(review_result)
     canonical["final_verdict"] = final_verdict
     canonical["review_loop_outcome"] = review_loop_outcome
@@ -751,6 +756,27 @@ def run_stage_review(
         },
     }
 
+    canonical_review_result = _write_canonical_review_result(
+        review_result_dir=review_result_dir,
+        review_result=review_result,
+        final_verdict=final_verdict,
+        review_loop_outcome=review_loop_outcome,
+        blocking_findings=blocking_findings,
+        reservation_findings=reservation_findings,
+        info_findings=info_findings,
+        residual_risks=residual_risks,
+        hard_gate_downgrade_detected=hard_gate_downgrade_detected,
+    )
+    common_payload["adversarial_review_result"] = canonical_review_result
+    if receipt_payload:
+        audit_payload = run_reviewer_write_scope_audit(stage_dir)
+        validate_reviewer_write_scope_audit(
+            receipt_payload=receipt_payload,
+            audit_payload=audit_payload,
+            stage_dir=stage_dir,
+        )
+        common_payload["reviewer_write_scope_audit"] = audit_payload
+
     if review_loop_outcome == FIX_REQUIRED_OUTCOME:
         write_review_runtime_state(
             stage_dir,
@@ -790,17 +816,6 @@ def run_stage_review(
             "final_verdict": None,
         }
 
-    canonical_review_result = _write_canonical_review_result(
-        review_result_dir=review_result_dir,
-        review_result=review_result,
-        final_verdict=final_verdict,
-        review_loop_outcome=review_loop_outcome,
-        blocking_findings=blocking_findings,
-        reservation_findings=reservation_findings,
-        info_findings=info_findings,
-        residual_risks=residual_risks,
-        hard_gate_downgrade_detected=hard_gate_downgrade_detected,
-    )
     payload = build_review_payload(
         lineage_id=lineage_id,
         stage=stage,

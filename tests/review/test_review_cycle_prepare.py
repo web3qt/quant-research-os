@@ -94,7 +94,18 @@ def test_review_cycle_prepare_script_emits_handoff_prompt(tmp_path: Path) -> Non
     receipt_payload = yaml.safe_load(
         (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    manifest_payload = yaml.safe_load(
+        (stage_dir / request_payload["handoff_manifest_path"]).read_text(encoding="utf-8")
+    )
+    assert request_payload["required_reviewer_write_path"] == "review/final_review.yaml"
+    assert request_payload["required_result_write_root"] == "review/result"
+    assert manifest_payload["permitted_output_roots"] == ["review/final_review.yaml"]
+    assert manifest_payload["required_reviewer_write_path"] == "review/final_review.yaml"
     assert receipt_payload["reviewer_agent_id"] == "reviewer-child-1"
+    assert receipt_payload["write_root"] == "review/final_review.yaml"
 
 
 def test_review_cycle_prepare_preflights_runtime_config_before_writing_request(
@@ -147,6 +158,112 @@ def test_prepare_writes_stage_contract_context_files(tmp_path: Path) -> None:
     assert "stage_contract_context.md" in payload["reviewer_handoff_prompt"]
 
 
+def test_review_cycle_prepare_rejects_review_ready_preflight_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        return {
+            "stage": "mandate",
+            "lineage_id": lineage_root.name,
+            "status": "FAIL",
+            "content_findings": ["Missing required output: run_manifest.json"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _fake_run_review_preflight)
+
+    with pytest.raises(ValueError, match="AUTHOR_FIX_REQUIRED_BEFORE_REVIEW"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+            reviewer_identity="reviewer-agent",
+            reviewer_session_id="review-session",
+            launcher_session_id="launcher-session",
+            launcher_thread_id="launcher-thread",
+            reviewer_agent_id="reviewer-child-agent",
+            host="codex",
+        )
+
+    assert not (stage_dir / "review" / "request" / "adversarial_review_request.yaml").exists()
+
+
+def test_start_review_cycle_rejects_review_ready_preflight_failure_before_writing_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        return {
+            "stage": "mandate",
+            "lineage_id": lineage_root.name,
+            "status": "FAIL",
+            "content_findings": ["Missing required output: run_manifest.json"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _fake_run_review_preflight)
+
+    with pytest.raises(ValueError, match="AUTHOR_FIX_REQUIRED_BEFORE_REVIEW"):
+        start_review_cycle(
+            explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+            reviewer_identity="reviewer-agent",
+            reviewer_session_id="review-session",
+            launcher_session_id="launcher-session",
+            launcher_thread_id="launcher-thread",
+            reviewer_agent_id="reviewer-child-agent",
+        )
+
+    assert not (stage_dir / "review" / "request" / "adversarial_review_request.yaml").exists()
+    assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
+
+
+def test_review_cycle_prepare_preserves_active_cycle_guard_before_review_ready_preflight(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    start_review_cycle(
+        explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+        reviewer_identity="reviewer-agent",
+        reviewer_session_id="review-session-1",
+        launcher_session_id="launcher-session-1",
+        launcher_thread_id="launcher-thread-1",
+        reviewer_agent_id="reviewer-child-agent-1",
+    )
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
+    original_request_text = request_path.read_text(encoding="utf-8")
+    preflight_called = False
+
+    def _unexpected_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        nonlocal preflight_called
+        preflight_called = True
+        raise AssertionError("repeat active cycle should be rejected before review-ready preflight")
+
+    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _unexpected_run_review_preflight)
+
+    with pytest.raises(ValueError, match="active review cycle"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+            reviewer_identity="reviewer-agent",
+            reviewer_session_id="review-session-2",
+            launcher_session_id="launcher-session-2",
+            launcher_thread_id="launcher-thread-2",
+            reviewer_agent_id="reviewer-child-agent-2",
+            host="codex",
+        )
+
+    assert not preflight_called
+    assert request_path.read_text(encoding="utf-8") == original_request_text
+    receipt_payload = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
+    assert receipt_payload["reviewer_agent_id"] == "reviewer-child-agent-1"
+
+
 def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_without_runtime_state(
     tmp_path: Path,
 ) -> None:
@@ -166,7 +283,7 @@ def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_wi
     (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
     (stage_dir / "author" / "formal" / "mandate.md").write_text("changed after prepare\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -180,8 +297,12 @@ def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_wi
             host="codex",
         )
 
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
 
-def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is_old(tmp_path: Path) -> None:
+
+def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is_old(
+    tmp_path: Path,
+) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
 
     start_review_cycle(
@@ -204,7 +325,7 @@ def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is
     state_payload["review_bound_author_digest"] = "manually-diverged-current-digest"
     state_path.write_text(yaml.safe_dump(state_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -218,8 +339,12 @@ def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is
             host="codex",
         )
 
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
 
-def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_output(tmp_path: Path) -> None:
+
+def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_output(
+    tmp_path: Path,
+) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
 
     start_review_cycle(
@@ -248,7 +373,7 @@ def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_outpu
     (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
     (stage_dir / "author" / "formal" / "field_dictionary.md").write_text("changed later-added truth\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -261,6 +386,8 @@ def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_outpu
             reviewer_agent_id="reviewer-child-2",
             host="codex",
         )
+
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
 
 
 def test_qros_review_cycle_wrapper_exists() -> None:
@@ -299,6 +426,17 @@ def test_review_cycle_reset_archives_stale_cycle(tmp_path: Path) -> None:
         for path in reset_payload["archived_paths"]
     )
     assert reset_payload["next_action"] == "run qros-review-cycle prepare and request a fresh reviewer run"
+
+
+def test_current_unexpected_result_files_flags_runtime_projection_before_final_review(
+    tmp_path: Path,
+) -> None:
+    _lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    result_path = stage_dir / "review" / "result" / "adversarial_review_result.yaml"
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text("review_cycle_id: reviewer-created\n", encoding="utf-8")
+
+    assert current_unexpected_result_files(stage_dir) == ["adversarial_review_result.yaml"]
 
 
 def test_review_cycle_reset_script_archives_stale_cycle(tmp_path: Path) -> None:
@@ -340,7 +478,6 @@ def test_review_cycle_reset_script_archives_stale_cycle(tmp_path: Path) -> None:
 
 def test_review_cycle_validate_script_reports_preflight_status(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
-    (stage_dir / "author" / "formal" / "run_config.toml").write_text("version = 1\n", encoding="utf-8")
     script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
 
     result = run(

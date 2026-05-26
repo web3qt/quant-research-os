@@ -1,5 +1,7 @@
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def test_install_docs_reference_supported_commands() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
@@ -203,3 +205,27 @@ def test_qros_research_session_usage_documents_stage_author_context() -> None:
     assert "stage_author_context.md" in content
     assert "author truth entrypoint" in content
     assert "author orchestration" in content
+
+
+def test_review_operations_ux_docs_explain_preflight_and_recovery() -> None:
+    usage = (REPO_ROOT / "docs" / "guides" / "qros-research-session-usage.md").read_text(
+        encoding="utf-8"
+    )
+    shared = (REPO_ROOT / "docs" / "guides" / "qros-review-shared-protocol.md").read_text(
+        encoding="utf-8"
+    )
+    constraint_map = (
+        REPO_ROOT / "docs" / "guides" / "qros-review-constraint-map.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Review Operations Snapshot" in usage
+    assert "AUTHOR_FIX_REQUIRED_BEFORE_REVIEW" in usage
+    assert "REQUEST_REFRESH_REQUIRED" in usage
+    assert "csf_data_ready_review_confirmation_pending" in usage
+    assert "tss_data_ready_review_confirmation_pending" in usage
+    assert "FINAL_REVIEW_REWRITE_REQUIRED" in shared
+    assert "REVIEWER_RESTART_REQUIRED" in shared
+    assert "mandate-only" not in usage
+    assert "mandate-only" not in shared
+    assert "review-ready preflight" in constraint_map
+    assert "review/final_review.yaml" in constraint_map

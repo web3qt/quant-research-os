@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
@@ -20,6 +21,12 @@ from runtime.tools.review_skillgen.protocol_validator import load_and_validate_p
 from runtime.tools.review_skillgen.review_runtime_state import (
     compute_author_materialization_digest,
     write_review_runtime_state,
+)
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_reviewer_write_scope_baseline
 from tests.helpers.lineage_program_support import ensure_stage_program, write_fake_stage_provenance
@@ -130,6 +137,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
         "handoff_manifest_digest": handoff_manifest_digest,
         "required_result_write_root": "review/result",
+        "author_program_hash": "test-hash",
         "launcher_review_ready_status": "complete",
         "launcher_checked_artifact_paths": required_artifact_paths,
         "launcher_checked_provenance_paths": required_provenance_paths,
@@ -145,6 +153,8 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         "launcher_thread_id": "leader-thread",
         "execution_mode": "spawned_agent",
         "reviewer_agent_id": "reviewer-child-agent",
+        "reviewer_context_source": "explicit_handoff_only",
+        "reviewer_history_inheritance": "none",
         "host": "codex",
         "reviewer_invocation_kind": "codex_spawn_agent",
         "context_isolation_policy": "fork_context_false",
@@ -173,6 +183,7 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
         "downstream_permissions": [],
     }
     _write_yaml(stage_dir / "review" / "request" / "adversarial_review_request.yaml", request_payload)
+    _bind_request_context(stage_dir)
     _write_yaml(stage_dir / "review" / "request" / "reviewer_receipt.yaml", receipt_payload)
     author_digest = compute_author_materialization_digest(
         artifact_root=stage_dir / "author" / "formal",
@@ -197,7 +208,35 @@ def _write_review_request_and_result(stage_dir: Path, *, stage: str) -> None:
     _write_yaml(stage_dir / "review" / "result" / "reviewer_findings.raw.yaml", raw_findings_payload)
 
 
-def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(tmp_path: Path) -> None:
+def _bind_request_context(stage_dir: Path) -> dict:
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
+    author_digest = compute_author_materialization_digest(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    context_payload = build_stage_contract_context(
+        stage_id=request_payload["stage"],
+        lineage_id=request_payload["lineage_id"],
+        review_cycle_id=request_payload["review_cycle_id"],
+        author_materialization_digest=author_digest,
+        review_cycle_stage_dir=stage_dir,
+    )
+    context_yaml_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = stage_dir / "review" / "request" / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(render_stage_contract_context_markdown(context_payload), encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = author_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return request_payload
+
+
+def test_protocol_validator_rejects_final_review_without_receipt_raw_or_closer(tmp_path: Path) -> None:
     stage_dir = _prepare_csf_stage(
         tmp_path,
         stage_key="csf_signal_ready",
@@ -234,6 +273,7 @@ def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(t
         yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
+    request_payload = _bind_request_context(stage_dir)
 
     for path in (
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
@@ -253,8 +293,8 @@ def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(t
             "reviewer_agent_id": "reviewer-child-agent",
             "reviewed_artifact_paths": ["artifact_catalog.md"],
             "reviewed_program_path": "program/cross_sectional_factor/csf_signal_ready/run_stage.py",
-            "reviewed_artifact_digest": "sha256:artifact-digest",
-            "reviewed_program_digest": "sha256:program-digest",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
             "verdict": "CONDITIONAL PASS",
             "review_summary": "scope review completed",
             "blocking_findings": [],
@@ -268,22 +308,19 @@ def test_protocol_validator_accepts_final_review_without_receipt_raw_or_closer(t
         },
     )
 
-    payload = load_and_validate_protocol(
-        review_request_dir=stage_dir / "review" / "request",
-        review_result_dir=stage_dir / "review" / "result",
-        request_loader=load_adversarial_review_request,
-        receipt_loader=load_reviewer_receipt,
-        runtime_identity=ReviewerRuntimeIdentity(
-            reviewer_identity="reviewer-agent",
-            reviewer_role="reviewer",
-            reviewer_session_id="review-session",
-            reviewer_mode="adversarial",
-        ),
-    )
-
-    assert payload["receipt_payload"] == {}
-    assert payload["audit_payload"] == {}
-    assert payload["review_result"]["review_loop_outcome"] == "CLOSURE_READY_CONDITIONAL_PASS"
+    with pytest.raises(ValueError, match="REVIEWER_UNBOUND"):
+        load_and_validate_protocol(
+            review_request_dir=stage_dir / "review" / "request",
+            review_result_dir=stage_dir / "review" / "result",
+            request_loader=load_adversarial_review_request,
+            receipt_loader=load_reviewer_receipt,
+            runtime_identity=ReviewerRuntimeIdentity(
+                reviewer_identity="reviewer-agent",
+                reviewer_role="reviewer",
+                reviewer_session_id="review-session",
+                reviewer_mode="adversarial",
+            ),
+        )
 
 
 def test_run_stage_review_blocks_csf_test_evidence_when_rank_ic_is_non_positive(tmp_path: Path) -> None:

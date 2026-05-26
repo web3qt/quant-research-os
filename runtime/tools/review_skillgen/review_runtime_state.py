@@ -10,6 +10,7 @@ import yaml
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
 )
+from runtime.tools.review_skillgen.review_scope import normalize_review_paths
 
 
 REVIEW_RUNTIME_STATE_FILENAME = "review_runtime_state.yaml"
@@ -264,7 +265,7 @@ def compute_author_materialization_digest(
     ledger_path = materialization_digest_ledger_path_from_artifact_root(artifact_root)
     ledger = _load_materialization_digest_ledger(ledger_path)
     parts: list[bytes] = []
-    for name in list(required_outputs) + list(required_provenance_paths):
+    for name in normalize_review_paths(required_outputs) + normalize_review_paths(required_provenance_paths):
         target = artifact_root / name
         parts.extend(
             [
@@ -289,7 +290,7 @@ def compute_author_materialization_digest_fresh(
 ) -> str:
     artifact_root = artifact_root.resolve()
     parts: list[bytes] = []
-    for name in list(required_outputs) + list(required_provenance_paths):
+    for name in normalize_review_paths(required_outputs) + normalize_review_paths(required_provenance_paths):
         target = artifact_root / name
         parts.extend(
             [

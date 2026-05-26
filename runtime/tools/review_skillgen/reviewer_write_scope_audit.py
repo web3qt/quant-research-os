@@ -14,6 +14,7 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
     load_adversarial_review_result,
     load_reviewer_receipt,
 )
+from runtime.tools.review_skillgen.final_review_normalizer import NORMALIZED_FINAL_REVIEW_FILENAME
 from runtime.tools.review_skillgen.review_cycle_trace import (
     REVIEW_CYCLE_TRACE_FILENAME,
     append_review_cycle_event,
@@ -27,6 +28,7 @@ REVIEW_RESULT_ROOT = Path("review/result")
 REVIEW_FINAL_REVIEW_PATH = Path("review") / FINAL_REVIEW_FILENAME
 ALLOWED_RESULT_FILENAMES = {
     ADVERSARIAL_REVIEW_RESULT_FILENAME,
+    NORMALIZED_FINAL_REVIEW_FILENAME,
     RAW_REVIEWER_FINDINGS_FILENAME,
     "review_findings.yaml",
     REVIEWER_WRITE_SCOPE_AUDIT_FILENAME,
@@ -128,12 +130,30 @@ def current_unexpected_result_files(stage_dir: Path) -> list[str]:
     result_dir = stage_dir / REVIEW_RESULT_ROOT
     if not result_dir.exists():
         return []
+    result_names = {path.name for path in result_dir.iterdir() if path.is_file()}
+    legacy_runtime_projection_present = {
+        ADVERSARIAL_REVIEW_RESULT_FILENAME,
+        "review_findings.yaml",
+    }.issubset(result_names)
     unexpected: list[str] = []
     for path in sorted(result_dir.rglob("*")):
         if not path.is_file():
             continue
         rel = path.relative_to(result_dir)
         if len(rel.parts) != 1 or rel.name not in ALLOWED_RESULT_FILENAMES:
+            unexpected.append(rel.as_posix())
+            continue
+        final_review_path = stage_dir / REVIEW_FINAL_REVIEW_PATH
+        # review/result is runtime-owned projection/audit state. Before the
+        # reviewer-owned final review exists, no reviewer-created result file is
+        # acceptable even if its filename is canonical. The only legacy
+        # exception is the complete runtime projection pair produced from
+        # reviewer_findings.raw.yaml.
+        if (
+            rel.name != REVIEWER_WRITE_SCOPE_AUDIT_FILENAME
+            and not final_review_path.exists()
+            and not legacy_runtime_projection_present
+        ):
             unexpected.append(rel.as_posix())
     return unexpected
 

@@ -157,7 +157,7 @@ graph LR
     R -->|"exit 5"| ExecFail["程序执行 / provenance 失败<br/>PROGRAM_EXECUTION_FAILED 等"]
     R -->|"exit 6"| BadOut["产物不完整<br/>OUTPUTS_INVALID"]
     R -->|"exit 7"| ReviewPend["等待 review lane<br/>REVIEW_PENDING 等"]
-    R -->|"exit 8"| FailHandle["需要失败处理<br/>FAILURE_HANDLER_REQUIRED"]
+    R -->|"exit 8"| FailHandle["需要失败处理<br/>FAILURE_HANDLING_REQUIRED"]
 ```
 
 这里的退出码是 Python 入口 `run_research_session.py` 的语义退出码：
@@ -311,7 +311,7 @@ graph TB
     end
 ```
 
-Runtime 的主会话状态机判定逻辑更准确地说是：**required outputs 存在于磁盘 + provenance 存在 = author 阶段可进入 review lane**。普通 review 路径不再要求 reviewer 先写 raw findings 再由 closer 合并。独立 reviewer 子代理直接写 `review/final_review.yaml`，主线程读取该文件的 `verdict`，再结合 closure artifacts 与部分 stage-specific contract gates（尤其是 CSF 结构 / 指标门）决定继续 author-fix、next-stage confirmation 还是 failure handling。整个流程都不依赖对话历史，也不依赖 Agent 记忆。
+Runtime 的主会话状态机判定逻辑更准确地说是：**required outputs 存在于磁盘 + provenance 存在 = author 阶段可进入 review lane**。普通 review 路径不再要求 reviewer 先写 raw findings 再由 closer 合并；独立 reviewer 子代理只写 `review/final_review.yaml`。主线程 / runtime 必须先校验 active `reviewer_receipt.yaml`、normalized scope、author digest freshness 与 final review normalization；随后投影 canonical `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才结合 closure artifacts 与部分 stage-specific contract gates（尤其是 CSF 结构 / 指标门）决定继续 author-fix、next-stage confirmation 还是 failure handling。整个流程都不依赖对话历史，也不依赖 Agent 记忆。
 
 ---
 

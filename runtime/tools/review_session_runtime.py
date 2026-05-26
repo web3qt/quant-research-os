@@ -17,18 +17,21 @@ from runtime.tools.research_session import (
 )
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ADVERSARIAL_REVIEW_REQUEST_FILENAME,
+    FINAL_REVIEW_FILENAME,
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
     load_adversarial_review_request,
 )
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_operations import REVIEW_READY_READY_TO_LAUNCH, map_review_ready_preflight_payload
 from runtime.tools.review_skillgen.review_engine import (
     CHECKLIST_PATH as DEFAULT_CHECKLIST_PATH,
     GATES_PATH as DEFAULT_GATES_PATH,
     ReviewRuntimeConfigurationError,
     _require_stage_config,
 )
+from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
@@ -68,7 +71,11 @@ def _current_author_digest(stage_dir: Path, spec) -> str:
     )
 
 
-def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list[str]:
+def _archive_if_stale_or_closed(
+    stage_dir: Path,
+    *,
+    current_digest: str,
+) -> list[str]:
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     if not request_path.exists():
         return []
@@ -107,6 +114,19 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
         f"review cycle {request_payload['review_cycle_id']} is superseded; "
         "run qros-review-cycle reset --archive-stale-cycle first, then prepare a fresh reviewer run"
     )
+
+
+def _guard_review_ready_preflight(*, stage_dir: Path, lineage_root: Path) -> None:
+    preflight_payload = run_review_preflight(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        }
+    )
+    preflight_result = map_review_ready_preflight_payload(preflight_payload)
+    if preflight_result.status != REVIEW_READY_READY_TO_LAUNCH:
+        details = "; ".join(preflight_result.blocking_findings[:3]) or "review-ready preflight failed"
+        raise ValueError(f"{preflight_result.status}: {details}")
 
 
 def _preflight_review_runtime_config(*, stage: str, stage_dir: Path, lineage_root: Path) -> None:
@@ -213,6 +233,7 @@ def _prepare_review_cycle(
     else:
         current_digest = _current_author_digest(stage_dir, spec)
     archived_paths = _archive_if_stale_or_closed(stage_dir, current_digest=current_digest)
+    _guard_review_ready_preflight(stage_dir=stage_dir, lineage_root=lineage_root)
 
     request_payload = ensure_adversarial_review_request(
         stage_dir,
@@ -330,13 +351,33 @@ def _reviewer_handoff_prompt(
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
     author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
     review_root = _display_path(stage_dir / "review", display_root=display_root)
-    final_review_path = _display_path(stage_dir / "review" / "final_review.yaml", display_root=display_root)
+    final_review_path = _display_path(stage_dir / "review" / FINAL_REVIEW_FILENAME, display_root=display_root)
     request_payload = payload["request_payload"]
     receipt_payload = payload["receipt_payload"]
     stage_contract_context_yaml_path = request_payload.get("stage_contract_context_yaml_path")
     stage_contract_context_md_path = request_payload.get("stage_contract_context_md_path")
+    expected_artifact_digest = request_payload.get("bound_author_materialization_digest", "<artifact digest>")
+    expected_program_digest = request_payload.get("author_program_hash", "<program digest>")
+    expected_artifact_paths = request_payload.get("stage_content_artifact_paths")
+    if not isinstance(expected_artifact_paths, list) or not all(isinstance(item, str) for item in expected_artifact_paths):
+        expected_artifact_paths = request_payload.get("required_artifact_paths", [])
+    expected_artifact_paths_text = yaml.safe_dump(
+        list(expected_artifact_paths),
+        default_flow_style=True,
+        sort_keys=False,
+        allow_unicode=True,
+    ).strip()
+    required_program_dir = request_payload.get("required_program_dir")
+    required_program_entrypoint = request_payload.get("required_program_entrypoint")
+    if isinstance(required_program_dir, str) and isinstance(required_program_entrypoint, str):
+        reviewed_program_path = (Path(required_program_dir) / required_program_entrypoint).as_posix()
+        program_read_scope = f"{required_program_dir}/{required_program_entrypoint} and any stage program source it imports"
+    else:
+        reviewed_program_path = "<relative path>"
+        program_read_scope = "active request stage program source"
     lines = [
         f"Handoff for QROS {payload['stage']} adversarial review ({host}).",
+        "Do not infer review truth from prior chat. This handoff, review/request/*, author/formal/*, and the active stage program source are the review inputs.",
         "",
         "Launcher boundary:",
         "- The current/main conversation is the launcher, not the reviewer.",
@@ -381,12 +422,13 @@ def _reviewer_handoff_prompt(
         "Permitted reads only:",
         f"- {request_root}/*",
         f"- {author_root}/*",
+        f"- {program_read_scope}",
         "",
         "Read these generated contract context files before evaluating stage truth:",
         f"- {_display_path(stage_dir / stage_contract_context_yaml_path, display_root=display_root) if isinstance(stage_contract_context_yaml_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_YAML_FILENAME}",
         f"- {_display_path(stage_dir / stage_contract_context_md_path, display_root=display_root) if isinstance(stage_contract_context_md_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_MD_FILENAME}",
         "",
-        "Permitted write only:",
+        "Write exactly one reviewer-owned file:",
         f"- {final_review_path}",
         "",
         "Write exactly one canonical machine-readable review artifact.",
@@ -395,10 +437,10 @@ def _reviewer_handoff_prompt(
         f"stage_id: {payload['stage']}",
         f"reviewer_identity: {reviewer_identity}",
         f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
-        "reviewed_artifact_paths: [<relative paths under author/formal>]",
-        "reviewed_program_path: <relative path>",
-        "reviewed_artifact_digest: <artifact digest>",
-        "reviewed_program_digest: <program digest>",
+        f"reviewed_artifact_paths: {expected_artifact_paths_text}",
+        f"reviewed_program_path: {reviewed_program_path}",
+        f"reviewed_artifact_digest: {expected_artifact_digest}",
+        f"reviewed_program_digest: {expected_program_digest}",
         "verdict: one of PASS, CONDITIONAL PASS, FIX_REQUIRED, RETRY, NO-GO, CHILD LINEAGE",
         "review_summary: <single sentence>",
         "blocking_findings: []",
@@ -424,9 +466,15 @@ def prepare_review_cycle_for_handoff(
     reviewer_agent_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
     payload = start_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,
@@ -458,9 +506,15 @@ def start_review_cycle(
     reviewer_agent_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
     prepared = _prepare_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )
@@ -490,9 +544,15 @@ def start_review_session(
     launcher_thread_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
     prepared = _prepare_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )

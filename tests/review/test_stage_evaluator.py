@@ -92,14 +92,6 @@ def test_write_stage_evaluator_artifacts_writes_current_and_ledger_for_passed_st
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _rewrite_active_request_to_old_subset(
-        stage_dir,
-        required_artifact_paths=[
-            "mandate.md",
-            "research_scope.md",
-        ],
-        rewrite_bound_digest=False,
-    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -182,14 +174,6 @@ def test_stage_evaluator_matches_runtime_for_fix_required_review_state(tmp_path:
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _rewrite_active_request_to_old_subset(
-        stage_dir,
-        required_artifact_paths=[
-            "mandate.md",
-            "research_scope.md",
-        ],
-        rewrite_bound_digest=False,
-    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -215,14 +199,6 @@ def test_stage_evaluator_matches_runtime_for_review_audit_pending_state(tmp_path
     _write_minimal_stage_outputs(stage_dir, stage="mandate")
     write_fake_stage_provenance(lineage_root, "mandate")
     _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
-    _rewrite_active_request_to_old_subset(
-        stage_dir,
-        required_artifact_paths=[
-            "mandate.md",
-            "research_scope.md",
-        ],
-        rewrite_bound_digest=False,
-    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -271,7 +247,7 @@ def test_stage_evaluator_rejects_result_file_added_after_pass_audit(tmp_path: Pa
     assert evaluator["can_progress"] is False
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in evaluator["reason"]
     assert session.current_stage == "mandate_review"
-    assert session.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert session.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
     assert "REVIEWER_WRITE_SCOPE_VIOLATION" in (session.blocking_reason or "")
 
 
