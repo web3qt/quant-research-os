@@ -11,9 +11,13 @@ from runtime.tools.review_operations import (
     OP_REVIEWER_RESTART_REQUIRED,
     OP_REVIEW_NOT_STARTED,
     OP_REVIEW_PREPARED,
+    REVIEW_READY_AUTHOR_FIX_REQUIRED,
+    REVIEW_READY_FAILURE_HANDLING_REQUIRED,
+    REVIEW_READY_READY_TO_LAUNCH,
     ReviewOperationSnapshot,
     build_review_operations_snapshot,
     classify_review_operation,
+    map_review_ready_preflight_payload,
 )
 
 
@@ -188,3 +192,46 @@ def test_classify_review_operation_maps_pass_for_retry_to_failure_handling() -> 
 
     assert operation.operation == OP_FAILURE_HANDLING_REQUIRED
     assert operation.blocking_reason_code == "FAILURE_HANDLING_REQUIRED"
+
+
+def test_map_review_ready_preflight_payload_passes_ready_to_launch() -> None:
+    result = map_review_ready_preflight_payload(
+        {
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+    )
+
+    assert result.status == REVIEW_READY_READY_TO_LAUNCH
+    assert result.blocking_findings == []
+
+
+def test_map_review_ready_preflight_payload_blocks_author_fix() -> None:
+    result = map_review_ready_preflight_payload(
+        {
+            "status": "FAIL",
+            "content_findings": ["Missing required output: run_manifest.json"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+    )
+
+    assert result.status == REVIEW_READY_AUTHOR_FIX_REQUIRED
+    assert result.blocking_reason_code == "OUTPUTS_INVALID"
+    assert result.blocking_findings == ["Missing required output: run_manifest.json"]
+
+
+def test_map_review_ready_preflight_payload_blocks_failure_handling_for_failure_package() -> None:
+    result = map_review_ready_preflight_payload(
+        {
+            "status": "FAIL",
+            "content_findings": ["FAILURE_DISPOSITION_REQUIRED: latest failure package owns this stage"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+    )
+
+    assert result.status == REVIEW_READY_FAILURE_HANDLING_REQUIRED
+    assert result.blocking_reason_code == "FAILURE_DISPOSITION_REQUIRED"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from runtime.tools.review_skillgen.adversarial_review_contract import FINAL_REVIEW_FILENAME
 
@@ -15,6 +16,11 @@ OP_FINAL_REVIEW_REWRITE_REQUIRED = "FINAL_REVIEW_REWRITE_REQUIRED"
 OP_REVIEWER_RESTART_REQUIRED = "REVIEWER_RESTART_REQUIRED"
 OP_FAILURE_HANDLING_REQUIRED = "FAILURE_HANDLING_REQUIRED"
 OP_NEXT_STAGE_CONFIRMATION_REQUIRED = "NEXT_STAGE_CONFIRMATION_REQUIRED"
+
+REVIEW_READY_READY_TO_LAUNCH = "READY_TO_LAUNCH_REVIEWER"
+REVIEW_READY_AUTHOR_FIX_REQUIRED = "AUTHOR_FIX_REQUIRED_BEFORE_REVIEW"
+REVIEW_READY_REQUEST_REFRESH_REQUIRED = "REQUEST_REFRESH_REQUIRED"
+REVIEW_READY_FAILURE_HANDLING_REQUIRED = "FAILURE_HANDLING_REQUIRED"
 
 
 @dataclass(frozen=True)
@@ -45,6 +51,44 @@ class RecommendedReviewOperation:
     operation: str
     blocking_reason_code: str | None
     blocking_reason: str
+
+
+@dataclass(frozen=True)
+class ReviewReadyPreflightResult:
+    status: str
+    blocking_reason_code: str | None
+    blocking_findings: list[str]
+
+
+def map_review_ready_preflight_payload(payload: dict[str, Any]) -> ReviewReadyPreflightResult:
+    findings = [
+        str(item)
+        for key in ("content_findings", "upstream_binding_findings", "research_preflight_findings")
+        for item in (payload.get(key) or [])
+    ]
+    if payload.get("status") == "PASS" and not findings:
+        return ReviewReadyPreflightResult(
+            status=REVIEW_READY_READY_TO_LAUNCH,
+            blocking_reason_code=None,
+            blocking_findings=[],
+        )
+    if any("FAILURE_DISPOSITION_REQUIRED" in item or "FAILURE_HANDLING_REQUIRED" in item for item in findings):
+        return ReviewReadyPreflightResult(
+            status=REVIEW_READY_FAILURE_HANDLING_REQUIRED,
+            blocking_reason_code="FAILURE_DISPOSITION_REQUIRED",
+            blocking_findings=findings,
+        )
+    if any("REVIEW_CONTRACT_CONTEXT_STALE" in item or "author digest" in item.lower() for item in findings):
+        return ReviewReadyPreflightResult(
+            status=REVIEW_READY_REQUEST_REFRESH_REQUIRED,
+            blocking_reason_code="AUTHOR_OUTPUTS_STALE",
+            blocking_findings=findings,
+        )
+    return ReviewReadyPreflightResult(
+        status=REVIEW_READY_AUTHOR_FIX_REQUIRED,
+        blocking_reason_code="OUTPUTS_INVALID",
+        blocking_findings=findings,
+    )
 
 
 def classify_review_operation(
