@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import subprocess
 import sys
@@ -8,6 +9,7 @@ from pathlib import Path
 
 import yaml
 
+import runtime.tools.progress_runtime as progress_runtime_module
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
@@ -283,6 +285,66 @@ def test_progress_reports_same_review_scope_mismatch_as_session(tmp_path: Path) 
 
     payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
 
+    assert payload["blocking_reason_code"] == "REVIEW_SCOPE_MISMATCH"
+    assert payload["stage_status"] == "review_scope_mismatch"
+
+
+def test_progress_preserves_built_review_operation_code_before_eligibility_override(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = _touch_lineage(outputs_root, "built_scope_mismatch_case")
+    (lineage_root / "01_mandate").mkdir(parents=True)
+    monkeypatch.setattr(
+        "runtime.tools.progress_runtime.detect_session_stage",
+        lambda root: "mandate_review_confirmation_pending",
+    )
+
+    eligibility_called = False
+    original_summarize = progress_runtime_module.summarize_session_status
+
+    def summarize_with_candidate_review_operation(**kwargs):
+        status = original_summarize(**kwargs)
+        if eligibility_called:
+            return status
+        return replace(
+            status,
+            stage_status="review_scope_mismatch",
+            blocking_reason_code="REVIEW_SCOPE_MISMATCH",
+            blocking_reason="reviewed_artifact_paths do not match active request scope",
+            next_action="Rewrite review/final_review.yaml against the active request.",
+        )
+
+    def ineligible_author_output_blocker(**kwargs) -> ReviewEligibilityStatus:
+        nonlocal eligibility_called
+        eligibility_called = True
+        return ReviewEligibilityStatus(
+            eligible_for_review=False,
+            blocking_reason_code="AUTHOR_OUTPUTS_INVALID",
+            blocking_reason="Author outputs must be repaired before review entry.",
+            review_blocking_surface="semantic_gate",
+            authorized_review_skill=None,
+            requires_failure_handling=False,
+            failure_stage=None,
+            failure_reason_summary=None,
+        )
+
+    monkeypatch.setattr(
+        progress_runtime_module,
+        "summarize_session_status",
+        summarize_with_candidate_review_operation,
+    )
+    monkeypatch.setattr(
+        progress_runtime_module,
+        "compute_review_eligibility",
+        ineligible_author_output_blocker,
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert eligibility_called is False
+    assert payload["current_stage"] == "mandate_review_confirmation_pending"
     assert payload["blocking_reason_code"] == "REVIEW_SCOPE_MISMATCH"
     assert payload["stage_status"] == "review_scope_mismatch"
 

@@ -27,6 +27,15 @@ from runtime.tools.review_skillgen.protected_state_guard import ProtectedStateEr
 from runtime.tools.review_resume_protocol import build_direct_handoff_capsule
 
 
+PROTECTED_REVIEW_BLOCKING_REASON_CODES = {
+    "REVIEW_SCOPE_MISMATCH",
+    "REVIEW_FORMAT_INVALID",
+    "AUTHOR_OUTPUTS_STALE",
+    "REVIEWER_SCOPE_VIOLATION",
+    "REVIEWER_UNBOUND",
+}
+
+
 class ProgressError(RuntimeError):
     pass
 
@@ -144,7 +153,10 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
             runtime_next_action_override=runtime_next_action_override,
         )
 
+    candidate_status = _build_status()
     if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
+        if candidate_status.blocking_reason_code in PROTECTED_REVIEW_BLOCKING_REASON_CODES:
+            return candidate_status
         preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
             lineage_root=lineage_root,
             current_stage=current_stage,
@@ -163,15 +175,6 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
                 review_skill=review_skill,
             )
             if not eligibility.eligible_for_review:
-                protected_review_codes = {
-                    "REVIEW_SCOPE_MISMATCH",
-                    "REVIEW_FORMAT_INVALID",
-                    "AUTHOR_OUTPUTS_STALE",
-                    "REVIEWER_SCOPE_VIOLATION",
-                    "REVIEWER_UNBOUND",
-                }
-                if runtime_blocking_reason_code_override in protected_review_codes:
-                    return _build_status()
                 can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
                 requires_failure_handling = (
                     eligibility.requires_failure_handling and can_route_failure
@@ -205,7 +208,9 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
                     runtime_stage_status_override = "awaiting_author_fix"
                     runtime_next_action_override = next_action
 
-    return _build_status()
+    if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
+        return _build_status()
+    return candidate_status
 
 
 def progress_status_payload(*, outputs_root: Path, lineage_id: str | None = None) -> dict[str, object]:
