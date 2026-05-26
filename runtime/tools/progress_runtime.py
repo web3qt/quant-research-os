@@ -111,6 +111,39 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
                 research_preflight_status.blocker_code or "OUTPUTS_INVALID"
             )
             runtime_next_action_override = next_action
+    why_now, open_risks = session_transition_summary(lineage_root, current_stage)
+    route_contract = current_route_contract(lineage_root)
+
+    def _build_status():
+        return summarize_session_status(
+            lineage_id=lineage_root.name,
+            lineage_root=lineage_root,
+            lineage_mode=f"progress_{selection_mode}",
+            lineage_selection_reason=f"qros-progress selected {lineage_root.name} using {selection_mode} mode",
+            current_stage=current_stage,
+            current_route=current_research_route(lineage_root),
+            artifacts_written=[],
+            gate_status=gate_status,
+            next_action=next_action,
+            why_now=why_now,
+            open_risks=open_risks,
+            factor_role=route_contract["factor_role"],
+            factor_structure=route_contract["factor_structure"],
+            portfolio_expression=route_contract["portfolio_expression"],
+            neutralization_policy=route_contract["neutralization_policy"],
+            review_verdict=review_verdict,
+            requires_failure_handling=requires_failure_handling,
+            failure_stage=failure_stage,
+            failure_reason_summary=failure_reason_summary,
+            current_skill=current_skill_override,
+            why_this_skill=why_this_skill_override,
+            blocking_reason=blocking_reason_override,
+            resume_hint=resume_hint_override,
+            runtime_stage_status_override=runtime_stage_status_override,
+            runtime_blocking_reason_code_override=runtime_blocking_reason_code_override,
+            runtime_next_action_override=runtime_next_action_override,
+        )
+
     if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
         preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
             lineage_root=lineage_root,
@@ -130,6 +163,15 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
                 review_skill=review_skill,
             )
             if not eligibility.eligible_for_review:
+                protected_review_codes = {
+                    "REVIEW_SCOPE_MISMATCH",
+                    "REVIEW_FORMAT_INVALID",
+                    "AUTHOR_OUTPUTS_STALE",
+                    "REVIEWER_SCOPE_VIOLATION",
+                    "REVIEWER_UNBOUND",
+                }
+                if runtime_blocking_reason_code_override in protected_review_codes:
+                    return _build_status()
                 can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
                 requires_failure_handling = (
                     eligibility.requires_failure_handling and can_route_failure
@@ -163,36 +205,7 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
                     runtime_stage_status_override = "awaiting_author_fix"
                     runtime_next_action_override = next_action
 
-    why_now, open_risks = session_transition_summary(lineage_root, current_stage)
-    route_contract = current_route_contract(lineage_root)
-    return summarize_session_status(
-        lineage_id=lineage_root.name,
-        lineage_root=lineage_root,
-        lineage_mode=f"progress_{selection_mode}",
-        lineage_selection_reason=f"qros-progress selected {lineage_root.name} using {selection_mode} mode",
-        current_stage=current_stage,
-        current_route=current_research_route(lineage_root),
-        artifacts_written=[],
-        gate_status=gate_status,
-        next_action=next_action,
-        why_now=why_now,
-        open_risks=open_risks,
-        factor_role=route_contract["factor_role"],
-        factor_structure=route_contract["factor_structure"],
-        portfolio_expression=route_contract["portfolio_expression"],
-        neutralization_policy=route_contract["neutralization_policy"],
-        review_verdict=review_verdict,
-        requires_failure_handling=requires_failure_handling,
-        failure_stage=failure_stage,
-        failure_reason_summary=failure_reason_summary,
-        current_skill=current_skill_override,
-        why_this_skill=why_this_skill_override,
-        blocking_reason=blocking_reason_override,
-        resume_hint=resume_hint_override,
-        runtime_stage_status_override=runtime_stage_status_override,
-        runtime_blocking_reason_code_override=runtime_blocking_reason_code_override,
-        runtime_next_action_override=runtime_next_action_override,
-    )
+    return _build_status()
 
 
 def progress_status_payload(*, outputs_root: Path, lineage_id: str | None = None) -> dict[str, object]:

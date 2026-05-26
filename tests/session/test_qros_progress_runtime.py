@@ -11,6 +11,13 @@ import yaml
 from runtime.tools.progress_runtime import ProgressError, latest_lineage_id, progress_status_payload
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
+from tests.session.test_research_session_runtime import (
+    _review_request_payload,
+    _write_adversarial_review_request,
+    _write_minimal_stage_outputs,
+    _write_reviewer_receipt,
+    _write_yaml,
+)
 
 
 def _touch_lineage(outputs_root: Path, lineage_id: str, filename: str = "marker.txt") -> Path:
@@ -239,6 +246,45 @@ def test_progress_payload_exposes_skill_first_direct_handoff(tmp_path: Path) -> 
     assert "qros-resume" not in payload["handoff_hint"]
     assert "qros-session" not in payload["next_action"]
     assert "qros-resume" not in payload["next_action"]
+
+
+def test_progress_reports_same_review_scope_mismatch_as_session(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": [],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "scope mismatch fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "rewrite final review",
+        },
+    )
+
+    payload = progress_status_payload(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert payload["blocking_reason_code"] == "REVIEW_SCOPE_MISMATCH"
+    assert payload["stage_status"] == "review_scope_mismatch"
 
 
 def test_progress_status_payload_surfaces_failure_disposition_gate(tmp_path: Path) -> None:
