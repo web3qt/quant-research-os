@@ -211,7 +211,7 @@ def test_start_review_cycle_rejects_review_ready_preflight_failure_before_writin
     assert not (stage_dir / "review" / "request" / "reviewer_receipt.yaml").exists()
 
 
-def test_review_cycle_prepare_rejects_existing_request_when_review_ready_preflight_fails(
+def test_review_cycle_prepare_preserves_active_cycle_guard_before_review_ready_preflight(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -227,20 +227,16 @@ def test_review_cycle_prepare_rejects_existing_request_when_review_ready_preflig
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     receipt_path = stage_dir / "review" / "request" / "reviewer_receipt.yaml"
     original_request_text = request_path.read_text(encoding="utf-8")
+    preflight_called = False
 
-    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
-        return {
-            "stage": "mandate",
-            "lineage_id": lineage_root.name,
-            "status": "FAIL",
-            "content_findings": ["Missing required output: run_manifest.json"],
-            "upstream_binding_findings": [],
-            "research_preflight_findings": [],
-        }
+    def _unexpected_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        nonlocal preflight_called
+        preflight_called = True
+        raise AssertionError("repeat active cycle should be rejected before review-ready preflight")
 
-    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _fake_run_review_preflight)
+    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _unexpected_run_review_preflight)
 
-    with pytest.raises(ValueError, match="AUTHOR_FIX_REQUIRED_BEFORE_REVIEW"):
+    with pytest.raises(ValueError, match="active review cycle"):
         prepare_review_cycle_for_handoff(
             explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
             reviewer_identity="reviewer-agent",
@@ -251,6 +247,7 @@ def test_review_cycle_prepare_rejects_existing_request_when_review_ready_preflig
             host="codex",
         )
 
+    assert not preflight_called
     assert request_path.read_text(encoding="utf-8") == original_request_text
     receipt_payload = yaml.safe_load(receipt_path.read_text(encoding="utf-8"))
     assert receipt_payload["reviewer_agent_id"] == "reviewer-child-agent-1"
