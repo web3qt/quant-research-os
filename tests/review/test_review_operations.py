@@ -87,6 +87,8 @@ def test_classify_review_operation_maps_stale_review_cycle_to_request_refresh() 
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_digest does not match active request scope",
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_digest does not match active request scope",
         "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths do not match active request scope",
+        "REVIEW_CONTRACT_CONTEXT_STALE: reviewed_artifact_digest does not match bound_author_materialization_digest",
+        "REVIEW_CONTRACT_CONTEXT_STALE: reviewed_program_digest does not match author_program_hash",
     ],
 )
 def test_classify_review_operation_maps_scope_mismatch_to_final_review_rewrite(proof_chain_error: str) -> None:

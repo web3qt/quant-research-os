@@ -3504,6 +3504,52 @@ def test_run_research_session_reports_final_review_rewrite_for_program_path_mism
     assert "rewrite" in status.next_action.lower() or "final_review.yaml" in status.next_action
 
 
+def test_run_research_session_reports_final_review_rewrite_for_artifact_digest_mismatch(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": "wrong-artifact-digest",
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "artifact digest mismatch fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "rewrite final review",
+        },
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+    assert status.stage_status == "review_scope_mismatch"
+    assert "reviewed_artifact_digest does not match bound_author_materialization_digest" in (
+        status.blocking_reason or ""
+    )
+    assert "rewrite" in status.next_action.lower() or "final_review.yaml" in status.next_action
+    assert status.blocking_reason_code != "AUTHOR_OUTPUTS_STALE"
+
+
 def test_run_research_session_reports_generic_review_audit_failure_without_reviewer_restart(
     tmp_path: Path,
 ) -> None:

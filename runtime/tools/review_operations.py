@@ -74,11 +74,19 @@ def classify_review_operation(
             "reviewed_program_digest does not match active request scope",
             "reviewed_artifact_digest does not match active request scope",
             "reviewed_artifact_paths do not match active request scope",
+            "reviewed_artifact_digest does not match bound_author_materialization_digest",
+            "reviewed_program_digest does not match author_program_hash",
         )
         if "REVIEWER_UNBOUND" in proof_chain_error:
             return RecommendedReviewOperation(
                 operation=OP_REVIEW_PREPARED,
                 blocking_reason_code="REVIEWER_UNBOUND",
+                blocking_reason=proof_chain_error,
+            )
+        if any(phrase in normalized_error for phrase in scope_mismatch_phrases) or "review scope" in normalized_error:
+            return RecommendedReviewOperation(
+                operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
+                blocking_reason_code="REVIEW_SCOPE_MISMATCH",
                 blocking_reason=proof_chain_error,
             )
         if (
@@ -91,12 +99,6 @@ def classify_review_operation(
             return RecommendedReviewOperation(
                 operation=OP_REQUEST_REFRESH_REQUIRED,
                 blocking_reason_code="AUTHOR_OUTPUTS_STALE",
-                blocking_reason=proof_chain_error,
-            )
-        if any(phrase in normalized_error for phrase in scope_mismatch_phrases) or "review scope" in normalized_error:
-            return RecommendedReviewOperation(
-                operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
-                blocking_reason_code="REVIEW_SCOPE_MISMATCH",
                 blocking_reason=proof_chain_error,
             )
         if "FORBIDDEN_FINAL_REVIEW_NORMALIZATION" in proof_chain_error:
