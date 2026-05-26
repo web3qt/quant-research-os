@@ -23,12 +23,14 @@ from runtime.tools.review_skillgen.adversarial_review_contract import (
 )
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
 from runtime.tools.review_skillgen.loaders import load_checklist_schema, load_gate_schema
+from runtime.tools.review_operations import REVIEW_READY_READY_TO_LAUNCH, map_review_ready_preflight_payload
 from runtime.tools.review_skillgen.review_engine import (
     CHECKLIST_PATH as DEFAULT_CHECKLIST_PATH,
     GATES_PATH as DEFAULT_GATES_PATH,
     ReviewRuntimeConfigurationError,
     _require_stage_config,
 )
+from runtime.tools.review_skillgen.review_preflight import run_review_preflight
 from runtime.tools.lineage_lock_ledger import assert_lineage_locks_intact
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
@@ -435,9 +437,28 @@ def prepare_review_cycle_for_handoff(
     reviewer_agent_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
+    existing_request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    if not existing_request_path.exists():
+        preflight_payload = run_review_preflight(
+            explicit_context={
+                "stage_dir": stage_dir,
+                "lineage_root": lineage_root,
+            }
+        )
+        preflight_result = map_review_ready_preflight_payload(preflight_payload)
+        if preflight_result.status != REVIEW_READY_READY_TO_LAUNCH:
+            details = "; ".join(preflight_result.blocking_findings[:3]) or "review-ready preflight failed"
+            raise ValueError(f"{preflight_result.status}: {details}")
+
     payload = start_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
         launcher_session_id=launcher_session_id,

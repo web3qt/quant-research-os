@@ -147,6 +147,38 @@ def test_prepare_writes_stage_contract_context_files(tmp_path: Path) -> None:
     assert "stage_contract_context.md" in payload["reviewer_handoff_prompt"]
 
 
+def test_review_cycle_prepare_rejects_review_ready_preflight_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+
+    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        return {
+            "stage": "mandate",
+            "lineage_id": lineage_root.name,
+            "status": "FAIL",
+            "content_findings": ["Missing required output: run_manifest.json"],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _fake_run_review_preflight)
+
+    with pytest.raises(ValueError, match="AUTHOR_FIX_REQUIRED_BEFORE_REVIEW"):
+        prepare_review_cycle_for_handoff(
+            explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
+            reviewer_identity="reviewer-agent",
+            reviewer_session_id="review-session",
+            launcher_session_id="launcher-session",
+            launcher_thread_id="launcher-thread",
+            reviewer_agent_id="reviewer-child-agent",
+            host="codex",
+        )
+
+    assert not (stage_dir / "review" / "request" / "adversarial_review_request.yaml").exists()
+
+
 def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_without_runtime_state(
     tmp_path: Path,
 ) -> None:
