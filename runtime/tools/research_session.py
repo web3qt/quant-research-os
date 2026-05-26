@@ -3551,7 +3551,10 @@ def _load_adversarial_review_result_if_present(stage_dir: Path) -> dict | None:
     result_path = _review_result_path(stage_dir)
     if not result_path.exists():
         return None
-    return load_adversarial_review_result(result_path)
+    try:
+        return load_adversarial_review_result(result_path)
+    except Exception:
+        return None
 
 
 def _load_final_review_if_present(stage_dir: Path) -> dict | None:
@@ -3604,7 +3607,10 @@ def _load_reviewer_write_scope_audit_if_present(stage_dir: Path) -> dict | None:
     audit_path = _review_audit_path(stage_dir)
     if not audit_path.exists():
         return None
-    return load_reviewer_write_scope_audit(audit_path)
+    try:
+        return load_reviewer_write_scope_audit(audit_path)
+    except Exception:
+        return None
 
 
 def _review_operation_next_action(
@@ -3637,7 +3643,10 @@ def _load_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
     receipt_path = _review_receipt_path(stage_dir)
     if not receipt_path.exists():
         return None
-    return load_reviewer_receipt(receipt_path)
+    try:
+        return load_reviewer_receipt(receipt_path)
+    except Exception:
+        return None
 
 
 def _review_proof_chain_error(stage_dir: Path) -> str | None:
@@ -3669,7 +3678,7 @@ def _review_proof_chain_error(stage_dir: Path) -> str | None:
             receipt_payload=receipt_payload,
         )
     except Exception as exc:
-        return str(exc)
+        return f"REVIEWER_UNBOUND: {exc}"
 
     spec = next(
         (
@@ -3946,11 +3955,18 @@ def _review_substate(
     if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
         return (
             "blocked_requires_failure_handling",
-            "FAILURE_HANDLER_REQUIRED",
+            "FAILURE_HANDLING_REQUIRED",
             f"{stage_base} review recorded a non-advancing verdict {review_result['verdict']} in review/{FINAL_REVIEW_FILENAME}; ordinary review closure must stop here.",
             f"Do not replay locked formal artifacts. Enter qros-stage-failure-handler for {stage_base} and follow the failure/retry protocol described in review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_audit is None:
+        if audit_error is not None:
+            return (
+                "review_audit_failed",
+                "REVIEW_AUDIT_FAILED",
+                f"{stage_base} reviewer write-scope audit is invalid: {audit_error}",
+                _generic_review_audit_repair_next_action(stage_base),
+            )
         return (
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_PENDING",
@@ -4001,7 +4017,7 @@ def _program_runtime_status(
         if requires_failure_handling:
             return (
                 "blocked_requires_failure_handling",
-                "FAILURE_HANDLER_REQUIRED",
+                "FAILURE_HANDLING_REQUIRED",
                 None,
                 None,
                 "n/a",
@@ -4033,7 +4049,7 @@ def _program_runtime_status(
     if requires_failure_handling:
         return (
             "blocked_requires_failure_handling",
-            "FAILURE_HANDLER_REQUIRED",
+            "FAILURE_HANDLING_REQUIRED",
             inspection.required_program_dir,
             inspection.required_program_entrypoint,
             inspection.program_contract_status,
@@ -5311,10 +5327,15 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
         )
     if review_result["verdict"] in NON_ADVANCING_COMPLETION_STATUSES:
         return (
-            "FAILURE_HANDLER_REQUIRED",
+            "FAILURE_HANDLING_REQUIRED",
             f"Do not replay locked formal artifacts. Enter qros-stage-failure-handler for {_stage_base_name(current_stage)} and follow review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_audit is None:
+        if audit_error is not None:
+            return (
+                "REVIEW_AUDIT_FAILED",
+                _generic_review_audit_repair_next_action(_stage_base_name(current_stage)),
+            )
         return (
             "REVIEW_AUDIT_PENDING",
             f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {_stage_base_name(current_stage)} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",

@@ -108,7 +108,8 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "required_artifact_paths": required_artifact_paths,
             "required_provenance_paths": required_provenance_paths,
             "permitted_input_roots": ["review/request", "author/formal"],
-            "permitted_output_roots": ["review/result"],
+            "permitted_output_roots": ["review/final_review.yaml"],
+            "required_reviewer_write_path": "review/final_review.yaml",
             "required_result_write_root": "review/result",
             "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
@@ -136,6 +137,7 @@ def _write_review_request(stage_dir: Path, *, author_identity: str = "author-age
             "required_reviewer_mode": "adversarial",
             "handoff_manifest_path": "review/request/reviewer_handoff_manifest.yaml",
             "handoff_manifest_digest": handoff_manifest_digest,
+            "required_reviewer_write_path": "review/final_review.yaml",
             "required_result_write_root": "review/result",
             "author_program_hash": "test-hash",
             "launcher_review_ready_status": "complete",
@@ -388,6 +390,31 @@ def test_run_stage_review_final_review_fix_required_runs_audit(tmp_path: Path) -
     assert audit_path.exists()
     assert audit_payload["audit_status"] == "PASS"
     assert payload["reviewer_write_scope_audit"]["audit_status"] == "PASS"
+
+
+def test_run_stage_review_rejects_preexisting_runtime_result_projection(tmp_path: Path) -> None:
+    stage_dir = _prepare_mandate_stage(tmp_path)
+    _write_review_request(stage_dir)
+    _write_reviewer_receipt(stage_dir)
+    _write_final_review(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "result" / "adversarial_review_result.yaml",
+        {"review_cycle_id": "reviewer-created"},
+    )
+
+    try:
+        run_stage_review(
+            cwd=stage_dir,
+            reviewer_identity="reviewer-agent",
+            reviewer_role="reviewer",
+            reviewer_session_id="review-session",
+            reviewer_mode="adversarial",
+        )
+    except ValueError as exc:
+        assert "REVIEWER_WRITE_SCOPE_VIOLATION" in str(exc)
+        assert "review/result is runtime-owned" in str(exc)
+    else:
+        raise AssertionError("expected pre-existing review/result projection to fail closed")
     assert not (stage_dir / "review" / "closure" / "stage_completion_certificate.yaml").exists()
 
 

@@ -94,7 +94,18 @@ def test_review_cycle_prepare_script_emits_handoff_prompt(tmp_path: Path) -> Non
     receipt_payload = yaml.safe_load(
         (stage_dir / "review" / "request" / "reviewer_receipt.yaml").read_text(encoding="utf-8")
     )
+    request_payload = yaml.safe_load(
+        (stage_dir / "review" / "request" / "adversarial_review_request.yaml").read_text(encoding="utf-8")
+    )
+    manifest_payload = yaml.safe_load(
+        (stage_dir / request_payload["handoff_manifest_path"]).read_text(encoding="utf-8")
+    )
+    assert request_payload["required_reviewer_write_path"] == "review/final_review.yaml"
+    assert request_payload["required_result_write_root"] == "review/result"
+    assert manifest_payload["permitted_output_roots"] == ["review/final_review.yaml"]
+    assert manifest_payload["required_reviewer_write_path"] == "review/final_review.yaml"
     assert receipt_payload["reviewer_agent_id"] == "reviewer-child-1"
+    assert receipt_payload["write_root"] == "review/final_review.yaml"
 
 
 def test_review_cycle_prepare_preflights_runtime_config_before_writing_request(
@@ -415,6 +426,17 @@ def test_review_cycle_reset_archives_stale_cycle(tmp_path: Path) -> None:
         for path in reset_payload["archived_paths"]
     )
     assert reset_payload["next_action"] == "run qros-review-cycle prepare and request a fresh reviewer run"
+
+
+def test_current_unexpected_result_files_flags_runtime_projection_before_final_review(
+    tmp_path: Path,
+) -> None:
+    _lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
+    result_path = stage_dir / "review" / "result" / "adversarial_review_result.yaml"
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text("review_cycle_id: reviewer-created\n", encoding="utf-8")
+
+    assert current_unexpected_result_files(stage_dir) == ["adversarial_review_result.yaml"]
 
 
 def test_review_cycle_reset_script_archives_stale_cycle(tmp_path: Path) -> None:

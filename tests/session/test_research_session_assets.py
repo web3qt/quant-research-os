@@ -160,6 +160,7 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
             "project_root": "/tmp/repo",
             "lineage_root": "/tmp/repo/outputs/lineage_a",
             "stage_dir": "/tmp/repo/outputs/lineage_a/02_csf_data_ready",
+            "stage_content_artifact_paths": ["panel_manifest.json", "cross_section_coverage.parquet"],
         },
         "receipt_payload": {
             "launcher_session_id": "launcher-session",
@@ -200,7 +201,7 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
     assert "review/final_review.yaml" in handoff_prompt
     assert "Do not run qros-review or any closer step." in handoff_prompt
     assert "reviewer_findings.raw.yaml" not in handoff_prompt
-    assert "reviewed_artifact_paths: [<relative paths under author/formal>]" in handoff_prompt
+    assert "reviewed_artifact_paths: [panel_manifest.json, cross_section_coverage.parquet]" in handoff_prompt
     assert "The QROS governance repo is not the active research repo unless the canonical paths in this handoff point there." in handoff_prompt
 
 
@@ -225,6 +226,13 @@ def test_review_handoff_lists_exact_expected_final_review_bindings(tmp_path: Pat
     assert "Do not infer review truth from prior chat" in prompt
     assert f"reviewed_artifact_digest: {request_payload['bound_author_materialization_digest']}" in prompt
     assert f"reviewed_program_digest: {request_payload['author_program_hash']}" in prompt
+    expected_artifact_paths = yaml.safe_dump(
+        request_payload["stage_content_artifact_paths"],
+        default_flow_style=True,
+        sort_keys=False,
+        allow_unicode=True,
+    ).strip()
+    assert f"reviewed_artifact_paths: {expected_artifact_paths}" in prompt
     assert "review/request/stage_contract_context.yaml" in prompt
     assert "review/request/stage_contract_context.md" in prompt
     assert "review/final_review.yaml" in prompt

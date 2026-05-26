@@ -1314,6 +1314,41 @@ git add runtime/tools/review_operations.py runtime/tools/research_session.py run
 git commit -m "fix: address review operations ux review findings"
 ```
 
+### Task 10A: Address Review Blockers
+
+**Files:**
+- `runtime/tools/review_skillgen/adversarial_review_contract.py`
+- `runtime/tools/review_skillgen/reviewer_write_scope_audit.py`
+- `runtime/tools/review_session_runtime.py`
+- `runtime/tools/research_session.py`
+- `runtime/tools/review_operations.py`
+- `tests/review/test_review_cycle_prepare.py`
+- `tests/session/test_research_session_assets.py`
+- `tests/session/test_research_session_runtime.py`
+- `tests/session/test_qros_progress_runtime.py`
+- `tests/review/test_review_operations.py`
+
+**Fixes:**
+- Make the machine-readable request/receipt contract match the prompt: reviewer-owned output is exactly `review/final_review.yaml`, while `review/result/*` is runtime-owned projection/audit state.
+- Fail closed when reviewer-created or pre-existing `review/result/*` appears before runtime projection.
+- Make malformed `reviewer_receipt.yaml` and malformed `reviewer_write_scope_audit.yaml` return review operation blockers instead of crashing session/progress status.
+- Render exact `reviewed_artifact_paths` in the reviewer handoff prompt.
+- Use one canonical failure-routing reason code between `review_operations`, session, progress, and tests.
+
+**Focused tests:**
+
+```bash
+python -m pytest \
+  tests/review/test_review_cycle_prepare.py \
+  tests/session/test_research_session_assets.py \
+  tests/session/test_research_session_runtime.py \
+  tests/session/test_qros_progress_runtime.py \
+  tests/review/test_review_operations.py \
+  -q
+```
+
+Then rerun smoke and full-smoke because these fixes change review orchestration and status projection.
+
 ## Plan Self-Review
 
 - Spec coverage: Task 1 and Task 2 cover Review Operations Snapshot and operation routing; Task 5 and Task 6 cover deterministic review-ready preflight; Task 7 prevents reviewer launch on preflight failure; Task 8 covers handoff exact values; Task 9 covers docs and skill UX; Task 10 covers verification and code review.

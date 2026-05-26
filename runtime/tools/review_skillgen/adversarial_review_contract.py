@@ -32,6 +32,7 @@ ALLOWED_REVIEWER_EXECUTION_MODES = {
 REQUIRED_REVIEWER_CONTEXT_SOURCE = "explicit_handoff_only"
 REQUIRED_REVIEWER_HISTORY_INHERITANCE = "none"
 REQUIRED_RESULT_WRITE_ROOT = "review/result"
+REQUIRED_REVIEWER_WRITE_PATH = f"review/{FINAL_REVIEW_FILENAME}"
 RUNTIME_LAUNCHER_OWNER = "qros-runtime-launcher"
 REQUIRED_LAUNCHER_REVIEW_READY_STATUS = "complete"
 
@@ -119,6 +120,15 @@ def _require_string(payload: dict[str, Any], key: str, *, path: Path) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{path}: {key} must be a non-empty string")
+    return value.strip()
+
+
+def _optional_string(payload: dict[str, Any], key: str, *, default: str) -> str:
+    value = payload.get(key)
+    if value is None:
+        return default
+    if not isinstance(value, str) or not value.strip():
+        return default
     return value.strip()
 
 
@@ -301,7 +311,8 @@ def _build_handoff_manifest_payload(
         "upstream_binding_artifact_paths": review_scope["upstream_binding_artifact_paths"],
         "upstream_binding_provenance_paths": review_scope["upstream_binding_provenance_paths"],
         "permitted_input_roots": list(REQUIRED_HANDOFF_INPUT_ROOTS),
-        "permitted_output_roots": [REQUIRED_RESULT_WRITE_ROOT],
+        "permitted_output_roots": [REQUIRED_REVIEWER_WRITE_PATH],
+        "required_reviewer_write_path": REQUIRED_REVIEWER_WRITE_PATH,
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
     payload.update(_canonical_review_context(stage_dir))
@@ -409,6 +420,7 @@ def ensure_adversarial_review_request(
         "required_reviewer_mode": REQUIRED_REVIEWER_MODE,
         "handoff_manifest_path": handoff_manifest_path,
         "handoff_manifest_digest": handoff_manifest_digest,
+        "required_reviewer_write_path": REQUIRED_REVIEWER_WRITE_PATH,
         "required_result_write_root": REQUIRED_RESULT_WRITE_ROOT,
     }
     payload.update(_canonical_review_context(stage_dir))
@@ -499,6 +511,11 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
         "required_reviewer_mode": _require_string(payload, "required_reviewer_mode", path=request_path),
         "handoff_manifest_path": _require_string(payload, "handoff_manifest_path", path=request_path),
         "handoff_manifest_digest": _require_string(payload, "handoff_manifest_digest", path=request_path),
+        "required_reviewer_write_path": _optional_string(
+            payload,
+            "required_reviewer_write_path",
+            default=REQUIRED_REVIEWER_WRITE_PATH,
+        ),
         "required_result_write_root": _require_string(payload, "required_result_write_root", path=request_path),
         "launcher_review_ready_status": _require_string(payload, "launcher_review_ready_status", path=request_path),
         "launcher_checked_artifact_paths": _require_string_list(
@@ -514,6 +531,10 @@ def load_adversarial_review_request(path: str | Path) -> dict[str, Any]:
     data.update(_validated_canonical_review_context(payload, stage_dir=stage_dir, path=request_path))
     if data["required_reviewer_mode"] != REQUIRED_REVIEWER_MODE:
         raise ValueError(f"{request_path}: required_reviewer_mode must be {REQUIRED_REVIEWER_MODE!r}")
+    if data["required_reviewer_write_path"] != REQUIRED_REVIEWER_WRITE_PATH:
+        raise ValueError(
+            f"{request_path}: required_reviewer_write_path must be {REQUIRED_REVIEWER_WRITE_PATH!r}"
+        )
     if data["required_result_write_root"] != REQUIRED_RESULT_WRITE_ROOT:
         raise ValueError(
             f"{request_path}: required_result_write_root must be {REQUIRED_RESULT_WRITE_ROOT!r}"
@@ -624,6 +645,11 @@ def load_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
         else [],
         "permitted_input_roots": _require_string_list(payload, "permitted_input_roots", path=manifest_path),
         "permitted_output_roots": _require_string_list(payload, "permitted_output_roots", path=manifest_path),
+        "required_reviewer_write_path": _optional_string(
+            payload,
+            "required_reviewer_write_path",
+            default=REQUIRED_REVIEWER_WRITE_PATH,
+        ),
         "required_result_write_root": _require_string(payload, "required_result_write_root", path=manifest_path),
         "launcher_review_ready_status": _require_string(payload, "launcher_review_ready_status", path=manifest_path),
         "launcher_checked_artifact_paths": _require_string_list(
@@ -639,8 +665,12 @@ def load_reviewer_handoff_manifest(path: str | Path) -> dict[str, Any]:
     data.update(_validated_canonical_review_context(payload, stage_dir=stage_dir, path=manifest_path))
     if tuple(data["permitted_input_roots"]) != REQUIRED_HANDOFF_INPUT_ROOTS:
         raise ValueError(f"{manifest_path}: permitted_input_roots must be {list(REQUIRED_HANDOFF_INPUT_ROOTS)!r}")
-    if data["permitted_output_roots"] != [REQUIRED_RESULT_WRITE_ROOT]:
-        raise ValueError(f"{manifest_path}: permitted_output_roots must be {[REQUIRED_RESULT_WRITE_ROOT]!r}")
+    if data["permitted_output_roots"] != [REQUIRED_REVIEWER_WRITE_PATH]:
+        raise ValueError(f"{manifest_path}: permitted_output_roots must be {[REQUIRED_REVIEWER_WRITE_PATH]!r}")
+    if data["required_reviewer_write_path"] != REQUIRED_REVIEWER_WRITE_PATH:
+        raise ValueError(
+            f"{manifest_path}: required_reviewer_write_path must be {REQUIRED_REVIEWER_WRITE_PATH!r}"
+        )
     if data["required_result_write_root"] != REQUIRED_RESULT_WRITE_ROOT:
         raise ValueError(f"{manifest_path}: required_result_write_root must be {REQUIRED_RESULT_WRITE_ROOT!r}")
     if data["launcher_review_ready_status"] != REQUIRED_LAUNCHER_REVIEW_READY_STATUS:
@@ -707,7 +737,8 @@ def issue_reviewer_receipt(
         "context_isolation_policy": HOST_CONTEXT_ISOLATION[host],
         "handoff_delivery_method": HOST_HANDOFF_DELIVERY[host],
         "reviewer_agent_id": reviewer_agent_id,
-        "write_root": REQUIRED_RESULT_WRITE_ROOT,
+        "write_root": REQUIRED_REVIEWER_WRITE_PATH,
+        "reviewer_owned_write_path": REQUIRED_REVIEWER_WRITE_PATH,
         "handoff_manifest_path": request_payload["handoff_manifest_path"],
         "handoff_manifest_digest": request_payload["handoff_manifest_digest"],
         "requested_reviewer_identity": reviewer_identity,
@@ -1064,7 +1095,7 @@ def validate_receipt_contract(
         raise ValueError("reviewer_receipt.yaml reviewer_agent_id must be a non-empty string")
     if not receipt_payload["launcher_thread_id"].strip():
         raise ValueError("reviewer_receipt.yaml launcher_thread_id must be a non-empty string")
-    if receipt_payload["write_root"] != request_payload["required_result_write_root"]:
+    if receipt_payload["write_root"] != request_payload.get("required_reviewer_write_path", REQUIRED_REVIEWER_WRITE_PATH):
         raise ValueError("reviewer_receipt.yaml write_root does not match the active request")
     if receipt_payload["handoff_manifest_path"] != request_payload["handoff_manifest_path"]:
         raise ValueError("reviewer_receipt.yaml handoff_manifest_path does not match the active request")

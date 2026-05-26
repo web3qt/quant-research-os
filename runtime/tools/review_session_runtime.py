@@ -358,6 +358,15 @@ def _reviewer_handoff_prompt(
     stage_contract_context_md_path = request_payload.get("stage_contract_context_md_path")
     expected_artifact_digest = request_payload.get("bound_author_materialization_digest", "<artifact digest>")
     expected_program_digest = request_payload.get("author_program_hash", "<program digest>")
+    expected_artifact_paths = request_payload.get("stage_content_artifact_paths")
+    if not isinstance(expected_artifact_paths, list) or not all(isinstance(item, str) for item in expected_artifact_paths):
+        expected_artifact_paths = request_payload.get("required_artifact_paths", [])
+    expected_artifact_paths_text = yaml.safe_dump(
+        list(expected_artifact_paths),
+        default_flow_style=True,
+        sort_keys=False,
+        allow_unicode=True,
+    ).strip()
     required_program_dir = request_payload.get("required_program_dir")
     required_program_entrypoint = request_payload.get("required_program_entrypoint")
     if isinstance(required_program_dir, str) and isinstance(required_program_entrypoint, str):
@@ -428,7 +437,7 @@ def _reviewer_handoff_prompt(
         f"stage_id: {payload['stage']}",
         f"reviewer_identity: {reviewer_identity}",
         f"reviewer_agent_id: {payload['receipt_payload']['reviewer_agent_id']}",
-        "reviewed_artifact_paths: [<relative paths under author/formal>]",
+        f"reviewed_artifact_paths: {expected_artifact_paths_text}",
         f"reviewed_program_path: {reviewed_program_path}",
         f"reviewed_artifact_digest: {expected_artifact_digest}",
         f"reviewed_program_digest: {expected_program_digest}",

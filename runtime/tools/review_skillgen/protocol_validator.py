@@ -157,6 +157,21 @@ def _validate_final_review_reviewer_is_bound_reviewer(receipt_payload: dict[str,
         raise ValueError("REVIEWER_UNBOUND: launcher identity cannot be reviewer for final review")
 
 
+def _assert_no_preexisting_runtime_projection(review_result_dir: Path) -> None:
+    if not review_result_dir.exists():
+        return
+    preexisting = sorted(
+        path.relative_to(review_result_dir).as_posix()
+        for path in review_result_dir.rglob("*")
+        if path.is_file()
+    )
+    if preexisting:
+        raise ValueError(
+            "REVIEWER_WRITE_SCOPE_VIOLATION: review/result is runtime-owned and must be empty "
+            "before final review projection; found " + ", ".join(preexisting)
+        )
+
+
 def load_and_validate_protocol(
     *,
     review_request_dir: Path,
@@ -176,6 +191,7 @@ def load_and_validate_protocol(
     if final_review_path.exists():
         if not receipt_path.exists():
             raise ValueError("REVIEWER_UNBOUND: review/final_review.yaml exists without active reviewer_receipt.yaml")
+        _assert_no_preexisting_runtime_projection(review_result_dir)
 
         validate_active_review_request_context(request_payload, review_request_dir)
         receipt_payload = receipt_loader(receipt_path)

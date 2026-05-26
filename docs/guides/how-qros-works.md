@@ -157,7 +157,7 @@ graph LR
     R -->|"exit 5"| ExecFail["程序执行 / provenance 失败<br/>PROGRAM_EXECUTION_FAILED 等"]
     R -->|"exit 6"| BadOut["产物不完整<br/>OUTPUTS_INVALID"]
     R -->|"exit 7"| ReviewPend["等待 review lane<br/>REVIEW_PENDING 等"]
-    R -->|"exit 8"| FailHandle["需要失败处理<br/>FAILURE_HANDLER_REQUIRED"]
+    R -->|"exit 8"| FailHandle["需要失败处理<br/>FAILURE_HANDLING_REQUIRED"]
 ```
 
 这里的退出码是 Python 入口 `run_research_session.py` 的语义退出码：

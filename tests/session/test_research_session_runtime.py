@@ -2831,7 +2831,7 @@ def test_detect_session_stage_review_eligible_csf_test_evidence_failure_handler_
 
     assert status.current_stage == "csf_test_evidence_review"
     assert status.stage_status == "blocked_requires_failure_handling"
-    assert status.blocking_reason_code == "FAILURE_HANDLER_REQUIRED"
+    assert status.blocking_reason_code == "FAILURE_HANDLING_REQUIRED"
     assert status.current_skill == "qros-stage-failure-handler"
     assert status.gate_status == "FAILURE_HANDLING_REQUIRED"
     assert status.requires_failure_handling is True
@@ -3457,6 +3457,93 @@ def test_run_research_session_reports_final_review_rewrite_for_scope_mismatch(
 
     assert status.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
     assert "rewrite" in status.next_action.lower() or "final_review.yaml" in status.next_action
+
+
+def test_run_research_session_fails_closed_for_malformed_reviewer_receipt(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    (stage_dir / "review" / "request" / "reviewer_receipt.yaml").write_text("[]\n", encoding="utf-8")
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "malformed receipt fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "fix receipt",
+        },
+    )
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "reviewer_unbound"
+    assert status.blocking_reason_code == "REVIEWER_UNBOUND"
+    assert "review proof chain is invalid" in (status.blocking_reason or "")
+
+
+def test_run_research_session_fails_closed_for_malformed_review_audit(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_payload = _review_request_payload(stage_dir)
+    _write_yaml(
+        stage_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "malformed audit fixture",
+            "blocking_findings": [],
+            "reservation_findings": [],
+            "info_findings": [],
+            "residual_risks": [],
+            "allowed_modifications": [],
+            "rollback_stage": None,
+            "downstream_permissions": [],
+            "recommended_next_action": "fix audit",
+        },
+    )
+    audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_path.write_text("[]\n", encoding="utf-8")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "review_audit_failed"
+    assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert "reviewer write-scope audit is invalid" in (status.blocking_reason or "")
 
 
 def test_run_research_session_reports_final_review_rewrite_for_program_path_mismatch(
