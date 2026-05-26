@@ -49,20 +49,6 @@ def _rewrite_active_request_to_old_subset(stage_dir: Path, *, required_artifact_
     request_path.write_text(yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
-def _patch_review_ready_preflight_pass(monkeypatch: pytest.MonkeyPatch, *, lineage_id: str) -> None:
-    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
-        return {
-            "stage": "mandate",
-            "lineage_id": lineage_id,
-            "status": "PASS",
-            "content_findings": [],
-            "upstream_binding_findings": [],
-            "research_preflight_findings": [],
-        }
-
-    monkeypatch.setattr("runtime.tools.review_session_runtime.run_review_preflight", _fake_run_review_preflight)
-
-
 def test_review_cycle_prepare_script_emits_handoff_prompt(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
     script_path = REPO_ROOT / "runtime" / "scripts" / "review_cycle.py"
@@ -240,7 +226,6 @@ def test_review_cycle_prepare_rejects_existing_request_when_review_ready_preflig
 
 def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_without_runtime_state(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
 
@@ -257,9 +242,8 @@ def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_wi
     )
     (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
     (stage_dir / "author" / "formal" / "mandate.md").write_text("changed after prepare\n", encoding="utf-8")
-    _patch_review_ready_preflight_pass(monkeypatch, lineage_id=lineage_root.name)
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -273,10 +257,11 @@ def test_prepare_rejects_active_cycle_when_request_bound_digest_is_stale_even_wi
             host="codex",
         )
 
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
+
 
 def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is_old(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
 
@@ -299,9 +284,8 @@ def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is
     state_payload = yaml.safe_load(state_path.read_text(encoding="utf-8"))
     state_payload["review_bound_author_digest"] = "manually-diverged-current-digest"
     state_path.write_text(yaml.safe_dump(state_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
-    _patch_review_ready_preflight_pass(monkeypatch, lineage_id=lineage_root.name)
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -315,10 +299,11 @@ def test_prepare_rejects_divergent_request_and_state_digests_when_one_binding_is
             host="codex",
         )
 
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
+
 
 def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_output(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
 
@@ -347,9 +332,8 @@ def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_outpu
     )
     (stage_dir / "review" / "state" / "review_runtime_state.yaml").unlink()
     (stage_dir / "author" / "formal" / "field_dictionary.md").write_text("changed later-added truth\n", encoding="utf-8")
-    _patch_review_ready_preflight_pass(monkeypatch, lineage_id=lineage_root.name)
 
-    with pytest.raises(ValueError, match="is stale"):
+    with pytest.raises(ValueError, match="is stale") as excinfo:
         prepare_review_cycle_for_handoff(
             explicit_context={
                 "stage_dir": stage_dir,
@@ -362,6 +346,8 @@ def test_prepare_rejects_stale_cycle_when_old_request_omitted_now_required_outpu
             reviewer_agent_id="reviewer-child-2",
             host="codex",
         )
+
+    assert "run qros-review-cycle reset --archive-stale-cycle" in str(excinfo.value)
 
 
 def test_qros_review_cycle_wrapper_exists() -> None:

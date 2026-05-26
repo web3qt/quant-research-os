@@ -70,7 +70,12 @@ def _current_author_digest(stage_dir: Path, spec) -> str:
     )
 
 
-def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list[str]:
+def _archive_if_stale_or_closed(
+    stage_dir: Path,
+    *,
+    current_digest: str,
+    allow_active_in_progress: bool = False,
+) -> list[str]:
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     if not request_path.exists():
         return []
@@ -100,6 +105,8 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
         )
 
     if current_digest in bound_digests and len(bound_digests) == 1 and not closure_exists and proof_chain_error is None:
+        if allow_active_in_progress:
+            return []
         raise ValueError(
             f"active review cycle {request_payload['review_cycle_id']} is still in progress; "
             "start a new review only after it closes or the author package changes"
@@ -109,6 +116,20 @@ def _archive_if_stale_or_closed(stage_dir: Path, *, current_digest: str) -> list
         f"review cycle {request_payload['review_cycle_id']} is superseded; "
         "run qros-review-cycle reset --archive-stale-cycle first, then prepare a fresh reviewer run"
     )
+
+
+def _preflight_existing_cycle_stale_or_closed_state(stage_dir: Path) -> None:
+    existing_request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    if not existing_request_path.exists():
+        return
+
+    existing_request = load_adversarial_review_request(existing_request_path)
+    current_digest = compute_author_materialization_digest_fresh(
+        artifact_root=_author_formal_dir(stage_dir),
+        required_outputs=existing_request["required_artifact_paths"],
+        required_provenance_paths=existing_request["required_provenance_paths"],
+    )
+    _archive_if_stale_or_closed(stage_dir, current_digest=current_digest, allow_active_in_progress=True)
 
 
 def _preflight_review_runtime_config(*, stage: str, stage_dir: Path, lineage_root: Path) -> None:
@@ -440,6 +461,7 @@ def prepare_review_cycle_for_handoff(
     context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
     stage_dir = Path(context["stage_dir"]).resolve()
     lineage_root = Path(context["lineage_root"]).resolve()
+    _preflight_existing_cycle_stale_or_closed_state(stage_dir)
     preflight_payload = run_review_preflight(
         explicit_context={
             "stage_dir": stage_dir,
