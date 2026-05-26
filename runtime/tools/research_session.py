@@ -3595,6 +3595,13 @@ def _review_operation_next_action(
     return f"Repair the active review proof chain for {stage_base}, then rerun {review_skill}."
 
 
+def _generic_review_audit_repair_next_action(stage_base: str) -> str:
+    return (
+        f"Inspect and regenerate {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base} "
+        "through the deterministic ./.qros/bin/qros-review audit path, then rerun qros-research-session."
+    )
+
+
 def _load_reviewer_receipt_if_present(stage_dir: Path) -> dict | None:
     receipt_path = _review_receipt_path(stage_dir)
     if not receipt_path.exists():
@@ -3927,13 +3934,13 @@ def _review_substate(
                 stage_status,
                 blocking_reason_code,
                 f"{stage_base} has a reviewer write-scope audit problem: {audit_error}",
-                f"Discard the invalid review cycle, explicitly resume the author lane if needed, then re-enter {review_skill} for a fresh reviewer child cycle.",
+                _generic_review_audit_repair_next_action(stage_base),
             )
         return (
             "awaiting_reviewer_write_scope_audit",
             "REVIEW_AUDIT_FAILED",
             f"{stage_base} has a reviewer write-scope audit problem: {audit_error}",
-            f"Discard the invalid review cycle, explicitly resume the author lane if needed, then re-enter {review_skill} for a fresh reviewer child cycle.",
+            _generic_review_audit_repair_next_action(stage_base),
         )
     if review_audit["audit_status"] != "PASS":
         return (
@@ -5283,7 +5290,7 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
             )
         return (
             "REVIEW_AUDIT_FAILED",
-            f"Reviewer write-scope audit failed; inspect {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} and discard the invalid review cycle.",
+            _generic_review_audit_repair_next_action(_stage_base_name(current_stage)),
         )
     if review_audit["audit_status"] != "PASS":
         return (

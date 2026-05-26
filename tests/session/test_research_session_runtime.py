@@ -3531,7 +3531,12 @@ def test_run_research_session_reports_generic_review_audit_failure_without_revie
     assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
     assert status.gate_status == "REVIEW_AUDIT_FAILED"
     assert "review_cycle_id does not match reviewer_receipt.yaml" in (status.blocking_reason or "")
-    assert "discard the invalid review cycle" in status.next_action
+    next_action = status.next_action.lower()
+    assert "reviewer_write_scope_audit.yaml" in status.next_action
+    assert "deterministic" in next_action or "qros-review" in next_action
+    assert "fresh reviewer" not in next_action
+    assert "discard" not in next_action
+    assert "restart" not in next_action
 
 
 def test_run_research_session_accepts_mapping_findings_in_raw_final_review(
