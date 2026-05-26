@@ -132,6 +132,20 @@ def _preflight_existing_cycle_stale_or_closed_state(stage_dir: Path) -> None:
     _archive_if_stale_or_closed(stage_dir, current_digest=current_digest, allow_active_in_progress=True)
 
 
+def _guard_review_ready_preflight(*, stage_dir: Path, lineage_root: Path) -> None:
+    _preflight_existing_cycle_stale_or_closed_state(stage_dir)
+    preflight_payload = run_review_preflight(
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        }
+    )
+    preflight_result = map_review_ready_preflight_payload(preflight_payload)
+    if preflight_result.status != REVIEW_READY_READY_TO_LAUNCH:
+        details = "; ".join(preflight_result.blocking_findings[:3]) or "review-ready preflight failed"
+        raise ValueError(f"{preflight_result.status}: {details}")
+
+
 def _preflight_review_runtime_config(*, stage: str, stage_dir: Path, lineage_root: Path) -> None:
     gates = load_gate_schema(GATES_PATH)
     checklist = load_checklist_schema(CHECKLIST_PATH)
@@ -461,18 +475,6 @@ def prepare_review_cycle_for_handoff(
     context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
     stage_dir = Path(context["stage_dir"]).resolve()
     lineage_root = Path(context["lineage_root"]).resolve()
-    _preflight_existing_cycle_stale_or_closed_state(stage_dir)
-    preflight_payload = run_review_preflight(
-        explicit_context={
-            "stage_dir": stage_dir,
-            "lineage_root": lineage_root,
-        }
-    )
-    preflight_result = map_review_ready_preflight_payload(preflight_payload)
-    if preflight_result.status != REVIEW_READY_READY_TO_LAUNCH:
-        details = "; ".join(preflight_result.blocking_findings[:3]) or "review-ready preflight failed"
-        raise ValueError(f"{preflight_result.status}: {details}")
-
     payload = start_review_cycle(
         cwd=cwd,
         explicit_context={
@@ -510,9 +512,16 @@ def start_review_cycle(
     reviewer_agent_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
+    _guard_review_ready_preflight(stage_dir=stage_dir, lineage_root=lineage_root)
     prepared = _prepare_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )
@@ -542,9 +551,16 @@ def start_review_session(
     launcher_thread_id: str,
     host: str = "codex",
 ) -> dict[str, Any]:
+    context = _stage_dir_for_context(cwd=cwd, explicit_context=explicit_context)
+    stage_dir = Path(context["stage_dir"]).resolve()
+    lineage_root = Path(context["lineage_root"]).resolve()
+    _guard_review_ready_preflight(stage_dir=stage_dir, lineage_root=lineage_root)
     prepared = _prepare_review_cycle(
         cwd=cwd,
-        explicit_context=explicit_context,
+        explicit_context={
+            "stage_dir": stage_dir,
+            "lineage_root": lineage_root,
+        },
         reviewer_identity=reviewer_identity,
         reviewer_session_id=reviewer_session_id,
     )
