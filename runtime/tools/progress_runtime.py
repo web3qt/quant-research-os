@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from runtime.tools.lineage_lock_ledger import FrozenArtifactMutationError, assert_lineage_locks_intact
 from runtime.tools.review_eligibility import compute_review_eligibility
 from runtime.tools.research_session import (
     STAGE_ACTIVE_SKILLS,
+    _current_skill_for_stage,
     _stage_base_name,
     _research_preflight_blocker_status,
     _review_entry_can_route_failure,
-    _review_confirmation_author_fix_runtime,
+    _resume_hint,
+    _why_this_skill,
     assert_current_protected_review_state_intact,
     _gate_status_and_next_action,
     _latest_failure_package_runtime_status,
@@ -153,63 +155,109 @@ def _read_only_session_status(lineage_root: Path, *, selection_mode: str):
             runtime_next_action_override=runtime_next_action_override,
         )
 
+    def _status_with_overrides(
+        candidate_status,
+        *,
+        stage_status: str,
+        blocking_reason_code: str,
+        blocking_reason: str | None,
+        gate_status: str,
+        next_action: str,
+        requires_failure_handling: bool,
+        failure_stage: str | None,
+        failure_reason_summary: str | None,
+    ):
+        current_skill = _current_skill_for_stage(
+            current_stage=current_stage,
+            requires_failure_handling=requires_failure_handling,
+            runtime_stage_status=stage_status,
+        )
+        return replace(
+            candidate_status,
+            stage_status=stage_status,
+            blocking_reason_code=blocking_reason_code,
+            current_skill=current_skill,
+            why_this_skill=_why_this_skill(
+                current_stage=current_stage,
+                current_skill=current_skill,
+                review_verdict=review_verdict,
+                requires_failure_handling=requires_failure_handling,
+                runtime_stage_status=stage_status,
+            ),
+            blocking_reason=blocking_reason,
+            resume_hint=_resume_hint(
+                lineage_id=lineage_root.name,
+                current_stage=current_stage,
+                current_skill=current_skill,
+                requires_failure_handling=requires_failure_handling,
+                required_program_dir=candidate_status.required_program_dir,
+                runtime_stage_status=stage_status,
+            ),
+            gate_status=gate_status,
+            next_action=next_action,
+            requires_failure_handling=requires_failure_handling,
+            failure_stage=failure_stage,
+            failure_reason_summary=failure_reason_summary,
+        )
+
     candidate_status = _build_status()
     if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
         if candidate_status.blocking_reason_code in PROTECTED_REVIEW_BLOCKING_REASON_CODES:
             return candidate_status
-        preflight_already_blocked, preflight_blocking_reason, preflight_next_action = _review_confirmation_author_fix_runtime(
+        if candidate_status.stage_status == "awaiting_author_fix":
+            return replace(candidate_status, gate_status="OUTPUTS_INVALID")
+
+        review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
+        eligibility = compute_review_eligibility(
             lineage_root=lineage_root,
             current_stage=current_stage,
-            review_verdict=review_verdict,
-            requires_failure_handling=requires_failure_handling,
+            review_skill=review_skill,
         )
-        if preflight_already_blocked:
-            gate_status = "OUTPUTS_INVALID"
-            next_action = preflight_next_action or next_action
-            blocking_reason_override = preflight_blocking_reason
-        else:
-            review_skill = STAGE_ACTIVE_SKILLS.get(current_stage, "qros-review")
-            eligibility = compute_review_eligibility(
-                lineage_root=lineage_root,
-                current_stage=current_stage,
-                review_skill=review_skill,
+        if not eligibility.eligible_for_review:
+            can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
+            requires_failure_handling = eligibility.requires_failure_handling and can_route_failure
+            failure_stage = (
+                _stage_base_name(str(eligibility.failure_stage))
+                if requires_failure_handling and eligibility.failure_stage is not None
+                else None
             )
-            if not eligibility.eligible_for_review:
-                can_route_failure = _review_entry_can_route_failure(_stage_base_name(current_stage))
-                requires_failure_handling = (
-                    eligibility.requires_failure_handling and can_route_failure
+            failure_reason_summary = (
+                eligibility.failure_reason_summary if requires_failure_handling else None
+            )
+            blocking_reason_override = eligibility.blocking_reason
+            if requires_failure_handling:
+                gate_status = "FAILURE_HANDLING_REQUIRED"
+                next_action = f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
+                return _status_with_overrides(
+                    candidate_status,
+                    stage_status="blocked_requires_failure_handling",
+                    blocking_reason_code=eligibility.blocking_reason_code,
+                    blocking_reason=blocking_reason_override,
+                    gate_status=gate_status,
+                    next_action=next_action,
+                    requires_failure_handling=requires_failure_handling,
+                    failure_stage=failure_stage,
+                    failure_reason_summary=failure_reason_summary,
                 )
-                failure_stage = (
-                    _stage_base_name(str(eligibility.failure_stage))
-                    if requires_failure_handling and eligibility.failure_stage is not None
-                    else None
-                )
-                failure_reason_summary = (
-                    eligibility.failure_reason_summary if requires_failure_handling else None
-                )
-                blocking_reason_override = eligibility.blocking_reason
-                if requires_failure_handling:
-                    runtime_blocking_reason_code_override = eligibility.blocking_reason_code
-                    gate_status = "FAILURE_HANDLING_REQUIRED"
-                    next_action = (
-                        f"Enter failure handling for {failure_stage} via qros-stage-failure-handler"
-                    )
-                    current_skill_override = "qros-stage-failure-handler"
-                    runtime_stage_status_override = "blocked_requires_failure_handling"
-                    runtime_next_action_override = next_action
-                else:
-                    gate_status = "OUTPUTS_INVALID"
-                    next_action = str(
-                        eligibility.blocking_reason
-                        or "Resolve canonical review eligibility blockers before entering review."
-                    )
-                    # 普通 review eligibility 阻塞应保持 author-fix / OUTPUTS_INVALID 语义。
-                    runtime_blocking_reason_code_override = "OUTPUTS_INVALID"
-                    runtime_stage_status_override = "awaiting_author_fix"
-                    runtime_next_action_override = next_action
 
-    if failure_package_status is None and current_stage.endswith("_review_confirmation_pending"):
-        return _build_status()
+            gate_status = "OUTPUTS_INVALID"
+            next_action = str(
+                eligibility.blocking_reason
+                or "Resolve canonical review eligibility blockers before entering review."
+            )
+            # 普通 review eligibility 阻塞应保持 author-fix / OUTPUTS_INVALID 语义。
+            return _status_with_overrides(
+                candidate_status,
+                stage_status="awaiting_author_fix",
+                blocking_reason_code="OUTPUTS_INVALID",
+                blocking_reason=blocking_reason_override,
+                gate_status=gate_status,
+                next_action=next_action,
+                requires_failure_handling=False,
+                failure_stage=None,
+                failure_reason_summary=None,
+            )
+
     return candidate_status
 
 
