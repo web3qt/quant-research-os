@@ -61,13 +61,18 @@ def classify_review_operation(
             blocking_reason="Deterministic review-ready preflight failed before reviewer launch.",
         )
     if proof_chain_error:
-        if "REVIEW_CONTRACT_CONTEXT_STALE" in proof_chain_error or "author digest" in proof_chain_error.lower():
+        normalized_error = proof_chain_error.lower()
+        if (
+            "REVIEW_CONTRACT_CONTEXT_STALE" in proof_chain_error
+            or "author digest" in normalized_error
+            or "bound_author_materialization_digest" in normalized_error
+        ):
             return RecommendedReviewOperation(
                 operation=OP_REQUEST_REFRESH_REQUIRED,
                 blocking_reason_code="AUTHOR_OUTPUTS_STALE",
                 blocking_reason=proof_chain_error,
             )
-        if "reviewed_artifact_paths do not match" in proof_chain_error or "review scope" in proof_chain_error.lower():
+        if "reviewed_artifact_paths do not match" in proof_chain_error or "review scope" in normalized_error:
             return RecommendedReviewOperation(
                 operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
                 blocking_reason_code="REVIEW_SCOPE_MISMATCH",

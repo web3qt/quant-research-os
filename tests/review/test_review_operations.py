@@ -49,6 +49,18 @@ def test_classify_review_operation_maps_contract_stale_to_request_refresh() -> N
     assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
 
 
+def test_classify_review_operation_maps_bound_author_digest_to_request_refresh() -> None:
+    operation = classify_review_operation(
+        proof_chain_error="active request is missing bound_author_materialization_digest",
+        review_verdict=None,
+        audit_error=None,
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_REQUEST_REFRESH_REQUIRED
+    assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+
+
 def test_classify_review_operation_maps_format_error_to_final_review_rewrite() -> None:
     operation = classify_review_operation(
         proof_chain_error="FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths do not match active request scope",
