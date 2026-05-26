@@ -3471,7 +3471,13 @@ def _review_entry_preflight_payload(
 ) -> dict[str, object] | None:
     if not current_stage.endswith("_review_confirmation_pending"):
         return None
-    if _stage_base_name(current_stage) != "mandate":
+    review_ready_preflight_stages = {
+        "mandate",
+        "data_ready",
+        "csf_data_ready",
+        "tss_data_ready",
+    }
+    if _stage_base_name(current_stage) not in review_ready_preflight_stages:
         return None
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
@@ -3481,7 +3487,7 @@ def _review_entry_preflight_payload(
     if not all((author_formal_dir / name).exists() for name in spec.required_outputs):
         return None
     try:
-        # 当前 rollout 只在 mandate review-entry 启用 deterministic preflight；
+        # 当前 rollout 只在 mandate 与 data-ready review-entry 启用 deterministic preflight；
         # 继续保持“required outputs 已齐才触发”的既有语义，避免把半成品误报成 reviewer-lane 失败。
         return run_review_preflight(
             explicit_context={

@@ -10,16 +10,15 @@ from runtime.tools.research_session import (
     run_research_session,
 )
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
+from tests.session.test_research_session_runtime import _write_minimal_stage_outputs
 
 
 POST_MANDATE_REVIEW_CONFIRMATION_STAGES = (
-    "data_ready_review_confirmation_pending",
     "signal_ready_review_confirmation_pending",
     "train_freeze_review_confirmation_pending",
     "test_evidence_review_confirmation_pending",
     "backtest_ready_review_confirmation_pending",
     "holdout_validation_review_confirmation_pending",
-    "csf_data_ready_review_confirmation_pending",
     "csf_signal_ready_review_confirmation_pending",
     "csf_train_freeze_review_confirmation_pending",
     "csf_test_evidence_review_confirmation_pending",
@@ -62,6 +61,47 @@ def test_csf_data_ready_required_outputs_are_classified_artifacts() -> None:
     classified_artifacts = set(normalize_review_paths(gate["machine_artifacts"] + gate["human_artifacts"]))
 
     assert required_outputs <= classified_artifacts
+
+
+def test_csf_data_ready_review_confirmation_runs_review_ready_preflight(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    mandate_formal_dir = lineage_root / "01_mandate" / "author" / "formal"
+    mandate_formal_dir.mkdir(parents=True, exist_ok=True)
+    (mandate_formal_dir / "research_route.yaml").write_text(
+        "research_route: cross_sectional_factor\n",
+        encoding="utf-8",
+    )
+    stage_dir = lineage_root / "02_csf_data_ready"
+    _write_minimal_stage_outputs(stage_dir, stage="csf_data_ready")
+    (lineage_root / "review_eligibility.json").write_text(
+        json.dumps({"semantic_gate": {"status": "pass"}}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        assert Path(explicit_context["stage_dir"]) == stage_dir
+        return {
+            "stage": "csf_data_ready",
+            "lineage_id": lineage_root.name,
+            "status": "FAIL",
+            "content_findings": [
+                "run_manifest.json: source_data_provenance must bind real input data before review"
+            ],
+            "upstream_binding_findings": [],
+            "research_preflight_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _fake_run_review_preflight)
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "awaiting_author_fix"
+    assert status.blocking_reason_code == "OUTPUTS_INVALID"
+    assert "source_data_provenance" in (status.blocking_reason or "")
 
 
 def _write_required_author_outputs(lineage_root: Path, current_stage: str) -> Path:
@@ -143,18 +183,26 @@ def test_review_entry_preflight_does_not_expand_to_post_mandate_review_confirmat
     assert captured_stage_dirs == []
 
 
-def test_run_research_session_keeps_post_mandate_review_entry_pending_without_preflight_gate(
+def test_run_research_session_keeps_data_ready_review_entry_pending_after_passing_preflight(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     stage_dir = _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+    captured_stage_dirs: list[Path] = []
 
-    def _unexpected_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
-        raise AssertionError(f"unexpected preflight for {explicit_context['stage_dir']}")
+    def _passing_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        captured_stage_dirs.append(Path(explicit_context["stage_dir"]))
+        return {
+            "stage": "data_ready",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        }
 
-    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _unexpected_preflight)
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _passing_preflight)
 
     assert stage_dir == lineage_root / "02_data_ready"
     assert detect_session_stage(lineage_root) == "data_ready_review_confirmation_pending"
@@ -165,6 +213,8 @@ def test_run_research_session_keeps_post_mandate_review_entry_pending_without_pr
     assert status.stage_status == "awaiting_review_confirmation"
     assert status.blocking_reason_code == "REVIEW_CONFIRMATION_REQUIRED"
     assert "qros-data-ready-review" in (status.next_action or "")
+    assert captured_stage_dirs
+    assert all(captured_stage_dir == stage_dir for captured_stage_dir in captured_stage_dirs)
 
 
 def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session(
@@ -173,12 +223,20 @@ def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session
 ) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
-    _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+    stage_dir = _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+    captured_stage_dirs: list[Path] = []
 
-    def _unexpected_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
-        raise AssertionError(f"unexpected preflight for {explicit_context['stage_dir']}")
+    def _passing_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        captured_stage_dirs.append(Path(explicit_context["stage_dir"]))
+        return {
+            "stage": "data_ready",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        }
 
-    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _unexpected_preflight)
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _passing_preflight)
 
     status = run_research_session(
         outputs_root=outputs_root,
@@ -193,12 +251,29 @@ def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session
     assert "CONFIRM_REVIEW" in status.next_action
     assert "stage-specific review protocol internally" in status.next_action
     assert "qros-data-ready-review" not in status.next_action
+    assert captured_stage_dirs
+    assert all(captured_stage_dir == stage_dir for captured_stage_dir in captured_stage_dirs)
 
 
-def test_confirm_review_moves_continue_mode_into_review_lane(tmp_path: Path) -> None:
+def test_confirm_review_moves_continue_mode_into_review_lane(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     stage_dir = _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+
+    def _passing_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        assert Path(explicit_context["stage_dir"]) == stage_dir
+        return {
+            "stage": "data_ready",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _passing_preflight)
 
     status = run_research_session(
         outputs_root=outputs_root,
