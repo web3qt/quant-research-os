@@ -159,6 +159,37 @@ def test_review_entry_preflight_runs_for_mandate_review_confirmation_pending(
     assert captured_stage_dirs == [stage_dir]
 
 
+def test_review_entry_preflight_runs_for_tss_data_ready_review_confirmation_pending(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "btc_leads_alts"
+    current_stage = "tss_data_ready_review_confirmation_pending"
+    stage_dir = _write_required_author_outputs(lineage_root, current_stage)
+    captured_stage_dirs: list[Path] = []
+
+    def _fake_run_review_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
+        captured_stage_dirs.append(Path(explicit_context["stage_dir"]))
+        return {
+            "stage": "tss_data_ready",
+            "lineage_id": lineage_root.name,
+            "status": "PASS",
+            "content_findings": [],
+            "upstream_binding_findings": [],
+        }
+
+    monkeypatch.setattr("runtime.tools.research_session.run_review_preflight", _fake_run_review_preflight)
+
+    payload = _review_entry_preflight_payload(
+        lineage_root=lineage_root,
+        current_stage=current_stage,  # type: ignore[arg-type]
+    )
+
+    assert payload is not None
+    assert payload["status"] == "PASS"
+    assert captured_stage_dirs == [stage_dir]
+
+
 @pytest.mark.parametrize("current_stage", POST_MANDATE_REVIEW_CONFIRMATION_STAGES)
 def test_review_entry_preflight_does_not_expand_to_post_mandate_review_confirmation_pending_stages(
     tmp_path: Path,
@@ -213,8 +244,7 @@ def test_run_research_session_keeps_data_ready_review_entry_pending_after_passin
     assert status.stage_status == "awaiting_review_confirmation"
     assert status.blocking_reason_code == "REVIEW_CONFIRMATION_REQUIRED"
     assert "qros-data-ready-review" in (status.next_action or "")
-    assert captured_stage_dirs
-    assert all(captured_stage_dir == stage_dir for captured_stage_dir in captured_stage_dirs)
+    assert captured_stage_dirs == [stage_dir]
 
 
 def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session(
@@ -251,8 +281,7 @@ def test_continue_mode_keeps_review_confirmation_user_facing_on_research_session
     assert "CONFIRM_REVIEW" in status.next_action
     assert "stage-specific review protocol internally" in status.next_action
     assert "qros-data-ready-review" not in status.next_action
-    assert captured_stage_dirs
-    assert all(captured_stage_dir == stage_dir for captured_stage_dir in captured_stage_dirs)
+    assert captured_stage_dirs == [stage_dir]
 
 
 def test_confirm_review_moves_continue_mode_into_review_lane(
@@ -262,9 +291,11 @@ def test_confirm_review_moves_continue_mode_into_review_lane(
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
     stage_dir = _write_required_author_outputs(lineage_root, "data_ready_review_confirmation_pending")
+    captured_stage_dirs: list[Path] = []
 
     def _passing_preflight(*, explicit_context: dict[str, object]) -> dict[str, object]:
         assert Path(explicit_context["stage_dir"]) == stage_dir
+        captured_stage_dirs.append(Path(explicit_context["stage_dir"]))
         return {
             "stage": "data_ready",
             "lineage_id": lineage_root.name,
@@ -288,3 +319,4 @@ def test_confirm_review_moves_continue_mode_into_review_lane(
     assert status.blocking_reason == "data_ready review lane is active and waiting for reviewer output, audit, or closure."
     assert "review orchestration for data_ready" in status.next_action
     assert (stage_dir / "author" / "draft" / "review_transition_approval.yaml").exists()
+    assert captured_stage_dirs == [stage_dir]

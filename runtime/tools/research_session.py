@@ -387,6 +387,7 @@ BacktestReadyTransitionDecision = Literal["CONFIRM_BACKTEST_READY", "HOLD", "REF
 HoldoutValidationTransitionDecision = Literal["CONFIRM_HOLDOUT_VALIDATION", "HOLD", "REFRAME"]
 ReviewTransitionDecision = Literal["CONFIRM_REVIEW"]
 NextStageTransitionDecision = Literal["CONFIRM_NEXT_STAGE"]
+ReviewEntryPreflightCache = dict[tuple[Path, SessionStage], dict[str, object] | None]
 MANDATE_REQUIRED_OUTPUTS = [
     "mandate.md",
     "research_scope.md",
@@ -2845,6 +2846,7 @@ def summarize_session_status(
     runtime_stage_status_override: str | None = None,
     runtime_blocking_reason_code_override: str | None = None,
     runtime_next_action_override: str | None = None,
+    review_entry_preflight_cache: ReviewEntryPreflightCache | None = None,
     continue_mode: bool = False,
 ) -> SessionContext:
     (
@@ -2861,6 +2863,7 @@ def summarize_session_status(
         current_stage=current_stage,
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
+        review_entry_preflight_cache=review_entry_preflight_cache,
     )
     if runtime_stage_status_override is not None:
         stage_status = runtime_stage_status_override
@@ -3349,6 +3352,7 @@ def _review_confirmation_author_fix_runtime(
     current_stage: SessionStage,
     review_verdict: str | None,
     requires_failure_handling: bool,
+    review_entry_preflight_cache: ReviewEntryPreflightCache | None = None,
 ) -> tuple[bool, str | None, str | None]:
     if not current_stage.endswith("_review_confirmation_pending"):
         return False, None, None
@@ -3357,6 +3361,7 @@ def _review_confirmation_author_fix_runtime(
         current_stage=current_stage,
         review_verdict=review_verdict,
         requires_failure_handling=requires_failure_handling,
+        review_entry_preflight_cache=review_entry_preflight_cache,
     )
     if runtime_state != "awaiting_author_fix":
         return False, None, None
@@ -3503,6 +3508,26 @@ def _review_entry_preflight_payload(
             "content_findings": [f"review preflight failed: {exc}"],
             "upstream_binding_findings": [],
         }
+
+
+def _cached_review_entry_preflight_payload(
+    *,
+    lineage_root: Path,
+    current_stage: SessionStage,
+    review_entry_preflight_cache: ReviewEntryPreflightCache | None,
+) -> dict[str, object] | None:
+    if review_entry_preflight_cache is None:
+        return _review_entry_preflight_payload(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+        )
+    key = (lineage_root, current_stage)
+    if key not in review_entry_preflight_cache:
+        review_entry_preflight_cache[key] = _review_entry_preflight_payload(
+            lineage_root=lineage_root,
+            current_stage=current_stage,
+        )
+    return review_entry_preflight_cache[key]
 
 
 def _review_entry_preflight_findings(payload: dict[str, object] | None) -> list[str]:
@@ -3969,6 +3994,7 @@ def _program_runtime_status(
     current_stage: SessionStage,
     review_verdict: str | None,
     requires_failure_handling: bool,
+    review_entry_preflight_cache: ReviewEntryPreflightCache | None = None,
 ) -> tuple[str, str, str | None, str | None, str, str, str | None, str]:
     spec = _program_spec_for_session_stage(current_stage)
     if spec is None:
@@ -4027,9 +4053,10 @@ def _program_runtime_status(
             "No further action required.",
         )
     if current_stage.endswith("_review_confirmation_pending"):
-        preflight_payload = _review_entry_preflight_payload(
+        preflight_payload = _cached_review_entry_preflight_payload(
             lineage_root=lineage_root,
             current_stage=current_stage,
+            review_entry_preflight_cache=review_entry_preflight_cache,
         )
         preflight_findings = _review_entry_preflight_findings(preflight_payload)
         if preflight_findings:
@@ -4227,6 +4254,7 @@ def run_research_session(
         )
 
     artifacts_written: list[str] = []
+    review_entry_preflight_cache: ReviewEntryPreflightCache = {}
     current_stage = detect_session_stage(lineage_root)
     try:
         assert_current_protected_review_state_intact(
@@ -4324,9 +4352,10 @@ def run_research_session(
         current_stage = detect_session_stage(lineage_root)
 
     if failure_package_status is None and review_decision is not None and current_stage.endswith("_review_confirmation_pending"):
-        preflight_payload = _review_entry_preflight_payload(
+        preflight_payload = _cached_review_entry_preflight_payload(
             lineage_root=lineage_root,
             current_stage=current_stage,
+            review_entry_preflight_cache=review_entry_preflight_cache,
         )
         preflight_findings = _review_entry_preflight_findings(preflight_payload)
         if not preflight_findings and not _review_transition_is_blocked(
@@ -4560,6 +4589,7 @@ def run_research_session(
             current_stage=current_stage,
             review_verdict=review_verdict,
             requires_failure_handling=requires_failure_handling,
+            review_entry_preflight_cache=review_entry_preflight_cache,
         )
         if preflight_already_blocked:
             gate_status = "OUTPUTS_INVALID"
@@ -4618,6 +4648,7 @@ def run_research_session(
         runtime_stage_status_override=runtime_stage_status_override,
         runtime_blocking_reason_code_override=runtime_blocking_reason_code_override,
         runtime_next_action_override=runtime_next_action_override,
+        review_entry_preflight_cache=review_entry_preflight_cache,
         continue_mode=continue_mode,
     )
 
