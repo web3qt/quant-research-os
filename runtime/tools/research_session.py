@@ -659,17 +659,6 @@ TSS_HOLDOUT_VALIDATION_REQUIRED_OUTPUTS = [
 ]
 ADVANCING_COMPLETION_STATUSES = {"PASS", "CONDITIONAL PASS", "GO"}
 NON_ADVANCING_COMPLETION_STATUSES = {"PASS FOR RETRY", "RETRY", "NO-GO", "CHILD LINEAGE"}
-REVIEW_PROTOCOL_STATUS_MAP: dict[str, tuple[str, str]] = {
-    "REVIEWER_UNBOUND": ("reviewer_unbound", "REVIEWER_UNBOUND"),
-    "REVIEW_CONTRACT_CONTEXT_STALE": ("author_outputs_stale", "AUTHOR_OUTPUTS_STALE"),
-    "review cycle is stale": ("author_outputs_stale", "AUTHOR_OUTPUTS_STALE"),
-    "reviewed_artifact_paths do not match active request scope": (
-        "review_scope_mismatch",
-        "REVIEW_SCOPE_MISMATCH",
-    ),
-    "FORBIDDEN_FINAL_REVIEW_NORMALIZATION": ("review_format_invalid", "REVIEW_FORMAT_INVALID"),
-    "REVIEWER_WRITE_SCOPE_VIOLATION": ("reviewer_scope_violation", "REVIEWER_SCOPE_VIOLATION"),
-}
 REVIEW_VERDICT_BY_OUTCOME = {
     "CLOSURE_READY_PASS": "PASS",
     "CLOSURE_READY_CONDITIONAL_PASS": "CONDITIONAL PASS",
@@ -3410,7 +3399,6 @@ def _review_state_snapshot(
     except Exception:
         request_payload = {}
     proof_chain_error = _review_proof_chain_error(stage_dir)
-    proof_chain_status = _review_protocol_status(proof_chain_error)
     review_result = _load_final_review_if_present(stage_dir)
     certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
     closure_written_at = (
@@ -3552,12 +3540,17 @@ def _load_final_review_if_present(stage_dir: Path) -> dict | None:
     return None
 
 
-def _review_protocol_status(error: str | None) -> tuple[str, str] | None:
-    if not error:
-        return None
-    for marker, status_pair in REVIEW_PROTOCOL_STATUS_MAP.items():
-        if marker in error:
-            return status_pair
+def _review_operation_status(operation_code: str | None) -> tuple[str, str] | None:
+    if operation_code == "REVIEWER_UNBOUND":
+        return ("reviewer_unbound", operation_code)
+    if operation_code == "AUTHOR_OUTPUTS_STALE":
+        return ("author_outputs_stale", operation_code)
+    if operation_code == "REVIEW_SCOPE_MISMATCH":
+        return ("review_scope_mismatch", operation_code)
+    if operation_code == "REVIEW_FORMAT_INVALID":
+        return ("review_format_invalid", operation_code)
+    if operation_code == "REVIEWER_SCOPE_VIOLATION":
+        return ("reviewer_scope_violation", operation_code)
     return None
 
 
@@ -3809,6 +3802,13 @@ def _review_substate(
             return f"review session {receipt_payload['requested_reviewer_session_id']}"
         return f"reviewer agent {receipt_payload['reviewer_agent_id']}"
 
+    if audit_error is not None and operation.operation == OP_REVIEWER_RESTART_REQUIRED:
+        return (
+            "reviewer_scope_violation",
+            "REVIEWER_SCOPE_VIOLATION",
+            f"{stage_base} reviewer write-scope audit failed: {audit_error}",
+            f"Invalidate this reviewer cycle and launch a fresh reviewer through {review_skill}; do not reuse the old verdict.",
+        )
     if not request_path.exists():
         return (
             "awaiting_adversarial_review",
@@ -3817,9 +3817,9 @@ def _review_substate(
             f"Enter {review_skill} in the current session; launch a reviewer agent and then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if review_receipt is None and proof_chain_error is not None:
-        protocol_status = _review_protocol_status(proof_chain_error)
-        if protocol_status is not None:
-            stage_status, blocking_reason_code = protocol_status
+        operation_status = _review_operation_status(operation.blocking_reason_code)
+        if operation_status is not None:
+            stage_status, blocking_reason_code = operation_status
             return (
                 stage_status,
                 blocking_reason_code,
@@ -3845,9 +3845,9 @@ def _review_substate(
         )
     if review_result is None:
         if review_receipt is not None and proof_chain_error is not None:
-            protocol_status = _review_protocol_status(proof_chain_error)
-            if protocol_status is not None:
-                stage_status, blocking_reason_code = protocol_status
+            operation_status = _review_operation_status(operation.blocking_reason_code)
+            if operation_status is not None:
+                stage_status, blocking_reason_code = operation_status
                 return (
                     stage_status,
                     blocking_reason_code,
@@ -3879,9 +3879,9 @@ def _review_substate(
             f"Enter {review_skill} in the current session, launch the reviewer, then wait for review/{FINAL_REVIEW_FILENAME}.",
         )
     if proof_chain_error is not None:
-        protocol_status = _review_protocol_status(proof_chain_error)
-        if protocol_status is not None:
-            stage_status, blocking_reason_code = protocol_status
+        operation_status = _review_operation_status(operation.blocking_reason_code)
+        if operation_status is not None:
+            stage_status, blocking_reason_code = operation_status
             return (
                 stage_status,
                 blocking_reason_code,
@@ -3920,16 +3920,9 @@ def _review_substate(
             f"Resolve {REVIEWER_WRITE_SCOPE_AUDIT_FILENAME} for {stage_base} via ./.qros/bin/qros-review, then continue qros-research-session to finish deterministic closure artifacts.",
         )
     if audit_error is not None:
-        protocol_status = _review_protocol_status(audit_error)
-        if operation.operation == OP_REVIEWER_RESTART_REQUIRED:
-            return (
-                "reviewer_scope_violation",
-                "REVIEWER_SCOPE_VIOLATION",
-                f"{stage_base} reviewer write-scope audit failed: {audit_error}",
-                f"Invalidate this reviewer cycle and launch a fresh reviewer through {review_skill}; do not reuse the old verdict.",
-            )
-        if protocol_status is not None:
-            stage_status, blocking_reason_code = protocol_status
+        operation_status = _review_operation_status(operation.blocking_reason_code)
+        if operation_status is not None:
+            stage_status, blocking_reason_code = operation_status
             return (
                 stage_status,
                 blocking_reason_code,
@@ -5213,11 +5206,16 @@ def _review_gate_status_and_next_action(lineage_root: Path, current_stage: Sessi
             "ADVERSARIAL_REVIEW_PENDING",
             f"Enter {review_skill} in the current session; launch a reviewer and wait for review/{FINAL_REVIEW_FILENAME}.",
         )
+    if audit_error is not None and operation.operation == OP_REVIEWER_RESTART_REQUIRED:
+        return (
+            "REVIEWER_SCOPE_VIOLATION",
+            f"Invalidate this reviewer cycle and launch a fresh reviewer through {review_skill}; do not reuse the old verdict.",
+        )
     if proof_chain_error is not None:
-        protocol_status = _review_protocol_status(proof_chain_error)
-        if protocol_status is not None:
+        operation_status = _review_operation_status(operation.blocking_reason_code)
+        if operation_status is not None:
             return (
-                protocol_status[1],
+                operation_status[1],
                 _review_operation_next_action(
                     operation=operation.operation,
                     stage_base=_stage_base_name(current_stage),

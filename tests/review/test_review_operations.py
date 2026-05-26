@@ -109,6 +109,18 @@ def test_classify_review_operation_maps_audit_error_to_reviewer_restart() -> Non
     assert operation.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
 
 
+def test_classify_review_operation_prioritizes_audit_error_over_stale_proof_chain() -> None:
+    operation = classify_review_operation(
+        proof_chain_error="REVIEW_CONTRACT_CONTEXT_STALE: author digest changed after review request",
+        review_verdict="PASS",
+        audit_error="REVIEWER_WRITE_SCOPE_VIOLATION: reviewer wrote review/result/notes.yaml",
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_REVIEWER_RESTART_REQUIRED
+    assert operation.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
+
+
 def test_classify_review_operation_maps_preflight_block_to_author_fix_before_review() -> None:
     operation = classify_review_operation(
         proof_chain_error=None,
