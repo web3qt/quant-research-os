@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from runtime.tools.review_operations import (
     OP_AWAITING_REVIEWER_COMPLETION,
     OP_AUTHOR_FIX_REQUIRED_BEFORE_REVIEW,
+    OP_FAILURE_HANDLING_REQUIRED,
     OP_FINAL_REVIEW_REWRITE_REQUIRED,
     OP_REQUEST_REFRESH_REQUIRED,
     OP_REVIEWER_RESTART_REQUIRED,
@@ -61,9 +64,18 @@ def test_classify_review_operation_maps_bound_author_digest_to_request_refresh()
     assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
 
 
-def test_classify_review_operation_maps_format_error_to_final_review_rewrite() -> None:
+@pytest.mark.parametrize(
+    "proof_chain_error",
+    [
+        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_path does not match active request scope",
+        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_program_digest does not match active request scope",
+        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_digest does not match active request scope",
+        "FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths do not match active request scope",
+    ],
+)
+def test_classify_review_operation_maps_scope_mismatch_to_final_review_rewrite(proof_chain_error: str) -> None:
     operation = classify_review_operation(
-        proof_chain_error="FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths do not match active request scope",
+        proof_chain_error=proof_chain_error,
         review_verdict=None,
         audit_error=None,
         preflight_blocked=False,
@@ -71,6 +83,18 @@ def test_classify_review_operation_maps_format_error_to_final_review_rewrite() -
 
     assert operation.operation == OP_FINAL_REVIEW_REWRITE_REQUIRED
     assert operation.blocking_reason_code == "REVIEW_SCOPE_MISMATCH"
+
+
+def test_classify_review_operation_maps_format_invalid_to_final_review_rewrite() -> None:
+    operation = classify_review_operation(
+        proof_chain_error="FORBIDDEN_FINAL_REVIEW_NORMALIZATION: reviewed_artifact_paths must be a list",
+        review_verdict=None,
+        audit_error=None,
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_FINAL_REVIEW_REWRITE_REQUIRED
+    assert operation.blocking_reason_code == "REVIEW_FORMAT_INVALID"
 
 
 def test_classify_review_operation_maps_audit_error_to_reviewer_restart() -> None:
@@ -95,3 +119,15 @@ def test_classify_review_operation_maps_preflight_block_to_author_fix_before_rev
 
     assert operation.operation == OP_AUTHOR_FIX_REQUIRED_BEFORE_REVIEW
     assert operation.blocking_reason_code == "OUTPUTS_INVALID"
+
+
+def test_classify_review_operation_maps_pass_for_retry_to_failure_handling() -> None:
+    operation = classify_review_operation(
+        proof_chain_error=None,
+        review_verdict="PASS FOR RETRY",
+        audit_error=None,
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_FAILURE_HANDLING_REQUIRED
+    assert operation.blocking_reason_code == "FAILURE_HANDLING_REQUIRED"

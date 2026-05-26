@@ -62,6 +62,12 @@ def classify_review_operation(
         )
     if proof_chain_error:
         normalized_error = proof_chain_error.lower()
+        scope_mismatch_phrases = (
+            "reviewed_program_path does not match active request scope",
+            "reviewed_program_digest does not match active request scope",
+            "reviewed_artifact_digest does not match active request scope",
+            "reviewed_artifact_paths do not match active request scope",
+        )
         if (
             "REVIEW_CONTRACT_CONTEXT_STALE" in proof_chain_error
             or "author digest" in normalized_error
@@ -72,7 +78,7 @@ def classify_review_operation(
                 blocking_reason_code="AUTHOR_OUTPUTS_STALE",
                 blocking_reason=proof_chain_error,
             )
-        if "reviewed_artifact_paths do not match" in proof_chain_error or "review scope" in normalized_error:
+        if any(phrase in normalized_error for phrase in scope_mismatch_phrases) or "review scope" in normalized_error:
             return RecommendedReviewOperation(
                 operation=OP_FINAL_REVIEW_REWRITE_REQUIRED,
                 blocking_reason_code="REVIEW_SCOPE_MISMATCH",
@@ -101,7 +107,7 @@ def classify_review_operation(
             blocking_reason_code="AUTHOR_FIX_REQUIRED",
             blocking_reason="Reviewer requested author fixes before closure.",
         )
-    if review_verdict in {"RETRY", "NO-GO", "CHILD LINEAGE"}:
+    if review_verdict in {"RETRY", "NO-GO", "CHILD LINEAGE", "PASS FOR RETRY"}:
         return RecommendedReviewOperation(
             operation=OP_FAILURE_HANDLING_REQUIRED,
             blocking_reason_code="FAILURE_HANDLING_REQUIRED",
