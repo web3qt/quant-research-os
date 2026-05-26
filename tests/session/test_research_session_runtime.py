@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -3341,6 +3342,30 @@ def test_run_research_session_reports_author_outputs_stale_after_prepare(
 
     assert status.stage_status == "author_outputs_stale"
     assert status.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+    assert "Refresh" in status.next_action or "refresh" in status.next_action
+
+
+def test_run_research_session_reports_author_outputs_stale_for_review_cycle_stale_reason(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    output_path = stage_dir / "author" / "formal" / "mandate.md"
+    future_mtime = request_path.stat().st_mtime + 5
+    os.utime(output_path, (future_mtime, future_mtime))
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "author_outputs_stale"
+    assert status.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+    assert "review cycle is stale" in (status.blocking_reason or "")
+    assert "Refresh" in status.next_action or "refresh" in status.next_action
 
 
 @pytest.mark.parametrize(
@@ -3477,6 +3502,36 @@ def test_run_research_session_reports_final_review_rewrite_for_program_path_mism
         status.blocking_reason or ""
     )
     assert "rewrite" in status.next_action.lower() or "final_review.yaml" in status.next_action
+
+
+def test_run_research_session_reports_generic_review_audit_failure_without_reviewer_restart(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "btc_leads_alts"
+    stage_dir = lineage_root / "01_mandate"
+
+    _write_minimal_stage_outputs(stage_dir, stage="mandate")
+    _write_adversarial_review_request(stage_dir, stage="mandate", program_dir="program/mandate")
+    _write_reviewer_receipt(stage_dir)
+    _write_adversarial_review_result(
+        stage_dir,
+        stage="mandate",
+        program_dir="program/mandate",
+        outcome="CLOSURE_READY_PASS",
+    )
+    audit_path = stage_dir / "review" / "result" / "reviewer_write_scope_audit.yaml"
+    audit_payload = yaml.safe_load(audit_path.read_text(encoding="utf-8"))
+    audit_payload["review_cycle_id"] = "mismatched-review-cycle"
+    audit_path.write_text(yaml.safe_dump(audit_payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+    status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_root.name)
+
+    assert status.stage_status == "awaiting_reviewer_write_scope_audit"
+    assert status.blocking_reason_code == "REVIEW_AUDIT_FAILED"
+    assert status.gate_status == "REVIEW_AUDIT_FAILED"
+    assert "review_cycle_id does not match reviewer_receipt.yaml" in (status.blocking_reason or "")
+    assert "discard the invalid review cycle" in status.next_action
 
 
 def test_run_research_session_accepts_mapping_findings_in_raw_final_review(

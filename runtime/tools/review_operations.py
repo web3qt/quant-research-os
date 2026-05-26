@@ -60,10 +60,16 @@ def classify_review_operation(
             blocking_reason_code="OUTPUTS_INVALID",
             blocking_reason="Deterministic review-ready preflight failed before reviewer launch.",
         )
-    if audit_error:
+    if audit_error and "REVIEWER_WRITE_SCOPE_VIOLATION" in audit_error:
         return RecommendedReviewOperation(
             operation=OP_REVIEWER_RESTART_REQUIRED,
             blocking_reason_code="REVIEWER_SCOPE_VIOLATION",
+            blocking_reason=audit_error,
+        )
+    if audit_error:
+        return RecommendedReviewOperation(
+            operation=OP_REVIEW_PREPARED,
+            blocking_reason_code="REVIEW_AUDIT_FAILED",
             blocking_reason=audit_error,
         )
     if proof_chain_error:
@@ -85,6 +91,8 @@ def classify_review_operation(
             "REVIEW_CONTRACT_CONTEXT_STALE" in proof_chain_error
             or "author digest" in normalized_error
             or "bound_author_materialization_digest" in normalized_error
+            or "review cycle is stale" in normalized_error
+            or "author/formal outputs or provenance changed" in normalized_error
         ):
             return RecommendedReviewOperation(
                 operation=OP_REQUEST_REFRESH_REQUIRED,

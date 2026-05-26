@@ -10,6 +10,7 @@ from runtime.tools.review_operations import (
     OP_REQUEST_REFRESH_REQUIRED,
     OP_REVIEWER_RESTART_REQUIRED,
     OP_REVIEW_NOT_STARTED,
+    OP_REVIEW_PREPARED,
     ReviewOperationSnapshot,
     build_review_operations_snapshot,
     classify_review_operation,
@@ -64,6 +65,21 @@ def test_classify_review_operation_maps_bound_author_digest_to_request_refresh()
     assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
 
 
+def test_classify_review_operation_maps_stale_review_cycle_to_request_refresh() -> None:
+    operation = classify_review_operation(
+        proof_chain_error=(
+            "author/formal outputs or provenance changed after adversarial_review_request.yaml was issued; "
+            "review cycle is stale"
+        ),
+        review_verdict=None,
+        audit_error=None,
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_REQUEST_REFRESH_REQUIRED
+    assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+
+
 @pytest.mark.parametrize(
     "proof_chain_error",
     [
@@ -107,6 +123,18 @@ def test_classify_review_operation_maps_audit_error_to_reviewer_restart() -> Non
 
     assert operation.operation == OP_REVIEWER_RESTART_REQUIRED
     assert operation.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
+
+
+def test_classify_review_operation_maps_generic_audit_error_to_audit_failed() -> None:
+    operation = classify_review_operation(
+        proof_chain_error=None,
+        review_verdict="PASS",
+        audit_error="reviewer_write_scope_audit.yaml review_cycle_id does not match reviewer_receipt.yaml",
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_REVIEW_PREPARED
+    assert operation.blocking_reason_code == "REVIEW_AUDIT_FAILED"
 
 
 def test_classify_review_operation_prioritizes_audit_error_over_stale_proof_chain() -> None:
