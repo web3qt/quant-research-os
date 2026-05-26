@@ -76,6 +76,10 @@ description: Use when the user asks for latest QROS research progress, current l
 - hard gate fail 不是 review lane candidate；如果 runtime 仍在 semantic gate、deterministic preflight、failure package 或 failure disposition 上阻断，就不要把当前 stage 说成“只差 review”。
 - `*_review_confirmation_pending` 只适用于真正 review-eligible 的 stage；它不是“artifact 齐了”的泛用中间态。
 - 如果 `current_stage` 仍被投影成 `*_review_confirmation_pending`，但 `stage_status` / `blocking_reason_code` 已明确说明 blocked，应按 blocked 解读，而不是把它汇报成 review-ready。
+- `AUTHOR_FIX_REQUIRED_BEFORE_REVIEW` means deterministic review-ready preflight failed; do not launch reviewer.
+- `REQUEST_REFRESH_REQUIRED` means active request/handoff must be refreshed before reviewer work continues.
+- `FINAL_REVIEW_REWRITE_REQUIRED` means the bound reviewer must rewrite `review/final_review.yaml`.
+- `REVIEWER_RESTART_REQUIRED` means the current reviewer cycle is invalid and a new cycle is required.
 - `CHILD_LINEAGE` 仍然只是 formal failure/disposition 结果，不是普通 review / author lane 的可选分支。
 
 不要根据聊天记忆覆盖磁盘状态；磁盘和 runtime 输出是进度查询的事实来源。

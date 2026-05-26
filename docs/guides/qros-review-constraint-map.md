@@ -193,6 +193,18 @@ Codex 安装副本在本机：
 | review 结束后回 author lane | 人显式恢复 author session | 给出 `awaiting_author_fix`、`resume_hint`、stale 判定 | runtime 自动无声切回 author |
 | review 通过后进入下游 | 人显式确认 next-stage handoff | closure 判真、推进 stage state | 旧 review result 在 author outputs 更新后继续被视为有效 |
 
+## Review Operations Constraints
+
+The review-ready preflight is deterministic author-lane validation. It may block reviewer launch for missing artifacts, placeholder machine outputs, missing provenance, stale handoff scope, or stage program identity failures, but it does not create a reviewer verdict.
+
+The reviewer-owned write path remains `review/final_review.yaml`. Runtime-owned projection, closure, write-scope audit, and recovery routing remain outside the reviewer write scope.
+
+Proof-chain recovery operations are launcher/runtime operations:
+
+- `REQUEST_REFRESH_REQUIRED`: rebuild request and handoff before reviewer work continues.
+- `FINAL_REVIEW_REWRITE_REQUIRED`: the bound reviewer must rewrite `review/final_review.yaml` against the active request.
+- `REVIEWER_RESTART_REQUIRED`: invalidate the current reviewer cycle and launch a new one.
+
 ### 建议的最小模型
 
 如果按这个方向收口，一个最小且强约束的模型应该是：
