@@ -351,6 +351,7 @@ def _reviewer_handoff_prompt(
     request_root = _display_path(stage_dir / "review" / "request", display_root=display_root)
     author_root = _display_path(stage_dir / "author" / "formal", display_root=display_root)
     review_root = _display_path(stage_dir / "review", display_root=display_root)
+    final_review_path = _display_path(stage_dir / "review" / FINAL_REVIEW_FILENAME, display_root=display_root)
     request_payload = payload["request_payload"]
     receipt_payload = payload["receipt_payload"]
     stage_contract_context_yaml_path = request_payload.get("stage_contract_context_yaml_path")
@@ -419,7 +420,7 @@ def _reviewer_handoff_prompt(
         f"- {_display_path(stage_dir / stage_contract_context_md_path, display_root=display_root) if isinstance(stage_contract_context_md_path, str) else request_root + '/' + STAGE_CONTRACT_CONTEXT_MD_FILENAME}",
         "",
         "Write exactly one reviewer-owned file:",
-        f"- {stage_dir.name}/review/{FINAL_REVIEW_FILENAME}",
+        f"- {final_review_path}",
         "",
         "Write exactly one canonical machine-readable review artifact.",
         "Required final review schema:",

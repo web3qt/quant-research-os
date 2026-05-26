@@ -207,6 +207,7 @@ def test_review_handoff_instructs_reviewer_to_write_final_review_yaml(monkeypatc
 def test_review_handoff_lists_exact_expected_final_review_bindings(tmp_path: Path) -> None:
     lineage_root, stage_dir = _prepare_mandate_stage(tmp_path)
     payload = prepare_review_cycle_for_handoff(
+        cwd=tmp_path,
         explicit_context={"stage_dir": stage_dir, "lineage_root": lineage_root},
         reviewer_identity="codex-mandate-reviewer",
         reviewer_session_id="review-session-1",
@@ -227,6 +228,8 @@ def test_review_handoff_lists_exact_expected_final_review_bindings(tmp_path: Pat
     assert "review/request/stage_contract_context.yaml" in prompt
     assert "review/request/stage_contract_context.md" in prompt
     assert "review/final_review.yaml" in prompt
+    assert "- outputs/topic_a/01_mandate/review/final_review.yaml" in prompt.splitlines()
+    assert "- 01_mandate/review/final_review.yaml" not in prompt.splitlines()
     assert "review/result/adversarial_review_result.yaml" not in prompt
 
 
