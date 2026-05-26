@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -23,11 +24,18 @@ from runtime.tools.review_skillgen.review_cycle_trace import load_review_cycle_t
 from runtime.tools.review_skillgen.review_runtime_state import (
     archive_active_review_cycle,
     compute_author_materialization_digest,
+    compute_author_materialization_digest_fresh,
     write_review_runtime_state,
 )
 from runtime.tools.review_skillgen.reviewer_write_scope_audit import (
     run_reviewer_write_scope_audit,
     write_reviewer_write_scope_baseline,
+)
+from runtime.tools.review_skillgen.stage_contract_context import (
+    STAGE_CONTRACT_CONTEXT_MD_FILENAME,
+    STAGE_CONTRACT_CONTEXT_YAML_FILENAME,
+    build_stage_contract_context,
+    render_stage_contract_context_markdown,
 )
 from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
 from tests.runtime.test_tss_test_evidence_runtime import (
@@ -104,7 +112,7 @@ def _write_adversarial_review_request(
 ) -> None:
     review_spec = _program_spec_for_session_stage(f"{stage_key}_review")
     assert review_spec is not None
-    ensure_adversarial_review_request(
+    request_payload = ensure_adversarial_review_request(
         stage_dir,
         lineage_id=stage_dir.parent.name,
         stage=review_spec.stage_id,
@@ -116,6 +124,50 @@ def _write_adversarial_review_request(
         required_provenance_paths=["program_execution_manifest.json"],
         program_hash="test-hash",
         stage_invoked_at="2026-04-03T00:00:00+00:00",
+    )
+    request_dir = stage_dir / "review" / "request"
+    bound_digest = compute_author_materialization_digest_fresh(
+        artifact_root=stage_dir / "author" / "formal",
+        required_outputs=request_payload["required_artifact_paths"],
+        required_provenance_paths=request_payload["required_provenance_paths"],
+    )
+    try:
+        context_payload = build_stage_contract_context(
+            stage_id=review_spec.stage_id,
+            lineage_id=stage_dir.parent.name,
+            review_cycle_id=request_payload["review_cycle_id"],
+            author_materialization_digest=bound_digest,
+            review_cycle_stage_dir=stage_dir,
+        )
+        context_md_text = render_stage_contract_context_markdown(context_payload)
+    except ValueError as exc:
+        if "REVIEW_CONTRACT_CONTEXT_MISSING" not in str(exc):
+            raise
+        context_payload = {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": review_spec.stage_id,
+            "review_cycle_id": request_payload["review_cycle_id"],
+            "stage_dir": str(stage_dir),
+            "author_materialization_digest": bound_digest,
+            "contract_sources": {},
+            "reviewer_focus": ["Review current stage formal package credibility."],
+        }
+        context_md_text = (
+            f"# {review_spec.stage_id} Review Context\n\n"
+            "This fixture context binds the active request to current author outputs.\n"
+        )
+    context_yaml_path = request_dir / STAGE_CONTRACT_CONTEXT_YAML_FILENAME
+    context_md_path = request_dir / STAGE_CONTRACT_CONTEXT_MD_FILENAME
+    context_yaml_text = yaml.safe_dump(context_payload, sort_keys=False, allow_unicode=True)
+    context_yaml_path.write_text(context_yaml_text, encoding="utf-8")
+    context_md_path.write_text(context_md_text, encoding="utf-8")
+    request_payload["bound_author_materialization_digest"] = bound_digest
+    request_payload["stage_contract_context_yaml_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_YAML_FILENAME}"
+    request_payload["stage_contract_context_md_path"] = f"review/request/{STAGE_CONTRACT_CONTEXT_MD_FILENAME}"
+    request_payload["stage_contract_context_digest"] = hashlib.sha256(context_yaml_text.encode("utf-8")).hexdigest()
+    (request_dir / "adversarial_review_request.yaml").write_text(
+        yaml.safe_dump(request_payload, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
     )
 
 
