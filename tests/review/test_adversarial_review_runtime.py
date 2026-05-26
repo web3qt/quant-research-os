@@ -109,6 +109,7 @@ def _write_adversarial_review_request(
     stage_key: str = "mandate",
     author_identity: str = "test-agent",
     author_session_id: str = "test-session",
+    allow_synthetic_context: bool = False,
 ) -> None:
     review_spec = _program_spec_for_session_stage(f"{stage_key}_review")
     assert review_spec is not None
@@ -141,7 +142,7 @@ def _write_adversarial_review_request(
         )
         context_md_text = render_stage_contract_context_markdown(context_payload)
     except ValueError as exc:
-        if "REVIEW_CONTRACT_CONTEXT_MISSING" not in str(exc):
+        if "REVIEW_CONTRACT_CONTEXT_MISSING" not in str(exc) or not allow_synthetic_context:
             raise
         context_payload = {
             "lineage_id": stage_dir.parent.name,
@@ -1105,7 +1106,11 @@ def test_run_research_session_reports_awaiting_adversarial_review_with_route_par
         stage_key=stage_key,
         stage_dir_name=stage_dir_name,
     )
-    _write_adversarial_review_request(stage_dir, stage_key=stage_key)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key=stage_key,
+        allow_synthetic_context=stage_key == "test_evidence",
+    )
 
     status = run_research_session(outputs_root=outputs_root, lineage_id=lineage_id)
 
@@ -1150,7 +1155,11 @@ def test_run_research_session_routes_fix_required_back_to_author_with_route_pari
         stage_key=stage_key,
         stage_dir_name=stage_dir_name,
     )
-    _write_adversarial_review_request(stage_dir, stage_key=stage_key)
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key=stage_key,
+        allow_synthetic_context=stage_key == "test_evidence",
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1176,7 +1185,11 @@ def test_run_research_session_waits_for_reviewer_child_after_receipt(tmp_path: P
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir, reviewer_agent_id="reviewer-child-agent")
 
     status = run_research_session(outputs_root=outputs_root, lineage_id="btc_reviewer_wait_case")
@@ -1195,7 +1208,11 @@ def test_run_research_session_waits_for_reviewer_write_scope_audit_before_closur
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1221,7 +1238,11 @@ def test_run_research_session_rejects_result_file_added_after_pass_audit(tmp_pat
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,
@@ -1252,7 +1273,11 @@ def test_run_research_session_keeps_review_pending_when_result_exists_without_re
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_adversarial_review_result(
         stage_dir,
         stage_key="test_evidence",
@@ -1277,7 +1302,11 @@ def test_run_research_session_keeps_review_pending_when_receipt_is_invalid(tmp_p
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_yaml(
         stage_dir / "review" / "request" / "reviewer_receipt.yaml",
@@ -1320,7 +1349,11 @@ def test_run_research_session_keeps_review_pending_when_request_handoff_is_inval
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
     request_payload = yaml.safe_load(request_path.read_text(encoding="utf-8"))
     request_payload["launcher_checked_artifact_paths"] = []
@@ -1342,7 +1375,11 @@ def test_run_research_session_invalidates_stale_review_cycle_after_author_output
         stage_key="test_evidence",
         stage_dir_name="05_test_evidence",
     )
-    _write_adversarial_review_request(stage_dir, stage_key="test_evidence")
+    _write_adversarial_review_request(
+        stage_dir,
+        stage_key="test_evidence",
+        allow_synthetic_context=True,
+    )
     _write_reviewer_receipt(stage_dir)
     _write_adversarial_review_result(
         stage_dir,

@@ -66,12 +66,6 @@ def classify_review_operation(
             blocking_reason_code="REVIEWER_SCOPE_VIOLATION",
             blocking_reason=audit_error,
         )
-    if audit_error:
-        return RecommendedReviewOperation(
-            operation=OP_REVIEW_PREPARED,
-            blocking_reason_code="REVIEW_AUDIT_FAILED",
-            blocking_reason=audit_error,
-        )
     if proof_chain_error:
         normalized_error = proof_chain_error.lower()
         scope_mismatch_phrases = (
@@ -115,6 +109,12 @@ def classify_review_operation(
             operation=OP_REQUEST_REFRESH_REQUIRED,
             blocking_reason_code="ADVERSARIAL_REVIEW_PENDING",
             blocking_reason=proof_chain_error,
+        )
+    if audit_error:
+        return RecommendedReviewOperation(
+            operation=OP_REVIEW_PREPARED,
+            blocking_reason_code="REVIEW_AUDIT_FAILED",
+            blocking_reason=audit_error,
         )
     if review_verdict == "FIX_REQUIRED":
         return RecommendedReviewOperation(

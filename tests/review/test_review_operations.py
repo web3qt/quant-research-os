@@ -149,6 +149,21 @@ def test_classify_review_operation_prioritizes_audit_error_over_stale_proof_chai
     assert operation.blocking_reason_code == "REVIEWER_SCOPE_VIOLATION"
 
 
+def test_classify_review_operation_prioritizes_stale_proof_chain_over_generic_audit_error() -> None:
+    operation = classify_review_operation(
+        proof_chain_error=(
+            "author/formal outputs or provenance changed after adversarial_review_request.yaml was issued; "
+            "review cycle is stale"
+        ),
+        review_verdict="PASS",
+        audit_error="reviewer_write_scope_audit.yaml review_cycle_id does not match reviewer_receipt.yaml",
+        preflight_blocked=False,
+    )
+
+    assert operation.operation == OP_REQUEST_REFRESH_REQUIRED
+    assert operation.blocking_reason_code == "AUTHOR_OUTPUTS_STALE"
+
+
 def test_classify_review_operation_maps_preflight_block_to_author_fix_before_review() -> None:
     operation = classify_review_operation(
         proof_chain_error=None,
