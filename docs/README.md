@@ -67,6 +67,34 @@
 
 <br>
 
+## 当前 canonical 阶段文档
+
+普通新研究线应从 `qros-research-session` 进入，并在 `mandate` 后按 `research_route` 走 route-specific 主线。
+
+`time_series_signal` 当前 canonical SOP：
+
+- [TSS Data Ready](sop/main-flow/02_tss_data_ready_sop_cn.md)
+- [TSS Signal Ready](sop/main-flow/03_tss_signal_ready_sop_cn.md)
+- [TSS Train Freeze](sop/main-flow/04_tss_train_freeze_sop_cn.md)
+- [TSS Test Evidence](sop/main-flow/05_tss_test_evidence_sop_cn.md)
+- [TSS Backtest Ready](sop/main-flow/06_tss_backtest_ready_sop_cn.md)
+- [TSS Holdout Validation](sop/main-flow/07_tss_holdout_validation_sop_cn.md)
+
+`cross_sectional_factor` 当前 canonical SOP：
+
+- [CSF Data Ready](sop/main-flow/02_csf_data_ready_sop_cn.md)
+- [CSF Signal Ready](sop/main-flow/03_csf_signal_ready_sop_cn.md)
+- [CSF Train Freeze](sop/main-flow/04_csf_train_freeze_sop_cn.md)
+- [CSF Test Evidence](sop/main-flow/05_csf_test_evidence_sop_cn.md)
+- [CSF Backtest Ready](sop/main-flow/06_csf_backtest_ready_sop_cn.md)
+- [CSF Holdout Validation](sop/main-flow/07_csf_holdout_validation_sop_cn.md)
+
+无前缀的 `02_data_ready`、`03_signal_ready`、`04_train_freeze`、`05_test_evidence`、`06_backtest_ready`、`07_holdout_validation` 文档只保留为 legacy compatibility doc，不能作为新 TSS lineage 的当前口径。
+
+---
+
+<br>
+
 ## 目录分工
 
 - `docs/guides/`

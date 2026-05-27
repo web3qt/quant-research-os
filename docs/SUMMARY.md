@@ -14,15 +14,18 @@
 * [研究 Session 使用](guides/qros-research-session-usage.md)
 * [Closure Artifact Writer](guides/closure-artifact-writer-usage.md)
 
-## 阶段门禁 SOP
+## Mandate SOP
 
 * [Mandate](sop/main-flow/01_mandate_sop_cn.md)
-* [Data Ready](sop/main-flow/02_data_ready_sop_cn.md)
-* [Signal Ready](sop/main-flow/03_signal_ready_sop_cn.md)
-* [Train Freeze](sop/main-flow/04_train_freeze_sop_cn.md)
-* [Test Evidence](sop/main-flow/05_test_evidence_sop_cn.md)
-* [Backtest Ready](sop/main-flow/06_backtest_ready_sop_cn.md)
-* [Holdout Validation](sop/main-flow/07_holdout_validation_sop_cn.md)
+
+## TSS 时序信号研究 SOP
+
+* [TSS Data Ready](sop/main-flow/02_tss_data_ready_sop_cn.md)
+* [TSS Signal Ready](sop/main-flow/03_tss_signal_ready_sop_cn.md)
+* [TSS Train Freeze](sop/main-flow/04_tss_train_freeze_sop_cn.md)
+* [TSS Test Evidence](sop/main-flow/05_tss_test_evidence_sop_cn.md)
+* [TSS Backtest Ready](sop/main-flow/06_tss_backtest_ready_sop_cn.md)
+* [TSS Holdout Validation](sop/main-flow/07_tss_holdout_validation_sop_cn.md)
 
 ## CSF 因子研究 SOP
 
@@ -52,13 +55,24 @@
 
 ## 失败处置
 
-* [Data Ready 失败 SOP](sop/failures/02_data_ready_failure_sop_cn.md)
-* [Signal Ready 失败 SOP](sop/failures/03_signal_ready_failure_sop_cn.md)
-* [Train Freeze 失败 SOP](sop/failures/04_train_freeze_failure_sop_cn.md)
-* [Test Evidence 失败 SOP](sop/failures/05_test_evidence_failure_sop_cn.md)
-* [Backtest 失败 SOP](sop/failures/06_backtest_failure_sop_cn.md)
-* [Holdout 失败 SOP](sop/failures/07_holdout_failure_sop_cn.md)
 * [Lineage 变更控制 SOP](sop/failures/lineage_change_control_sop_cn.md)
+
+## Legacy compatibility 文档
+
+以下无前缀文档只保留给旧 lineage / 历史兼容引用。新 `time_series_signal` 研究线应使用上面的 TSS SOP；新 `cross_sectional_factor` 研究线应使用 CSF SOP。
+
+* [Legacy Data Ready](sop/main-flow/02_data_ready_sop_cn.md)
+* [Legacy Signal Ready](sop/main-flow/03_signal_ready_sop_cn.md)
+* [Legacy Train Freeze](sop/main-flow/04_train_freeze_sop_cn.md)
+* [Legacy Test Evidence](sop/main-flow/05_test_evidence_sop_cn.md)
+* [Legacy Backtest Ready](sop/main-flow/06_backtest_ready_sop_cn.md)
+* [Legacy Holdout Validation](sop/main-flow/07_holdout_validation_sop_cn.md)
+* [Legacy Data Ready 失败 SOP](sop/failures/02_data_ready_failure_sop_cn.md)
+* [Legacy Signal Ready 失败 SOP](sop/failures/03_signal_ready_failure_sop_cn.md)
+* [Legacy Train Freeze 失败 SOP](sop/failures/04_train_freeze_failure_sop_cn.md)
+* [Legacy Test Evidence 失败 SOP](sop/failures/05_test_evidence_failure_sop_cn.md)
+* [Legacy Backtest 失败 SOP](sop/failures/06_backtest_failure_sop_cn.md)
+* [Legacy Holdout 失败 SOP](sop/failures/07_holdout_failure_sop_cn.md)
 
 ## 治理与规则
 

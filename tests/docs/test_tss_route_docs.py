@@ -161,6 +161,18 @@ def test_current_readme_and_visual_docs_use_prefixed_tss_and_csf_stage_names() -
             assert token not in content, f"{label} still contains {token}"
 
 
+def test_summary_separates_canonical_routes_from_legacy_unprefixed_docs() -> None:
+    summary = (ROOT / "docs" / "SUMMARY.md").read_text(encoding="utf-8")
+
+    assert "## TSS 时序信号研究 SOP" in summary
+    assert "## CSF 因子研究 SOP" in summary
+    assert "[TSS Data Ready](sop/main-flow/02_tss_data_ready_sop_cn.md)" in summary
+    assert "[CSF Data Ready](sop/main-flow/02_csf_data_ready_sop_cn.md)" in summary
+    assert "## Legacy compatibility 文档" in summary
+    assert "[Legacy Data Ready](sop/main-flow/02_data_ready_sop_cn.md)" in summary
+    assert "[Data Ready](sop/main-flow/02_data_ready_sop_cn.md)" not in summary
+
+
 def test_tss_stage_artifact_map_uses_current_tss_test_evidence_outputs() -> None:
     content = (ROOT / "docs" / "visuals" / "qros-stage-artifact-map.drawio").read_text(encoding="utf-8")
 

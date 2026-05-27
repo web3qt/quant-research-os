@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/host-Codex%20%7C%20Claude%20Code-0F172A?style=flat-square" alt="hosts" />
   <img src="https://img.shields.io/badge/runtime-repo--local%20.qros-4C1D95?style=flat-square" alt="runtime" />
   <img src="https://img.shields.io/badge/workflow-contract--first-0F766E?style=flat-square" alt="workflow" />
-  <img src="https://img.shields.io/badge/tests-999%20pytest-9A3412?style=flat-square" alt="tests" />
+  <img src="https://img.shields.io/badge/tests-1191%20pytest-9A3412?style=flat-square" alt="tests" />
 </p>
 
 <p align="center">
@@ -130,7 +130,7 @@ $qros-update
 
 ## 🪜 主流程
 
-`qros-research-session` 是统一入口，推进到 `holdout_validation review` closure 为止。
+`qros-research-session` 是统一入口，推进到 route-specific `holdout_validation review` closure 和最终 next-stage confirmation 为止。
 
 ```text
 mandate_admission -> mandate_freeze_confirmation_pending -> 01_mandate -> route selection
@@ -166,17 +166,17 @@ mandate_admission -> mandate_freeze_confirmation_pending -> 01_mandate -> route 
            │             │
            ▼             ▼
      tests/          docs/
-   (999 tests)    (SOP/guides/visuals)
+   (1191 tests)   (SOP/guides/visuals)
 ```
 
 <p align="center">
 <table>
 <tr><td width="25%"><b>contracts/</b></td><td>机器真值层 — gate 定义、checklist、artifact schema</td></tr>
-<tr><td><b>skills/</b></td><td>Agent 行为层 — 56 个 public skill bundles，覆盖 core、author、review、failure 和 diagnostics</td></tr>
+<tr><td><b>skills/</b></td><td>Agent 行为层 — 55 个 public skill bundles，覆盖 core、author、review、failure 和 diagnostics</td></tr>
 <tr><td><b>runtime/</b></td><td>运行时层 — bin 入口 + scripts wrapper + tools 引擎</td></tr>
 <tr><td><b>templates/</b></td><td>生成模板层 — host-agnostic review skill 模板</td></tr>
 <tr><td><b>docs/</b></td><td>解释层 — 安装、SOP、使用指南</td></tr>
-<tr><td><b>tests/</b></td><td>验证层 — 999 条 pytest collected tests 覆盖全流程</td></tr>
+<tr><td><b>tests/</b></td><td>验证层 — 当前 `python -m pytest --collect-only -q` 收集 1191 条 pytest tests，覆盖全流程</td></tr>
 </table>
 </p>
 
@@ -205,8 +205,8 @@ mandate_admission -> mandate_freeze_confirmation_pending -> 01_mandate -> route 
 
 | 宿主 | 当前版本 |
 |------|------|
-| Codex CLI | `codex-cli 0.130.0` |
-| Claude Code | `2.1.128 (Claude Code)` |
+| Codex CLI | `codex-cli 0.134.0` |
+| Claude Code | `2.1.152 (Claude Code)` |
 
 <table>
 <tr>
@@ -260,7 +260,7 @@ spawn_agent (fork_context=false)
 <td width="33%" align="center"><b>🔎 Verification</b></td>
 </tr>
 <tr>
-<td>999 条 pytest collected tests<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
+<td>1191 条 pytest collected tests<br>bootstrap + contracts + runtime<br>session + review + skills<br>docs + anti_drift + pipeline</td>
 <td>CI 自动回归检测<br>metamorphic testing<br>snapshot baseline<br>drift coverage matrix</td>
 <td>smoke / full-smoke 分层<br>contract validation<br>semantic validation<br>upstream binding check</td>
 </tr>
@@ -287,5 +287,5 @@ spawn_agent (fork_context=false)
 ---
 
 <p align="center">
-  <sub>🧭 QROS · 治理框架 · 20 stage keys · 双宿主 · 999 测试 · contract-first</sub>
+  <sub>🧭 QROS · 治理框架 · 19 stage-program keys · 双宿主 · 1191 测试 · contract-first</sub>
 </p>
