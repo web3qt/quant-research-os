@@ -1,0 +1,35 @@
+# QROS Research Repo Agent Contract
+
+## Project Context
+
+- 这个仓库是消费 QROS 的 active research repo，不是 QROS 框架仓。
+- QROS 框架仓只提供 workflow、runtime wrapper、skills、contracts 和 tests；本仓库才是当前 lineage execution outputs 的事实来源。
+- 正式研究产物必须写入 `outputs/<lineage_id>/`，不要写回 QROS source checkout。
+- 空目录、placeholder 文件、聊天记录或只有合同语义的说明文档，不能被当作任何 stage 已完成。
+
+## Main Workflow
+
+- 普通研究推进统一从 `$qros-research-session` 开始。
+- 只读进度查询使用 `$qros-progress`。
+- diagnostics 只解释已落盘产物，不写 review closure，也不替代 gate。
+- 每个阶段必须先冻结 grouped contracts，再真实物化 formal artifacts，之后通过 review closure 才能进入下一阶段。
+- review verdict 非正常放行时，不要继续普通阶段推进；应按 runtime 状态进入 failure handling。
+
+## Local Runtime
+
+- repo-local QROS runtime 位于 `./.qros/`。
+- 优先使用 `./.qros/bin/qros-*` wrapper；不要绕过 wrapper 直接调用 QROS source repo 的 runtime scripts。
+- 更新 QROS 时，从本仓库根目录运行 `$qros-update`，它会刷新全局 skills 和当前仓库的 `./.qros/`。
+
+## Working Rules
+
+- 在开始或恢复任务前，先让 runtime 读取当前 lineage 状态，不要从聊天记录猜 stage。
+- 如果 runtime 报告 `*_confirmation_pending`，必须等待用户显式确认对应 freeze / review / next-stage handoff。
+- 如果 stage program 缺失，正确动作是在本仓库的 `outputs/<lineage_id>/program/` 下显式生成或刷新 lineage-local stage program。
+- reviewer 只能做独立 judgement；不要让 reviewer 修改 author outputs 或 runtime-owned closure / audit / projection 文件。
+
+## Safety Boundaries
+
+- 未经用户明确同意，不得提交、合并或推送到 `main` / `master`。
+- 不要删除或改写既有 lineage 的正式产物，除非 runtime 的 failure handling / retry 路径明确允许。
+- 不要把旧 review result 复用为新 author outputs 的 closure proof；author outputs 变化后必须刷新 request / handoff 并重新 review。

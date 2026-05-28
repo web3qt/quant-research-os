@@ -49,6 +49,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("runtime/scripts/start_review_cycle.py").exists()
     assert Path("runtime/scripts/check_stage_entry.py").exists()
     assert Path("runtime/scripts/audit_reviewer_write_scope.py").exists()
+    assert Path("templates/research-repo/AGENTS.md.tmpl").exists()
     assert Path("runtime/tools/artifact_contract_runtime.py").exists()
     assert Path("runtime/tools/agent_behavior_eval.py").exists()
     assert Path("runtime/tools/backtest_runtime.py").exists()

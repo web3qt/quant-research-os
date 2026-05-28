@@ -34,6 +34,8 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review-cycle" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
+    assert "AGENTS.md" in combined
+    assert "templates/research-repo/AGENTS.md.tmpl" in combined
     assert "setup --check" in combined
     assert "source_git_commit drift" in combined
     assert "Fetch and follow instructions from https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.codex/INSTALL.md" in combined
@@ -58,6 +60,25 @@ def test_install_docs_describe_research_repo_first_fetch_flow() -> None:
     assert "current repo's `./.qros/`" in update_skill
     assert "For ordinary users, the update command is always" in update_skill
     assert "--host codex` and `--host claude-code` are manual recovery/debug overrides" in update_skill
+
+
+def test_install_docs_describe_research_repo_agents_scaffold() -> None:
+    combined = "\n".join(
+        [
+            Path(".codex/INSTALL.md").read_text(encoding="utf-8"),
+            Path(".claude/INSTALL.md").read_text(encoding="utf-8"),
+            Path("docs/guides/installation.md").read_text(encoding="utf-8"),
+            Path("docs/README.codex.md").read_text(encoding="utf-8"),
+        ]
+    )
+
+    assert "research-repo `AGENTS.md`" in combined
+    assert "created only when absent" in combined
+    assert "不会覆盖" in combined
+    assert "templates/research-repo/AGENTS.md.tmpl" in combined
+    assert "outputs/<lineage_id>/" in combined
+    assert "$qros-research-session" in combined
+    assert "failure handling" in combined
 
 
 def test_install_docs_describe_stable_default_and_main_developer_path() -> None:

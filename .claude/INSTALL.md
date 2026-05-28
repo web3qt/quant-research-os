@@ -10,7 +10,7 @@ Start Claude Code from the active research repo root, then ask Claude Code:
 请阅读并按照 https://raw.githubusercontent.com/web3qt/quant-research-os/refs/heads/main/.claude/INSTALL.md 的指示安装 QROS
 ```
 
-Claude Code should install QROS globally, bootstrap the current research repo's `./.qros/`, then you should restart Claude Code. After restart, begin with:
+Claude Code should install QROS globally, bootstrap the current research repo's `./.qros/`, write a lightweight research-repo `AGENTS.md` only if the repo does not already have one, then you should restart Claude Code. After restart, begin with:
 
 ```
 qros-research-session 帮我研究这个想法：<your idea>
@@ -63,6 +63,7 @@ test -d ./.qros/bin
 ```
 
 You should see a global install manifest under `~/.claude/qros/` and project-local runtime wrappers under `./.qros/bin/`.
+If this repo did not already have `AGENTS.md`, setup also writes a QROS research repo agent contract at `./AGENTS.md`.
 
 ## How it works
 
@@ -70,6 +71,7 @@ You should see a global install manifest under `~/.claude/qros/` and project-loc
 - installed flat Claude Code skill tree: `~/.claude/skills/`
 - global install metadata: `~/.claude/qros/install-manifest.json`
 - project-local runtime helpers: `<research-repo>/.qros/`
+- optional research-repo agent contract: `<research-repo>/AGENTS.md` (created only when absent)
 
 ## Updating
 

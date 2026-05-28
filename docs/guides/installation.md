@@ -81,6 +81,7 @@ Claude Code 安装 plugin 之后，还需要初始化 active research repo 的 `
 这会写入：
 - `./.qros/bin/*` (wrapper 脚本)
 - `./.qros/install-manifest.json` (记录 `host = claude-code`)
+- `./AGENTS.md` (仅当 active research repo 根目录还没有该文件时写入 QROS research repo 操作边界)
 
 Claude Code 的 global skills 存储在 `~/.claude/skills/`，global install manifest 在 `~/.claude/qros/install-manifest.json`。
 
@@ -150,6 +151,8 @@ test -d ./.qros
 - `install-manifest.json`
 
 > 它是项目本地 wrapper + Python runtime 层，不再复制整套 runtime 源码镜像。
+
+repo-local bootstrap 还会在 active research repo 根目录缺少 `AGENTS.md` 时写入一份轻量操作合同，来源是 QROS source repo 的 `templates/research-repo/AGENTS.md.tmpl`。这份文件只说明 research repo 边界、`qros-research-session` 入口、`outputs/<lineage_id>/` 产物事实来源、review / failure handling 约束，以及 `./.qros/bin/qros-*` wrapper 使用规则。如果 research repo 已经有自己的 `AGENTS.md`，安装器不会覆盖它；需要团队把这些 QROS 边界手动合并进现有项目规则。
 
 `./.qros/` 拥有一套由 `uv` 管理的 Python runtime。`./.qros/.venv/bin/python` 必须是 Python 3.12；`./.qros/uv.lock` 是该 runtime 的 pinned dependency lock。`qros-update` / bootstrap 会使用 `uv` 创建或刷新这套 runtime。
 
