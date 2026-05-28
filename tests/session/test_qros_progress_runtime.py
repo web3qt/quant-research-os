@@ -288,24 +288,31 @@ def test_progress_infers_csf_route_from_materialized_downstream_stage_when_route
     assert payload["current_skill"] == "qros-research-session"
 
 
-def test_progress_infers_csf_route_from_materialized_downstream_stage_when_route_file_permission_denied(
+def test_progress_uses_stage_detection_route_inference_when_formal_route_unsupported_and_draft_is_stale(
     tmp_path: Path,
 ) -> None:
     outputs_root = tmp_path / "outputs"
-    lineage_root = outputs_root / "csf_permission_denied_route_case"
+    lineage_root = outputs_root / "csf_unsupported_formal_stale_draft_case"
     _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
-    route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
-    route_path.chmod(0)
+    _write_yaml(
+        lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml",
+        {"research_route": "legacy_unknown"},
+    )
+    _write_yaml(
+        lineage_root / "01_mandate" / "author" / "draft" / "mandate_admission.yaml",
+        {
+            "route_assessment": {
+                "recommended_route": "time_series_signal",
+            },
+        },
+    )
 
-    try:
-        payload = progress_status_payload(
-            outputs_root=outputs_root,
-            lineage_id=lineage_root.name,
-        )
+    payload = progress_status_payload(
+        outputs_root=outputs_root,
+        lineage_id=lineage_root.name,
+    )
 
-        assert payload["current_stage"] == "csf_train_freeze_next_stage_confirmation_pending"
-    finally:
-        route_path.chmod(0o644)
+    assert payload["current_stage"] == "csf_train_freeze_next_stage_confirmation_pending"
 
 
 def test_progress_reports_csf_test_evidence_after_train_next_stage_confirmation(

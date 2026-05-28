@@ -1644,10 +1644,17 @@ def _route_has_materialized_stage(candidates: list[StageResolutionCandidate]) ->
 
 
 def _current_research_route_for_stage_detection(lineage_root: Path) -> str | None:
-    try:
-        return current_research_route(lineage_root)
-    except PermissionError:
+    mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    if not mandate_route_path.exists():
         return None
+    try:
+        route_payload = _read_yaml(mandate_route_path)
+    except Exception:
+        return None
+    route_value = str(route_payload.get("research_route", "")).strip()
+    if route_value in SUPPORTED_RESEARCH_ROUTES:
+        return route_value
+    return None
 
 
 def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool]:
@@ -1656,10 +1663,11 @@ def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool]:
         return True, False
     if explicit_route == "time_series_signal":
         return False, True
-    return (
-        _route_has_materialized_stage(_csf_stage_resolution_candidates(lineage_root)),
-        _route_has_materialized_stage(_tss_stage_resolution_candidates(lineage_root)),
-    )
+    has_csf_materialization = _route_has_materialized_stage(_csf_stage_resolution_candidates(lineage_root))
+    has_tss_materialization = _route_has_materialized_stage(_tss_stage_resolution_candidates(lineage_root))
+    if has_csf_materialization and has_tss_materialization:
+        return False, False
+    return has_csf_materialization, has_tss_materialization
 
 
 def detect_session_stage(lineage_root: Path) -> SessionStage:
@@ -2589,10 +2597,7 @@ def session_transition_summary(
 def current_research_route(lineage_root: Path) -> str | None:
     mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if mandate_route_path.exists():
-        try:
-            route_payload = _read_yaml(mandate_route_path)
-        except PermissionError:
-            return None
+        route_payload = _read_yaml(mandate_route_path)
         route_value = str(route_payload.get("research_route", "")).strip()
         if route_value in SUPPORTED_RESEARCH_ROUTES:
             return route_value
@@ -2629,15 +2634,7 @@ def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
             "neutralization_policy": None,
         }
 
-    try:
-        route_payload = _read_yaml(mandate_route_path)
-    except PermissionError:
-        return {
-            "factor_role": None,
-            "factor_structure": None,
-            "portfolio_expression": None,
-            "neutralization_policy": None,
-        }
+    route_payload = _read_yaml(mandate_route_path)
     return {
         "factor_role": _optional_payload_value(route_payload.get("factor_role")),
         "factor_structure": _optional_payload_value(route_payload.get("factor_structure")),
@@ -4981,14 +4978,41 @@ def _stage_has_downstream_materialization(stage_dir: Path) -> bool:
     return False
 
 
-def _review_closure_complete(stage_dir: Path) -> bool:
-    has_historical_downstream_progress = (
-        _historical_stage_advancing_closure_exists(stage_dir)
-        and _stage_has_downstream_materialization(stage_dir)
-    )
-    if _review_proof_chain_error(stage_dir) is not None and not has_historical_downstream_progress:
+def _historical_legacy_malformed_request_allows_progress(
+    stage_dir: Path,
+    proof_chain_error: str | None,
+) -> bool:
+    if proof_chain_error is None:
         return False
-    if _review_write_scope_audit_error(stage_dir) is not None and not has_historical_downstream_progress:
+    if "review_cycle_id must be a non-empty string" not in proof_chain_error:
+        return False
+    if not _historical_stage_advancing_closure_exists(stage_dir):
+        return False
+    if not _stage_has_downstream_materialization(stage_dir):
+        return False
+    if any(
+        path.exists()
+        for path in (
+            _review_receipt_path(stage_dir),
+            stage_dir / "review" / FINAL_REVIEW_FILENAME,
+            _review_result_path(stage_dir),
+            _review_audit_path(stage_dir),
+        )
+    ):
+        return False
+
+    request_payload = _read_yaml(_review_request_path(stage_dir))
+    return "review_cycle_id" not in request_payload
+
+
+def _review_closure_complete(stage_dir: Path) -> bool:
+    proof_chain_error = _review_proof_chain_error(stage_dir)
+    if proof_chain_error is not None and not _historical_legacy_malformed_request_allows_progress(
+        stage_dir,
+        proof_chain_error,
+    ):
+        return False
+    if _review_write_scope_audit_error(stage_dir) is not None:
         return False
     if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)

@@ -956,6 +956,26 @@ def _prepare_csf_stage_pass_closed(lineage_root: Path, *, stage_dir_name: str, s
     return stage_dir
 
 
+def _prepare_tss_stage_pass_closed(lineage_root: Path, *, stage_dir_name: str, stage: str) -> Path:
+    from runtime.tools import research_session as research_session_module
+
+    stage_dir = lineage_root / stage_dir_name
+    author_formal_dir = stage_dir / "author" / "formal"
+    author_formal_dir.mkdir(parents=True, exist_ok=True)
+    required_outputs = getattr(
+        research_session_module,
+        f"{stage.upper()}_REQUIRED_OUTPUTS",
+    )
+    for name in required_outputs:
+        (author_formal_dir / name).write_text("ok\n", encoding="utf-8")
+    _write_stage_completion_certificate(
+        stage_dir / "stage_completion_certificate.yaml",
+        stage_status="PASS",
+    )
+    write_fake_stage_provenance(lineage_root, stage)
+    return stage_dir
+
+
 def _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root: Path) -> None:
     mandate_dir = _prepare_csf_stage_pass_closed(
         lineage_root,
@@ -2661,6 +2681,47 @@ def test_review_closure_complete_uses_historical_certificate_only_after_downstre
     assert research_session_module._mandate_closure_complete(mandate_dir) is True
 
 
+def test_review_closure_complete_does_not_bypass_bare_final_review_after_downstream_materialization(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    lineage_root = tmp_path / "outputs" / "bare_final_review_with_downstream_case"
+    mandate_dir = _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
+    _write_adversarial_review_request(
+        mandate_dir,
+        stage="mandate",
+        program_dir="program/mandate",
+    )
+    request_payload = _review_request_payload(mandate_dir)
+    _write_yaml(
+        mandate_dir / "review" / "final_review.yaml",
+        {
+            "lineage_id": lineage_root.name,
+            "stage_id": "mandate",
+            "reviewer_identity": "reviewer-agent",
+            "reviewer_agent_id": "reviewer-child-agent",
+            "reviewed_artifact_paths": request_payload["required_artifact_paths"],
+            "reviewed_program_path": "program/mandate/run_stage.py",
+            "reviewed_artifact_digest": request_payload["bound_author_materialization_digest"],
+            "reviewed_program_digest": request_payload["author_program_hash"],
+            "verdict": "PASS",
+            "review_summary": "bare final review fixture",
+        },
+    )
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_csf_data_ready",
+        stage="csf_data_ready",
+    )
+
+    assert research_session_module._mandate_closure_complete(mandate_dir) is False
+
+
 def test_detect_session_stage_uses_latest_csf_closed_stage_over_legacy_upstream_request(
     tmp_path: Path,
 ) -> None:
@@ -2670,11 +2731,66 @@ def test_detect_session_stage_uses_latest_csf_closed_stage_over_legacy_upstream_
     assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
 
 
+def test_detect_session_stage_ignores_stale_draft_route_when_formal_route_unsupported(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_unsupported_formal_stale_draft_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    mandate_dir = lineage_root / "01_mandate"
+    _write_yaml(_stage_output_path(mandate_dir, "research_route.yaml"), {"research_route": "legacy_unknown"})
+    _write_yaml(
+        mandate_dir / "author" / "draft" / "mandate_admission.yaml",
+        {
+            "route_assessment": {
+                "recommended_route": "time_series_signal",
+            },
+        },
+    )
+
+    assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
+
+
+def test_detect_session_stage_does_not_infer_route_when_csf_and_tss_are_both_materialized(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "ambiguous_materialized_route_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    _write_yaml(_stage_output_path(lineage_root / "01_mandate", "research_route.yaml"), {})
+    _prepare_tss_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_tss_data_ready",
+        stage="tss_data_ready",
+    )
+
+    assert detect_session_stage(lineage_root) == "mandate_review"
+
+
 def test_detect_session_stage_infers_csf_route_from_materialized_downstream_stage_when_route_file_unreadable(
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "csf_unreadable_route_case"
     _prepare_csf_train_freeze_closed_with_unreadable_route_and_legacy_mandate_request(lineage_root)
+
+    assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
+
+
+def test_detect_session_stage_infers_csf_route_when_formal_route_read_raises_permission_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    lineage_root = tmp_path / "outputs" / "csf_permission_error_route_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    route_path = _stage_output_path(lineage_root / "01_mandate", "research_route.yaml")
+    original_read_yaml = research_session_module._read_yaml
+
+    def _raise_for_route(path: Path) -> dict:
+        if path == route_path:
+            raise PermissionError("deterministic route read failure")
+        return original_read_yaml(path)
+
+    monkeypatch.setattr(research_session_module, "_read_yaml", _raise_for_route)
 
     assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
 
