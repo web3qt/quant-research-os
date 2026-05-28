@@ -39,6 +39,11 @@ def test_csf_holdout_validation_artifact_contract_declares_all_formal_outputs() 
         "holdout_factor_diagnostics.parquet",
         "holdout_test_compare.parquet",
         "holdout_portfolio_compare.parquet",
+        "portfolio_return_series.parquet",
+        "equity_curve.parquet",
+        "portfolio_pnl_ledger.parquet",
+        "asset_pnl_ledger.parquet",
+        "risk_adjusted_metrics.parquet",
         "rolling_holdout_stability.json",
         "regime_shift_audit.json",
         "csf_holdout_gate_decision.md",
@@ -91,7 +96,7 @@ def test_csf_holdout_validation_contract_locks_run_manifest_fields() -> None:
     assert consumer_stage["values"] == ["terminal"]
 
 
-def test_csf_holdout_validation_contract_locks_parquet_shapes() -> None:
+def test_csf_holdout_validation_contract_locks_machine_artifact_shapes() -> None:
     contract = _load_contract()
 
     assert _artifact(contract, "holdout_factor_diagnostics.parquet")["required_columns"] == [
@@ -114,6 +119,59 @@ def test_csf_holdout_validation_contract_locks_parquet_shapes() -> None:
         "holdout_max_drawdown",
         "holdout_mean_net_return",
         "net_return_delta",
+    ]
+    assert _artifact(contract, "portfolio_return_series.parquet")["required_columns"] == [
+        "date",
+        "variant_id",
+        "gross_return",
+        "net_return",
+        "turnover",
+        "cost",
+        "asset_count",
+        "max_name_weight",
+    ]
+    assert _artifact(contract, "equity_curve.parquet")["required_columns"] == [
+        "date",
+        "variant_id",
+        "gross_equity",
+        "net_equity",
+        "drawdown",
+    ]
+    assert _artifact(contract, "portfolio_pnl_ledger.parquet")["required_columns"] == [
+        "date",
+        "variant_id",
+        "gross_pnl",
+        "cost",
+        "net_pnl",
+        "capital_base",
+        "profit_loss_sign",
+    ]
+    assert _artifact(contract, "asset_pnl_ledger.parquet")["required_columns"] == [
+        "date",
+        "variant_id",
+        "asset",
+        "weight",
+        "side",
+        "asset_return",
+        "gross_pnl_contribution",
+        "cost_contribution",
+        "net_pnl_contribution",
+    ]
+    assert _artifact(contract, "risk_adjusted_metrics.parquet")["required_columns"] == [
+        "variant_id",
+        "annualized_return_365d",
+        "annualized_return_252d",
+        "volatility_365d",
+        "volatility_252d",
+        "sharpe_365d",
+        "sharpe_252d",
+        "sortino_365d",
+        "sortino_252d",
+        "calmar_365d",
+        "calmar_252d",
+        "profit_factor",
+        "max_drawdown",
+        "observation_count",
     ]
 
 

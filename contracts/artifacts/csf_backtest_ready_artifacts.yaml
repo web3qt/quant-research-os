@@ -111,6 +111,74 @@ artifacts:
       - max_drawdown
     non_empty: true
 
+  portfolio_return_series.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - gross_return
+      - net_return
+      - turnover
+      - cost
+      - asset_count
+      - max_name_weight
+    non_empty: true
+
+  equity_curve.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - gross_equity
+      - net_equity
+      - drawdown
+    non_empty: true
+
+  portfolio_pnl_ledger.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - gross_pnl
+      - cost
+      - net_pnl
+      - capital_base
+      - profit_loss_sign
+    non_empty: true
+
+  asset_pnl_ledger.parquet:
+    type: parquet
+    required_columns:
+      - date
+      - variant_id
+      - asset
+      - weight
+      - side
+      - asset_return
+      - gross_pnl_contribution
+      - cost_contribution
+      - net_pnl_contribution
+    non_empty: true
+
+  risk_adjusted_metrics.parquet:
+    type: parquet
+    required_columns:
+      - variant_id
+      - annualized_return_365d
+      - annualized_return_252d
+      - volatility_365d
+      - volatility_252d
+      - sharpe_365d
+      - sharpe_252d
+      - sortino_365d
+      - sortino_252d
+      - calmar_365d
+      - calmar_252d
+      - profit_factor
+      - max_drawdown
+      - observation_count
+    non_empty: true
+
   name_level_metrics.parquet:
     type: parquet
     required_columns:
