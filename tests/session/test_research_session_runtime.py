@@ -8,6 +8,7 @@ import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
+from runtime.tools.artifact_digest_manifest import HOT_PATH_CONTENT_HASH_BANNED_SUFFIXES, write_artifact_digest_manifest
 from runtime.tools.review_skillgen.adversarial_review_contract import (
     ensure_adversarial_review_request,
     issue_reviewer_receipt,
@@ -891,6 +892,19 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
             ):
                 (engine_dir / name).write_bytes(b"PAR1test-payloadPAR1")
     write_fake_stage_provenance(stage_dir.parent, stage)
+    digest_artifacts = [
+        path.relative_to(author_formal_dir).as_posix()
+        for path in sorted(author_formal_dir.rglob("*"))
+        if path.is_file() and path.suffix.lower() in HOT_PATH_CONTENT_HASH_BANNED_SUFFIXES
+    ]
+    if digest_artifacts:
+        write_artifact_digest_manifest(
+            artifact_root=author_formal_dir,
+            lineage_id=stage_dir.parent.name,
+            stage_id=stage,
+            program_hash="test-hash",
+            artifact_paths=digest_artifacts,
+        )
 
 
 def _freeze_draft(*, confirmed: bool) -> dict:

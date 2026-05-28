@@ -65,6 +65,7 @@ lineage_program_contract:
     - README.md
     - entrypoint referenced by stage_program.yaml
   generated_provenance_file: <stage_artifact_dir>/program_execution_manifest.json
+  generated_artifact_digest_manifest: <stage_artifact_dir>/artifact_digest_manifest.json
   shared_helper_root: outputs/<lineage_id>/program/common/
   stage_program_keys:
     mandate:

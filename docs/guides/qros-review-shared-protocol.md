@@ -140,6 +140,12 @@ Launcher agents must not convert these operations into informal judgment. They m
 - `downstream_permissions`
 - `recommended_next_action`
 
+### Author Materialization Digest
+
+`reviewed_artifact_digest` / `bound_author_materialization_digest` 绑定的是当前 review scope 的证明 digest。runtime 热路径不得直接读取 `.parquet`、`.arrow`、`.npy`、`.npz`、`.feather` 等数据文件，也不得读取超过阈值的大文件来现场计算内容 hash。
+
+对这些数据面 artifact，stage program 必须在生成正式产物时写出 `author/formal/artifact_digest_manifest.json`。manifest 记录每个数据 artifact 的 `path`、`size_bytes`、`digest_algorithm`、`sha256`、`artifact_kind`、`generated_at`，并通过 `program_hash` 绑定当前 `program_execution_manifest.json`。`qros-session`、review prepare、protocol validator、stage evaluator 和 protected-state guard 只读取该小型证明文件；如果 manifest 缺失、缺少 required output 条目、digest 形状非法或 size 已漂移，必须 fail closed。
+
 ## Fail-Closed 边界码
 
 下列边界码仍然是共享 review 协议的一部分；如果 proof chain、review scope 或 hard gate 语义被破坏，runtime / reviewer 必须 fail-closed，而不是静默继续：

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,21 @@ from runtime.tools.review_skillgen.reviewer_write_scope_audit import write_revie
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _write_artifact_digest_manifest(formal_dir: Path, *, artifacts: list[dict]) -> None:
+    payload = {
+        "schema_version": 1,
+        "lineage_id": "digest-case",
+        "stage_id": "tss_data_ready",
+        "program_hash": "program-hash",
+        "program_execution_manifest_path": "program_execution_manifest.json",
+        "artifacts": artifacts,
+    }
+    (formal_dir / "artifact_digest_manifest.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _prepare_raw_findings_case(tmp_path: Path) -> tuple[Path, Path, list[str], list[str]]:
@@ -149,7 +165,7 @@ def test_compute_author_materialization_digest_reuses_unchanged_file_digest_cach
     stage_dir = tmp_path / "03_csf_signal_ready"
     formal_dir = stage_dir / "author" / "formal"
     formal_dir.mkdir(parents=True)
-    (formal_dir / "factor_panel.parquet").write_bytes(b"large-artifact-bytes")
+    (formal_dir / "factor_manifest.yaml").write_text("factor: ok\n", encoding="utf-8")
     (formal_dir / "program_execution_manifest.json").write_text('{"status":"success"}\n', encoding="utf-8")
 
     original_file_digest = review_runtime_state._file_digest
@@ -163,15 +179,15 @@ def test_compute_author_materialization_digest_reuses_unchanged_file_digest_cach
 
     first = review_runtime_state.compute_author_materialization_digest(
         artifact_root=formal_dir,
-        required_outputs=("factor_panel.parquet",),
+        required_outputs=("factor_manifest.yaml",),
         required_provenance_paths=("program_execution_manifest.json",),
     )
-    assert sorted(digest_calls) == ["factor_panel.parquet", "program_execution_manifest.json"]
+    assert sorted(digest_calls) == ["factor_manifest.yaml", "program_execution_manifest.json"]
 
     digest_calls.clear()
     second = review_runtime_state.compute_author_materialization_digest(
         artifact_root=formal_dir,
-        required_outputs=("factor_panel.parquet",),
+        required_outputs=("factor_manifest.yaml",),
         required_provenance_paths=("program_execution_manifest.json",),
     )
 
@@ -200,6 +216,107 @@ def test_compute_author_materialization_digest_cached_path_is_order_insensitive(
 
     assert second == first
     assert (stage_dir / "review" / "state" / "materialization_digest_ledger.yaml").exists()
+
+
+def test_author_materialization_digest_rejects_parquet_without_digest_manifest(tmp_path: Path, monkeypatch) -> None:
+    stage_dir = tmp_path / "02_tss_data_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    (formal_dir / "asset_time_index.parquet").write_bytes(b"parquet-bytes")
+    (formal_dir / "program_execution_manifest.json").write_text("{}\n", encoding="utf-8")
+
+    def reject_file_digest(path: Path) -> str:
+        if path.name == "asset_time_index.parquet":
+            raise AssertionError("parquet must not be content-hashed in runtime hot paths")
+        return "small-file-digest"
+
+    monkeypatch.setattr(review_runtime_state, "_file_digest", reject_file_digest)
+
+    with pytest.raises(ValueError, match="ARTIFACT_DIGEST_MANIFEST_MISSING"):
+        review_runtime_state.compute_author_materialization_digest_fresh(
+            artifact_root=formal_dir,
+            required_outputs=["asset_time_index.parquet"],
+            required_provenance_paths=["program_execution_manifest.json"],
+        )
+
+
+def test_author_materialization_digest_uses_manifest_for_parquet_without_reading_file(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    stage_dir = tmp_path / "02_tss_data_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    parquet_path = formal_dir / "asset_time_index.parquet"
+    parquet_path.write_bytes(b"parquet-bytes")
+    (formal_dir / "program_execution_manifest.json").write_text("{}\n", encoding="utf-8")
+    _write_artifact_digest_manifest(
+        formal_dir,
+        artifacts=[
+            {
+                "path": "asset_time_index.parquet",
+                "size_bytes": parquet_path.stat().st_size,
+                "digest_algorithm": "sha256",
+                "sha256": "a" * 64,
+                "artifact_kind": "machine",
+                "generated_at": "2026-05-28T00:00:00+00:00",
+            }
+        ],
+    )
+    digest_calls: list[str] = []
+
+    def counting_file_digest(path: Path) -> str:
+        digest_calls.append(path.name)
+        if path.name == "asset_time_index.parquet":
+            raise AssertionError("parquet must not be content-hashed in runtime hot paths")
+        return "small-file-digest"
+
+    monkeypatch.setattr(review_runtime_state, "_file_digest", counting_file_digest)
+
+    digest = review_runtime_state.compute_author_materialization_digest_fresh(
+        artifact_root=formal_dir,
+        required_outputs=["asset_time_index.parquet"],
+        required_provenance_paths=["program_execution_manifest.json"],
+    )
+
+    assert isinstance(digest, str)
+    assert len(digest) == 64
+    assert digest_calls == ["program_execution_manifest.json"]
+
+
+def test_author_materialization_digest_rejects_large_non_data_file_without_manifest(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    stage_dir = tmp_path / "03_signal_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    (formal_dir / "large_report.txt").write_bytes(b"x" * 20)
+    (formal_dir / "program_execution_manifest.json").write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(review_runtime_state, "LARGE_ARTIFACT_CONTENT_DIGEST_LIMIT_BYTES", 8)
+
+    with pytest.raises(ValueError, match="ARTIFACT_DIGEST_MANIFEST_MISSING"):
+        review_runtime_state.compute_author_materialization_digest_fresh(
+            artifact_root=formal_dir,
+            required_outputs=["large_report.txt"],
+            required_provenance_paths=["program_execution_manifest.json"],
+        )
+
+
+def test_author_materialization_digest_rejects_manifest_missing_required_data_artifact(tmp_path: Path) -> None:
+    stage_dir = tmp_path / "02_tss_data_ready"
+    formal_dir = stage_dir / "author" / "formal"
+    formal_dir.mkdir(parents=True)
+    (formal_dir / "asset_time_index.parquet").write_bytes(b"parquet-bytes")
+    (formal_dir / "program_execution_manifest.json").write_text("{}\n", encoding="utf-8")
+    _write_artifact_digest_manifest(formal_dir, artifacts=[])
+
+    with pytest.raises(ValueError, match="ARTIFACT_DIGEST_MANIFEST_INCOMPLETE"):
+        review_runtime_state.compute_author_materialization_digest_fresh(
+            artifact_root=formal_dir,
+            required_outputs=["asset_time_index.parquet"],
+            required_provenance_paths=["program_execution_manifest.json"],
+        )
 
 
 def test_compute_author_materialization_digest_fresh_bypasses_corrupt_cache(

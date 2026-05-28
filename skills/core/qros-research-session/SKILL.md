@@ -216,6 +216,7 @@ For any author-eligible stage:
 - 当前主线程不得自己撰写 `review/final_review.yaml`
 - reviewer 正常只写 `review/final_review.yaml`
 - ordinary final review 是 strict receipt-bound：active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context
+- author materialization digest 不允许在 `qros-session` / review 热路径中读取 `.parquet`、`.arrow`、`.npy`、`.npz`、`.feather` 或超过阈值的大文件本体算 hash；这些 artifact 必须由 stage program 生成 `author/formal/artifact_digest_manifest.json` 作为内容 digest 证明
 - 当前主线程必须读取 `review/final_review.yaml`，先完成 receipt、normalized scope、author digest freshness 与 final review normalization 校验；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling
 
 ## Main-Agent Review Loop

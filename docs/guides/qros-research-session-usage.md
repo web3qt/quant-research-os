@@ -160,6 +160,8 @@ CSF canonical stage ids 是带 `csf_*` 前缀的 route-specific 身份，例如 
 
 ordinary final review 是 strict receipt-bound。active `reviewer_receipt.yaml` 必须绑定 reviewer identity、reviewer session、execution / agent identity、active request scope、author materialization digest 与 review context；`review/final_review.yaml` 单独存在并不构成 closure proof。主线程 / runtime 必须先校验 receipt、normalized scope、author digest freshness 与 final review normalization；随后投影 `review/result/adversarial_review_result.yaml` 并运行 reviewer write-scope audit；audit 通过后才可写 closure artifacts 或推进 author-fix、next-stage confirmation / failure handling。
 
+author materialization digest 是 review scope 的证明 digest，不是让 `qros-session` 或 review validator 反复读取大体量数据文件。`.parquet`、`.arrow`、`.npy`、`.npz`、`.feather` 等数据格式，以及超过 runtime 阈值的大文件，必须由 stage program 在生成正式产物时写出 `author/formal/artifact_digest_manifest.json`。该 manifest 记录每个数据 artifact 的 `path`、`size_bytes`、`digest_algorithm`、`sha256` 和 `program_hash` 绑定；`qros-session`、`qros-review-cycle prepare`、protocol validator 和 protected-state guard 只读取这个小型证明文件。缺少 manifest 或缺少 required output 对应条目时 runtime 必须 fail closed，不得在热路径自动补算大文件 hash。
+
 这里有一个容易被忽略的主线程职责：在真正起 reviewer 之前，主 Agent 应先做一次 `review-ready` 自查。最少要重新核对当前 stage 的 required outputs、`artifact_catalog.md`、`field_dictionary.md`、`run_manifest.json`、当前 stage program provenance，以及 machine-readable artifacts 不是 placeholder。review 不应该把 reviewer 当成第一轮“帮 author 数缺件”的入口。
 
 现在这层自查还会被压成 request / handoff contract：

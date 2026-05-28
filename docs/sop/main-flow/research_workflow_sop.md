@@ -99,7 +99,7 @@ Canonical program tree：
 - CSF 主线：`outputs/<lineage_id>/program/cross_sectional_factor/<stage>/`
 - 可复用共享代码：`outputs/<lineage_id>/program/common/`
 
-每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，其中 `program_hash` 记录的是整个 `program_dir` 的 hash，而不是单个 `run_stage.py` 文件。共享 helper 只能作为库被 lineage-local entrypoint 调用，不能继续充当 framework-side completion fallback。
+每个 stage program 目录至少包含 `stage_program.yaml`、`README.md` 和 manifest 指向的 entrypoint。runtime 成功调用后，必须在对应阶段产物目录写出 `program_execution_manifest.json`，其中 `program_hash` 记录的是整个 `program_dir` 的 hash，而不是单个 `run_stage.py` 文件。若阶段产出 `.parquet`、`.arrow`、`.npy`、`.npz`、`.feather` 等数据文件或超过 runtime 阈值的大文件，stage program 还必须写出 `artifact_digest_manifest.json`，把这些数据 artifact 的内容 SHA256 证明绑定到当前 `program_hash`；`qros-session` 和 review 热路径只读取该小型证明，不会现场读取数据文件本体算 hash。共享 helper 只能作为库被 lineage-local entrypoint 调用，不能继续充当 framework-side completion fallback。
 
 阶段产物目录的 canonical layout：
 

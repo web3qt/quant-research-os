@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from runtime.tools.artifact_digest_manifest import HOT_PATH_CONTENT_HASH_BANNED_SUFFIXES, write_artifact_digest_manifest
 from runtime.tools.backtest_runtime import BACKTEST_READY_DRAFT_FILE
 from runtime.tools.csf_backtest_runtime import CSF_BACKTEST_READY_DRAFT_FILE
 from runtime.tools.csf_data_ready_runtime import CSF_DATA_READY_FREEZE_DRAFT_FILE
@@ -257,6 +258,19 @@ def write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         else:
             target.write_text("placeholder\n", encoding="utf-8")
     write_program_execution_manifest(stage_dir, stage=stage)
+    digest_artifacts = [
+        name
+        for name in file_outputs[stage]
+        if Path(name).suffix.lower() in HOT_PATH_CONTENT_HASH_BANNED_SUFFIXES
+    ]
+    if digest_artifacts:
+        write_artifact_digest_manifest(
+            artifact_root=author_formal,
+            lineage_id=stage_dir.parent.name,
+            stage_id="mandate" if stage == "mandate" else stage.removeprefix("csf_"),
+            program_hash="fixture-hash",
+            artifact_paths=digest_artifacts,
+        )
 
 
 def write_stage_completion_certificate(
