@@ -4769,8 +4769,10 @@ def _historical_stage_advancing_closure_exists(stage_dir: Path) -> bool:
     if not payload:
         return False
 
-    stage_status = payload.get("stage_status") or payload.get("final_verdict")
-    return stage_status in ADVANCING_COMPLETION_STATUSES
+    return (
+        payload.get("stage_status") in ADVANCING_COMPLETION_STATUSES
+        or payload.get("final_verdict") in ADVANCING_COMPLETION_STATUSES
+    )
 
 
 def _review_closure_complete(stage_dir: Path) -> bool:

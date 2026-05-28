@@ -2551,6 +2551,50 @@ def test_historical_advancing_closure_accepts_legacy_malformed_request_for_close
     assert research_session_module._historical_stage_advancing_closure_exists(mandate_dir) is True
 
 
+def test_historical_stage_advancing_closure_accepts_final_verdict_only_pass(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    stage_dir = tmp_path / "outputs" / "legacy_closed_case" / "01_mandate"
+    _write_yaml(
+        stage_dir / "review" / "closure" / "stage_completion_certificate.yaml",
+        {"final_verdict": "PASS"},
+    )
+
+    assert research_session_module._historical_stage_advancing_closure_exists(stage_dir) is True
+
+
+def test_historical_stage_advancing_closure_accepts_advancing_final_verdict_when_stage_status_unknown(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    stage_dir = tmp_path / "outputs" / "legacy_closed_case" / "01_mandate"
+    _write_stage_completion_certificate(
+        stage_dir / "stage_completion_certificate.yaml",
+        stage_status="UNKNOWN",
+        final_verdict="PASS",
+    )
+
+    assert research_session_module._historical_stage_advancing_closure_exists(stage_dir) is True
+
+
+def test_historical_stage_advancing_closure_rejects_non_advancing_certificate(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    stage_dir = tmp_path / "outputs" / "legacy_closed_case" / "01_mandate"
+    _write_stage_completion_certificate(
+        stage_dir / "stage_completion_certificate.yaml",
+        stage_status="RETRY",
+        final_verdict="NO-GO",
+    )
+
+    assert research_session_module._historical_stage_advancing_closure_exists(stage_dir) is False
+
+
 def test_run_research_session_enters_next_stage_confirmation_after_completed_display(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "btc_leads_alts"
