@@ -16,6 +16,7 @@ from runtime.tools.research_session import run_research_session
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from tests.session.test_research_session_runtime import (
+    _prepare_csf_train_freeze_closed_with_unreadable_route_and_legacy_mandate_request,
     _prepare_csf_train_freeze_closed_with_legacy_upstream_request,
     _review_request_payload,
     _write_adversarial_review_request,
@@ -269,6 +270,22 @@ def test_progress_reports_latest_csf_closed_stage_over_legacy_upstream_request(
     assert payload["current_stage"] == "csf_train_freeze_next_stage_confirmation_pending"
     assert payload["current_skill"] == "qros-research-session"
     assert payload["recommended_skill"] == "qros-research-session"
+
+
+def test_progress_infers_csf_route_from_materialized_downstream_stage_when_route_file_unreadable(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_unreadable_route_case"
+    _prepare_csf_train_freeze_closed_with_unreadable_route_and_legacy_mandate_request(lineage_root)
+
+    payload = progress_status_payload(
+        outputs_root=outputs_root,
+        lineage_id=lineage_root.name,
+    )
+
+    assert payload["current_stage"] == "csf_train_freeze_next_stage_confirmation_pending"
+    assert payload["current_skill"] == "qros-research-session"
 
 
 def test_progress_reports_csf_test_evidence_after_train_next_stage_confirmation(

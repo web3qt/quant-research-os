@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -907,6 +908,14 @@ class FailurePackageRuntimeStatus:
     failure_reason_summary: str
 
 
+@dataclass(frozen=True)
+class StageResolutionCandidate:
+    stage_base: str
+    stage_dir: Path
+    outputs_complete: Callable[[Path], bool]
+    closure_complete: Callable[[Path], bool]
+
+
 def _lineage_lock_blocked_status(
     *,
     lineage_root: Path,
@@ -1489,6 +1498,163 @@ def resolve_lineage_selection(outputs_root: Path, lineage_id: str | None, raw_id
     raise ValueError("Either lineage_id or raw_idea must be provided")
 
 
+def _mainline_stage_resolution_candidates(lineage_root: Path) -> list[StageResolutionCandidate]:
+    return [
+        StageResolutionCandidate(
+            "mandate",
+            lineage_root / "01_mandate",
+            _mandate_outputs_complete,
+            _mandate_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "data_ready",
+            lineage_root / "02_data_ready",
+            _data_ready_outputs_complete,
+            _data_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "signal_ready",
+            lineage_root / "03_signal_ready",
+            _signal_ready_outputs_complete,
+            _signal_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "train_freeze",
+            lineage_root / "04_train_freeze",
+            _train_freeze_outputs_complete,
+            _train_freeze_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "test_evidence",
+            lineage_root / "05_test_evidence",
+            _test_evidence_outputs_complete,
+            _test_evidence_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "backtest_ready",
+            lineage_root / "06_backtest",
+            _backtest_ready_outputs_complete,
+            _backtest_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "holdout_validation",
+            lineage_root / "07_holdout",
+            _holdout_validation_outputs_complete,
+            _holdout_validation_closure_complete,
+        ),
+    ]
+
+
+def _csf_stage_resolution_candidates(lineage_root: Path) -> list[StageResolutionCandidate]:
+    return [
+        StageResolutionCandidate(
+            "mandate",
+            lineage_root / "01_mandate",
+            _mandate_outputs_complete,
+            _mandate_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_data_ready",
+            lineage_root / "02_csf_data_ready",
+            _csf_data_ready_outputs_complete,
+            _csf_data_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_signal_ready",
+            lineage_root / "03_csf_signal_ready",
+            _csf_signal_ready_outputs_complete,
+            _csf_signal_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_train_freeze",
+            lineage_root / "04_csf_train_freeze",
+            _csf_train_freeze_outputs_complete,
+            _csf_train_freeze_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_test_evidence",
+            lineage_root / "05_csf_test_evidence",
+            _csf_test_evidence_outputs_complete,
+            _csf_test_evidence_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_backtest_ready",
+            lineage_root / "06_csf_backtest_ready",
+            _csf_backtest_ready_outputs_complete,
+            _csf_backtest_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "csf_holdout_validation",
+            lineage_root / "07_csf_holdout_validation",
+            _csf_holdout_validation_outputs_complete,
+            _csf_holdout_validation_closure_complete,
+        ),
+    ]
+
+
+def _tss_stage_resolution_candidates(lineage_root: Path) -> list[StageResolutionCandidate]:
+    return [
+        StageResolutionCandidate(
+            "mandate",
+            lineage_root / "01_mandate",
+            _mandate_outputs_complete,
+            _mandate_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_data_ready",
+            lineage_root / "02_tss_data_ready",
+            _tss_data_ready_outputs_complete,
+            _tss_data_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_signal_ready",
+            lineage_root / "03_tss_signal_ready",
+            _tss_signal_ready_outputs_complete,
+            _tss_signal_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_train_freeze",
+            lineage_root / "04_tss_train_freeze",
+            _tss_train_freeze_outputs_complete,
+            _tss_train_freeze_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_test_evidence",
+            lineage_root / "05_tss_test_evidence",
+            _tss_test_evidence_outputs_complete,
+            _tss_test_evidence_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_backtest_ready",
+            lineage_root / "06_tss_backtest_ready",
+            _tss_backtest_ready_outputs_complete,
+            _tss_backtest_ready_closure_complete,
+        ),
+        StageResolutionCandidate(
+            "tss_holdout_validation",
+            lineage_root / "07_tss_holdout_validation",
+            _tss_holdout_validation_outputs_complete,
+            _tss_holdout_validation_closure_complete,
+        ),
+    ]
+
+
+def _route_has_materialized_stage(candidates: list[StageResolutionCandidate]) -> bool:
+    return any(candidate.outputs_complete(candidate.stage_dir) for candidate in candidates[1:])
+
+
+def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool]:
+    explicit_route = current_research_route(lineage_root)
+    if explicit_route == "cross_sectional_factor":
+        return True, False
+    if explicit_route == "time_series_signal":
+        return False, True
+    return (
+        _route_has_materialized_stage(_csf_stage_resolution_candidates(lineage_root)),
+        _route_has_materialized_stage(_tss_stage_resolution_candidates(lineage_root)),
+    )
+
+
 def detect_session_stage(lineage_root: Path) -> SessionStage:
     mandate_dir = lineage_root / "01_mandate"
     data_ready_dir = lineage_root / "02_data_ready"
@@ -1509,8 +1675,7 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     csf_test_evidence_dir = lineage_root / "05_csf_test_evidence"
     csf_backtest_dir = lineage_root / "06_csf_backtest_ready"
     csf_holdout_dir = lineage_root / "07_csf_holdout_validation"
-    is_csf_route = _is_csf_route(lineage_root)
-    is_tss_route = _is_tss_route(lineage_root)
+    is_csf_route, is_tss_route = _route_flags_for_stage_detection(lineage_root)
 
     if is_csf_route:
         if _csf_holdout_validation_outputs_complete(csf_holdout_dir):
@@ -4775,10 +4940,37 @@ def _historical_stage_advancing_closure_exists(stage_dir: Path) -> bool:
     )
 
 
+def _stage_resolution_candidates_for_lineage(lineage_root: Path) -> list[StageResolutionCandidate]:
+    is_csf_route, is_tss_route = _route_flags_for_stage_detection(lineage_root)
+    if is_csf_route:
+        return _csf_stage_resolution_candidates(lineage_root)
+    if is_tss_route:
+        return _tss_stage_resolution_candidates(lineage_root)
+    return _mainline_stage_resolution_candidates(lineage_root)
+
+
+def _stage_has_downstream_materialization(stage_dir: Path) -> bool:
+    lineage_root = stage_dir.parent
+    stage_base = _stage_name_from_stage_dir(stage_dir)
+    candidates = _stage_resolution_candidates_for_lineage(lineage_root)
+    for index, candidate in enumerate(candidates):
+        if candidate.stage_base != stage_base:
+            continue
+        return any(
+            downstream.outputs_complete(downstream.stage_dir)
+            for downstream in candidates[index + 1 :]
+        )
+    return False
+
+
 def _review_closure_complete(stage_dir: Path) -> bool:
-    if _review_proof_chain_error(stage_dir) is not None:
+    has_historical_downstream_progress = (
+        _historical_stage_advancing_closure_exists(stage_dir)
+        and _stage_has_downstream_materialization(stage_dir)
+    )
+    if _review_proof_chain_error(stage_dir) is not None and not has_historical_downstream_progress:
         return False
-    if _review_write_scope_audit_error(stage_dir) is not None:
+    if _review_write_scope_audit_error(stage_dir) is not None and not has_historical_downstream_progress:
         return False
     if _review_closure_path(stage_dir, "stage_completion_certificate.yaml").exists():
         return _completion_certificate_allows_progress(stage_dir)

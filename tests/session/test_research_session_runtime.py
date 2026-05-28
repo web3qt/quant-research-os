@@ -980,6 +980,33 @@ def _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root: 
     )
 
 
+def _prepare_csf_train_freeze_closed_with_unreadable_route_and_legacy_mandate_request(
+    lineage_root: Path,
+) -> None:
+    mandate_dir = _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
+    _write_yaml(_stage_output_path(mandate_dir, "research_route.yaml"), {})
+    _write_legacy_malformed_review_request(mandate_dir, stage="mandate")
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_csf_data_ready",
+        stage="csf_data_ready",
+    )
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="03_csf_signal_ready",
+        stage="csf_signal_ready",
+    )
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="04_csf_train_freeze",
+        stage="csf_train_freeze",
+    )
+
+
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -2610,11 +2637,44 @@ def test_historical_advancing_closure_accepts_legacy_malformed_request_for_close
     assert research_session_module._historical_stage_advancing_closure_exists(mandate_dir) is True
 
 
+def test_review_closure_complete_uses_historical_certificate_only_after_downstream_materialization(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    lineage_root = tmp_path / "outputs" / "legacy_closed_with_downstream_case"
+    mandate_dir = _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
+    _write_legacy_malformed_review_request(mandate_dir, stage="mandate")
+
+    assert research_session_module._mandate_closure_complete(mandate_dir) is False
+
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_csf_data_ready",
+        stage="csf_data_ready",
+    )
+
+    assert research_session_module._mandate_closure_complete(mandate_dir) is True
+
+
 def test_detect_session_stage_uses_latest_csf_closed_stage_over_legacy_upstream_request(
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "csf_legacy_upstream_case"
     _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+
+    assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
+
+
+def test_detect_session_stage_infers_csf_route_from_materialized_downstream_stage_when_route_file_unreadable(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_unreadable_route_case"
+    _prepare_csf_train_freeze_closed_with_unreadable_route_and_legacy_mandate_request(lineage_root)
 
     assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
 
