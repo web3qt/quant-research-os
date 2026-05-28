@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from runtime.tools.artifact_contract_runtime import ArtifactValidationResult
+from runtime.tools.csf_path_risk_contract import PATH_RISK_ARTIFACTS, validate_path_risk_artifacts
 
 
 EXPECTED_SELECTED_VARIANTS_REFERENCE = "../05_csf_test_evidence/author/formal/csf_selected_variants_test.csv"
@@ -65,7 +66,7 @@ REQUIRED_STAGE_OUTPUTS = {
     "run_manifest.json",
     "artifact_catalog.md",
     "field_dictionary.md",
-}
+} | PATH_RISK_ARTIFACTS
 
 
 def validate_csf_backtest_ready_semantics(
@@ -96,6 +97,13 @@ def validate_csf_backtest_ready_semantics(
     errors.extend(_validate_parquet_variant_ids(stage_formal_dir / "portfolio_summary.parquet", selected_variant_ids))
     errors.extend(_validate_parquet_variant_ids(stage_formal_dir / "turnover_capacity_report.parquet", selected_variant_ids))
     errors.extend(_validate_run_manifest(run_manifest))
+    errors.extend(
+        validate_path_risk_artifacts(
+            stage_formal_dir,
+            selected_variant_ids=selected_variant_ids,
+            portfolio_expression=str(portfolio_contract.get("portfolio_expression", "")).strip(),
+        )
+    )
 
     return ArtifactValidationResult(errors=errors)
 

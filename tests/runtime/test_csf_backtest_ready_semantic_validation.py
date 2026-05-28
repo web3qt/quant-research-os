@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import yaml
 
 from runtime.tools.csf_backtest_runtime import build_csf_backtest_ready_from_test_evidence
@@ -11,6 +13,11 @@ from tests.runtime.test_csf_backtest_runtime import (
     _prepare_csf_test_stage,
     _write_yaml,
 )
+
+
+def _write_parquet_rows(path: Path, rows: list[dict[str, object]]) -> None:
+    columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
+    pq.write_table(pa.table(columns), path)
 
 
 def _build_valid_formal_dir(lineage_root: Path) -> Path:
@@ -159,6 +166,39 @@ def test_csf_backtest_ready_semantics_rejects_missing_return_accounting_provenan
     result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
 
     assert "return_accounting_provenance.yaml: missing required return accounting provenance" in result.errors
+
+
+def test_csf_backtest_ready_semantics_rejects_missing_path_risk_artifacts(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    (formal_dir / "portfolio_return_series.parquet").unlink()
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert any("portfolio_return_series.parquet" in error for error in result.errors)
+
+
+def test_csf_backtest_ready_semantics_rejects_risk_metric_drift(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools.csf_backtest_ready_contract_runtime import validate_csf_backtest_ready_semantics
+
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    formal_dir = _build_valid_formal_dir(lineage_root)
+    rows = pq.read_table(formal_dir / "risk_adjusted_metrics.parquet").to_pylist()
+    rows[0]["annualized_return_365d"] = 999.0
+    _write_parquet_rows(formal_dir / "risk_adjusted_metrics.parquet", rows)
+
+    result = validate_csf_backtest_ready_semantics(formal_dir, lineage_root)
+
+    assert any(
+        "risk_adjusted_metrics.parquet: annualized_return_365d mismatch" in error
+        for error in result.errors
+    )
 
 
 def test_csf_backtest_ready_semantics_rejects_signal_panel_return_source(

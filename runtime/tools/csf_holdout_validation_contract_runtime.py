@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime.tools.artifact_contract_runtime import ArtifactValidationResult
+from runtime.tools.csf_path_risk_contract import PATH_RISK_ARTIFACTS, validate_path_risk_artifacts
 
 
 EXPECTED_BACKTEST_CONTRACT_REFERENCE = "../06_csf_backtest_ready/author/formal/portfolio_contract.yaml"
@@ -22,7 +23,7 @@ REQUIRED_STAGE_OUTPUTS = {
     "csf_holdout_gate_decision.md",
     "artifact_catalog.md",
     "field_dictionary.md",
-}
+} | PATH_RISK_ARTIFACTS
 
 
 def validate_csf_holdout_validation_semantics(
@@ -44,6 +45,13 @@ def validate_csf_holdout_validation_semantics(
     errors.extend(_validate_parquet_variant_ids(stage_formal_dir / "holdout_portfolio_compare.parquet", selected_variant_ids))
     errors.extend(_validate_json_selected_variants(stage_formal_dir / "rolling_holdout_stability.json", selected_variant_ids))
     errors.extend(_validate_json_selected_variants(stage_formal_dir / "regime_shift_audit.json", selected_variant_ids))
+    errors.extend(
+        validate_path_risk_artifacts(
+            stage_formal_dir,
+            selected_variant_ids=selected_variant_ids,
+            portfolio_expression=str(run_manifest.get("portfolio_expression", "")).strip(),
+        )
+    )
 
     return ArtifactValidationResult(errors=errors)
 

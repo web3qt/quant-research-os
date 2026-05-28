@@ -146,3 +146,34 @@ def test_csf_holdout_validation_semantic_validator_rejects_portfolio_expression_
         "csf_holdout_run_manifest.json: portfolio_expression must match upstream backtest run_manifest; "
         "expected='long_short_market_neutral'; observed='changed_expression'"
     ) in result.errors
+
+
+def test_csf_holdout_validation_semantic_validator_rejects_missing_path_risk_artifacts(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    stage_dir = _prepare_valid_csf_holdout_validation(lineage_root)
+    formal_dir = stage_dir / "author" / "formal"
+    (formal_dir / "portfolio_return_series.parquet").unlink()
+
+    result = validate_csf_holdout_validation_semantics(formal_dir, lineage_root)
+
+    assert any("portfolio_return_series.parquet" in error for error in result.errors)
+
+
+def test_csf_holdout_validation_semantic_validator_rejects_risk_metric_drift(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    stage_dir = _prepare_valid_csf_holdout_validation(lineage_root)
+    formal_dir = stage_dir / "author" / "formal"
+    rows = pq.read_table(formal_dir / "risk_adjusted_metrics.parquet").to_pylist()
+    rows[0]["annualized_return_365d"] = 999.0
+    _write_parquet_rows(formal_dir / "risk_adjusted_metrics.parquet", rows)
+
+    result = validate_csf_holdout_validation_semantics(formal_dir, lineage_root)
+
+    assert any(
+        "risk_adjusted_metrics.parquet: annualized_return_365d mismatch" in error
+        for error in result.errors
+    )
