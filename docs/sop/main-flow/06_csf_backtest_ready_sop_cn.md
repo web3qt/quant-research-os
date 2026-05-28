@@ -59,6 +59,11 @@
 - `turnover_capacity_report.parquet`
 - `cost_assumption_report.md`
 - `portfolio_summary.parquet`
+- `portfolio_return_series.parquet`
+- `equity_curve.parquet`
+- `portfolio_pnl_ledger.parquet`
+- `asset_pnl_ledger.parquet`
+- `risk_adjusted_metrics.parquet`
 - `name_level_metrics.parquet`
 - `drawdown_report.json`
 - `target_strategy_compare.parquet`
@@ -73,6 +78,19 @@
 条件性输出：
 - `gated_portfolio_summary.parquet`
 - `ungated_portfolio_summary.parquet`
+
+---
+
+## 3.1 路径级风险诊断 hard contract
+
+`portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet` 与 `risk_adjusted_metrics.parquet` 是本阶段 formal hard contract。它们必须存在、非空，并能由 deterministic preflight 互相复算：
+
+- `equity_curve.parquet` 必须能由 `portfolio_return_series.parquet` 的 gross / net return 从初始净值 1.0 复算。
+- `portfolio_pnl_ledger.parquet` 必须能与 return series 的收益、成本和 `capital_base` 对齐。
+- `asset_pnl_ledger.parquet` 必须能聚合回 portfolio PnL，并与冻结的 `portfolio_expression` 暴露规则一致。
+- `risk_adjusted_metrics.parquet` 中 Sharpe、Sortino、Calmar、profit factor 必须能由 formal return / PnL 序列复算。
+
+365 天是 crypto 永续主口径；252 天是传统交易日参考口径。Sharpe、Sortino、Calmar、profit factor 不新增 PASS 阈值；它们可以表现很差，但缺失、不可复算或与原始序列不一致会阻断 stage validation。这里的“不新增 PASS 阈值”只表示不因为 Sharpe / Calmar / profit factor 数值低而机器失败，不表示可以缺少这些产物。
 
 ---
 

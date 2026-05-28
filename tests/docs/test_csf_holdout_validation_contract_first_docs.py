@@ -9,6 +9,12 @@ def test_research_session_usage_documents_csf_holdout_validation_contract_first_
     assert "contracts/artifacts/csf_holdout_validation_artifacts.yaml" in content
     assert "qros-validate-stage --stage csf_holdout_validation" in content
     assert "csf_holdout_validation semantic validator" in content
+    assert "portfolio_return_series.parquet" in content
+    assert "equity_curve.parquet" in content
+    assert "portfolio_pnl_ledger.parquet" in content
+    assert "asset_pnl_ledger.parquet" in content
+    assert "risk_adjusted_metrics.parquet" in content
+    assert "不新增 PASS 阈值" in content
 
 
 def test_review_shared_protocol_documents_csf_holdout_validation_preflight() -> None:
@@ -33,5 +39,13 @@ def test_csf_holdout_validation_sop_uses_contract_facing_artifacts() -> None:
     assert "csf_holdout_run_manifest.json" in content
     assert "holdout_test_compare.parquet" in content
     assert "holdout_portfolio_compare.parquet" in content
+    assert "portfolio_return_series.parquet" in content
+    assert "equity_curve.parquet" in content
+    assert "portfolio_pnl_ledger.parquet" in content
+    assert "asset_pnl_ledger.parquet" in content
+    assert "risk_adjusted_metrics.parquet" in content
+    assert "365" in content
+    assert "252" in content
+    assert "不新增 PASS 阈值" in content
     assert "holdout_backtest_compare.csv" not in content
     assert "window_results/" not in content

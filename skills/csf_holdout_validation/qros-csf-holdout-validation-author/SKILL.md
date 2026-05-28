@@ -37,6 +37,11 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - `holdout_factor_diagnostics.parquet`
 - `holdout_test_compare.parquet`
 - `holdout_portfolio_compare.parquet`
+- `portfolio_return_series.parquet`
+- `equity_curve.parquet`
+- `portfolio_pnl_ledger.parquet`
+- `asset_pnl_ledger.parquet`
+- `risk_adjusted_metrics.parquet`
 - `rolling_holdout_stability.json`
 - `regime_shift_audit.json`
 - `csf_holdout_gate_decision.md`
@@ -65,6 +70,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 必须使用 runtime scaffold/build 物化 `07_csf_holdout_validation/author/formal/*`
 - build 后必须运行 `qros-validate-stage --stage csf_holdout_validation`
 - 进入 review 前必须通过 csf_holdout_validation semantic validator / deterministic preflight
+- `portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet`、`risk_adjusted_metrics.parquet` 是 formal hard contract；必须使用冻结组合规则在 holdout 窗口真实生成，缺失、不可复算或与 formal return / PnL 序列不一致时不得进入 review
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
 - thin wrapper、framework builder shim、只转发共享 helper 的 skeleton 都不合法；`run_stage.py` 与关键 helper 不能只是把框架 builder 包一层
@@ -95,6 +101,9 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 
 ### Artifact shape 由 contract 决定
 `csf_holdout_run_manifest.json`、`holdout_test_compare.parquet`、`holdout_portfolio_compare.parquet`、`rolling_holdout_stability.json`、`regime_shift_audit.json` 与所有 parquet columns 必须通过 `contracts/artifacts/csf_holdout_validation_artifacts.yaml` 校验。agent 不得因为 skill 文本、聊天上下文或 reviewer 偏好新增 formal artifact 字段。
+
+### 路径级风险诊断必须与 backtest 同口径
+`portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet` 与 `risk_adjusted_metrics.parquet` 必须沿用 `csf_backtest_ready` 冻结的组合规则和路径级风险口径。365 天是 crypto 永续主口径，252 天是参考口径；Sharpe、Sortino、Calmar、profit factor 不新增 PASS 阈值，但缺失、不可复算或不一致会阻断 validation。
 
 ## Working Rules
 

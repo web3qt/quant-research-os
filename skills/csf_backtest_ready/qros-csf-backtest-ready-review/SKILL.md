@@ -74,6 +74,7 @@ reviewer 写出的 `review/final_review.yaml` 必须包含以下顶层字段：
 - 进入 reviewer lane 前必须已经运行 `qros-validate-stage --stage csf_backtest_ready`，并通过 deterministic preflight
 - preflight 中的 `ARTIFACT-CONTRACT-001` 与 `CSF-BACKTEST-SEMANTIC-001` 都是 review 前阻断项
 - preflight 覆盖 artifact contract validation、semantic validation 与 upstream binding validation；reviewer 仍需审查机制和残留风险
+- `portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet`、`risk_adjusted_metrics.parquet` 缺失、不可复算或与 formal return / PnL 序列不一致时必须判为 blocking；Sharpe、Sortino、Calmar、profit factor 不新增数值 PASS 阈值，但 reviewer 必须解释明显退化或异常值
 - 必须检查 `return_accounting_provenance.yaml` 是否存在，并确认 `portfolio_summary.parquet` 与 `csf_backtest_gate_table.csv` 的 formal metrics 受该 provenance 支撑
 - 如果 formal return field、formula 或 stage-local program 使用 `mom_ret`、signal/factor score、rank score、neutralized factor 或其他 proxy PnL，必须判为 blocking
 - proxy PnL 只能作为 diagnostic evidence；一旦进入 formal gate metrics，不得进入 csf_holdout_validation

@@ -647,11 +647,12 @@ When `research_route = cross_sectional_factor` and the stage is `csf_backtest_re
 - `engine_contract` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 portfolio outputs、combo ledgers、capacity artifacts？
+- 当前 research repo 里将真实生成哪些 `portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet`、`risk_adjusted_metrics.parquet`？
 - 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_backtest_ready？`
 
 Do not skip this question. Do not imply the transition already happened.
-Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_backtest_ready`.
+Do not accept empty directories, placeholder artifacts, contract-only docs, or missing/unreproducible path-risk artifacts as completed `csf_backtest_ready`.
 
 When `research_route = cross_sectional_factor` and the stage is `csf_holdout_validation_confirmation_pending`, the agent must ask explicitly:
 
@@ -661,11 +662,12 @@ When `research_route = cross_sectional_factor` and the stage is `csf_holdout_val
 - `failure_governance` 这一组冻结什么？
 - `delivery_contract` 这一组冻结什么？
 - 当前 research repo 里将真实生成哪些 single-window、merged-window、comparison artifacts？
+- 当前 research repo 里将真实生成哪些 holdout `portfolio_return_series.parquet`、`equity_curve.parquet`、`portfolio_pnl_ledger.parquet`、`asset_pnl_ledger.parquet`、`risk_adjusted_metrics.parquet`？
 - 可一次回显全部 freeze groups；若用户回复 `确认全部`，先批量确认 groups，再继续最终 stage 冻结确认
 - `是否按以上内容冻结 csf_holdout_validation？`
 
 Do not skip this question. Do not imply the transition already happened.
-Do not accept empty directories, placeholder artifacts, or contract-only docs as completed `csf_holdout_validation`.
+Do not accept empty directories, placeholder artifacts, contract-only docs, or missing/unreproducible path-risk artifacts as completed `csf_holdout_validation`.
 
 ## State Source Of Truth
 
