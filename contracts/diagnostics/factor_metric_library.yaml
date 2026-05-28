@@ -346,8 +346,8 @@ metrics:
     meaning: 衡量单位总波动风险带来的超额收益。
     expected_direction: higher_is_better
     required_inputs:
-      - portfolio_return_series.parquet
-    v1_observation_mode: gap_detect_only
+      - risk_adjusted_metrics.parquet.sharpe_365d
+    v1_observation_mode: read_existing
 
   sortino:
     display_name: Sortino Ratio
@@ -355,8 +355,8 @@ metrics:
     meaning: 衡量单位下行风险带来的超额收益。
     expected_direction: higher_is_better
     required_inputs:
-      - portfolio_return_series.parquet
-    v1_observation_mode: gap_detect_only
+      - risk_adjusted_metrics.parquet.sortino_365d
+    v1_observation_mode: read_existing
 
   calmar:
     display_name: Calmar Ratio
@@ -364,9 +364,8 @@ metrics:
     meaning: 衡量单位最大回撤对应的年化收益效率。
     expected_direction: higher_is_better
     required_inputs:
-      - portfolio_return_series.parquet
-      - drawdown_report.json.max_drawdown
-    v1_observation_mode: gap_detect_only
+      - risk_adjusted_metrics.parquet.calmar_365d
+    v1_observation_mode: read_existing
 
   profit_factor:
     display_name: Profit Factor
@@ -374,8 +373,8 @@ metrics:
     meaning: 衡量总盈利对总亏损的覆盖程度。
     expected_direction: higher_is_better
     required_inputs:
-      - trade_pnl_ledger.parquet
-    v1_observation_mode: gap_detect_only
+      - risk_adjusted_metrics.parquet.profit_factor
+    v1_observation_mode: read_existing
 
   direction_match:
     display_name: Direction Match

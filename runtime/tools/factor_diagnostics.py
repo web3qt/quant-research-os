@@ -771,6 +771,18 @@ def _mean_from_holdout_factor(metric_id: str) -> Any:
     return observe
 
 
+def _risk_metric(metric_id: str, column: str) -> Any:
+    def observe(formal_dir: Path) -> ObservedMetric | MissingMetric:
+        return _mean_from_parquet(
+            formal_dir / "risk_adjusted_metrics.parquet",
+            metric_id,
+            column,
+            f"risk_adjusted_metrics.parquet.{column}",
+        )
+
+    return observe
+
+
 _METRIC_OBSERVERS: dict[str, dict[str, Any]] = {
     "csf_data_ready": {
         "coverage_ratio": _data_coverage,
@@ -816,12 +828,12 @@ _METRIC_OBSERVERS: dict[str, dict[str, Any]] = {
         "alpha": _gap("alpha", "portfolio_return_series.parquet"),
         "beta": _gap("beta", "portfolio_return_series.parquet"),
         "max_drawdown": _max_drawdown,
-        "sharpe": _gap("sharpe", "portfolio_return_series.parquet"),
-        "sortino": _gap("sortino", "portfolio_return_series.parquet"),
-        "calmar": _gap("calmar", "portfolio_return_series.parquet"),
+        "sharpe": _risk_metric("sharpe", "sharpe_365d"),
+        "sortino": _risk_metric("sortino", "sortino_365d"),
+        "calmar": _risk_metric("calmar", "calmar_365d"),
         "turnover": _turnover,
         "capacity_utilization": _capacity_utilization,
-        "profit_factor": _gap("profit_factor", "trade_pnl_ledger.parquet"),
+        "profit_factor": _risk_metric("profit_factor", "profit_factor"),
     },
     "csf_holdout_validation": {
         "direction_match": _direction_match,
@@ -831,6 +843,10 @@ _METRIC_OBSERVERS: dict[str, dict[str, Any]] = {
         "coverage_ratio": _mean_from_holdout_factor("coverage_ratio"),
         "breadth": _breadth,
         "bucket_stability_score": _bucket_stability_score,
+        "sharpe": _risk_metric("sharpe", "sharpe_365d"),
+        "sortino": _risk_metric("sortino", "sortino_365d"),
+        "calmar": _risk_metric("calmar", "calmar_365d"),
+        "profit_factor": _risk_metric("profit_factor", "profit_factor"),
         "rolling_stability": _rolling_stability,
         "regime_shift_audit": _regime_shift_audit,
     },

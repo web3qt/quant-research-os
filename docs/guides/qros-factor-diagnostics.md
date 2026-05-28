@@ -85,8 +85,8 @@ $qros-factor-diagnostics 帮我解释 missing diagnostics 里哪些最应该补
 | `csf_signal_ready` | factor coverage、score 非空率、factor_direction、input field binding、route inheritance |
 | `csf_train_freeze` | variant ledger、reject reason、train quality score、bucket min names、neutralization diagnostics |
 | `csf_test_evidence` | Rank IC、Rank IC win rate、ICIR、Top-Bottom Spread、monotonicity、breadth、subperiod stability |
-| `csf_backtest_ready` | gross/net return、gross/net erosion、max drawdown、turnover、capacity utilization、Sharpe / Profit Factor 缺口 |
-| `csf_holdout_validation` | direction_match、holdout mean net return、net return delta、drawdown delta、rolling stability、regime shift audit |
+| `csf_backtest_ready` | gross/net return、gross/net erosion、max drawdown、turnover、capacity utilization、Sharpe / Sortino / Calmar / Profit Factor formal risk metrics |
+| `csf_holdout_validation` | direction_match、holdout mean net return、net return delta、drawdown delta、rolling stability、regime shift audit、Sharpe / Calmar / Profit Factor formal risk metrics |
 
 ---
 

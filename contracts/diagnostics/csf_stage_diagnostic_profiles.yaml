@@ -83,16 +83,16 @@ profiles:
       risk_adjusted_quality:
         required_metrics:
           - max_drawdown
-        recommended_metrics:
           - sharpe
           - sortino
           - calmar
+        recommended_metrics: []
       trading_cost_and_capacity:
         required_metrics:
           - turnover
           - capacity_utilization
-        recommended_metrics:
           - profit_factor
+        recommended_metrics: []
 
   csf_holdout_validation:
     health_dimensions:
@@ -113,4 +113,12 @@ profiles:
           - bucket_stability_score
           - rolling_stability
           - regime_shift_audit
+        recommended_metrics: []
+      holdout_path_risk:
+        required_metrics:
+          - sharpe
+          - sortino
+          - calmar
+          - profit_factor
+        recommended_metrics: []
         recommended_metrics: []

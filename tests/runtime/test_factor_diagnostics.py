@@ -204,6 +204,27 @@ def test_csf_backtest_ready_reads_existing_portfolio_metrics(tmp_path: Path) -> 
         formal_dir / "turnover_capacity_report.parquet",
         [{"date": "2024-01-01", "variant_id": "baseline_v1", "turnover": 0.14, "capacity_utilization": 0.25}],
     )
+    _write_parquet(
+        formal_dir / "risk_adjusted_metrics.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "annualized_return_365d": 1.46,
+                "annualized_return_252d": 1.008,
+                "volatility_365d": 0.1469693845669907,
+                "volatility_252d": 0.12210651088302175,
+                "sharpe_365d": 9.933360652841385,
+                "sharpe_252d": 8.255087035380547,
+                "sortino_365d": 0.0,
+                "sortino_252d": 0.0,
+                "calmar_365d": 292.0,
+                "calmar_252d": 201.6,
+                "profit_factor": 3.4,
+                "max_drawdown": -0.005,
+                "observation_count": 3,
+            }
+        ],
+    )
 
     payload = diagnostics_payload(outputs_root=outputs_root, lineage_id="lineage", stage="csf_backtest_ready")
 
@@ -211,13 +232,16 @@ def test_csf_backtest_ready_reads_existing_portfolio_metrics(tmp_path: Path) -> 
     assert _observed_metric(payload, "mean_net_return")["value"] == pytest.approx(0.012)
     assert _observed_metric(payload, "gross_net_erosion")["value"] == pytest.approx(0.006)
     assert _observed_metric(payload, "max_drawdown")["value"] == pytest.approx(-0.08)
+    assert _observed_metric(payload, "sharpe")["value"] == pytest.approx(9.933360652841385)
+    assert _observed_metric(payload, "sortino")["value"] == pytest.approx(0.0)
+    assert _observed_metric(payload, "calmar")["value"] == pytest.approx(292.0)
     assert _observed_metric(payload, "turnover")["value"] == pytest.approx(0.14)
     assert _observed_metric(payload, "capacity_utilization")["value"] == pytest.approx(0.25)
+    assert _observed_metric(payload, "profit_factor")["value"] == pytest.approx(3.4)
     assert "扣成本后" in _observed_metric(payload, "mean_net_return")["interpretation"]
     assert "成本侵蚀" in _observed_metric(payload, "gross_net_erosion")["interpretation"]
     assert "最大回撤" in _observed_metric(payload, "max_drawdown")["interpretation"]
     assert "容量" in _observed_metric(payload, "capacity_utilization")["interpretation"]
-    assert {"sharpe", "profit_factor"} <= _missing_metric_ids(payload)
 
 
 def test_csf_holdout_validation_reads_compare_metrics(tmp_path: Path) -> None:
@@ -243,6 +267,27 @@ def test_csf_holdout_validation_reads_compare_metrics(tmp_path: Path) -> None:
         formal_dir / "regime_shift_audit.json",
         {"stage": "csf_holdout_validation", "selected_variant_ids": ["baseline_v1"], "regime_shift_detected": False, "audit_status": "pass", "explanation": "No material shift."},
     )
+    _write_parquet(
+        formal_dir / "risk_adjusted_metrics.parquet",
+        [
+            {
+                "variant_id": "baseline_v1",
+                "annualized_return_365d": 0.8,
+                "annualized_return_252d": 0.552,
+                "volatility_365d": 0.2,
+                "volatility_252d": 0.16,
+                "sharpe_365d": 4.0,
+                "sharpe_252d": 3.45,
+                "sortino_365d": 3.0,
+                "sortino_252d": 2.6,
+                "calmar_365d": 8.0,
+                "calmar_252d": 5.52,
+                "profit_factor": 2.1,
+                "max_drawdown": -0.1,
+                "observation_count": 3,
+            }
+        ],
+    )
 
     payload = diagnostics_payload(outputs_root=outputs_root, lineage_id="lineage", stage="csf_holdout_validation")
 
@@ -251,6 +296,9 @@ def test_csf_holdout_validation_reads_compare_metrics(tmp_path: Path) -> None:
     assert _observed_metric(payload, "net_return_delta")["value"] == pytest.approx(-0.002)
     assert _observed_metric(payload, "drawdown_delta")["value"] == pytest.approx(-0.02)
     assert _observed_metric(payload, "bucket_stability_score")["value"] == pytest.approx(0.7)
+    assert _observed_metric(payload, "sharpe")["value"] == pytest.approx(4.0)
+    assert _observed_metric(payload, "calmar")["value"] == pytest.approx(8.0)
+    assert _observed_metric(payload, "profit_factor")["value"] == pytest.approx(2.1)
     assert _observed_metric(payload, "rolling_stability")["value"] == "pass"
     assert _observed_metric(payload, "regime_shift_audit")["value"] == "pass"
 
