@@ -64,6 +64,8 @@ def test_setup_repo_local_installs_into_current_repo(tmp_path: Path) -> None:
     assert (project_root / ".qros" / "install-manifest.json").exists()
     assert (project_root / ".qros" / "bin" / "qros-session").exists()
     assert (project_root / ".qros" / "bin" / "qros-update").exists()
+    assert (project_root / "AGENTS.md").exists()
+    assert "QROS Research Repo Agent Contract" in (project_root / "AGENTS.md").read_text(encoding="utf-8")
     assert (home_root / ".codex" / "skills" / "qros-mandate-review" / "SKILL.md").exists()
 
     session_result = run(

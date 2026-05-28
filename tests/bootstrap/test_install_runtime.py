@@ -63,6 +63,14 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
     assert (install_root / ".qros" / "bin" / "qros-resume").exists()
     assert (install_root / ".qros" / ".venv" / "bin" / "python").exists()
     assert (install_root / ".qros" / "uv.lock").exists()
+    research_agents = install_root / "AGENTS.md"
+    assert research_agents.exists()
+    research_agents_content = research_agents.read_text(encoding="utf-8")
+    assert "QROS Research Repo Agent Contract" in research_agents_content
+    assert "$qros-research-session" in research_agents_content
+    assert "outputs/<lineage_id>/" in research_agents_content
+    assert "placeholder" in research_agents_content
+    assert "./.qros/bin/qros-*" in research_agents_content
     assert not (install_root / ".qros" / "tools").exists()
     assert not (install_root / ".qros" / "scripts").exists()
     assert not (install_root / ".qros" / "docs").exists()
@@ -122,6 +130,23 @@ def test_repo_local_install_writes_skills_globally_and_runtime_locally(
         "bin/qros-verify",
         "bin/qros-wrapper-lib",
     ]
+
+
+def test_repo_local_install_preserves_existing_research_repo_agents(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = Path.cwd()
+    install_root = tmp_path / "installed-repo"
+    install_root.mkdir()
+    existing_agents = install_root / "AGENTS.md"
+    existing_agents.write_text("# Existing Project Rules\n\nKeep this file.\n", encoding="utf-8")
+    home_root = tmp_path / "home"
+    home_root.mkdir()
+    monkeypatch.setenv("HOME", str(home_root))
+
+    install_qros(repo_root=repo_root, cwd=install_root, home=home_root, mode="repo-local")
+
+    assert existing_agents.read_text(encoding="utf-8") == "# Existing Project Rules\n\nKeep this file.\n"
 
 
 def test_user_global_install_writes_skills_and_install_manifest_under_home(
@@ -232,6 +257,7 @@ def test_repo_local_install_manifest_ignores_staging_dir_when_repo_root_is_insta
     home_root.mkdir()
     shutil.copytree(Path.cwd() / "skills", repo_root / "skills")
     shutil.copytree(Path.cwd() / "runtime" / "bin", repo_root / "runtime" / "bin")
+    shutil.copytree(Path.cwd() / "templates" / "research-repo", repo_root / "templates" / "research-repo")
     (repo_root / ".gitignore").write_text(".qros/\n", encoding="utf-8")
     subprocess.run(["git", "init", "-b", "main"], cwd=repo_root, check=True, capture_output=True, text=True)
     subprocess.run(["git", "config", "user.name", "QROS Test"], cwd=repo_root, check=True)
@@ -315,6 +341,7 @@ def test_repo_local_install_manifest_keeps_tracked_changes_under_qros_tmp_like_p
     home_root.mkdir()
     shutil.copytree(Path.cwd() / "skills", repo_root / "skills")
     shutil.copytree(Path.cwd() / "runtime" / "bin", repo_root / "runtime" / "bin")
+    shutil.copytree(Path.cwd() / "templates" / "research-repo", repo_root / "templates" / "research-repo")
     tracked_file = repo_root / "experiments" / ".qros.tmp-real" / "config.py"
     tracked_file.parent.mkdir(parents=True)
     tracked_file.write_text("VALUE = 'clean'\n", encoding="utf-8")

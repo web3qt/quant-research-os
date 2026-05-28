@@ -24,6 +24,7 @@ InstallHost = Literal["codex", "claude-code"]
 SUPPORTED_HOSTS: set[str] = {"codex", "claude-code"}
 SUPPORTED_MODES: set[str] = {"repo-local", "user-global", "auto"}
 SKILLS_SOURCE_DIR = Path("skills")
+RESEARCH_REPO_AGENTS_TEMPLATE = Path("templates/research-repo/AGENTS.md.tmpl")
 
 _HOST_CONFIG: dict[str, str] = {
     "codex": ".codex",
@@ -373,6 +374,7 @@ def _install_repo_local_runtime(
             )
 
             _replace_runtime_root(staging_root=staging_target.runtime_root, final_root=target.runtime_root)
+            _ensure_research_repo_agents(repo_root=repo_root, research_repo_root=target.runtime_root.parent)
             return sorted(runtime_written)
         finally:
             if staging_root.exists():
@@ -449,6 +451,18 @@ def _write_qros_staging_marker(staging_root: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
+
+
+def _ensure_research_repo_agents(*, repo_root: Path, research_repo_root: Path) -> None:
+    destination = research_repo_root / "AGENTS.md"
+    if destination.exists():
+        return
+
+    source = repo_root / RESEARCH_REPO_AGENTS_TEMPLATE
+    if not source.exists():
+        raise InstallError(f"missing research repo AGENTS template: {source}")
+
+    destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def _relocate_runtime_env_metadata(

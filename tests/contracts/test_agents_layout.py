@@ -32,6 +32,27 @@ def test_root_agents_declares_real_governance_entrypoints() -> None:
     assert "python runtime/scripts/run_verification_tier.py --tier full-smoke" in content
     assert "docs/guides/qros-verification-tiers.md" in content
     assert "runtime/scripts/run_verification_tier.py" in content
+    assert "## References" in content
+    assert "docs/guides/qros-research-session-usage.md" in content
+    assert "docs/guides/qros-review-constraint-map.md" in content
+    assert "docs/guides/stage-freeze-group-field-guide.md" in content
+    assert "docs/guides/installation.md" in content
+
+
+def test_research_repo_agents_template_locks_consumer_repo_boundaries() -> None:
+    content = Path("templates/research-repo/AGENTS.md.tmpl").read_text(encoding="utf-8")
+
+    assert "QROS Research Repo Agent Contract" in content
+    assert "active research repo" in content
+    assert "不是 QROS 框架仓" in content
+    assert "outputs/<lineage_id>/" in content
+    assert "$qros-research-session" in content
+    assert "$qros-progress" in content
+    assert "$qros-update" in content
+    assert "./.qros/bin/qros-*" in content
+    assert "placeholder" in content
+    assert "failure handling" in content
+    assert "review closure" in content
 
 
 def test_removed_harness_tree_is_not_part_of_active_docs() -> None:
