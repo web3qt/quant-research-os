@@ -286,6 +286,20 @@ def _write_stage_completion_certificate(
     )
 
 
+def _write_legacy_malformed_review_request(stage_dir: Path, *, stage: str) -> None:
+    request_path = stage_dir / "review" / "request" / "adversarial_review_request.yaml"
+    _write_yaml(
+        request_path,
+        {
+            "lineage_id": stage_dir.parent.name,
+            "stage_id": stage,
+            "author_identity": "legacy-author",
+            "required_artifact_paths": [],
+            "required_provenance_paths": ["program_execution_manifest.json"],
+        },
+    )
+
+
 def _write_display_decision(stage_dir: Path, *, stage: str) -> None:
     # Dedicated stage display has been removed from the formal workflow.
     return None
@@ -2516,6 +2530,25 @@ def test_detect_session_stage_advances_on_pass_completion_certificate(tmp_path: 
         _write_stage_completion_certificate(stage_dir / "stage_completion_certificate.yaml", stage_status="PASS")
 
         assert detect_session_stage(lineage_root) == expected_stage, stage
+
+
+def test_historical_advancing_closure_accepts_legacy_malformed_request_for_closed_stage(
+    tmp_path: Path,
+) -> None:
+    from runtime.tools import research_session as research_session_module
+
+    lineage_root = tmp_path / "outputs" / "legacy_closed_case"
+    mandate_dir = lineage_root / "01_mandate"
+    _write_minimal_stage_outputs(mandate_dir, stage="mandate")
+    _write_stage_completion_certificate(
+        mandate_dir / "stage_completion_certificate.yaml",
+        stage_status="PASS",
+    )
+    _write_legacy_malformed_review_request(mandate_dir, stage="mandate")
+    write_fake_stage_provenance(lineage_root, "mandate")
+
+    assert research_session_module._review_closure_complete(mandate_dir) is False
+    assert research_session_module._historical_stage_advancing_closure_exists(mandate_dir) is True
 
 
 def test_run_research_session_enters_next_stage_confirmation_after_completed_display(tmp_path: Path) -> None:

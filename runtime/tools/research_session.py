@@ -4760,6 +4760,19 @@ def _completion_certificate_allows_progress(stage_dir: Path) -> bool:
     return True
 
 
+def _historical_stage_advancing_closure_exists(stage_dir: Path) -> bool:
+    certificate_path = _review_closure_path(stage_dir, "stage_completion_certificate.yaml")
+    if not certificate_path.exists():
+        return False
+
+    payload = _read_yaml(certificate_path)
+    if not payload:
+        return False
+
+    stage_status = payload.get("stage_status") or payload.get("final_verdict")
+    return stage_status in ADVANCING_COMPLETION_STATUSES
+
+
 def _review_closure_complete(stage_dir: Path) -> bool:
     if _review_proof_chain_error(stage_dir) is not None:
         return False
