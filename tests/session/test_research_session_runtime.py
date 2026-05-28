@@ -2679,6 +2679,20 @@ def test_detect_session_stage_infers_csf_route_from_materialized_downstream_stag
     assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
 
 
+def test_detect_session_stage_infers_csf_route_from_materialized_downstream_stage_when_route_file_permission_denied(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_permission_denied_route_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    route_path = _stage_output_path(lineage_root / "01_mandate", "research_route.yaml")
+    route_path.chmod(0)
+
+    try:
+        assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
+    finally:
+        route_path.chmod(0o644)
+
+
 def test_detect_session_stage_enters_csf_test_evidence_after_train_next_stage_confirmation(
     tmp_path: Path,
 ) -> None:

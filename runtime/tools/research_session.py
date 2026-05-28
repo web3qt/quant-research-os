@@ -1643,8 +1643,15 @@ def _route_has_materialized_stage(candidates: list[StageResolutionCandidate]) ->
     return any(candidate.outputs_complete(candidate.stage_dir) for candidate in candidates[1:])
 
 
+def _current_research_route_for_stage_detection(lineage_root: Path) -> str | None:
+    try:
+        return current_research_route(lineage_root)
+    except PermissionError:
+        return None
+
+
 def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool]:
-    explicit_route = current_research_route(lineage_root)
+    explicit_route = _current_research_route_for_stage_detection(lineage_root)
     if explicit_route == "cross_sectional_factor":
         return True, False
     if explicit_route == "time_series_signal":
@@ -2582,7 +2589,10 @@ def session_transition_summary(
 def current_research_route(lineage_root: Path) -> str | None:
     mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if mandate_route_path.exists():
-        route_payload = _read_yaml(mandate_route_path)
+        try:
+            route_payload = _read_yaml(mandate_route_path)
+        except PermissionError:
+            return None
         route_value = str(route_payload.get("research_route", "")).strip()
         if route_value in SUPPORTED_RESEARCH_ROUTES:
             return route_value
@@ -2619,7 +2629,15 @@ def current_route_contract(lineage_root: Path) -> dict[str, str | None]:
             "neutralization_policy": None,
         }
 
-    route_payload = _read_yaml(mandate_route_path)
+    try:
+        route_payload = _read_yaml(mandate_route_path)
+    except PermissionError:
+        return {
+            "factor_role": None,
+            "factor_structure": None,
+            "portfolio_expression": None,
+            "neutralization_policy": None,
+        }
     return {
         "factor_role": _optional_payload_value(route_payload.get("factor_role")),
         "factor_structure": _optional_payload_value(route_payload.get("factor_structure")),
