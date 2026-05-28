@@ -16,9 +16,11 @@ from runtime.tools.research_session import run_research_session
 from runtime.tools.review_eligibility import ReviewEligibilityStatus
 from tests.helpers.lineage_program_support import write_fake_stage_provenance
 from tests.session.test_research_session_runtime import (
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request,
     _review_request_payload,
     _write_adversarial_review_request,
     _write_minimal_stage_outputs,
+    _write_next_stage_confirmation,
     _write_reviewer_receipt,
     _write_yaml,
 )
@@ -250,6 +252,43 @@ def test_progress_payload_exposes_skill_first_direct_handoff(tmp_path: Path) -> 
     assert "qros-resume" not in payload["handoff_hint"]
     assert "qros-session" not in payload["next_action"]
     assert "qros-resume" not in payload["next_action"]
+
+
+def test_progress_reports_latest_csf_closed_stage_over_legacy_upstream_request(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_legacy_upstream_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+
+    payload = progress_status_payload(
+        outputs_root=outputs_root,
+        lineage_id=lineage_root.name,
+    )
+
+    assert payload["current_stage"] == "csf_train_freeze_next_stage_confirmation_pending"
+    assert payload["current_skill"] == "qros-research-session"
+    assert payload["recommended_skill"] == "qros-research-session"
+
+
+def test_progress_reports_csf_test_evidence_after_train_next_stage_confirmation(
+    tmp_path: Path,
+) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_legacy_upstream_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    _write_next_stage_confirmation(
+        lineage_root / "04_csf_train_freeze",
+        stage="csf_train_freeze",
+    )
+
+    payload = progress_status_payload(
+        outputs_root=outputs_root,
+        lineage_id=lineage_root.name,
+    )
+
+    assert payload["current_stage"] == "csf_test_evidence_confirmation_pending"
+    assert payload["current_skill"] == "qros-csf-test-evidence-author"
 
 
 def test_progress_reports_same_review_scope_mismatch_as_session(tmp_path: Path) -> None:

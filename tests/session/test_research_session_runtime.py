@@ -921,6 +921,65 @@ def _write_minimal_stage_outputs(stage_dir: Path, *, stage: str) -> None:
         )
 
 
+def _write_csf_route_contract(mandate_dir: Path) -> None:
+    _write_yaml(
+        _stage_output_path(mandate_dir, "research_route.yaml"),
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "regime_filter",
+            "factor_structure": "multi_factor_score",
+            "portfolio_expression": "long_only_rank",
+            "neutralization_policy": "group_neutral",
+            "target_strategy_reference": "trend_combo_v1",
+            "group_taxonomy_reference": "sector_bucket_v1",
+            "excluded_routes": ["time_series_signal"],
+            "route_rationale": ["Cross-sectional factor route is the frozen route."],
+            "route_change_policy": {
+                "before_downstream_freeze": "rollback_to_mandate",
+                "after_downstream_freeze": "child_lineage",
+            },
+            "route_contract_version": "v1",
+        },
+    )
+
+
+def _prepare_csf_stage_pass_closed(lineage_root: Path, *, stage_dir_name: str, stage: str) -> Path:
+    stage_dir = lineage_root / stage_dir_name
+    _write_minimal_stage_outputs(stage_dir, stage=stage)
+    if stage == "mandate":
+        _write_csf_route_contract(stage_dir)
+    _write_stage_completion_certificate(
+        stage_dir / "stage_completion_certificate.yaml",
+        stage_status="PASS",
+    )
+    write_fake_stage_provenance(lineage_root, stage)
+    return stage_dir
+
+
+def _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root: Path) -> None:
+    mandate_dir = _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
+    _write_legacy_malformed_review_request(mandate_dir, stage="mandate")
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_csf_data_ready",
+        stage="csf_data_ready",
+    )
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="03_csf_signal_ready",
+        stage="csf_signal_ready",
+    )
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="04_csf_train_freeze",
+        stage="csf_train_freeze",
+    )
+
+
 def _freeze_draft(*, confirmed: bool) -> dict:
     return {
         "groups": {
@@ -2549,6 +2608,49 @@ def test_historical_advancing_closure_accepts_legacy_malformed_request_for_close
 
     assert research_session_module._review_closure_complete(mandate_dir) is False
     assert research_session_module._historical_stage_advancing_closure_exists(mandate_dir) is True
+
+
+def test_detect_session_stage_uses_latest_csf_closed_stage_over_legacy_upstream_request(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_legacy_upstream_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+
+    assert detect_session_stage(lineage_root) == "csf_train_freeze_next_stage_confirmation_pending"
+
+
+def test_detect_session_stage_enters_csf_test_evidence_after_train_next_stage_confirmation(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_legacy_upstream_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    _write_next_stage_confirmation(
+        lineage_root / "04_csf_train_freeze",
+        stage="csf_train_freeze",
+    )
+
+    assert detect_session_stage(lineage_root) == "csf_test_evidence_confirmation_pending"
+
+
+def test_detect_session_stage_keeps_highest_malformed_review_request_strict(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "highest_malformed_case"
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
+    stage_dir = lineage_root / "02_csf_data_ready"
+    _write_minimal_stage_outputs(stage_dir, stage="csf_data_ready")
+    _write_stage_completion_certificate(
+        stage_dir / "stage_completion_certificate.yaml",
+        stage_status="PASS",
+    )
+    _write_legacy_malformed_review_request(stage_dir, stage="csf_data_ready")
+    write_fake_stage_provenance(lineage_root, "csf_data_ready")
+
+    assert detect_session_stage(lineage_root) == "csf_data_ready_review"
 
 
 def test_historical_stage_advancing_closure_accepts_final_verdict_only_pass(
