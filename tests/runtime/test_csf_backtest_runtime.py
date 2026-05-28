@@ -10,6 +10,15 @@ from runtime.tools.csf_backtest_runtime import (
     build_csf_backtest_ready_from_test_evidence,
     scaffold_csf_backtest_ready,
 )
+from runtime.tools.csf_path_risk_contract import validate_path_risk_artifacts
+
+PATH_RISK_ARTIFACT_NAMES = [
+    "portfolio_return_series.parquet",
+    "equity_curve.parquet",
+    "portfolio_pnl_ledger.parquet",
+    "asset_pnl_ledger.parquet",
+    "risk_adjusted_metrics.parquet",
+]
 
 
 def _write_yaml(path: Path, payload: dict) -> None:
@@ -161,9 +170,13 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert (formal_dir / "run_manifest.json").exists()
     assert (formal_dir / "artifact_catalog.md").exists()
     assert (formal_dir / "field_dictionary.md").exists()
+    for artifact_name in PATH_RISK_ARTIFACT_NAMES:
+        assert (formal_dir / artifact_name).exists()
 
     assert pq.read_table(formal_dir / "portfolio_weight_panel.parquet").num_rows > 0
     assert pq.read_table(formal_dir / "portfolio_summary.parquet").num_rows > 0
+    for artifact_name in PATH_RISK_ARTIFACT_NAMES:
+        assert pq.read_table(formal_dir / artifact_name).num_rows > 0
 
     return_accounting_provenance = yaml.safe_load(
         (formal_dir / "return_accounting_provenance.yaml").read_text(encoding="utf-8")
@@ -213,6 +226,20 @@ def test_build_csf_backtest_ready_writes_required_outputs(tmp_path: Path) -> Non
     assert "return_accounting_provenance.yaml" in run_manifest["stage_outputs"]
     assert "csf_backtest_gate_decision.md" in run_manifest["stage_outputs"]
     assert "run_manifest.json" in run_manifest["stage_outputs"]
+    for artifact_name in PATH_RISK_ARTIFACT_NAMES:
+        assert artifact_name in run_manifest["stage_outputs"]
+
+    portfolio_contract = yaml.safe_load((formal_dir / "portfolio_contract.yaml").read_text(encoding="utf-8"))
+    for artifact_name in PATH_RISK_ARTIFACT_NAMES:
+        assert artifact_name in portfolio_contract["delivery_contract"]["machine_artifacts"]
+    assert (
+        validate_path_risk_artifacts(
+            formal_dir,
+            selected_variant_ids=["baseline_v1"],
+            portfolio_expression=portfolio_contract["portfolio_expression"],
+        )
+        == []
+    )
 
     result = validate_stage_artifacts(formal_dir, load_artifact_contract("csf_backtest_ready"))
     assert result.valid is True
@@ -242,3 +269,36 @@ def test_build_csf_backtest_ready_accepts_new_standalone_alpha_expression(tmp_pa
     formal_dir = built_dir / "author" / "formal"
     payload = yaml.safe_load((formal_dir / "portfolio_contract.yaml").read_text(encoding="utf-8"))
     assert payload["portfolio_expression"] == "group_relative_long_short"
+
+
+def test_build_csf_backtest_ready_writes_path_risk_for_long_only_expression(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _prepare_csf_test_stage(lineage_root)
+    mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
+    _write_yaml(
+        mandate_route_path,
+        {
+            "research_route": "cross_sectional_factor",
+            "factor_role": "standalone_alpha",
+            "portfolio_expression": "long_only_rank",
+        },
+    )
+    stage_dir = lineage_root / "06_csf_backtest_ready"
+    stage_dir.mkdir(parents=True)
+    draft_payload = _csf_backtest_ready_draft(confirmed=True)
+    draft_payload["groups"]["portfolio_contract"]["draft"]["portfolio_expression"] = "long_only_rank"
+    _write_yaml(stage_dir / "author" / "draft" / "csf_backtest_ready_draft.yaml", draft_payload)
+
+    built_dir = build_csf_backtest_ready_from_test_evidence(lineage_root)
+
+    formal_dir = built_dir / "author" / "formal"
+    assert (
+        validate_path_risk_artifacts(
+            formal_dir,
+            selected_variant_ids=["baseline_v1"],
+            portfolio_expression="long_only_rank",
+        )
+        == []
+    )

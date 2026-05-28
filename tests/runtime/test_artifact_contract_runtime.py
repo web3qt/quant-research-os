@@ -9,6 +9,16 @@ import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
 from runtime.tools.idea_runtime import scaffold_idea_intake
+from runtime.tools.path_risk_metrics import compute_risk_metrics
+
+
+PATH_RISK_ARTIFACT_NAMES = [
+    "portfolio_return_series.parquet",
+    "equity_curve.parquet",
+    "portfolio_pnl_ledger.parquet",
+    "asset_pnl_ledger.parquet",
+    "risk_adjusted_metrics.parquet",
+]
 
 
 def test_load_artifact_contract_supports_mandate_admission() -> None:
@@ -37,6 +47,113 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, object]]) -> None:
 
 def _write_empty_parquet(path: Path, schema: dict[str, pa.DataType]) -> None:
     pq.write_table(pa.table({key: pa.array([], type=value) for key, value in schema.items()}), path)
+
+
+def _write_path_risk_fixture_artifacts(stage_dir: Path, variant_id: str = "baseline_v1") -> None:
+    _write_parquet_rows(
+        stage_dir / "portfolio_return_series.parquet",
+        [
+            {
+                "date": "2024-10-01",
+                "variant_id": variant_id,
+                "gross_return": 0.012,
+                "net_return": 0.010,
+                "turnover": 0.20,
+                "cost": 0.002,
+                "asset_count": 2,
+                "max_name_weight": 0.5,
+            },
+            {
+                "date": "2024-10-02",
+                "variant_id": variant_id,
+                "gross_return": -0.004,
+                "net_return": -0.005,
+                "turnover": 0.10,
+                "cost": 0.001,
+                "asset_count": 2,
+                "max_name_weight": 0.5,
+            },
+            {
+                "date": "2024-10-03",
+                "variant_id": variant_id,
+                "gross_return": 0.008,
+                "net_return": 0.007,
+                "turnover": 0.10,
+                "cost": 0.001,
+                "asset_count": 2,
+                "max_name_weight": 0.5,
+            },
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "equity_curve.parquet",
+        [
+            {"date": "2024-10-01", "variant_id": variant_id, "gross_equity": 1.012, "net_equity": 1.010, "drawdown": 0.0},
+            {"date": "2024-10-02", "variant_id": variant_id, "gross_equity": 1.007952, "net_equity": 1.00495, "drawdown": -0.005},
+            {"date": "2024-10-03", "variant_id": variant_id, "gross_equity": 1.016015616, "net_equity": 1.01198465, "drawdown": 0.0},
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "portfolio_pnl_ledger.parquet",
+        [
+            {
+                "date": "2024-10-01",
+                "variant_id": variant_id,
+                "gross_pnl": 0.012,
+                "cost": 0.002,
+                "net_pnl": 0.010,
+                "capital_base": 1.0,
+                "profit_loss_sign": "profit",
+            },
+            {
+                "date": "2024-10-02",
+                "variant_id": variant_id,
+                "gross_pnl": -0.004,
+                "cost": 0.001,
+                "net_pnl": -0.005,
+                "capital_base": 1.0,
+                "profit_loss_sign": "loss",
+            },
+            {
+                "date": "2024-10-03",
+                "variant_id": variant_id,
+                "gross_pnl": 0.008,
+                "cost": 0.001,
+                "net_pnl": 0.007,
+                "capital_base": 1.0,
+                "profit_loss_sign": "profit",
+            },
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "asset_pnl_ledger.parquet",
+        [
+            {
+                "date": date,
+                "variant_id": variant_id,
+                "asset": asset,
+                "weight": weight,
+                "side": side,
+                "asset_return": gross,
+                "gross_pnl_contribution": gross,
+                "cost_contribution": cost,
+                "net_pnl_contribution": gross - cost,
+            }
+            for date, long_gross, short_gross, long_cost, short_cost in [
+                ("2024-10-01", 0.013, -0.001, 0.001, 0.001),
+                ("2024-10-02", -0.003, -0.001, 0.0005, 0.0005),
+                ("2024-10-03", 0.009, -0.001, 0.0005, 0.0005),
+            ]
+            for asset, weight, side, gross, cost in [
+                ("SOLUSDT", 1.0, "long", long_gross, long_cost),
+                ("DOGEUSDT", -1.0, "short", short_gross, short_cost),
+            ]
+        ],
+    )
+    _write_parquet_rows(
+        stage_dir / "risk_adjusted_metrics.parquet",
+        [compute_risk_metrics(variant_id, [0.010, -0.005, 0.007], [0.010, -0.005, 0.007], -0.005)],
+    )
 
 
 def _write_minimal_valid_mandate_formal(stage_dir: Path) -> None:
@@ -656,6 +773,7 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
                     "portfolio_contract.yaml",
                     "portfolio_weight_panel.parquet",
                     "csf_backtest_gate_table.csv",
+                    *PATH_RISK_ARTIFACT_NAMES,
                 ],
                 "consumer_stage": "csf_holdout_validation",
                 "frozen_config_note": "Holdout must reuse this frozen portfolio contract.",
@@ -680,6 +798,7 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
         stage_dir / "portfolio_summary.parquet",
         [{"variant_id": "baseline_v1", "mean_gross_return": 0.018, "mean_net_return": 0.012, "max_drawdown": -0.08}],
     )
+    _write_path_risk_fixture_artifacts(stage_dir)
     _write_parquet_rows(
         stage_dir / "name_level_metrics.parquet",
         [{"asset": "SOLUSDT", "variant_id": "baseline_v1", "contribution": 0.012, "max_weight": 0.5}],
@@ -761,6 +880,7 @@ def _write_minimal_valid_csf_backtest_ready_formal(stage_dir: Path) -> None:
                 "turnover_capacity_report.parquet",
                 "cost_assumption_report.md",
                 "portfolio_summary.parquet",
+                *PATH_RISK_ARTIFACT_NAMES,
                 "name_level_metrics.parquet",
                 "drawdown_report.json",
                 "target_strategy_compare.parquet",
@@ -815,6 +935,7 @@ def _write_minimal_valid_csf_holdout_validation_formal(stage_dir: Path) -> None:
                 "holdout_factor_diagnostics.parquet",
                 "holdout_test_compare.parquet",
                 "holdout_portfolio_compare.parquet",
+                *PATH_RISK_ARTIFACT_NAMES,
                 "rolling_holdout_stability.json",
                 "regime_shift_audit.json",
                 "csf_holdout_gate_decision.md",
@@ -832,6 +953,7 @@ def _write_minimal_valid_csf_holdout_validation_formal(stage_dir: Path) -> None:
                     "csf_holdout_run_manifest.json",
                     "holdout_test_compare.parquet",
                     "holdout_portfolio_compare.parquet",
+                    *PATH_RISK_ARTIFACT_NAMES,
                 ],
                 "consumer_stage": "terminal",
                 "field_doc_rule": "Every machine artifact needs field documentation.",
@@ -874,6 +996,7 @@ def _write_minimal_valid_csf_holdout_validation_formal(stage_dir: Path) -> None:
             }
         ],
     )
+    _write_path_risk_fixture_artifacts(stage_dir)
     _write_json(
         stage_dir / "rolling_holdout_stability.json",
         {

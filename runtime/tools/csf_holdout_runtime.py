@@ -9,10 +9,18 @@ import yaml
 from runtime.tools.artifact_contract_runtime import load_artifact_contract, validate_stage_artifacts
 from runtime.tools.csf_holdout_validation_contract_runtime import validate_csf_holdout_validation_semantics
 from runtime.tools.freeze_contract_runtime import require_confirmed_freeze_groups
+from runtime.tools.path_risk_metrics import compute_risk_metrics
 from runtime.tools.stage_artifact_layout import ensure_stage_author_layout
 
 
 CSF_HOLDOUT_VALIDATION_DRAFT_FILE = "csf_holdout_validation_draft.yaml"
+PATH_RISK_ARTIFACT_NAMES = [
+    "portfolio_return_series.parquet",
+    "equity_curve.parquet",
+    "portfolio_pnl_ledger.parquet",
+    "asset_pnl_ledger.parquet",
+    "risk_adjusted_metrics.parquet",
+]
 CSF_HOLDOUT_VALIDATION_GROUP_ORDER = [
     "window_contract",
     "reuse_contract",
@@ -25,6 +33,11 @@ CSF_HOLDOUT_VALIDATION_STAGE_OUTPUTS = [
     "holdout_factor_diagnostics.parquet",
     "holdout_test_compare.parquet",
     "holdout_portfolio_compare.parquet",
+    "portfolio_return_series.parquet",
+    "equity_curve.parquet",
+    "portfolio_pnl_ledger.parquet",
+    "asset_pnl_ledger.parquet",
+    "risk_adjusted_metrics.parquet",
     "rolling_holdout_stability.json",
     "regime_shift_audit.json",
     "csf_holdout_gate_decision.md",
@@ -43,6 +56,174 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, Any]]) -> None:
 
     columns = {key: [row.get(key) for row in rows] for key in rows[0].keys()}
     pq.write_table(pa.table(columns), path)
+
+
+def _asset_path_rows(row: dict[str, Any], portfolio_expression: str) -> list[dict[str, Any]]:
+    if portfolio_expression == "long_only_rank":
+        return [
+            {
+                "asset": "SOLUSDT",
+                "weight": 1.0,
+                "side": "long",
+                "gross": row["gross_return"],
+                "cost": row["cost"],
+            }
+        ]
+    if portfolio_expression == "short_only_rank":
+        return [
+            {
+                "asset": "DOGEUSDT",
+                "weight": -1.0,
+                "side": "short",
+                "gross": row["gross_return"],
+                "cost": row["cost"],
+            }
+        ]
+    return [
+        {
+            "asset": "SOLUSDT",
+            "weight": 1.0,
+            "side": "long",
+            "gross": row["long_gross_pnl"],
+            "cost": row["long_cost"],
+        },
+        {
+            "asset": "DOGEUSDT",
+            "weight": -1.0,
+            "side": "short",
+            "gross": row["short_gross_pnl"],
+            "cost": row["short_cost"],
+        },
+    ]
+
+
+def _write_fixture_path_risk_artifacts(
+    stage_formal_dir: Path,
+    selected_variant_ids: list[str],
+    portfolio_expression: str,
+) -> None:
+    return_rows: list[dict[str, Any]] = []
+    equity_rows: list[dict[str, Any]] = []
+    portfolio_rows: list[dict[str, Any]] = []
+    asset_rows: list[dict[str, Any]] = []
+    metric_rows: list[dict[str, Any]] = []
+    path_rows = [
+        {
+            "date": "2024-10-01",
+            "gross_return": 0.012,
+            "net_return": 0.010,
+            "turnover": 0.20,
+            "cost": 0.002,
+            "gross_equity": 1.012,
+            "net_equity": 1.010,
+            "drawdown": 0.0,
+            "profit_loss_sign": "profit",
+            "long_gross_pnl": 0.013,
+            "short_gross_pnl": -0.001,
+            "long_cost": 0.001,
+            "short_cost": 0.001,
+        },
+        {
+            "date": "2024-10-02",
+            "gross_return": -0.004,
+            "net_return": -0.005,
+            "turnover": 0.10,
+            "cost": 0.001,
+            "gross_equity": 1.007952,
+            "net_equity": 1.00495,
+            "drawdown": -0.005,
+            "profit_loss_sign": "loss",
+            "long_gross_pnl": -0.003,
+            "short_gross_pnl": -0.001,
+            "long_cost": 0.0005,
+            "short_cost": 0.0005,
+        },
+        {
+            "date": "2024-10-03",
+            "gross_return": 0.008,
+            "net_return": 0.007,
+            "turnover": 0.10,
+            "cost": 0.001,
+            "gross_equity": 1.016015616,
+            "net_equity": 1.01198465,
+            "drawdown": 0.0,
+            "profit_loss_sign": "profit",
+            "long_gross_pnl": 0.009,
+            "short_gross_pnl": -0.001,
+            "long_cost": 0.0005,
+            "short_cost": 0.0005,
+        },
+    ]
+    for variant_id in selected_variant_ids:
+        for row in path_rows:
+            return_rows.append(
+                {
+                    "date": row["date"],
+                    "variant_id": variant_id,
+                    "gross_return": row["gross_return"],
+                    "net_return": row["net_return"],
+                    "turnover": row["turnover"],
+                    "cost": row["cost"],
+                    "asset_count": 2,
+                    "max_name_weight": 0.5,
+                }
+            )
+            equity_rows.append(
+                {
+                    "date": row["date"],
+                    "variant_id": variant_id,
+                    "gross_equity": row["gross_equity"],
+                    "net_equity": row["net_equity"],
+                    "drawdown": row["drawdown"],
+                }
+            )
+            portfolio_rows.append(
+                {
+                    "date": row["date"],
+                    "variant_id": variant_id,
+                    "gross_pnl": row["gross_return"],
+                    "cost": row["cost"],
+                    "net_pnl": row["net_return"],
+                    "capital_base": 1.0,
+                    "profit_loss_sign": row["profit_loss_sign"],
+                }
+            )
+            for asset_row in _asset_path_rows(row, portfolio_expression):
+                asset_rows.append(
+                    {
+                        "date": row["date"],
+                        "variant_id": variant_id,
+                        "asset": asset_row["asset"],
+                        "weight": asset_row["weight"],
+                        "side": asset_row["side"],
+                        "asset_return": asset_row["gross"],
+                        "gross_pnl_contribution": asset_row["gross"],
+                        "cost_contribution": asset_row["cost"],
+                        "net_pnl_contribution": asset_row["gross"] - asset_row["cost"],
+                    }
+                )
+        metric_rows.append(
+            compute_risk_metrics(
+                variant_id,
+                [0.010, -0.005, 0.007],
+                [0.010, -0.005, 0.007],
+                -0.005,
+            )
+        )
+
+    _write_parquet_rows(stage_formal_dir / "portfolio_return_series.parquet", return_rows)
+    _write_parquet_rows(stage_formal_dir / "equity_curve.parquet", equity_rows)
+    _write_parquet_rows(stage_formal_dir / "portfolio_pnl_ledger.parquet", portfolio_rows)
+    _write_parquet_rows(stage_formal_dir / "asset_pnl_ledger.parquet", asset_rows)
+    _write_parquet_rows(stage_formal_dir / "risk_adjusted_metrics.parquet", metric_rows)
+
+
+def _with_path_risk_artifacts(machine_artifacts: list[str]) -> list[str]:
+    enriched = list(machine_artifacts)
+    for artifact_name in PATH_RISK_ARTIFACT_NAMES:
+        if artifact_name not in enriched:
+            enriched.append(artifact_name)
+    return enriched
 
 
 def _blank_csf_holdout_validation_draft() -> dict[str, Any]:
@@ -163,7 +344,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
     retryable_conditions = _string_list(failure_governance.get("retryable_conditions", []))
     child_lineage_trigger = _required_draft_value(failure_governance, "child_lineage_trigger")
     rollback_boundary = _required_draft_value(failure_governance, "rollback_boundary")
-    machine_artifacts = _string_list(delivery_contract.get("machine_artifacts", []))
+    machine_artifacts = _with_path_risk_artifacts(_string_list(delivery_contract.get("machine_artifacts", [])))
     consumer_stage = _required_draft_value(delivery_contract, "consumer_stage")
     field_doc_rule = _required_draft_value(delivery_contract, "field_doc_rule")
 
@@ -271,6 +452,7 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
             for variant_id in selected_variant_ids
         ],
     )
+    _write_fixture_path_risk_artifacts(stage_formal_dir, selected_variant_ids, portfolio_expression)
     (stage_formal_dir / "rolling_holdout_stability.json").write_text(
         json.dumps(
             {
@@ -334,6 +516,11 @@ def build_csf_holdout_validation_from_backtest(lineage_root: Path) -> Path:
                 "- holdout_factor_diagnostics.parquet",
                 "- holdout_test_compare.parquet",
                 "- holdout_portfolio_compare.parquet",
+                "- portfolio_return_series.parquet",
+                "- equity_curve.parquet",
+                "- portfolio_pnl_ledger.parquet",
+                "- asset_pnl_ledger.parquet",
+                "- risk_adjusted_metrics.parquet",
                 "- rolling_holdout_stability.json",
                 "- regime_shift_audit.json",
                 "- csf_holdout_gate_decision.md",
