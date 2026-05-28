@@ -2754,13 +2754,33 @@ def test_detect_session_stage_does_not_infer_route_when_csf_and_tss_are_both_mat
     tmp_path: Path,
 ) -> None:
     lineage_root = tmp_path / "outputs" / "ambiguous_materialized_route_case"
-    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="01_mandate",
+        stage="mandate",
+    )
     _write_yaml(_stage_output_path(lineage_root / "01_mandate", "research_route.yaml"), {})
+    _prepare_csf_stage_pass_closed(
+        lineage_root,
+        stage_dir_name="02_csf_data_ready",
+        stage="csf_data_ready",
+    )
     _prepare_tss_stage_pass_closed(
         lineage_root,
         stage_dir_name="02_tss_data_ready",
         stage="tss_data_ready",
     )
+
+    assert detect_session_stage(lineage_root) == "mandate_review"
+
+
+def test_detect_session_stage_does_not_infer_route_when_formal_route_yaml_is_malformed(
+    tmp_path: Path,
+) -> None:
+    lineage_root = tmp_path / "outputs" / "malformed_formal_route_case"
+    _prepare_csf_train_freeze_closed_with_legacy_upstream_request(lineage_root)
+    route_path = _stage_output_path(lineage_root / "01_mandate", "research_route.yaml")
+    route_path.write_text("research_route: [\n", encoding="utf-8")
 
     assert detect_session_stage(lineage_root) == "mandate_review"
 

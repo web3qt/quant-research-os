@@ -1643,31 +1643,35 @@ def _route_has_materialized_stage(candidates: list[StageResolutionCandidate]) ->
     return any(candidate.outputs_complete(candidate.stage_dir) for candidate in candidates[1:])
 
 
-def _current_research_route_for_stage_detection(lineage_root: Path) -> str | None:
+def _formal_route_state_for_stage_detection(lineage_root: Path) -> tuple[str | None, bool]:
     mandate_route_path = lineage_root / "01_mandate" / "author" / "formal" / "research_route.yaml"
     if not mandate_route_path.exists():
-        return None
+        return None, False
     try:
         route_payload = _read_yaml(mandate_route_path)
-    except Exception:
-        return None
+    except OSError:
+        return None, False
+    except yaml.YAMLError:
+        return None, True
     route_value = str(route_payload.get("research_route", "")).strip()
     if route_value in SUPPORTED_RESEARCH_ROUTES:
-        return route_value
-    return None
+        return route_value, False
+    return None, False
 
 
-def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool]:
-    explicit_route = _current_research_route_for_stage_detection(lineage_root)
+def _route_flags_for_stage_detection(lineage_root: Path) -> tuple[bool, bool, bool]:
+    explicit_route, route_resolution_blocked = _formal_route_state_for_stage_detection(lineage_root)
+    if route_resolution_blocked:
+        return False, False, True
     if explicit_route == "cross_sectional_factor":
-        return True, False
+        return True, False, False
     if explicit_route == "time_series_signal":
-        return False, True
+        return False, True, False
     has_csf_materialization = _route_has_materialized_stage(_csf_stage_resolution_candidates(lineage_root))
     has_tss_materialization = _route_has_materialized_stage(_tss_stage_resolution_candidates(lineage_root))
     if has_csf_materialization and has_tss_materialization:
-        return False, False
-    return has_csf_materialization, has_tss_materialization
+        return False, False, True
+    return has_csf_materialization, has_tss_materialization, False
 
 
 def detect_session_stage(lineage_root: Path) -> SessionStage:
@@ -1690,7 +1694,11 @@ def detect_session_stage(lineage_root: Path) -> SessionStage:
     csf_test_evidence_dir = lineage_root / "05_csf_test_evidence"
     csf_backtest_dir = lineage_root / "06_csf_backtest_ready"
     csf_holdout_dir = lineage_root / "07_csf_holdout_validation"
-    is_csf_route, is_tss_route = _route_flags_for_stage_detection(lineage_root)
+    is_csf_route, is_tss_route, route_resolution_blocked = _route_flags_for_stage_detection(lineage_root)
+    if route_resolution_blocked:
+        if _mandate_outputs_complete(mandate_dir):
+            return "mandate_review"
+        return "mandate_author"
 
     if is_csf_route:
         if _csf_holdout_validation_outputs_complete(csf_holdout_dir):
@@ -4956,7 +4964,7 @@ def _historical_stage_advancing_closure_exists(stage_dir: Path) -> bool:
 
 
 def _stage_resolution_candidates_for_lineage(lineage_root: Path) -> list[StageResolutionCandidate]:
-    is_csf_route, is_tss_route = _route_flags_for_stage_detection(lineage_root)
+    is_csf_route, is_tss_route, _ = _route_flags_for_stage_detection(lineage_root)
     if is_csf_route:
         return _csf_stage_resolution_candidates(lineage_root)
     if is_tss_route:
