@@ -128,6 +128,40 @@ $qros-update
 
 <br>
 
+## 📄 paper-to-spec 用法
+
+如果你的目标不是先走完整治理主流程，而是先把论文、PDF 或网页链接压成实现级策略规格说明，可以直接用：
+
+```text
+$qros-paper-to-spec https://example.com/paper.pdf
+$qros-paper-to-spec ./papers/momentum-reversal.pdf
+$qros-paper-to-spec 下面是我整理的论文摘要，请输出 spec，并把 paper_stated / agent_inferred 分开写：...
+$qros-paper-to-spec https://example.com/paper.pdf --auto-implement
+```
+
+普通 skill 入口会先做 source ingestion，再生成：
+
+- `strategy_spec.yaml`
+- `strategy_spec.md`
+- `source_manifest.yaml`
+
+这些产物会写到 active research repo 本地输出树：
+
+- `outputs/paper_to_spec/<paper_slug>/`
+
+只有当你显式要求 `--auto-implement`，并且不存在阻断自动实现的歧义时，才会继续调用 baseline helper 进入最小可运行实现。
+
+如果你只是需要调试或补物化已有 spec，而不是让 skill 自己读 source，可以使用 lower-level wrapper：
+
+```bash
+./.qros/bin/qros-paper-to-spec --spec-file ./tmp/strategy_spec.yaml --source "https://example.com/paper.pdf" --source-kind pdf_url --title "Example Paper"
+./.qros/bin/qros-paper-to-spec-baseline --spec-path ./outputs/paper_to_spec/example-paper/strategy_spec.yaml
+```
+
+完整说明见 [docs/guides/qros-paper-to-spec-usage.md](docs/guides/qros-paper-to-spec-usage.md)。
+
+<br>
+
 ## 🪜 主流程
 
 `qros-research-session` 是统一入口，推进到 route-specific `holdout_validation review` closure 和最终 next-stage confirmation 为止。

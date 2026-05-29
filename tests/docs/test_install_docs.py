@@ -34,6 +34,8 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review-cycle" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
+    assert "$qros-paper-to-spec" in combined
+    assert "./.qros/bin/qros-paper-to-spec" in combined
     assert "./.qros/bin/qros-paper-to-spec-baseline" in combined
     assert "AGENTS.md" in combined
     assert "templates/research-repo/AGENTS.md.tmpl" in combined
@@ -129,6 +131,19 @@ def test_codex_readme_documents_paper_to_spec_entrypoints() -> None:
     assert "./.qros/bin/qros-paper-to-spec" in codex_guide
     assert "./.qros/bin/qros-paper-to-spec-baseline" in codex_guide
     assert "docs/guides/qros-paper-to-spec-usage.md" in codex_guide
+
+
+def test_root_readme_documents_paper_to_spec_usage() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert "$qros-paper-to-spec https://example.com/paper.pdf" in readme
+    assert "strategy_spec.yaml" in readme
+    assert "strategy_spec.md" in readme
+    assert "source_manifest.yaml" in readme
+    assert "outputs/paper_to_spec/<paper_slug>/" in readme
+    assert "./.qros/bin/qros-paper-to-spec" in readme
+    assert "./.qros/bin/qros-paper-to-spec-baseline" in readme
+    assert "docs/guides/qros-paper-to-spec-usage.md" in readme
 
 
 def test_install_docs_reference_stage_field_guide() -> None:
