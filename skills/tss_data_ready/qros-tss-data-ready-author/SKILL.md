@@ -82,9 +82,9 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 1. 确认 mandate review closure 存在且 route 为 `time_series_signal`。
 2. 读取 `contracts/artifacts/tss_data_ready_artifacts.yaml`。
 3. 逐组确认 freeze groups，并回显 grouped summary。
-4. 只有用户明确确认 `是否按以上内容冻结 tss_data_ready？` 后，才生成正式 artifacts。
-5. 真实生成 `02_tss_data_ready/author/formal` 下的 required outputs。
-6. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁；门禁不通过时停在 author lane 修复程序，不得进入 review。
+4. 只有用户明确确认 `是否按以上内容冻结 tss_data_ready？` 后，才允许进入正式 build 准备。
+5. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁；门禁不通过时停在 author lane 修复程序，不得进入 review。
+6. `data_implementation_contract` 门禁通过后才生成正式 `02_tss_data_ready/author/formal` 下的 required outputs。
 7. 补齐 `artifact_catalog.md` 与 `field_dictionary.md`。
 8. 运行 `qros-validate-stage --stage tss_data_ready`。
 9. validator 通过后停在 `tss_data_ready_review_confirmation_pending`，由用户显式进入 `qros-tss-data-ready-review`。

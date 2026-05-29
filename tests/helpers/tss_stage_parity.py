@@ -261,6 +261,7 @@ def assert_tss_skill_guidance_is_contract_first(stage: str) -> None:
             "时间轴主路径计算",
             "stage_program.yaml",
             "门禁不通过时停在 author lane 修复程序，不得进入 review",
+            "门禁通过后才生成正式 `02_tss_data_ready/author/formal` 下的 required outputs",
             "Python loop 只能用于 manifest、artifact catalog、field dictionary、输出文件枚举和小型 metadata/report 控制流，不能承担时间轴主路径计算。",
             "manifest",
             "artifact catalog",

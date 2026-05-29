@@ -121,12 +121,13 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 6. 最后确认 `delivery_contract`
 7. 明确当前 research repo 中由谁负责真实生成 `panel_manifest.json`、覆盖证据和共享派生层
 8. 输出一份 grouped csf_data_ready summary
-9. 只有用户最终批准后，才生成正式 `02_csf_data_ready` artifacts
-10. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
-11. 保存 `rebuild_csf_data_ready.py` 或等价 stage-local 程序快照
-12. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁；门禁不通过时停在 author lane 修复程序，不得进入 review
-13. 生成 `split_sample_adequacy_report.yaml`，并确认 `final_verdict = PASS`
-14. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
-15. 运行 `qros-validate-stage --stage csf_data_ready`
-16. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过，并把 `provenance_viability_contract` 锁定
-17. 若当前只能产出 skeleton、placeholder 或 split 样本不足，必须明确判定为未完成，不得冒充 csf_data_ready 完成
+9. 只有用户最终批准后，才允许进入正式 build 准备
+10. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁；门禁不通过时停在 author lane 修复程序，不得进入 review
+11. `data_implementation_contract` 门禁通过后才生成正式 `02_csf_data_ready` artifacts
+12. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
+13. 保存 `rebuild_csf_data_ready.py` 或等价 stage-local 程序快照
+14. 生成 `split_sample_adequacy_report.yaml`，并确认 `final_verdict = PASS`
+15. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
+16. 运行 `qros-validate-stage --stage csf_data_ready`
+17. 运行 deterministic preflight，确认 artifact contract validation、semantic validation 和 upstream binding validation 通过，并把 `provenance_viability_contract` 锁定
+18. 若当前只能产出 skeleton、placeholder 或 split 样本不足，必须明确判定为未完成，不得冒充 csf_data_ready 完成

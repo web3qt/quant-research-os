@@ -28,6 +28,7 @@ def test_csf_data_ready_author_skill_requires_data_implementation_contract_gate(
     assert "不得询问用户技术实现细节" in content
     assert "stage_program.yaml" in content
     assert "门禁不通过时停在 author lane 修复程序，不得进入 review" in content
+    assert "门禁通过后才生成正式 `02_csf_data_ready` artifacts" in content
     assert (
         "Python loop 只能用于 manifest、artifact catalog、field dictionary、输出文件枚举和小型 metadata/report 控制流，"
         "不能承担面板主路径计算。"
