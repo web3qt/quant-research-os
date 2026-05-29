@@ -37,6 +37,7 @@ class DataImplementationValidationResult:
     stage_id: str
     program_dir: Path | None
     status: str
+    findings: list[tuple[str, str]]
     errors: list[str]
     reason_codes: list[str]
 
@@ -56,6 +57,7 @@ def validate_data_implementation_contract(
             stage_id=stage_id,
             program_dir=None,
             status="not_applicable",
+            findings=[],
             errors=[],
             reason_codes=[],
         )
@@ -85,6 +87,7 @@ def _result(
         stage_id=stage_id,
         program_dir=program_dir,
         status="valid" if not findings else "invalid",
+        findings=findings,
         errors=[message for _, message in findings],
         reason_codes=_dedupe([code for code, _ in findings]),
     )

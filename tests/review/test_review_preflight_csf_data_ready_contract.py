@@ -90,6 +90,30 @@ def test_review_preflight_blocks_csf_data_ready_when_program_imports_pandas(tmp_
     assert any("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in item for item in payload["content_findings"])
 
 
+def test_review_preflight_reports_data_implementation_codes_per_finding(tmp_path: Path) -> None:
+    stage_dir = _prepare_valid_csf_data_ready_stage(tmp_path)
+    program_dir = stage_dir.parent / "program" / "cross_sectional_factor" / "data_ready"
+    manifest_path = program_dir / "stage_program.yaml"
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    manifest.pop("data_implementation_contract")
+    manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    (program_dir / "run_stage.py").write_text("import pandas as pd\n", encoding="utf-8")
+
+    payload = _run_csf_data_ready_preflight(stage_dir)
+
+    pandas_findings = [item for item in payload["content_findings"] if "pandas import is forbidden" in item]
+    assert payload["status"] == "FAIL"
+    assert any(item.startswith("DATA_IMPL_DECLARATION_MISSING:") for item in payload["content_findings"])
+    assert any(item.startswith("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:") for item in payload["content_findings"])
+    assert pandas_findings == [
+        next(item for item in payload["content_findings"] if item.startswith("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:"))
+    ]
+    assert not any(
+        item.startswith("DATA_IMPL_DECLARATION_MISSING, DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:")
+        for item in payload["content_findings"]
+    )
+
+
 def test_review_preflight_blocks_csf_data_ready_when_route_is_not_csf(tmp_path: Path) -> None:
     stage_dir = _prepare_valid_csf_data_ready_stage(tmp_path)
     _write_yaml(

@@ -192,8 +192,7 @@ def _check_data_implementation_contract(stage: str, lineage_root: Path) -> list[
     result = validate_data_implementation_contract(lineage_root, stage, route)
     if result.valid:
         return []
-    reason_codes = ", ".join(result.reason_codes) or "DATA_IMPL_CONTRACT_INVALID"
-    return [f"{reason_codes}: {error}" for error in result.errors]
+    return [f"{reason_code}: {error}" for reason_code, error in result.findings]
 
 
 def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:

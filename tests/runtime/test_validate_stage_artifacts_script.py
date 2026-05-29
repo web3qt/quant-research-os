@@ -295,6 +295,45 @@ def test_validate_stage_artifacts_script_rejects_csf_data_ready_pandas_program(t
     assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in result.stderr
 
 
+def test_validate_stage_artifacts_script_reports_data_implementation_codes_per_finding(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    program_dir = ensure_stage_program(lineage_root, "csf_data_ready")
+    (program_dir / "run_stage.py").write_text("import pandas as pd\n", encoding="utf-8")
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_csf_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    build_csf_data_ready_from_mandate(lineage_root)
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_data_ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    stderr_lines = result.stderr.splitlines()
+    pandas_lines = [line for line in stderr_lines if "pandas import is forbidden" in line]
+    assert result.returncode == 1
+    assert any(line.startswith("DATA_IMPL_DECLARATION_MISSING:") for line in stderr_lines)
+    assert any(line.startswith("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:") for line in stderr_lines)
+    assert pandas_lines == [
+        next(line for line in stderr_lines if line.startswith("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:"))
+    ]
+    assert not any(line.startswith("DATA_IMPL_DECLARATION_MISSING, DATA_IMPL_ENGINE_FORBIDDEN_PANDAS:") for line in stderr_lines)
+
+
 def test_validate_stage_artifacts_script_reports_invalid_csf_data_ready_shape(tmp_path: Path) -> None:
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "csf_case"

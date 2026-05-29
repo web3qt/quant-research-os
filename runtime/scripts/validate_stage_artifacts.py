@@ -52,9 +52,8 @@ def main() -> int:
         lineage_root = args.outputs_root / args.lineage_id
         implementation_result = validate_data_implementation_contract(lineage_root, args.stage, route)
         if not implementation_result.valid:
-            reason_codes = ", ".join(implementation_result.reason_codes) or "DATA_IMPL_CONTRACT_INVALID"
-            for error in implementation_result.errors:
-                print(f"{reason_codes}: {error}", file=sys.stderr)
+            for reason_code, error in implementation_result.findings:
+                print(f"{reason_code}: {error}", file=sys.stderr)
             return 1
 
     print(f"{args.stage} artifact shape valid: {stage_dir}")

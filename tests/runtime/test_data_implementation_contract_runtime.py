@@ -147,6 +147,29 @@ def test_pandas_import_fails(tmp_path: Path) -> None:
     result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in result.reason_codes
+    assert result.findings == [
+        (
+            "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS",
+            f"{lineage_root / 'program' / 'cross_sectional_factor' / 'data_ready' / 'run_stage.py'}: pandas import is forbidden",
+        )
+    ]
+
+
+def test_multiple_violations_preserve_per_finding_codes(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(lineage_root, "csf_data_ready", "import pandas as pd\n", None)
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert result.reason_codes == ["DATA_IMPL_DECLARATION_MISSING", "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS"]
+    assert result.findings[0] == (
+        "DATA_IMPL_DECLARATION_MISSING",
+        "csf_data_ready: missing data_implementation_contract declaration",
+    )
+    assert result.findings[1] == (
+        "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS",
+        f"{lineage_root / 'program' / 'cross_sectional_factor' / 'data_ready' / 'run_stage.py'}: pandas import is forbidden",
+    )
 
 
 def test_to_pandas_fails(tmp_path: Path) -> None:
