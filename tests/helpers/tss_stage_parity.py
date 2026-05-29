@@ -17,6 +17,7 @@ from runtime.tools.tss_signal_ready_runtime import build_tss_signal_ready_from_d
 from runtime.tools.tss_test_evidence_runtime import build_tss_test_evidence_from_train_freeze
 from runtime.tools.tss_train_runtime import build_tss_train_freeze_from_signal_ready
 from tests.helpers.skill_test_utils import skill_text
+from tests.helpers.lineage_program_support import ensure_stage_program
 from tests.runtime.test_tss_backtest_runtime import (
     _prepare_tss_test_evidence_stage,
     _tss_backtest_ready_draft,
@@ -165,6 +166,28 @@ TSS_TEST_EVIDENCE_PREFLIGHT_TERMS = (
 )
 
 
+def _valid_data_implementation_declaration() -> dict[str, Any]:
+    return {
+        "engine": "polars",
+        "input_strategy": "parquet_lazy_scan",
+        "compute_strategy": "expression_vectorized",
+        "output_strategy": "parquet_columnar",
+        "disallowed_main_path": [
+            "pandas",
+            "row_wise_loop",
+            "per_symbol_full_scan_loop",
+            "repeated_full_scan_without_shared_intermediate",
+        ],
+    }
+
+
+def _add_data_implementation_declaration(program_dir: Path) -> None:
+    manifest_path = program_dir / "stage_program.yaml"
+    payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    payload["data_implementation_contract"] = _valid_data_implementation_declaration()
+    manifest_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
 def assert_tss_artifact_contract_is_stage_specific(stage: str) -> None:
     meta = TSS_STAGE_META[stage]
     contract = load_artifact_contract(stage)
@@ -189,6 +212,8 @@ def assert_tss_review_preflight_is_contract_wired(stage: str, tmp_path: Path) ->
     stage_dir = lineage_root / str(TSS_STAGE_META[stage]["stage_dir"]).split("/", 1)[0]
     formal_dir = stage_dir / "author" / "formal"
     formal_dir.mkdir(parents=True)
+    if stage == "tss_data_ready":
+        _add_data_implementation_declaration(ensure_stage_program(lineage_root, "tss_data_ready"))
 
     payload = run_review_preflight(
         explicit_context={
