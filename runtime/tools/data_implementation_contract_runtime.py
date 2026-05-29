@@ -164,9 +164,13 @@ class _ProgramScanner(ast.NodeVisitor):
         self.path = path
         self.findings: list[tuple[str, str]] = []
         self.scan_literal_paths: list[str] = []
-        self.polars_module_aliases: set[str] = set()
+        self.polars_module_alias_scopes: list[set[str]] = [set()]
         self.polars_scan_name_scopes: list[set[str]] = [set()]
         self.per_asset_loop_scan_stack: list[bool] = []
+
+    @property
+    def polars_module_aliases(self) -> set[str]:
+        return self.polars_module_alias_scopes[-1]
 
     @property
     def polars_scan_names(self) -> set[str]:
@@ -191,36 +195,50 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         resolved = self._resolve_polars_scan_function(node.value)
+        module_alias = self._resolve_polars_module_alias(node.value)
         for target in node.targets:
             if isinstance(target, ast.Name):
                 if resolved is not None:
                     self.polars_scan_names.add(target.id)
                 else:
                     self.polars_scan_names.discard(target.id)
+                if module_alias is not None:
+                    self.polars_module_aliases.add(target.id)
+                else:
+                    self.polars_module_aliases.discard(target.id)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if isinstance(node.target, ast.Name):
             resolved = self._resolve_polars_scan_function(node.value) if node.value is not None else None
+            module_alias = self._resolve_polars_module_alias(node.value) if node.value is not None else None
             if resolved is not None:
                 self.polars_scan_names.add(node.target.id)
             else:
                 self.polars_scan_names.discard(node.target.id)
+            if module_alias is not None:
+                self.polars_module_aliases.add(node.target.id)
+            else:
+                self.polars_module_aliases.discard(node.target.id)
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.polars_scan_names.discard(node.name)
+        self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.polars_scan_names.discard(node.name)
+        self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.polars_scan_names.discard(node.name)
+        self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def _visit_nested_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
+        self.polars_module_alias_scopes.append(set(self.polars_module_aliases))
         self.polars_scan_name_scopes.append(set(self.polars_scan_names))
         for decorator in node.decorator_list:
             self.visit(decorator)
@@ -240,6 +258,7 @@ class _ProgramScanner(ast.NodeVisitor):
         for stmt in node.body:
             self.visit(stmt)
         self.polars_scan_name_scopes.pop()
+        self.polars_module_alias_scopes.pop()
 
     def visit_Call(self, node: ast.Call) -> None:
         call_name = _call_name(node.func)
@@ -262,6 +281,7 @@ class _ProgramScanner(ast.NodeVisitor):
         self.visit(node.iter)
         for name in target_names:
             self.polars_scan_names.discard(name)
+            self.polars_module_aliases.discard(name)
 
         is_per_asset_loop = bool(target_names & LOOP_TARGET_NAMES)
         if is_per_asset_loop:
@@ -294,6 +314,11 @@ class _ProgramScanner(ast.NodeVisitor):
                 return None
             if func.attr in FULL_SCAN_CALLS:
                 return func.attr
+        return None
+
+    def _resolve_polars_module_alias(self, value: ast.AST | None) -> str | None:
+        if isinstance(value, ast.Name) and value.id in self.polars_module_aliases:
+            return value.id
         return None
 
 
