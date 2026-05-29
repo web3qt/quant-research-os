@@ -1,0 +1,67 @@
+schema_id: data-implementation-contract-v1
+schema_version: v1
+contract_role: data_ready_stage_program_implementation_gate
+applicable_stages:
+  - csf_data_ready
+  - tss_data_ready
+legacy_stages_excluded:
+  - data_ready
+
+required_declaration:
+  engine: polars
+  input_strategy: parquet_lazy_scan
+  compute_strategy: expression_vectorized
+  output_strategy: parquet_columnar
+  disallowed_main_path:
+    - pandas
+    - row_wise_loop
+    - per_symbol_full_scan_loop
+    - repeated_full_scan_without_shared_intermediate
+
+forbidden_patterns:
+  imports:
+    - pandas
+  calls:
+    - to_pandas
+    - iterrows
+    - itertuples
+  apply_axis:
+    - 1
+  loop_targets:
+    - asset
+    - assets
+    - symbol
+    - symbols
+  full_scan_calls:
+    - scan_parquet
+    - read_parquet
+    - scan_csv
+    - read_csv
+
+allowed_exceptions:
+  - metadata_report_conversion
+  - manifest_writing
+  - field_dictionary_writing
+  - artifact_catalog_writing
+  - test_fixture
+  - docs_archive_migration
+
+reason_codes:
+  - code: DATA_IMPL_DECLARATION_MISSING
+    meaning: 适用 stage 的 stage_program.yaml 缺少 data_implementation_contract 声明。
+  - code: DATA_IMPL_ENGINE_NOT_POLARS
+    meaning: 适用 stage 未声明 Polars 作为主数据引擎。
+  - code: DATA_IMPL_ENGINE_FORBIDDEN_PANDAS
+    meaning: 适用 stage program 主路径导入 pandas。
+  - code: DATA_IMPL_TO_PANDAS_FORBIDDEN
+    meaning: 适用 stage program 主路径调用 to_pandas。
+  - code: DATA_IMPL_ROW_LOOP_FORBIDDEN
+    meaning: 适用 stage program 主路径使用逐行迭代。
+  - code: DATA_IMPL_APPLY_AXIS1_FORBIDDEN
+    meaning: 适用 stage program 主路径使用 DataFrame.apply(axis=1)。
+  - code: DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN
+    meaning: 适用 stage program 对 asset 或 symbol 循环执行全量 scan/read。
+  - code: DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN
+    meaning: 适用 stage program 对同一输入重复全量 scan/read，且未声明共享中间层。
+  - code: DATA_IMPL_CONTRACT_STAGE_NOT_APPLICABLE
+    meaning: 请求校验的 stage 不属于 active data-ready 路线。
