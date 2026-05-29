@@ -62,6 +62,11 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 - 本阶段只建立单资产时间轴、质量标记、split adequacy 和可复现数据基础层；不得产出信号有效性、收益或白名单结论。
 - 必须在当前 research repo 真实物化 machine-readable artifacts，不得把空目录、placeholder 或 contract-only markdown 当成完成。
 - 必须先显式生成或刷新 lineage-local stage program，并在 `run_manifest.json` 记录 replay/provenance。
+- 必须通过 `data_implementation_contract` 硬门禁后才允许 build/review；该门禁只约束实现纪律，不替代 artifact contract、semantic validation 或 upstream binding validation。
+- 主数据引擎必须使用 Polars；大表 parquet 输入默认使用 `pl.scan_parquet` 或等价 lazy scan；time index、quality flags、split adequacy 和 as-of feature base 的聚合、排序、去重、join、窗口和过滤优先 Polars expression / lazy pipeline。
+- 不得询问用户技术实现细节来决定是否使用 Polars、parquet-first、lazy scan 或表达式化计算。
+- 主路径不得使用 pandas、`.to_pandas()`、`.iterrows()`、`.itertuples()`、`DataFrame.apply(..., axis=1)`、逐行循环、逐 symbol 全量 scan/read/write、重复全量 scan 同一大输入来分别生成多个 formal outputs。
+- Python loop 只能用于 manifest、artifact catalog、field dictionary、输出文件枚举和小型 metadata/report 控制流，不能承担时间轴主路径计算。
 - 不得写入 review/result；author lane 只能写 `author/draft`、`author/formal` 和必要的 program provenance。
 
 ## Gate Discipline
@@ -78,6 +83,7 @@ TSS 是“单个资产用自己的历史预测自己的未来路径/方向”，
 3. 逐组确认 freeze groups，并回显 grouped summary。
 4. 只有用户明确确认 `是否按以上内容冻结 tss_data_ready？` 后，才生成正式 artifacts。
 5. 真实生成 `02_tss_data_ready/author/formal` 下的 required outputs。
-6. 补齐 `artifact_catalog.md` 与 `field_dictionary.md`。
-7. 运行 `qros-validate-stage --stage tss_data_ready`。
-8. validator 通过后停在 `tss_data_ready_review_confirmation_pending`，由用户显式进入 `qros-tss-data-ready-review`。
+6. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁。
+7. 补齐 `artifact_catalog.md` 与 `field_dictionary.md`。
+8. 运行 `qros-validate-stage --stage tss_data_ready`。
+9. validator 通过后停在 `tss_data_ready_review_confirmation_pending`，由用户显式进入 `qros-tss-data-ready-review`。

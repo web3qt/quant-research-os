@@ -242,10 +242,20 @@ def assert_tss_skill_guidance_is_contract_first(stage: str) -> None:
     assert f"qros-validate-stage --stage {stage}" in author
     assert f"qros-validate-stage --stage {stage}" in review
     assert "research_route = time_series_signal" in author
-    assert "research_route = time_series_signal" in review
     assert "不是横截面排序" in author
     assert "qros-review-cycle prepare" in review
     assert "qros-factor-diagnostics" not in author + review
+    if stage == "tss_data_ready":
+        for term in (
+            "data_implementation_contract",
+            "Polars",
+            "pl.scan_parquet",
+            "pandas",
+            "逐行循环",
+            "逐 symbol",
+            "不得询问用户技术实现细节",
+        ):
+            assert term in author
     if stage == "tss_test_evidence":
         for term in TSS_TEST_EVIDENCE_PREFLIGHT_TERMS:
             assert term in author

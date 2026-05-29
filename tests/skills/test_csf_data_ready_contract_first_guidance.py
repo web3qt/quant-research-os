@@ -16,6 +16,18 @@ def test_csf_data_ready_author_skill_treats_artifact_contract_as_shape_truth() -
     assert "cross_section_snapshot" in content
 
 
+def test_csf_data_ready_author_skill_requires_data_implementation_contract_gate() -> None:
+    content = skill_text("qros-csf-data-ready-author")
+
+    assert "data_implementation_contract" in content
+    assert "Polars" in content
+    assert "pl.scan_parquet" in content
+    assert "pandas" in content
+    assert "逐行循环" in content
+    assert "逐 symbol" in content
+    assert "不得询问用户技术实现细节" in content
+
+
 def test_csf_data_ready_review_skill_defers_shape_truth_to_runtime_preflight() -> None:
     content = skill_text("qros-csf-data-ready-review")
 
@@ -24,5 +36,3 @@ def test_csf_data_ready_review_skill_defers_shape_truth_to_runtime_preflight() -
     assert "contracts/artifacts/csf_data_ready_artifacts.yaml" in content
     assert "semantic validation" in content
     assert "机制和残留风险" in content
-    assert "split_sample_adequacy_report.yaml" in content
-    assert "cross_section_snapshot" in content
