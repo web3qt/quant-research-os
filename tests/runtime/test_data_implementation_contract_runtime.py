@@ -384,6 +384,65 @@ def main():
     assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" not in result.reason_codes
 
 
+def test_nested_function_shadow_does_not_invalidate_outer_imported_scan(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+from polars import scan_parquet
+
+
+def wrapper():
+    def scan_parquet(path):
+        return path
+    return scan_parquet("metadata-only")
+
+
+def main():
+    scan_parquet("raw/panel.parquet").select("asset").collect()
+    scan_parquet("raw/panel.parquet").select("date").collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_nested_reassignment_does_not_invalidate_outer_scan_alias(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+scan = pl.scan_parquet
+
+
+def local_helper(path):
+    return path
+
+
+def wrapper():
+    scan = local_helper
+    return scan("metadata-only")
+
+
+def main():
+    scan("raw/panel.parquet").select("asset").collect()
+    scan("raw/panel.parquet").select("date").collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
 def test_repeated_literal_full_scan_across_program_files_fails(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     program_dir = _write_program(

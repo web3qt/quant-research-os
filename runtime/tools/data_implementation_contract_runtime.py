@@ -165,7 +165,11 @@ class _ProgramScanner(ast.NodeVisitor):
         self.findings: list[tuple[str, str]] = []
         self.scan_literal_paths: list[str] = []
         self.polars_module_aliases: set[str] = set()
-        self.polars_scan_names: set[str] = set()
+        self.polars_scan_name_scopes: list[set[str]] = [set()]
+
+    @property
+    def polars_scan_names(self) -> set[str]:
+        return self.polars_scan_name_scopes[-1]
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -205,15 +209,36 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.polars_scan_names.discard(node.name)
-        self.generic_visit(node)
+        self._visit_nested_scope(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.polars_scan_names.discard(node.name)
-        self.generic_visit(node)
+        self._visit_nested_scope(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.polars_scan_names.discard(node.name)
-        self.generic_visit(node)
+        self._visit_nested_scope(node)
+
+    def _visit_nested_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
+        self.polars_scan_name_scopes.append(set(self.polars_scan_names))
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for default in node.args.defaults:
+                self.visit(default)
+            for default in node.args.kw_defaults:
+                if default is not None:
+                    self.visit(default)
+            if node.returns is not None:
+                self.visit(node.returns)
+        else:
+            for base in node.bases:
+                self.visit(base)
+            for keyword in node.keywords:
+                self.visit(keyword)
+        for stmt in node.body:
+            self.visit(stmt)
+        self.polars_scan_name_scopes.pop()
 
     def visit_Call(self, node: ast.Call) -> None:
         call_name = _call_name(node.func)
