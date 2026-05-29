@@ -76,6 +76,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 - 必须先显式生成或刷新本 stage 的 lineage-local stage program，再执行 author build；QROS runtime 只负责校验和调用，不再后台静默生成默认 wrapper
 - 该 stage program 必须是当前 lineage 在本 stage 里真实产生产物的程序，必须明确 formal artifacts 的生成路径、输入绑定和 replay 入口
 - 必须通过 `data_implementation_contract` 硬门禁后才允许 build/review；该门禁只约束实现纪律，不替代 artifact contract、semantic validation 或 upstream binding validation。
+- `data_implementation_contract` 门禁不通过时停在 author lane 修复程序，不得进入 review。
 - 主数据引擎必须使用 Polars；大表 parquet 输入默认使用 `pl.scan_parquet` 或等价 lazy scan；聚合、排序、去重、join、窗口和过滤优先 Polars expression / lazy pipeline。
 - 不得询问用户技术实现细节来决定是否使用 Polars、parquet-first、lazy scan 或表达式化计算。
 - 主路径不得使用 pandas、`.to_pandas()`、`.iterrows()`、`.itertuples()`、`DataFrame.apply(..., axis=1)`、逐行循环、逐 symbol 全量 scan/read/write、重复全量 scan 同一大输入来分别生成多个 formal outputs。
@@ -123,7 +124,7 @@ QROS 仓库提供的是流程框架，不替用户的研究仓“代存”真实
 9. 只有用户最终批准后，才生成正式 `02_csf_data_ready` artifacts
 10. 生成 `run_manifest.json`，写清 runtime 版本、program_artifacts、replay_command 和输入根目录
 11. 保存 `rebuild_csf_data_ready.py` 或等价 stage-local 程序快照
-12. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁
+12. 在 lineage-local `stage_program.yaml` 声明 `data_implementation_contract`，并在 build/review 前通过该门禁；门禁不通过时停在 author lane 修复程序，不得进入 review
 13. 生成 `split_sample_adequacy_report.yaml`，并确认 `final_verdict = PASS`
 14. 为 machine-readable artifacts 补 `artifact_catalog.md` 与 `field_dictionary.md`
 15. 运行 `qros-validate-stage --stage csf_data_ready`

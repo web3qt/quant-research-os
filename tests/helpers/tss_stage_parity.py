@@ -254,6 +254,18 @@ def assert_tss_skill_guidance_is_contract_first(stage: str) -> None:
             "逐行循环",
             "逐 symbol",
             "不得询问用户技术实现细节",
+            "time index",
+            "quality flags",
+            "split adequacy",
+            "as-of feature base",
+            "时间轴主路径计算",
+            "stage_program.yaml",
+            "门禁不通过时停在 author lane 修复程序，不得进入 review",
+            "manifest",
+            "artifact catalog",
+            "field dictionary",
+            "输出文件枚举",
+            "metadata/report",
         ):
             assert term in author
     if stage == "tss_test_evidence":

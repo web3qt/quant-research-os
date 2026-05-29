@@ -26,6 +26,13 @@ def test_csf_data_ready_author_skill_requires_data_implementation_contract_gate(
     assert "逐行循环" in content
     assert "逐 symbol" in content
     assert "不得询问用户技术实现细节" in content
+    assert "stage_program.yaml" in content
+    assert "门禁不通过时停在 author lane 修复程序，不得进入 review" in content
+    assert "manifest" in content
+    assert "artifact catalog" in content
+    assert "field dictionary" in content
+    assert "输出文件枚举" in content
+    assert "metadata/report" in content
 
 
 def test_csf_data_ready_review_skill_defers_shape_truth_to_runtime_preflight() -> None:
