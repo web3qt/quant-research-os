@@ -166,6 +166,7 @@ class _ProgramScanner(ast.NodeVisitor):
         self.scan_literal_paths: list[str] = []
         self.polars_module_aliases: set[str] = set()
         self.polars_scan_name_scopes: list[set[str]] = [set()]
+        self.per_asset_loop_scan_stack: list[bool] = []
 
     @property
     def polars_scan_names(self) -> set[str]:
@@ -249,6 +250,8 @@ class _ProgramScanner(ast.NodeVisitor):
         if call_name == "apply" and _call_has_axis_one(node):
             self.findings.append(("DATA_IMPL_APPLY_AXIS1_FORBIDDEN", f"{self.path}: apply(axis=1) is forbidden"))
         if self._resolve_polars_scan_function(node.func) is not None:
+            for index in range(len(self.per_asset_loop_scan_stack)):
+                self.per_asset_loop_scan_stack[index] = True
             literal_path = _first_literal_arg(node)
             if literal_path is not None:
                 self.scan_literal_paths.append(literal_path)
@@ -256,23 +259,28 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         target_names = _target_names(node.target)
-        if target_names & LOOP_TARGET_NAMES and self._loop_body_has_full_scan(node):
+        self.visit(node.iter)
+        for name in target_names:
+            self.polars_scan_names.discard(name)
+
+        is_per_asset_loop = bool(target_names & LOOP_TARGET_NAMES)
+        if is_per_asset_loop:
+            self.per_asset_loop_scan_stack.append(False)
+        for stmt in node.body:
+            self.visit(stmt)
+        for stmt in node.orelse:
+            self.visit(stmt)
+        loop_had_scan = self.per_asset_loop_scan_stack.pop() if is_per_asset_loop else False
+        if loop_had_scan:
             self.findings.append(
                 (
                     "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN",
                     f"{self.path}: per-asset or per-symbol full scan loop is forbidden",
                 )
             )
-        self.generic_visit(node)
 
     def visit_Module(self, node: ast.Module) -> None:
         self.generic_visit(node)
-
-    def _loop_body_has_full_scan(self, node: ast.For) -> bool:
-        for child in ast.walk(node):
-            if isinstance(child, ast.Call) and self._resolve_polars_scan_function(child.func) is not None:
-                return True
-        return False
 
     def _resolve_polars_scan_function(self, func: ast.AST) -> str | None:
         if isinstance(func, ast.Name):

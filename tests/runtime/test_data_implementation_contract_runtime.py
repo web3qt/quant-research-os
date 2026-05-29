@@ -237,6 +237,34 @@ def main(symbols):
     assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
 
 
+def test_loop_local_reassignment_shadows_polars_scan_alias(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+scan = pl.scan_parquet
+
+
+def local_helper(path):
+    return path
+
+
+def main(symbols):
+    for symbol in symbols:
+        scan = local_helper
+        scan("raw/panel.parquet")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" not in result.reason_codes
+
+
 def test_repeated_literal_full_scan_fails(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _write_program(
