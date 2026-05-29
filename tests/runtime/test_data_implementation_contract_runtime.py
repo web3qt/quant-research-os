@@ -214,6 +214,29 @@ def main(symbols):
     assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
 
 
+def test_polars_full_scan_alias_in_symbol_loop_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+scan = pl.scan_parquet
+
+
+def main(symbols):
+    for symbol in symbols:
+        scan("raw/panel.parquet").filter(pl.col("asset") == symbol).collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
 def test_repeated_literal_full_scan_fails(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _write_program(
@@ -233,6 +256,51 @@ def main():
     result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_imported_polars_scan_alias_repeated_literal_full_scan_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+from polars import scan_parquet
+
+reader = scan_parquet
+
+
+def main():
+    reader("raw/panel.parquet").select("asset").collect()
+    reader("raw/panel.parquet").select("date").collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_local_scan_parquet_helper_does_not_trigger_repeated_full_scan(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+def scan_parquet(path):
+    return path
+
+
+def main():
+    scan_parquet("raw/panel.parquet")
+    scan_parquet("raw/panel.parquet")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" not in result.reason_codes
 
 
 def test_repeated_literal_full_scan_across_program_files_fails(tmp_path: Path) -> None:

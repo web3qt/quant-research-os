@@ -164,16 +164,39 @@ class _ProgramScanner(ast.NodeVisitor):
         self.path = path
         self.findings: list[tuple[str, str]] = []
         self.scan_literal_paths: list[str] = []
+        self.polars_module_aliases: set[str] = set()
+        self.polars_scan_names: set[str] = set()
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if alias.name == "pandas" or alias.name.startswith("pandas."):
                 self.findings.append(("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS", f"{self.path}: pandas import is forbidden"))
+            if alias.name == "polars":
+                self.polars_module_aliases.add(alias.asname or alias.name)
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module == "pandas" or (node.module is not None and node.module.startswith("pandas.")):
             self.findings.append(("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS", f"{self.path}: pandas import is forbidden"))
+        if node.module == "polars":
+            for alias in node.names:
+                if alias.name in FULL_SCAN_CALLS:
+                    self.polars_scan_names.add(alias.asname or alias.name)
+        self.generic_visit(node)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        resolved = self._resolve_polars_scan_function(node.value)
+        if resolved is not None:
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    self.polars_scan_names.add(target.id)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if isinstance(node.target, ast.Name) and node.value is not None:
+            resolved = self._resolve_polars_scan_function(node.value)
+            if resolved is not None:
+                self.polars_scan_names.add(node.target.id)
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -184,7 +207,7 @@ class _ProgramScanner(ast.NodeVisitor):
             self.findings.append(("DATA_IMPL_ROW_LOOP_FORBIDDEN", f"{self.path}: {call_name} is forbidden"))
         if call_name == "apply" and _call_has_axis_one(node):
             self.findings.append(("DATA_IMPL_APPLY_AXIS1_FORBIDDEN", f"{self.path}: apply(axis=1) is forbidden"))
-        if call_name in FULL_SCAN_CALLS:
+        if self._resolve_polars_scan_function(node.func) is not None:
             literal_path = _first_literal_arg(node)
             if literal_path is not None:
                 self.scan_literal_paths.append(literal_path)
@@ -192,7 +215,7 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         target_names = _target_names(node.target)
-        if target_names & LOOP_TARGET_NAMES and _loop_body_has_full_scan(node):
+        if target_names & LOOP_TARGET_NAMES and self._loop_body_has_full_scan(node):
             self.findings.append(
                 (
                     "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN",
@@ -203,6 +226,26 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_Module(self, node: ast.Module) -> None:
         self.generic_visit(node)
+
+    def _loop_body_has_full_scan(self, node: ast.For) -> bool:
+        for child in ast.walk(node):
+            if isinstance(child, ast.Call) and self._resolve_polars_scan_function(child.func) is not None:
+                return True
+        return False
+
+    def _resolve_polars_scan_function(self, func: ast.AST) -> str | None:
+        if isinstance(func, ast.Name):
+            if func.id in self.polars_scan_names:
+                return func.id
+            return None
+        if isinstance(func, ast.Attribute):
+            if not isinstance(func.value, ast.Name):
+                return None
+            if func.value.id not in self.polars_module_aliases:
+                return None
+            if func.attr in FULL_SCAN_CALLS:
+                return func.attr
+        return None
 
 
 def _call_name(func: ast.AST) -> str | None:
@@ -238,10 +281,3 @@ def _target_names(target: ast.AST) -> set[str]:
             names.update(_target_names(item))
         return names
     return set()
-
-
-def _loop_body_has_full_scan(node: ast.For) -> bool:
-    for child in ast.walk(node):
-        if isinstance(child, ast.Call) and _call_name(child.func) in FULL_SCAN_CALLS:
-            return True
-    return False
