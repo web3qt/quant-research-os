@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+TARGET_CWD="$PWD"
+ARGS=()
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --cwd)
+      if [ "$#" -lt 2 ] || [ -z "${2:-}" ]; then
+        echo "qros-paper-to-spec: --cwd requires a value" >&2
+        exit 2
+      fi
+      TARGET_CWD="$2"
+      shift 2
+      ;;
+    --outputs-root)
+      echo "qros-paper-to-spec: does not accept --outputs-root; it is derived from the project root" >&2
+      exit 2
+      ;;
+    --outputs-root=*)
+      echo "qros-paper-to-spec: does not accept --outputs-root; it is derived from the project root" >&2
+      exit 2
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if ! PROJECT_ROOT="$(cd "$TARGET_CWD" 2>/dev/null && pwd)"; then
+  echo "qros-paper-to-spec: invalid --cwd path: $TARGET_CWD" >&2
+  exit 2
+fi
+
+if [ -d "$PROJECT_ROOT/contracts" ] && [ -d "$PROJECT_ROOT/runtime" ] && [ -d "$PROJECT_ROOT/skills" ]; then
+  echo "qros-paper-to-spec: --cwd must point to an active research repo, not the QROS framework repo: $PROJECT_ROOT" >&2
+  exit 2
+fi
+
+source "$SCRIPT_DIR/qros-wrapper-lib"
+PYTHON_BIN="$(qros_select_python_bin "$SCRIPT_DIR")"
+qros_verify_runtime_lock "$SCRIPT_DIR" "$PYTHON_BIN"
+RUNTIME_ROOT="$(qros_resolve_runtime_root "$SCRIPT_DIR" "$PYTHON_BIN" strict)"
+
+cd "$PROJECT_ROOT"
+exec "$PYTHON_BIN" "$RUNTIME_ROOT/scripts/run_paper_to_spec.py" --outputs-root "$PROJECT_ROOT/outputs" "${ARGS[@]}"

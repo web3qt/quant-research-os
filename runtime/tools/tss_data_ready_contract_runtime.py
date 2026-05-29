@@ -14,39 +14,35 @@ def validate_tss_data_ready_semantics(
     del lineage_root
     stage_formal_dir = stage_formal_dir.resolve()
     errors: list[str] = []
-    rows = _read_parquet_rows(stage_formal_dir / "asset_time_index.parquet", errors)
-    for row_index, row in enumerate(rows, start=1):
-        timestamp = _parse_datetime(row.get("timestamp"))
-        forward_label_timestamp = _parse_datetime(row.get("forward_label_timestamp"))
-        if timestamp is None or forward_label_timestamp is None:
-            continue
-        if forward_label_timestamp <= timestamp:
-            errors.append(
-                "asset_time_index.parquet: forward_label_timestamp must be after timestamp "
-                f"for row {row_index}"
-            )
+    violations = _check_forward_label_ordering(
+        stage_formal_dir / "asset_time_index.parquet", errors
+    )
+    if violations > 0:
+        errors.append(
+            f"asset_time_index.parquet: forward_label_timestamp must be after timestamp "
+            f"({violations} row(s) violated)"
+        )
     return ArtifactValidationResult(errors=errors)
 
 
-def _read_parquet_rows(path: Path, errors: list[str]) -> list[dict[str, Any]]:
+def _check_forward_label_ordering(
+    path: Path, errors: list[str]
+) -> int:
+    """Use vectorized PyArrow compute to count ordering violations."""
     try:
         import pyarrow.parquet as pq
+        import pyarrow.compute as pc
 
-        return pq.read_table(path).to_pylist()
+        table = pq.read_table(path, columns=["timestamp", "forward_label_timestamp"])
+        if table.num_rows == 0:
+            return 0
+        ts = table.column("timestamp")
+        flt = table.column("forward_label_timestamp")
+        # Both should be timestamps; if either column is missing/null, skip.
+        if ts.null_count == table.num_rows or flt.null_count == table.num_rows:
+            return 0
+        violations = pc.less_equal(flt, ts)
+        return int(pc.sum(violations.cast("int32")).as_py())
     except Exception as exc:
         errors.append(f"{path.name}: parquet read failed: {exc}")
-        return []
-
-
-def _parse_datetime(value: Any) -> datetime | None:
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value
-    raw = str(value).strip()
-    if not raw:
-        return None
-    try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    except ValueError:
-        return None
+        return 0

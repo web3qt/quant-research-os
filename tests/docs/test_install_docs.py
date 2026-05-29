@@ -34,6 +34,7 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review-cycle" in combined
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
+    assert "./.qros/bin/qros-paper-to-spec-baseline" in combined
     assert "AGENTS.md" in combined
     assert "templates/research-repo/AGENTS.md.tmpl" in combined
     assert "setup --check" in combined
@@ -119,6 +120,15 @@ def test_codex_readme_describes_python312_wrapper_runtime() -> None:
     assert "`uv` 创建或刷新 `./.qros/.venv`" in codex_guide
     assert "不要为了绕过 Python 版本问题而跳过 `./.qros/bin/qros-*` wrapper" in codex_guide
     assert "直接调用 `runtime/scripts/*`" in codex_guide
+
+
+def test_codex_readme_documents_paper_to_spec_entrypoints() -> None:
+    codex_guide = Path("docs/README.codex.md").read_text(encoding="utf-8")
+
+    assert "$qros-paper-to-spec" in codex_guide
+    assert "./.qros/bin/qros-paper-to-spec" in codex_guide
+    assert "./.qros/bin/qros-paper-to-spec-baseline" in codex_guide
+    assert "docs/guides/qros-paper-to-spec-usage.md" in codex_guide
 
 
 def test_install_docs_reference_stage_field_guide() -> None:
