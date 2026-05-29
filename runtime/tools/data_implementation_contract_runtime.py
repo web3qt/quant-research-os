@@ -186,17 +186,33 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         resolved = self._resolve_polars_scan_function(node.value)
-        if resolved is not None:
-            for target in node.targets:
-                if isinstance(target, ast.Name):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                if resolved is not None:
                     self.polars_scan_names.add(target.id)
+                else:
+                    self.polars_scan_names.discard(target.id)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        if isinstance(node.target, ast.Name) and node.value is not None:
-            resolved = self._resolve_polars_scan_function(node.value)
+        if isinstance(node.target, ast.Name):
+            resolved = self._resolve_polars_scan_function(node.value) if node.value is not None else None
             if resolved is not None:
                 self.polars_scan_names.add(node.target.id)
+            else:
+                self.polars_scan_names.discard(node.target.id)
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self.polars_scan_names.discard(node.name)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self.polars_scan_names.discard(node.name)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.polars_scan_names.discard(node.name)
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
