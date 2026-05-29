@@ -300,6 +300,10 @@ def test_validate_stage_artifacts_script_reports_data_implementation_codes_per_f
     lineage_root = outputs_root / "csf_case"
     _prepare_mandate_stage(lineage_root)
     program_dir = ensure_stage_program(lineage_root, "csf_data_ready")
+    manifest_path = program_dir / "stage_program.yaml"
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    manifest.pop("data_implementation_contract", None)
+    manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True), encoding="utf-8")
     (program_dir / "run_stage.py").write_text("import pandas as pd\n", encoding="utf-8")
     stage_dir = lineage_root / "02_csf_data_ready"
     stage_dir.mkdir(parents=True)
