@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import yaml
 
 from runtime.tools.csf_data_ready_runtime import build_csf_data_ready_from_mandate
 from runtime.tools.review_skillgen.review_preflight import run_review_preflight
@@ -20,10 +21,32 @@ def _write_parquet_rows(path: Path, rows: list[dict[str, object]]) -> None:
     pq.write_table(pa.table(columns), path)
 
 
+def _valid_data_implementation_declaration() -> dict:
+    return {
+        "engine": "polars",
+        "input_strategy": "parquet_lazy_scan",
+        "compute_strategy": "expression_vectorized",
+        "output_strategy": "parquet_columnar",
+        "disallowed_main_path": [
+            "pandas",
+            "row_wise_loop",
+            "per_symbol_full_scan_loop",
+            "repeated_full_scan_without_shared_intermediate",
+        ],
+    }
+
+
+def _add_data_implementation_declaration(program_dir: Path) -> None:
+    manifest_path = program_dir / "stage_program.yaml"
+    payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    payload["data_implementation_contract"] = _valid_data_implementation_declaration()
+    manifest_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
 def _prepare_valid_csf_data_ready_stage(tmp_path: Path) -> Path:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _prepare_mandate_stage(lineage_root)
-    ensure_stage_program(lineage_root, "csf_data_ready")
+    _add_data_implementation_declaration(ensure_stage_program(lineage_root, "csf_data_ready"))
     stage_dir = lineage_root / "02_csf_data_ready"
     stage_dir.mkdir(parents=True)
     _write_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
@@ -54,6 +77,17 @@ def test_review_preflight_blocks_csf_data_ready_when_artifact_contract_fails(tmp
         item == "ARTIFACT-CONTRACT-001: shared_feature_base/returns_panel.parquet: missing required artifact"
         for item in payload["content_findings"]
     )
+
+
+def test_review_preflight_blocks_csf_data_ready_when_program_imports_pandas(tmp_path: Path) -> None:
+    stage_dir = _prepare_valid_csf_data_ready_stage(tmp_path)
+    program_dir = stage_dir.parent / "program" / "cross_sectional_factor" / "data_ready"
+    (program_dir / "run_stage.py").write_text("import pandas as pd\n", encoding="utf-8")
+
+    payload = _run_csf_data_ready_preflight(stage_dir)
+
+    assert payload["status"] == "FAIL"
+    assert any("DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in item for item in payload["content_findings"])
 
 
 def test_review_preflight_blocks_csf_data_ready_when_route_is_not_csf(tmp_path: Path) -> None:

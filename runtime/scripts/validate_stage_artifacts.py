@@ -15,6 +15,13 @@ from runtime.tools.artifact_contract_runtime import (  # noqa: E402
     load_artifact_contract,
     validate_stage_artifacts,
 )
+from runtime.tools.data_implementation_contract_runtime import validate_data_implementation_contract  # noqa: E402
+
+
+DATA_IMPLEMENTATION_STAGE_ROUTES = {
+    "csf_data_ready": "cross_sectional_factor",
+    "tss_data_ready": "time_series_signal",
+}
 
 
 def _parse_args() -> argparse.Namespace:
@@ -39,6 +46,16 @@ def main() -> int:
         for error in result.errors:
             print(error, file=sys.stderr)
         return 1
+
+    route = DATA_IMPLEMENTATION_STAGE_ROUTES.get(args.stage)
+    if route is not None:
+        lineage_root = args.outputs_root / args.lineage_id
+        implementation_result = validate_data_implementation_contract(lineage_root, args.stage, route)
+        if not implementation_result.valid:
+            reason_codes = ", ".join(implementation_result.reason_codes) or "DATA_IMPL_CONTRACT_INVALID"
+            for error in implementation_result.errors:
+                print(f"{reason_codes}: {error}", file=sys.stderr)
+            return 1
 
     print(f"{args.stage} artifact shape valid: {stage_dir}")
     return 0

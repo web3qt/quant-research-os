@@ -13,6 +13,7 @@ from runtime.tools.csf_holdout_validation_contract_runtime import validate_csf_h
 from runtime.tools.csf_signal_ready_contract_runtime import validate_csf_signal_ready_semantics
 from runtime.tools.csf_test_evidence_contract_runtime import validate_csf_test_evidence_semantics
 from runtime.tools.csf_train_freeze_contract_runtime import validate_csf_train_freeze_semantics
+from runtime.tools.data_implementation_contract_runtime import validate_data_implementation_contract
 from runtime.tools.mandate_admission_runtime import assess_time_coverage_preflight
 from runtime.tools.mandate_contract_runtime import validate_mandate_semantics
 from runtime.tools.review_skillgen.context_inference import build_stage_context, infer_review_context
@@ -39,6 +40,10 @@ CHECKLIST_PATH = ROOT / "contracts" / "review" / "review_checklist_master.yaml"
 
 _STAGE_PROGRAM_SPEC_ALIASES = {
     "train_calibration": "train_freeze",
+}
+_DATA_IMPLEMENTATION_STAGE_ROUTES = {
+    "csf_data_ready": "cross_sectional_factor",
+    "tss_data_ready": "time_series_signal",
 }
 
 
@@ -93,6 +98,7 @@ def run_review_preflight(
 
     content_findings: list[str] = []
     content_findings.extend(_validate_stage_program_for_review(stage, lineage_root))
+    content_findings.extend(_check_data_implementation_contract(stage, lineage_root))
     content_findings.extend(
         f"Missing required output: {item}"
         for item in check_required_outputs(author_formal_dir, stage_contract.get("required_outputs", []))
@@ -176,6 +182,18 @@ def _validate_stage_program_for_review(stage: str, lineage_root: Path) -> list[s
     except StageProgramRuntimeError as exc:
         return [f"{exc.reason_code}: {exc.message}"]
     return []
+
+
+def _check_data_implementation_contract(stage: str, lineage_root: Path) -> list[str]:
+    route = _DATA_IMPLEMENTATION_STAGE_ROUTES.get(stage)
+    if route is None:
+        return []
+
+    result = validate_data_implementation_contract(lineage_root, stage, route)
+    if result.valid:
+        return []
+    reason_codes = ", ".join(result.reason_codes) or "DATA_IMPL_CONTRACT_INVALID"
+    return [f"{reason_codes}: {error}" for error in result.errors]
 
 
 def _check_artifact_contract(stage: str, author_formal_dir: Path) -> list[str]:

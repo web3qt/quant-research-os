@@ -7,6 +7,7 @@ import sys
 import yaml
 
 from tests.helpers.freeze_draft_support import with_freeze_digests
+from tests.helpers.lineage_program_support import ensure_stage_program
 from runtime.tools.idea_runtime import scaffold_idea_intake
 from tests.helpers.repo_paths import REPO_ROOT
 from tests.runtime.test_csf_data_ready_runtime import (
@@ -27,6 +28,28 @@ from tests.runtime.test_artifact_contract_runtime import (
 def _write_yaml(path: Path, payload: dict) -> None:
     payload = with_freeze_digests(payload)
     path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _valid_data_implementation_declaration() -> dict:
+    return {
+        "engine": "polars",
+        "input_strategy": "parquet_lazy_scan",
+        "compute_strategy": "expression_vectorized",
+        "output_strategy": "parquet_columnar",
+        "disallowed_main_path": [
+            "pandas",
+            "row_wise_loop",
+            "per_symbol_full_scan_loop",
+            "repeated_full_scan_without_shared_intermediate",
+        ],
+    }
+
+
+def _add_data_implementation_declaration(program_dir: Path) -> None:
+    manifest_path = program_dir / "stage_program.yaml"
+    payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+    payload["data_implementation_contract"] = _valid_data_implementation_declaration()
+    manifest_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
 
 def test_validate_stage_artifacts_script_accepts_valid_idea_intake(tmp_path: Path) -> None:
@@ -212,6 +235,7 @@ def test_validate_stage_artifacts_script_accepts_valid_csf_data_ready(tmp_path: 
     outputs_root = tmp_path / "outputs"
     lineage_root = outputs_root / "csf_case"
     _prepare_mandate_stage(lineage_root)
+    _add_data_implementation_declaration(ensure_stage_program(lineage_root, "csf_data_ready"))
     stage_dir = lineage_root / "02_csf_data_ready"
     stage_dir.mkdir(parents=True)
     _write_csf_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
@@ -236,6 +260,39 @@ def test_validate_stage_artifacts_script_accepts_valid_csf_data_ready(tmp_path: 
 
     assert result.returncode == 0
     assert "csf_data_ready artifact shape valid" in result.stdout
+
+
+def test_validate_stage_artifacts_script_rejects_csf_data_ready_pandas_program(tmp_path: Path) -> None:
+    outputs_root = tmp_path / "outputs"
+    lineage_root = outputs_root / "csf_case"
+    _prepare_mandate_stage(lineage_root)
+    program_dir = ensure_stage_program(lineage_root, "csf_data_ready")
+    _add_data_implementation_declaration(program_dir)
+    (program_dir / "run_stage.py").write_text("import pandas as pd\n", encoding="utf-8")
+    stage_dir = lineage_root / "02_csf_data_ready"
+    stage_dir.mkdir(parents=True)
+    _write_csf_yaml(stage_dir / "author" / "draft" / "csf_data_ready_freeze_draft.yaml", _csf_data_ready_draft(confirmed=True))
+    build_csf_data_ready_from_mandate(lineage_root)
+
+    result = run(
+        [
+            sys.executable,
+            "runtime/scripts/validate_stage_artifacts.py",
+            "--outputs-root",
+            str(outputs_root),
+            "--lineage-id",
+            "csf_case",
+            "--stage",
+            "csf_data_ready",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+    assert result.returncode == 1
+    assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in result.stderr
 
 
 def test_validate_stage_artifacts_script_reports_invalid_csf_data_ready_shape(tmp_path: Path) -> None:
