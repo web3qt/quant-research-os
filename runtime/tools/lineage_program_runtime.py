@@ -360,6 +360,11 @@ def validate_stage_program(lineage_root: Path, stage_id: StageId, route: RouteId
 def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> InvocationResult:
     lineage_root = lineage_root.resolve()
     validated = validate_stage_program(lineage_root, spec.stage_id, spec.route)
+    _run_data_implementation_gate_if_applicable(
+        lineage_root=lineage_root,
+        stage_id=spec.stage_id,
+        route=spec.route,
+    )
     stage_dir = lineage_root / spec.stage_dir_name
     author_formal_dir = _author_formal_dir(stage_dir)
     author_formal_dir.mkdir(parents=True, exist_ok=True)
@@ -414,6 +419,19 @@ def invoke_stage_if_admitted(lineage_root: Path, spec: StageProgramSpec) -> Invo
         output_refs=tuple(ref.path for ref in validated.outputs),
         input_refs=tuple(ref.path for ref in validated.inputs),
         provenance_path=provenance_path,
+    )
+
+
+def _run_data_implementation_gate_if_applicable(*, lineage_root: Path, stage_id: str, route: str) -> None:
+    from runtime.tools.data_implementation_contract_runtime import validate_data_implementation_contract
+
+    result = validate_data_implementation_contract(lineage_root, stage_id, route)
+    if result.valid:
+        return
+    message = "\n".join(f"{code}: {text}" for code, text in result.findings)
+    raise StageProgramRuntimeError(
+        "DATA_IMPLEMENTATION_CONTRACT_FAILED",
+        message or f"{stage_id}: data_implementation_contract failed",
     )
 
 

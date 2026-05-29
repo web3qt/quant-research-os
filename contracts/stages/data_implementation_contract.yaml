@@ -55,6 +55,10 @@ reason_codes:
     meaning: 适用 stage program 主路径导入 pandas。
   - code: DATA_IMPL_TO_PANDAS_FORBIDDEN
     meaning: 适用 stage program 主路径调用 to_pandas。
+  - code: DATA_IMPL_EAGER_READ_FORBIDDEN
+    meaning: 适用 stage program 主路径使用 eager parquet/csv read，未走 lazy scan。
+  - code: DATA_IMPL_NON_PARQUET_INPUT_FORBIDDEN
+    meaning: 适用 stage program 主路径使用 csv 输入，未遵守 parquet-first。
   - code: DATA_IMPL_ROW_LOOP_FORBIDDEN
     meaning: 适用 stage program 主路径使用逐行迭代。
   - code: DATA_IMPL_APPLY_AXIS1_FORBIDDEN

@@ -28,8 +28,12 @@ REQUIRED_DECLARATION = {
     ],
 }
 FULL_SCAN_CALLS = {"scan_parquet", "read_parquet", "scan_csv", "read_csv"}
+EAGER_READ_CALLS = {"read_parquet", "read_csv"}
+NON_PARQUET_INPUT_CALLS = {"scan_csv", "read_csv"}
 ROW_LOOP_CALLS = {"iterrows", "itertuples"}
 LOOP_TARGET_NAMES = {"asset", "assets", "symbol", "symbols"}
+EXCEPTION_PATH_PARTS = {"tests", "fixtures", "docs", "archive", "migration"}
+EXCEPTION_FILENAME_TOKENS = ("metadata", "report")
 
 
 @dataclass(frozen=True)
@@ -136,6 +140,8 @@ def _scan_program_python_files(program_dir: Path) -> list[tuple[str, str]]:
     findings: list[tuple[str, str]] = []
     scan_literal_paths: list[tuple[Path, str]] = []
     for path in sorted(program_dir.rglob("*.py")):
+        if _is_exception_path(path.relative_to(program_dir)):
+            continue
         source = path.read_text(encoding="utf-8")
         try:
             tree = ast.parse(source, filename=str(path))
@@ -168,7 +174,7 @@ class _ProgramScanner(ast.NodeVisitor):
         self.findings: list[tuple[str, str]] = []
         self.scan_literal_paths: list[str] = []
         self.polars_module_alias_scopes: list[set[str]] = [set()]
-        self.polars_scan_name_scopes: list[set[str]] = [set()]
+        self.polars_scan_name_scopes: list[dict[str, str]] = [{}]
         self.per_asset_loop_scan_stack: list[bool] = []
 
     @property
@@ -176,7 +182,7 @@ class _ProgramScanner(ast.NodeVisitor):
         return self.polars_module_alias_scopes[-1]
 
     @property
-    def polars_scan_names(self) -> set[str]:
+    def polars_scan_names(self) -> dict[str, str]:
         return self.polars_scan_name_scopes[-1]
 
     def visit_Import(self, node: ast.Import) -> None:
@@ -193,7 +199,7 @@ class _ProgramScanner(ast.NodeVisitor):
         if node.module == "polars":
             for alias in node.names:
                 if alias.name in FULL_SCAN_CALLS:
-                    self.polars_scan_names.add(alias.asname or alias.name)
+                    self.polars_scan_names[alias.asname or alias.name] = alias.name
         self.generic_visit(node)
 
     def visit_Assign(self, node: ast.Assign) -> None:
@@ -202,9 +208,9 @@ class _ProgramScanner(ast.NodeVisitor):
         for target in node.targets:
             if isinstance(target, ast.Name):
                 if resolved is not None:
-                    self.polars_scan_names.add(target.id)
+                    self.polars_scan_names[target.id] = resolved
                 else:
-                    self.polars_scan_names.discard(target.id)
+                    self.polars_scan_names.pop(target.id, None)
                 if module_alias is not None:
                     self.polars_module_aliases.add(target.id)
                 else:
@@ -216,9 +222,9 @@ class _ProgramScanner(ast.NodeVisitor):
             resolved = self._resolve_polars_scan_function(node.value) if node.value is not None else None
             module_alias = self._resolve_polars_module_alias(node.value) if node.value is not None else None
             if resolved is not None:
-                self.polars_scan_names.add(node.target.id)
+                self.polars_scan_names[node.target.id] = resolved
             else:
-                self.polars_scan_names.discard(node.target.id)
+                self.polars_scan_names.pop(node.target.id, None)
             if module_alias is not None:
                 self.polars_module_aliases.add(node.target.id)
             else:
@@ -226,23 +232,23 @@ class _ProgramScanner(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        self.polars_scan_names.discard(node.name)
+        self.polars_scan_names.pop(node.name, None)
         self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        self.polars_scan_names.discard(node.name)
+        self.polars_scan_names.pop(node.name, None)
         self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        self.polars_scan_names.discard(node.name)
+        self.polars_scan_names.pop(node.name, None)
         self.polars_module_aliases.discard(node.name)
         self._visit_nested_scope(node)
 
     def _visit_nested_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
         self.polars_module_alias_scopes.append(set(self.polars_module_aliases))
-        self.polars_scan_name_scopes.append(set(self.polars_scan_names))
+        self.polars_scan_name_scopes.append(dict(self.polars_scan_names))
         for decorator in node.decorator_list:
             self.visit(decorator)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -254,7 +260,7 @@ class _ProgramScanner(ast.NodeVisitor):
             if node.returns is not None:
                 self.visit(node.returns)
             for parameter_name in _argument_names(node.args):
-                self.polars_scan_names.discard(parameter_name)
+                self.polars_scan_names.pop(parameter_name, None)
                 self.polars_module_aliases.discard(parameter_name)
         else:
             for base in node.bases:
@@ -274,7 +280,22 @@ class _ProgramScanner(ast.NodeVisitor):
             self.findings.append(("DATA_IMPL_ROW_LOOP_FORBIDDEN", f"{self.path}: {call_name} is forbidden"))
         if call_name == "apply" and _call_has_axis_one(node):
             self.findings.append(("DATA_IMPL_APPLY_AXIS1_FORBIDDEN", f"{self.path}: apply(axis=1) is forbidden"))
-        if self._resolve_polars_scan_function(node.func) is not None:
+        resolved_polars_call = self._resolve_polars_scan_function(node.func)
+        if resolved_polars_call is not None:
+            if resolved_polars_call in EAGER_READ_CALLS:
+                self.findings.append(
+                    (
+                        "DATA_IMPL_EAGER_READ_FORBIDDEN",
+                        f"{self.path}: {resolved_polars_call} is forbidden in data-ready main path; use lazy parquet scan",
+                    )
+                )
+            if resolved_polars_call in NON_PARQUET_INPUT_CALLS:
+                self.findings.append(
+                    (
+                        "DATA_IMPL_NON_PARQUET_INPUT_FORBIDDEN",
+                        f"{self.path}: {resolved_polars_call} violates parquet-first input strategy",
+                    )
+                )
             for index in range(len(self.per_asset_loop_scan_stack)):
                 self.per_asset_loop_scan_stack[index] = True
             literal_path = _first_literal_arg(node)
@@ -286,10 +307,11 @@ class _ProgramScanner(ast.NodeVisitor):
         target_names = _target_names(node.target)
         self.visit(node.iter)
         for name in target_names:
-            self.polars_scan_names.discard(name)
+            self.polars_scan_names.pop(name, None)
             self.polars_module_aliases.discard(name)
 
-        is_per_asset_loop = bool(target_names & LOOP_TARGET_NAMES)
+        iter_names = _expr_names(node.iter)
+        is_per_asset_loop = bool((target_names | iter_names) & LOOP_TARGET_NAMES)
         if is_per_asset_loop:
             self.per_asset_loop_scan_stack.append(False)
         for stmt in node.body:
@@ -310,9 +332,7 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def _resolve_polars_scan_function(self, func: ast.AST) -> str | None:
         if isinstance(func, ast.Name):
-            if func.id in self.polars_scan_names:
-                return func.id
-            return None
+            return self.polars_scan_names.get(func.id)
         if isinstance(func, ast.Attribute):
             if not isinstance(func.value, ast.Name):
                 return None
@@ -372,3 +392,21 @@ def _argument_names(arguments: ast.arguments) -> set[str]:
     if arguments.kwarg is not None:
         names.add(arguments.kwarg.arg)
     return names
+
+
+def _expr_names(node: ast.AST) -> set[str]:
+    if isinstance(node, ast.Name):
+        return {node.id}
+    if isinstance(node, ast.Attribute):
+        return {node.attr}
+    if isinstance(node, ast.Call):
+        return _expr_names(node.func)
+    return set()
+
+
+def _is_exception_path(relpath: Path) -> bool:
+    parts = set(relpath.parts)
+    if parts & EXCEPTION_PATH_PARTS:
+        return True
+    stem = relpath.stem.lower()
+    return any(token in stem for token in EXCEPTION_FILENAME_TOKENS)

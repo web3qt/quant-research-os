@@ -193,6 +193,68 @@ def main() -> None:
     assert "DATA_IMPL_TO_PANDAS_FORBIDDEN" in result.reason_codes
 
 
+def test_eager_parquet_read_fails_even_when_used_once(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main() -> None:
+    pl.read_parquet("raw/panel.parquet").select("asset")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_EAGER_READ_FORBIDDEN" in result.reason_codes
+
+
+def test_csv_input_fails_even_when_lazy(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main() -> None:
+    pl.scan_csv("raw/panel.csv").select("asset")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_NON_PARQUET_INPUT_FORBIDDEN" in result.reason_codes
+
+
+def test_eager_read_alias_preserves_underlying_call_type(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+reader = pl.read_parquet
+
+
+def main() -> None:
+    reader("raw/panel.parquet").select("asset")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_EAGER_READ_FORBIDDEN" in result.reason_codes
+
+
 def test_row_iteration_and_apply_axis_one_fail(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "tss_case"
     _write_program(
@@ -235,6 +297,92 @@ def main(symbols):
     result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_per_symbol_full_scan_loop_with_short_target_name_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main(symbols):
+    for s in symbols:
+        pl.scan_parquet("raw/panel.parquet").filter(pl.col("asset") == s).collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_per_asset_full_scan_loop_with_ticker_target_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main(assets):
+    for ticker in assets:
+        pl.scan_parquet("raw/panel.parquet").filter(pl.col("asset") == ticker).collect()
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_exception_scope_fixture_file_allows_pandas_import(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    program_dir = _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main() -> None:
+    pl.scan_parquet("raw/panel.parquet").select("asset")
+''',
+        _valid_declaration(),
+    )
+    fixture_dir = program_dir / "fixtures"
+    fixture_dir.mkdir()
+    (fixture_dir / "pandas_fixture.py").write_text("import pandas as pd\n", encoding="utf-8")
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" not in result.reason_codes
+
+
+def test_metadata_report_helper_allows_pandas_import(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    program_dir = _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main() -> None:
+    pl.scan_parquet("raw/panel.parquet").select("asset")
+''',
+        _valid_declaration(),
+    )
+    (program_dir / "metadata_report.py").write_text("import pandas as pd\n", encoding="utf-8")
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" not in result.reason_codes
 
 
 def test_polars_full_scan_alias_in_symbol_loop_fails(tmp_path: Path) -> None:

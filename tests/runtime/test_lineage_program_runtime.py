@@ -372,6 +372,94 @@ def test_invoke_stage_if_admitted_blocks_full_build_when_prebuild_schema_gate_fa
     assert not (formal_dir / "program_execution_manifest.json").exists()
 
 
+def test_invoke_stage_if_admitted_blocks_csf_data_ready_before_forbidden_program_executes(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    program_dir = lineage_root / "program" / "cross_sectional_factor" / "data_ready"
+    program_dir.mkdir(parents=True)
+    (program_dir / "README.md").write_text("# CSF Data Ready Program\n", encoding="utf-8")
+    (program_dir / "run_stage.py").write_text(
+        """#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+import pandas as pd
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lineage-root", type=Path, required=True)
+    args = parser.parse_args()
+    # 如果实现门禁正确前置，这个 marker 永远不应被写出。
+    formal_dir = args.lineage_root / "02_csf_data_ready" / "author" / "formal"
+    formal_dir.mkdir(parents=True, exist_ok=True)
+    (formal_dir / "marker.txt").write_text(str(pd.__name__), encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+""",
+        encoding="utf-8",
+    )
+    (program_dir / "stage_program.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "stage_id": "csf_data_ready",
+                "route": "cross_sectional_factor",
+                "lineage_id": lineage_root.name,
+                "entrypoint": "run_stage.py",
+                "entry_type": "python",
+                "inputs": [],
+                "outputs": [
+                    {"kind": "machine", "path": "02_csf_data_ready/author/formal/marker.txt", "required": True}
+                ],
+                "depends_on_programs": ["mandate"],
+                "shared_libs": [],
+                "authored_by": {
+                    "agent_id": "test-agent",
+                    "agent_role": "executor",
+                    "session_id": "test-session",
+                },
+                "data_implementation_contract": {
+                    "engine": "polars",
+                    "input_strategy": "parquet_lazy_scan",
+                    "compute_strategy": "expression_vectorized",
+                    "output_strategy": "parquet_columnar",
+                    "disallowed_main_path": [
+                        "pandas",
+                        "row_wise_loop",
+                        "per_symbol_full_scan_loop",
+                        "repeated_full_scan_without_shared_intermediate",
+                    ],
+                },
+            },
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+
+    try:
+        invoke_stage_if_admitted(
+            lineage_root,
+            StageProgramSpec(
+                stage_id="csf_data_ready",
+                route="cross_sectional_factor",
+                stage_dir_name="02_csf_data_ready",
+                required_outputs=("marker.txt",),
+            ),
+        )
+    except StageProgramRuntimeError as exc:
+        assert exc.reason_code == "DATA_IMPLEMENTATION_CONTRACT_FAILED"
+        assert "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS" in exc.message
+    else:
+        raise AssertionError("expected data implementation gate to block forbidden program before execution")
+
+    assert not (lineage_root / "02_csf_data_ready" / "author" / "formal" / "marker.txt").exists()
+
+
 def test_invoke_stage_if_admitted_runs_full_build_after_prebuild_schema_gate_passes(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _write_prebuild_gate_program(

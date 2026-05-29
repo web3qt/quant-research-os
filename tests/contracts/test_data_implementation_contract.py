@@ -55,6 +55,8 @@ def test_data_implementation_contract_declares_forbidden_patterns_and_reason_cod
         "DATA_IMPL_ENGINE_NOT_POLARS",
         "DATA_IMPL_ENGINE_FORBIDDEN_PANDAS",
         "DATA_IMPL_TO_PANDAS_FORBIDDEN",
+        "DATA_IMPL_EAGER_READ_FORBIDDEN",
+        "DATA_IMPL_NON_PARQUET_INPUT_FORBIDDEN",
         "DATA_IMPL_ROW_LOOP_FORBIDDEN",
         "DATA_IMPL_APPLY_AXIS1_FORBIDDEN",
         "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN",
