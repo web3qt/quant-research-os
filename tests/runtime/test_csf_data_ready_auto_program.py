@@ -156,6 +156,9 @@ def test_materialize_fixture_stage_program_for_csf_data_ready_is_valid(tmp_path:
     assert validated.entrypoint == "run_stage.py"
     assert validated.route == "cross_sectional_factor"
     assert validated.stage_id == "csf_data_ready"
+    manifest = yaml.safe_load((program_dir / "stage_program.yaml").read_text(encoding="utf-8"))
+    assert manifest["data_implementation_contract"]["engine"] == "polars"
+    assert manifest["data_implementation_contract"]["input_strategy"] == "parquet_lazy_scan"
 
 
 def test_run_research_session_uses_explicit_fixture_stage_program_for_csf_data_ready(

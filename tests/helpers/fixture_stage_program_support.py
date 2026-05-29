@@ -9,6 +9,21 @@ import yaml
 from runtime.tools.stage_program_scaffold import STAGE_PROGRAM_SPECS
 
 
+DATA_IMPLEMENTATION_STAGE_KEYS = {"csf_data_ready", "tss_data_ready"}
+DATA_IMPLEMENTATION_DECLARATION = {
+    "engine": "polars",
+    "input_strategy": "parquet_lazy_scan",
+    "compute_strategy": "expression_vectorized",
+    "output_strategy": "parquet_columnar",
+    "disallowed_main_path": [
+        "pandas",
+        "row_wise_loop",
+        "per_symbol_full_scan_loop",
+        "repeated_full_scan_without_shared_intermediate",
+    ],
+}
+
+
 def _render_fixture_run_stage_py(*, repo_root: Path, module: str, function: str) -> str:
     return textwrap.dedent(
         f"""\
@@ -111,5 +126,7 @@ def materialize_fixture_stage_program(
             "session_id": authoring_session_id,
         },
     }
+    if stage_key in DATA_IMPLEMENTATION_STAGE_KEYS:
+        manifest["data_implementation_contract"] = DATA_IMPLEMENTATION_DECLARATION
     (program_dir / "stage_program.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True), encoding="utf-8")
     return program_dir
