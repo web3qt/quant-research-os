@@ -6,6 +6,37 @@
 
 <br>
 
+## 0.6.0 - 2026-05-29
+
+### 新增
+
+- 新增 mandate admission 合流后的主流程口径：`qros-research-session` 现在把 idea intake / mandate admission / mandate freeze 纳入同一条更明确的入口路径，旧 `qros-idea-intake-author` 入口已从 active workflow 中移除。
+- 新增 research preflight truth layer，在进入 mandate / review 前提前暴露路线、数据可行性和常见研究阻塞项，减少晚期 review 才发现基础假设不成立的情况。
+- 新增 canonical review eligibility、strict review proof chain、receipt-bound final review normalization 和 reviewer write-scope audit 的 runtime 状态投影。
+- 新增 CSF path-level risk contract 与 formal risk metrics 读取 / 语义校验，覆盖 backtest / holdout 阶段的路径风险证据。
+
+### 修复
+
+- 修复 `qros-progress` / shared session stage resolution 可能被早期已关闭 stage 的 legacy `adversarial_review_request.yaml` 卡回 `mandate_review` 的问题。
+- 历史兼容现在只允许旧 request 缺 `review_cycle_id`、已有 advancing completion certificate、且下游 stage 已物化的 closed stage 继续被视为已关闭；现代 review custody、digest、receipt、result 和 write-scope audit 错误仍然 fail closed。
+- 当 formal route 缺失、unsupported 或不可读时，stage detection 会从已物化的 CSF / TSS downstream stages 推断 route；当 formal route YAML 损坏或 CSF/TSS 双路线同时物化时，会阻断推断，避免静默选择错误 route。
+- 修复 review operation / progress projection 中 stale review、audit failure、final review rewrite 和 failure handling 状态的若干边界口径。
+
+### 改进
+
+- `qros-progress` 与 `qros-research-session` 共享同一套 stage resolution 和 review operation projection，减少 display/progress 与真实 runtime gate 的漂移。
+- 强化 review-ready preflight、review operation classification 和用户 next action 文案，明确 author refresh、reviewer restart、final review rewrite 与 failure handling 的边界。
+- 更新 skills、SOP、review constraint map、research session usage、freeze group field guide 和视觉文档，使 active docs 与 mandate admission 合流、strict review proof chain、CSF path-risk contract 保持一致。
+
+### 验证
+
+- 本版本发布前已运行 qros-progress / research-session focused regressions、session/progress 模块回归、smoke 和 full-smoke。
+- `pyproject.toml`、`uv.lock` 与 `RELEASE_NOTES.md` 同步到 `0.6.0`。
+
+---
+
+<br>
+
 ## 0.5.0 - 2026-05-20
 
 ### 新增
