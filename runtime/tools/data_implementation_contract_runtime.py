@@ -250,6 +250,9 @@ class _ProgramScanner(ast.NodeVisitor):
                     self.visit(default)
             if node.returns is not None:
                 self.visit(node.returns)
+            for parameter_name in _argument_names(node.args):
+                self.polars_scan_names.discard(parameter_name)
+                self.polars_module_aliases.discard(parameter_name)
         else:
             for base in node.bases:
                 self.visit(base)
@@ -355,3 +358,14 @@ def _target_names(target: ast.AST) -> set[str]:
             names.update(_target_names(item))
         return names
     return set()
+
+
+def _argument_names(arguments: ast.arguments) -> set[str]:
+    names = {arg.arg for arg in arguments.posonlyargs}
+    names.update(arg.arg for arg in arguments.args)
+    names.update(arg.arg for arg in arguments.kwonlyargs)
+    if arguments.vararg is not None:
+        names.add(arguments.vararg.arg)
+    if arguments.kwarg is not None:
+        names.add(arguments.kwarg.arg)
+    return names

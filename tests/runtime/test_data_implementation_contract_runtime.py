@@ -292,6 +292,27 @@ def main(symbols):
     assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" not in result.reason_codes
 
 
+def test_function_parameter_shadows_polars_module_alias(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main(symbols, pl):
+    for symbol in symbols:
+        pl.scan_parquet("raw/panel.parquet")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_PER_ASSET_FULL_SCAN_FORBIDDEN" not in result.reason_codes
+
+
 def test_repeated_literal_full_scan_fails(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _write_program(
@@ -311,6 +332,27 @@ def main():
     result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
 
     assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
+def test_function_parameter_shadows_imported_polars_scan(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+from polars import scan_parquet
+
+
+def main(scan_parquet):
+    scan_parquet("raw/panel.parquet")
+    scan_parquet("raw/panel.parquet")
+''',
+        _valid_declaration(),
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" not in result.reason_codes
 
 
 def test_imported_polars_scan_alias_repeated_literal_full_scan_fails(tmp_path: Path) -> None:
