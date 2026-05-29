@@ -51,24 +51,13 @@ def validate_data_implementation_contract(
     route: str,
 ) -> DataImplementationValidationResult:
     expected_route = APPLICABLE_STAGE_ROUTES.get(stage_id)
-    if expected_route is None:
+    if expected_route is None or route != expected_route:
         return DataImplementationValidationResult(
             stage_id=stage_id,
             program_dir=None,
             status="not_applicable",
             errors=[],
             reason_codes=[],
-        )
-    if route != expected_route:
-        return _result(
-            stage_id,
-            None,
-            [
-                (
-                    "DATA_IMPL_CONTRACT_STAGE_NOT_APPLICABLE",
-                    f"{stage_id}: expected route {expected_route}, found {route}",
-                )
-            ],
         )
 
     program_dir = stage_program_dir(lineage_root, stage_id, route)
@@ -142,6 +131,7 @@ def _validate_declaration(stage_id: str, declaration: Any) -> list[tuple[str, st
 
 def _scan_program_python_files(program_dir: Path) -> list[tuple[str, str]]:
     findings: list[tuple[str, str]] = []
+    scan_literal_paths: list[tuple[Path, str]] = []
     for path in sorted(program_dir.rglob("*.py")):
         source = path.read_text(encoding="utf-8")
         try:
@@ -152,6 +142,20 @@ def _scan_program_python_files(program_dir: Path) -> list[tuple[str, str]]:
         scanner = _ProgramScanner(path)
         scanner.visit(tree)
         findings.extend(scanner.findings)
+        scan_literal_paths.extend((path, literal_path) for literal_path in scanner.scan_literal_paths)
+
+    # stage program 是一个整体；重复 literal scan 即使分散在 helper 里也要拦截。
+    literal_counts = Counter(literal_path for _, literal_path in scan_literal_paths)
+    repeated_paths = {literal_path for literal_path, count in literal_counts.items() if count > 1}
+    for path, literal_path in scan_literal_paths:
+        if literal_path not in repeated_paths:
+            continue
+        findings.append(
+            (
+                "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN",
+                f"{path}: repeated full scan/read of {literal_path!r} is forbidden without shared intermediate",
+            )
+        )
     return findings
 
 
@@ -199,15 +203,6 @@ class _ProgramScanner(ast.NodeVisitor):
 
     def visit_Module(self, node: ast.Module) -> None:
         self.generic_visit(node)
-        # 同一源码文件里重复 literal 全量 scan/read，通常表示没有共享 lazy intermediate。
-        repeated = [path for path, count in Counter(self.scan_literal_paths).items() if count > 1]
-        for path in repeated:
-            self.findings.append(
-                (
-                    "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN",
-                    f"{self.path}: repeated full scan/read of {path!r} is forbidden without shared intermediate",
-                )
-            )
 
 
 def _call_name(func: ast.AST) -> str | None:

@@ -105,6 +105,41 @@ def test_missing_declaration_fails(tmp_path: Path) -> None:
     assert result.reason_codes == ["DATA_IMPL_DECLARATION_MISSING"]
 
 
+def test_missing_stage_program_yaml_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    program_dir = lineage_root / "program" / "cross_sectional_factor" / "data_ready"
+    program_dir.mkdir(parents=True)
+    (program_dir / "run_stage.py").write_text("import polars as pl\n", encoding="utf-8")
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert result.valid is False
+    assert result.reason_codes == ["DATA_IMPL_DECLARATION_MISSING"]
+
+
+def test_wrong_engine_declaration_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    declaration = _valid_declaration()
+    declaration["engine"] = "pandas"
+    _write_program(lineage_root, "csf_data_ready", "import polars as pl\n", declaration)
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_ENGINE_NOT_POLARS" in result.reason_codes
+
+
+def test_wrong_strategy_or_disallowed_main_path_declaration_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "tss_case"
+    declaration = _valid_declaration()
+    declaration["input_strategy"] = "parquet_eager_read"
+    declaration["disallowed_main_path"] = ["pandas"]
+    _write_program(lineage_root, "tss_data_ready", "import polars as pl\n", declaration)
+
+    result = validate_data_implementation_contract(lineage_root, "tss_data_ready", "time_series_signal")
+
+    assert "DATA_IMPL_DECLARATION_MISSING" in result.reason_codes
+
+
 def test_pandas_import_fails(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "csf_case"
     _write_program(lineage_root, "csf_data_ready", "import pandas as pd\n", _valid_declaration())
@@ -200,6 +235,36 @@ def main():
     assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
 
 
+def test_repeated_literal_full_scan_across_program_files_fails(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "csf_case"
+    program_dir = _write_program(
+        lineage_root,
+        "csf_data_ready",
+        '''
+import polars as pl
+
+
+def main():
+    pl.scan_parquet("raw/panel.parquet").select("asset").collect()
+''',
+        _valid_declaration(),
+    )
+    (program_dir / "helper.py").write_text(
+        '''
+import polars as pl
+
+
+def helper():
+    pl.scan_parquet("raw/panel.parquet").select("date").collect()
+''',
+        encoding="utf-8",
+    )
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "cross_sectional_factor")
+
+    assert "DATA_IMPL_REPEATED_FULL_SCAN_FORBIDDEN" in result.reason_codes
+
+
 def test_legacy_data_ready_is_not_applicable(tmp_path: Path) -> None:
     lineage_root = tmp_path / "outputs" / "legacy_case"
 
@@ -207,4 +272,15 @@ def test_legacy_data_ready_is_not_applicable(tmp_path: Path) -> None:
 
     assert result.valid is True
     assert result.reason_codes == []
+    assert result.status == "not_applicable"
+
+
+def test_applicable_stage_with_non_matching_route_is_not_applicable(tmp_path: Path) -> None:
+    lineage_root = tmp_path / "outputs" / "route_case"
+
+    result = validate_data_implementation_contract(lineage_root, "csf_data_ready", "time_series_signal")
+
+    assert result.valid is True
+    assert result.reason_codes == []
+    assert result.errors == []
     assert result.status == "not_applicable"
