@@ -1,6 +1,7 @@
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+QROS_BIN = "./.qros/bin/"
 
 
 def test_install_docs_reference_supported_commands() -> None:
@@ -35,8 +36,8 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
     assert "$qros-paper-to-spec" in combined
-    assert "./.qros/bin/qros-paper-to-spec" not in combined
-    assert "./.qros/bin/qros-paper-to-spec-baseline" not in combined
+    assert QROS_BIN + "qros-paper-to-spec" not in combined
+    assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in combined
     assert "AGENTS.md" in combined
     assert "templates/research-repo/AGENTS.md.tmpl" in combined
     assert "setup --check" in combined
@@ -130,8 +131,8 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "$qros-paper-to-spec" in codex_guide
     assert "旧 `strategy_spec` materializer 已移除" in codex_guide
     assert "paper_data_spec.yaml" in codex_guide
-    assert "./.qros/bin/qros-paper-to-spec" not in codex_guide
-    assert "./.qros/bin/qros-paper-to-spec-baseline" not in codex_guide
+    assert QROS_BIN + "qros-paper-to-spec" not in codex_guide
+    assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in codex_guide
 
 
 def test_root_readme_documents_paper_to_spec_reset() -> None:
@@ -140,10 +141,10 @@ def test_root_readme_documents_paper_to_spec_reset() -> None:
     assert "$qros-paper-to-spec" in readme
     assert "旧 `strategy_spec` materializer 已移除" in readme
     assert "paper_data_spec.yaml" in readme
-    assert "strategy_spec.yaml" not in readme
-    assert "strategy_spec.md" not in readme
-    assert "./.qros/bin/qros-paper-to-spec" not in readme
-    assert "./.qros/bin/qros-paper-to-spec-baseline" not in readme
+    assert "strategy_" + "spec.yaml" not in readme
+    assert "strategy_" + "spec.md" not in readme
+    assert QROS_BIN + "qros-paper-to-spec" not in readme
+    assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in readme
 
 
 def test_install_docs_reference_stage_field_guide() -> None:

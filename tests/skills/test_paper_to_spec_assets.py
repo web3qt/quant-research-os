@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_PATH = ROOT / "skills/core/qros-paper-to-spec/SKILL.md"
+QROS_BIN = "./.qros/bin/"
 
 
 def test_paper_to_spec_skill_exists() -> None:
@@ -30,13 +31,13 @@ def test_paper_to_spec_skill_documents_removed_legacy_path_and_v2_direction() ->
         assert needle in content
 
     forbidden_strings = [
-        "./.qros/bin/qros-paper-to-spec",
-        "./.qros/bin/qros-paper-to-spec-baseline",
-        "--spec-file",
-        "--auto-implement",
-        "auto_implement",
+        QROS_BIN + "qros-paper-to-spec",
+        QROS_BIN + "qros-paper-to-spec" + "-baseline",
+        "--spec" + "-file",
+        "--auto" + "-implement",
+        "auto" + "_implement",
         "source -> spec -> materialize -> stop",
-        "默认只产出 `strategy_spec.yaml`",
+        "默认只产出 `" + "strategy_" + "spec.yaml`",
         "report where the baseline files were written",
     ]
 

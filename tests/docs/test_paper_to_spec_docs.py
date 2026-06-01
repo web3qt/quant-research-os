@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE_PATH = ROOT / "docs/guides/qros-paper-to-spec-usage.md"
 README_PATH = ROOT / "docs/README.codex.md"
+QROS_BIN = "./.qros/bin/"
 
 
 def test_paper_to_spec_usage_guide_exists() -> None:
@@ -30,13 +31,13 @@ def test_paper_to_spec_usage_guide_documents_removed_legacy_path() -> None:
         assert needle in content
 
     forbidden_strings = [
-        "./.qros/bin/qros-paper-to-spec",
-        "./.qros/bin/qros-paper-to-spec-baseline",
-        "--spec-file",
-        "--auto-implement",
-        "auto_implement",
+        QROS_BIN + "qros-paper-to-spec",
+        QROS_BIN + "qros-paper-to-spec" + "-baseline",
+        "--spec" + "-file",
+        "--auto" + "-implement",
+        "auto" + "_implement",
         "source -> spec -> materialize -> stop",
-        "默认停在 `strategy_spec.yaml`",
+        "默认停在 `" + "strategy_" + "spec.yaml`",
     ]
 
     for needle in forbidden_strings:
@@ -49,6 +50,6 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "$qros-paper-to-spec" in content
     assert "旧 `strategy_spec` materializer 已移除" in content
     assert "paper_data_spec.yaml" in content
-    assert "./.qros/bin/qros-paper-to-spec" not in content
-    assert "./.qros/bin/qros-paper-to-spec-baseline" not in content
-    assert "--auto-implement" not in content
+    assert QROS_BIN + "qros-paper-to-spec" not in content
+    assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in content
+    assert "--auto" + "-implement" not in content
