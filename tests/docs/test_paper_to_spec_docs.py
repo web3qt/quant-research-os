@@ -23,10 +23,12 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "paper_signal_spec.yaml",
         "paper_train_freeze_spec.yaml",
         "paper_test_evidence_spec.yaml",
+        "paper_backtest_spec.yaml",
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
         "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
         "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
+        "contracts/paper_to_spec/paper_backtest_spec_contract.yaml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
@@ -108,6 +110,24 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "evidence_scope",
         "no_retune",
         "provenance_identity",
+        "test_evidence_spec_reference",
+        "core_backtest_requirements",
+        "backtest_scope",
+        "market_assumptions",
+        "portfolio_construction",
+        "position_sizing",
+        "execution_assumptions",
+        "fees_slippage_funding",
+        "risk_controls",
+        "required_metrics",
+        "pass_fail_gate",
+        "reproducibility",
+        "implementation_handoff_plan",
+        "test_evidence_spec_inherited",
+        "scope_and_binding",
+        "portfolio_and_execution",
+        "accounting_and_risk",
+        "evidence_and_reproducibility",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
         "不直接生成回测代码",
@@ -115,6 +135,7 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "不把 train/test 是否需要留到 backtest 阶段才判断",
         "不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义",
         "不把 test evidence 用作 holdout 前调参入口",
+        "不把 backtest 结果用作调参入口",
         "不是 `qros-research-session` 的阶段入口",
     ]
 
@@ -144,10 +165,12 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "paper_signal_spec.yaml" in content
     assert "paper_train_freeze_spec.yaml" in content
     assert "paper_test_evidence_spec.yaml" in content
+    assert "paper_backtest_spec.yaml" in content
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml" in content
+    assert "contracts/paper_to_spec/paper_backtest_spec_contract.yaml" in content
     assert "runtime/scripts/validate_paper_data_spec.py" in content
     assert "runtime/scripts/validate_paper_signal_spec.py" in content
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in content
@@ -156,6 +179,7 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "train/test policy" in content
     assert "artifact identity" in content
     assert "evidence identity" in content
+    assert "implementation handoff plan" in content
     assert "下一版会采用 data-spec-first" not in content
     assert QROS_BIN + "qros-paper-to-spec" not in content
     assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in content

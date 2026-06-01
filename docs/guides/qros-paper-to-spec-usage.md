@@ -30,6 +30,12 @@ outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml
 outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml
 ```
 
+第五阶段产出：
+
+```text
+outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml
+```
+
 这个入口不是 `qros-research-session` 的阶段入口，不进入 mandate / freeze / review / failure handling 的 heavy governance flow。
 
 ## Data Contract
@@ -79,6 +85,16 @@ contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml
 ```
 
 第四阶段 contract 依赖已校验的 `paper_train_freeze_spec.yaml`，锁定 test window、frozen artifact binding、signal diagnostics、performance diagnostics、rule-based evidence、parameter-fit evidence、ML model evidence、no-retune attestation、test result usage policy、provenance 和 evidence identity。
+
+## Backtest Contract
+
+`paper_backtest_spec.yaml` 必须遵守：
+
+```text
+contracts/paper_to_spec/paper_backtest_spec_contract.yaml
+```
+
+第五阶段 contract 依赖已校验的 `paper_test_evidence_spec.yaml`，锁定 backtest scope、frozen artifact binding、market assumptions、portfolio construction、position sizing、execution assumptions、fees/slippage/funding、risk controls、required metrics、pass/fail gate、reproducibility、provenance 和 implementation handoff plan。
 
 ## Data 执行流程
 
@@ -165,6 +181,21 @@ python runtime/scripts/validate_paper_test_evidence_spec.py --spec-path outputs/
 
 该 validator 只检查 contract shape、枚举、required fields、train-freeze spec reference、strict blocking unknown、no-retune attestation、test result usage policy 和 handoff shape，不判断策略是否能赚钱。
 
+## Backtest 执行流程
+
+只有 `paper_test_evidence_spec.yaml` 通过 validator 后，才允许继续 `paper_backtest_spec.yaml`：
+
+1. 写入 `test_evidence_spec_reference`：paper_slug、test-evidence spec path、validation_status、inherited_evidence_fields、inherited_evidence_identity。
+2. 写入 `backtest_intent`：用一句话说明本阶段要把冻结后的信号、证据和市场假设整理成可实现的回测需求，不写回测代码。
+3. 填写 `core_backtest_requirements`：`backtest_scope`、`frozen_artifact_binding`、`market_assumptions`、`portfolio_construction`、`position_sizing`、`execution_assumptions`、`fees_slippage_funding`、`risk_controls`、`required_metrics`、`pass_fail_gate`、`reproducibility`、`provenance`、`implementation_handoff_plan`。
+4. 只在 test-evidence spec 或 backtest reasoning 触发时填写 `triggered_optional_blocks`，包括 long-short portfolio、long-only/flat portfolio、leverage and margin、capacity and turnover、funding accounting、cost sensitivity。
+5. `pass_fail_gate` 必须说明回测如何判定是否可继续实现，不能把 backtest 结果变成参数重调入口。
+6. `implementation_handoff_plan` 必须说明 active research repo 后续要实现的文件、模块、输出和验证检查，但本 skill 不直接生成回测代码。
+7. 任一 backtest strict blocking field 为 `unknown`，或无法绑定 frozen artifact / evidence identity，必须停止并问研究员。
+8. 没有阻断项时，写入 `outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml`。
+
+当前 backtest spec 第一版只有 contract，暂不提供 deterministic validator。
+
 ## Requirement entry shape
 
 每个 data requirement 使用同一结构：
@@ -203,6 +234,14 @@ source: train_freeze_spec_inherited | paper_stated | agent_inferred | researcher
 ```
 
 `train_freeze_spec_inherited` 只能用于从 valid `paper_train_freeze_spec.yaml` 继承的字段。test diagnostics、no-retune attestation、provenance 和 evidence identity 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
+
+Backtest spec 使用同一 entry shape，但 source enum 是：
+
+```yaml
+source: test_evidence_spec_inherited | train_freeze_spec_inherited | paper_stated | agent_inferred | researcher_required
+```
+
+`test_evidence_spec_inherited` 只能用于从 valid `paper_test_evidence_spec.yaml` 继承的字段。portfolio construction、execution assumptions、fees/slippage/funding、risk controls、pass/fail gate 和 implementation handoff plan 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
 
 ## Strict blocking
 
@@ -254,6 +293,22 @@ Test-evidence 阶段以下字段不清楚时必须停止，不得继续 backtest
 - `provenance`
 - `evidence_identity`
 
+Backtest 阶段以下字段不清楚时必须停止，不得继续实现回测：
+
+- `backtest_scope`
+- `frozen_artifact_binding`
+- `market_assumptions`
+- `portfolio_construction`
+- `position_sizing`
+- `execution_assumptions`
+- `fees_slippage_funding`
+- `risk_controls`
+- `required_metrics`
+- `pass_fail_gate`
+- `reproducibility`
+- `provenance`
+- `implementation_handoff_plan`
+
 阻断问题最多聚合成 3 个问题，并按 `blocking_question_groups` 归类：
 
 - `market_scope`
@@ -282,6 +337,13 @@ Test-evidence 阶段阻断问题按 `paper_test_evidence_spec_contract.yaml` 中
 - `no_retune`
 - `provenance_identity`
 
+Backtest 阶段阻断问题按 `paper_backtest_spec_contract.yaml` 中的 `blocking_question_groups` 归类：
+
+- `scope_and_binding`
+- `portfolio_and_execution`
+- `accounting_and_risk`
+- `evidence_and_reproducibility`
+
 ## 边界
 
 - 不直接生成完整 strategy spec。
@@ -291,9 +353,10 @@ Test-evidence 阶段阻断问题按 `paper_test_evidence_spec_contract.yaml` 中
 - 不把 train/test 是否需要留到 backtest 阶段才判断；必须在 `paper_signal_spec.yaml` 的 `train_test_policy` 里先分类。
 - 不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义；必须在 `paper_train_freeze_spec.yaml` 里冻结。
 - 不把 test evidence 用作 holdout 前调参入口；test 结果只能用于诊断、失败处理或是否继续的判断。
+- 不把 backtest 结果用作调参入口；`paper_backtest_spec.yaml` 只能定义实现需求和 pass/fail gate。
 - 不为所有 optional blocks 机械展开字段；只展开被论文或 data reasoning 触发的块。
-- 不保留与 `paper_data_spec_contract.yaml`、`paper_signal_spec_contract.yaml`、`paper_train_freeze_spec_contract.yaml` 或 `paper_test_evidence_spec_contract.yaml` 冲突的字段名或枚举。
+- 不保留与 `paper_data_spec_contract.yaml`、`paper_signal_spec_contract.yaml`、`paper_train_freeze_spec_contract.yaml`、`paper_test_evidence_spec_contract.yaml` 或 `paper_backtest_spec_contract.yaml` 冲突的字段名或枚举。
 
 ## 后续
 
-`paper_test_evidence_spec.yaml` 稳定后，再继续设计 `paper_backtest_spec.yaml`。
+`paper_backtest_spec.yaml` 稳定后，再继续设计后续实现与验证入口。

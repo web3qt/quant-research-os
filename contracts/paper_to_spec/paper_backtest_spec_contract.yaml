@@ -1,0 +1,254 @@
+schema_id: qros-paper-backtest-spec-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_test_evidence_spec.yaml
+  schema_id: qros-paper-test-evidence-spec-contract-v1
+  validator: runtime/scripts/validate_paper_test_evidence_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - test_evidence_spec_reference
+  - backtest_intent
+  - core_backtest_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_test_evidence_spec_reference_fields:
+  - paper_slug
+  - path
+  - validation_status
+  - inherited_evidence_fields
+  - inherited_evidence_identity
+
+allowed_test_evidence_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+core_required_fields:
+  - backtest_scope
+  - frozen_artifact_binding
+  - market_assumptions
+  - portfolio_construction
+  - position_sizing
+  - execution_assumptions
+  - fees_slippage_funding
+  - risk_controls
+  - required_metrics
+  - pass_fail_gate
+  - reproducibility
+  - provenance
+  - implementation_handoff_plan
+
+strict_blocking_fields:
+  - backtest_scope
+  - frozen_artifact_binding
+  - market_assumptions
+  - portfolio_construction
+  - position_sizing
+  - execution_assumptions
+  - fees_slippage_funding
+  - risk_controls
+  - required_metrics
+  - pass_fail_gate
+  - reproducibility
+  - provenance
+  - implementation_handoff_plan
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - test_evidence_spec_inherited
+  - train_freeze_spec_inherited
+  - paper_stated
+  - agent_inferred
+  - researcher_required
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - long_short_portfolio
+  - long_only_or_flat_portfolio
+  - leverage_and_margin
+  - capacity_and_turnover
+  - funding_accounting
+  - cost_sensitivity
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - backtest_inputs
+  - backtest_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+allowed_next_stage_recommendations:
+  - implement_backtest
+  - ask_researcher
+
+field_library:
+  core:
+    backtest_scope:
+      question: Which assets, dates, bars, route, and evaluation window must the backtest cover?
+      examples:
+        - crypto_perpetual_top30_1h_2023_to_2025
+        - inherited_test_window_plus_requested_backtest_window
+    frozen_artifact_binding:
+      question: Which frozen signal, train-freeze, and test-evidence identities must be consumed without retuning?
+      examples:
+        - frozen_signal_config_digest
+        - evidence_bundle_digest
+        - train_freeze_artifact_identity
+    market_assumptions:
+      question: Which crypto perpetual market conventions must the backtest use?
+      examples:
+        - linear_usdt_perpetuals
+        - utc_timestamp
+        - mark_price_for_funding
+    portfolio_construction:
+      question: How are signals transformed into positions, legs, weights, or flat states?
+      examples:
+        - long_short_equal_notional
+        - long_only_top_quantile_else_flat
+        - threshold_signal_to_position
+    position_sizing:
+      question: How are notional, leverage, exposure caps, and cash allocation determined?
+      examples:
+        - equal_notional_per_symbol
+        - volatility_scaled_weights
+        - max_leverage_1x
+    execution_assumptions:
+      question: When and how are trades executed relative to signal timestamps?
+      examples:
+        - next_bar_open
+        - close_to_close_with_one_bar_lag
+        - taker_market_order
+    fees_slippage_funding:
+      question: Which cost, slippage, and funding PnL assumptions are required?
+      examples:
+        - taker_fee_bps
+        - slippage_bps_by_turnover
+        - funding_cashflow_from_exchange_rate
+    risk_controls:
+      question: Which exposure, leverage, drawdown, symbol, and liquidity controls are enforced?
+      examples:
+        - max_gross_exposure
+        - max_symbol_weight
+        - drawdown_stop_policy
+    required_metrics:
+      question: Which metrics must be reported and recomputable from ledger outputs?
+      examples:
+        - net_return
+        - max_drawdown
+        - sharpe_365d
+        - turnover
+        - hit_rate
+        - funding_adjusted_pnl
+    pass_fail_gate:
+      question: What threshold or decision rule determines whether implementation may continue?
+      examples:
+        - net_return_positive_after_costs
+        - max_drawdown_below_limit
+        - no_parameter_retune_allowed
+    reproducibility:
+      question: Which deterministic environment, seed, code, and config identity must be captured?
+      examples:
+        - code_commit
+        - dependency_lock_digest
+        - random_seed
+        - config_digest
+    provenance:
+      question: Which data snapshots, artifact digests, run manifests, and timestamps prove lineage?
+      examples:
+        - data_snapshot_id
+        - run_manifest_digest
+        - generated_at
+    implementation_handoff_plan:
+      question: Which files, modules, outputs, and validation checks should the active research repo implement next?
+      examples:
+        - backtest_entrypoint_path
+        - portfolio_ledger_output_path
+        - metrics_report_output_path
+  optional_blocks:
+    long_short_portfolio:
+      trigger_when:
+        - signal spec maps ranked assets into long and short legs
+      fields:
+        - long_leg_rule
+        - short_leg_rule
+        - dollar_neutrality
+    long_only_or_flat_portfolio:
+      trigger_when:
+        - signal spec maps assets into long, flat, or no short state
+      fields:
+        - entry_threshold
+        - exit_threshold
+        - flat_state_policy
+    leverage_and_margin:
+      trigger_when:
+        - strategy uses leverage, margin, liquidation assumptions, or gross exposure above one
+      fields:
+        - max_leverage
+        - margin_mode
+        - liquidation_policy
+    capacity_and_turnover:
+      trigger_when:
+        - viability depends on turnover, liquidity, or capacity
+      fields:
+        - turnover_limit
+        - participation_rate_limit
+        - capacity_metric
+    funding_accounting:
+      trigger_when:
+        - holding periods cross funding timestamps or funding is material to returns
+      fields:
+        - funding_rate_source
+        - funding_timestamp_alignment
+        - funding_pnl_ledger
+    cost_sensitivity:
+      trigger_when:
+        - expected edge is small relative to fee, slippage, or funding uncertainty
+      fields:
+        - fee_scenarios
+        - slippage_scenarios
+        - funding_scenarios
+
+blocking_question_groups:
+  scope_and_binding:
+    - backtest_scope
+    - frozen_artifact_binding
+  portfolio_and_execution:
+    - portfolio_construction
+    - position_sizing
+    - execution_assumptions
+  accounting_and_risk:
+    - market_assumptions
+    - fees_slippage_funding
+    - risk_controls
+  evidence_and_reproducibility:
+    - required_metrics
+    - pass_fail_gate
+    - reproducibility
+    - provenance
+    - implementation_handoff_plan

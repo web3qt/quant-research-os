@@ -55,6 +55,8 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 
 第四阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_test_evidence_spec.py` 做 deterministic validation，用于定义 frozen artifact binding、signal diagnostics、performance diagnostics、no-retune attestation、test result usage policy、provenance 和 evidence identity。
 
+第五阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_backtest_spec_contract.yaml`，用于定义 backtest scope、portfolio construction、position sizing、execution assumptions、fees/slippage/funding、risk controls、required metrics、pass/fail gate 和 implementation handoff plan。当前第一版只定义 contract，不直接生成回测代码。
+
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 
 因子 diagnostics 通常在 Codex 里直接问，例如：
