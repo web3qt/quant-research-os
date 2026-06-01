@@ -47,7 +47,9 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 
 `$qros-paper-to-spec` 这个 Codex skill 名称保留，但旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。当前不要再把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
 
-第一版采用 data-spec-first，只产出 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、strict blocking 问题和 data implementation handoff。
+第一阶段采用 data-spec-first，产出 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、strict blocking 问题和 data implementation handoff。
+
+第二阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_signal_spec_contract.yaml`，用于记录 signal family、feature inputs、signal definition、lookahead controls、train/test policy、portfolio mapping 和 diagnostics。
 
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 

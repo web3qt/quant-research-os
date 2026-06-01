@@ -1,0 +1,221 @@
+schema_id: qros-paper-signal-spec-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_data_spec.yaml
+  schema_id: qros-paper-data-spec-contract-v1
+  validator: runtime/scripts/validate_paper_data_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - data_spec_reference
+  - signal_research_intent
+  - core_signal_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_data_spec_reference_fields:
+  - paper_slug
+  - path
+  - validation_status
+  - inherited_data_fields
+
+allowed_data_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+core_required_fields:
+  - signal_family
+  - prediction_target
+  - feature_inputs
+  - signal_definition
+  - signal_timing
+  - lookahead_controls
+  - train_test_policy
+  - portfolio_mapping
+  - diagnostics
+
+strict_blocking_fields:
+  - signal_family
+  - prediction_target
+  - feature_inputs
+  - signal_definition
+  - signal_timing
+  - lookahead_controls
+  - train_test_policy
+  - portfolio_mapping
+  - diagnostics
+
+allowed_signal_families:
+  - cross_sectional_factor
+  - time_series_signal
+  - hybrid
+  - event_driven
+  - unknown
+
+allowed_train_test_modes:
+  - not_required_rule_based
+  - required_parameter_fit
+  - required_ml_model
+  - unknown
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - paper_stated
+  - data_spec_inherited
+  - agent_inferred
+  - researcher_required
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - cross_sectional_ranking
+  - time_series_thresholds
+  - parameter_search
+  - machine_learning_model
+  - regime_filter
+  - risk_filter
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - signal_inputs
+  - signal_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+allowed_next_stage_recommendations:
+  - paper_train_freeze_spec
+  - paper_test_evidence_spec
+  - ask_researcher
+
+field_library:
+  core:
+    signal_family:
+      question: Is the paper idea cross-sectional, time-series, hybrid, or event-driven?
+      examples:
+        - cross_sectional_factor
+        - time_series_signal
+    prediction_target:
+      question: What return or event is the signal trying to predict?
+      examples:
+        - next_1h_log_return
+        - next_1d_cross_sectional_return
+    feature_inputs:
+      question: Which data-spec fields or derived features enter the signal?
+      examples:
+        - momentum_return_24h
+        - funding_rate
+        - open_interest_change
+    signal_definition:
+      question: What exact formula, rule, or model transforms features into a signal?
+      examples:
+        - rank_24h_momentum_with_funding_filter
+        - zscore_return_breakout
+    signal_timing:
+      question: When is the signal computed, refreshed, and eligible for trading?
+      examples:
+        - compute_at_1h_bar_close_trade_next_bar
+        - rebalance_daily_utc_close
+    lookahead_controls:
+      question: What prevents future labels, future constituents, or late data from entering features?
+      examples:
+        - feature_timestamp_lte_signal_timestamp
+        - universe_known_at_signal_time
+    train_test_policy:
+      question: Does the signal require parameter fitting or model training?
+      examples:
+        - not_required_rule_based
+        - required_parameter_fit
+        - required_ml_model
+    portfolio_mapping:
+      question: How does the signal map to positions before full backtest details?
+      examples:
+        - long_top_decile_short_bottom_decile
+        - long_when_signal_positive_flat_otherwise
+    diagnostics:
+      question: Which pre-backtest signal checks are mandatory?
+      examples:
+        - signal_coverage
+        - turnover_proxy
+        - rank_ic
+        - autocorrelation
+  optional_blocks:
+    cross_sectional_ranking:
+      trigger_when:
+        - signal compares symbols at each timestamp
+      fields:
+        - ranking_method
+        - neutralization
+        - bucket_count
+    time_series_thresholds:
+      trigger_when:
+        - signal triggers independently per symbol over time
+      fields:
+        - threshold_rule
+        - hysteresis
+        - holding_rule
+    parameter_search:
+      trigger_when:
+        - paper requires choosing windows, thresholds, weights, or transforms
+      fields:
+        - parameter_space
+        - selection_metric
+        - train_window
+    machine_learning_model:
+      trigger_when:
+        - paper uses supervised learning, classifiers, regressors, embeddings, or neural models
+      fields:
+        - model_family
+        - features
+        - labels
+        - retrain_schedule
+    regime_filter:
+      trigger_when:
+        - signal changes behavior by volatility, trend, liquidity, macro, or market regime
+      fields:
+        - regime_definition
+        - filter_application
+    risk_filter:
+      trigger_when:
+        - paper gates signal by volatility, drawdown, liquidity, leverage, or concentration
+      fields:
+        - risk_measure
+        - gating_rule
+
+blocking_question_groups:
+  signal_identity:
+    - signal_family
+    - signal_definition
+  prediction_and_inputs:
+    - prediction_target
+    - feature_inputs
+    - signal_timing
+  leakage_and_training:
+    - lookahead_controls
+    - train_test_policy
+  portfolio_and_diagnostics:
+    - portfolio_mapping
+    - diagnostics
