@@ -39,11 +39,17 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 | 查看当前研究进度 | `$qros-progress` |
 | 查看横截面因子阶段质量诊断 | `$qros-factor-diagnostics` |
 | 查看时序信号阶段质量诊断 | `$qros-signal-diagnostics` |
-| 把论文/PDF/URL 转成 implementable strategy spec | `$qros-paper-to-spec https://example.com/paper.pdf` |
+| paper-to-spec v2 data-spec-first 方向 | `$qros-paper-to-spec` |
 | 更新 QROS 到最新稳定版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
 | 高级/debug 手动进入某阶段 review | `$qros-mandate-review` |
 
-其中，`$qros-paper-to-spec` 是普通 skill 入口：top-level skill 会先做 source ingestion，自己 read source itself，推导 `source_kind`、`source`、`title`、`slug` 和 `target repo`，整理 claim inventory / formula inventory / ambiguity inventory，生成带 `paper_stated`、`agent_inferred`、`implementation_handoff` 的 draft spec，写到 temp spec file，然后再调用 lower-level wrapper 物化。默认合同仍然是先生成 spec，再默认停止。默认产物是 `strategy_spec.yaml`、`strategy_spec.md` 和 `source_manifest.yaml`；只有显式要求 `--auto-implement`，并且不存在阻断自动实现的歧义时，才会继续调用 baseline helper 进入实现。输出应落在 active research repo output tree 下的 `outputs/paper_to_spec/<paper_slug>/`，不属于 QROS framework repo。只有在需要 deterministic runtime 排查、补物化或检查 materializer 行为时，才切到 lower-level debug/materializer wrapper。
+### paper-to-spec v2 方向
+
+`$qros-paper-to-spec` 这个 Codex skill 名称保留，但旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。当前不要再把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
+
+下一版会采用 data-spec-first，第一产物将是 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、严格阻断问题和 data implementation handoff。
+
+完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 
 因子 diagnostics 通常在 Codex 里直接问，例如：
 
@@ -79,13 +85,9 @@ repo-local bootstrap 只在 active research repo 根目录缺少 `AGENTS.md` 时
 ./.qros/bin/qros-session --raw-idea "BTC leads high-liquidity alts after shock events"
 ./.qros/bin/qros-factor-diagnostics --stage csf_test_evidence
 ./.qros/bin/qros-signal-diagnostics --stage tss_test_evidence
-./.qros/bin/qros-paper-to-spec --spec-file ./tmp/strategy_spec.yaml --source "https://example.com/paper.pdf" --source-kind pdf_url --title "Example Paper" [--slug example-paper]
-./.qros/bin/qros-paper-to-spec-baseline --spec-path ./outputs/paper_to_spec/example-paper/strategy_spec.yaml
 ./.qros/bin/qros-review-cycle prepare --host codex --reviewer-id reviewer-agent --reviewer-session-id reviewer-session --reviewer-agent-id reviewer-child-agent
 ./.qros/bin/qros-review
 ```
-
-对 `qros-paper-to-spec` 而言，`./.qros/bin/qros-paper-to-spec` 只是 lower-level debug/materializer wrapper；其中 `--source` is provenance metadata only，wrapper never fetches/parses paper body itself。`--source` 只作为 provenance metadata，wrapper 不会抓取或解析论文正文。它不会替 skill 做 source ingestion，也不会替 skill 读取 URL、本地 PDF 或 pasted summary。`./.qros/bin/qros-paper-to-spec-baseline` 则是更低层的 lower-level deterministic scaffold/debug surface，用来消费已有 `--spec-path` 继续 baseline，不替代普通 skill 入口。论文转规格的独立 fast-lane 用法见 `docs/guides/qros-paper-to-spec-usage.md`。
 
 ## 更新
 

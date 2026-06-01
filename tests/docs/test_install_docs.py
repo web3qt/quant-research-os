@@ -35,8 +35,8 @@ def test_install_docs_reference_supported_commands() -> None:
     assert "./.qros/bin/qros-review" in combined
     assert "./.qros/bin/qros-verify" in combined
     assert "$qros-paper-to-spec" in combined
-    assert "./.qros/bin/qros-paper-to-spec" in combined
-    assert "./.qros/bin/qros-paper-to-spec-baseline" in combined
+    assert "./.qros/bin/qros-paper-to-spec" not in combined
+    assert "./.qros/bin/qros-paper-to-spec-baseline" not in combined
     assert "AGENTS.md" in combined
     assert "templates/research-repo/AGENTS.md.tmpl" in combined
     assert "setup --check" in combined
@@ -124,26 +124,26 @@ def test_codex_readme_describes_python312_wrapper_runtime() -> None:
     assert "直接调用 `runtime/scripts/*`" in codex_guide
 
 
-def test_codex_readme_documents_paper_to_spec_entrypoints() -> None:
+def test_codex_readme_documents_paper_to_spec_reset() -> None:
     codex_guide = Path("docs/README.codex.md").read_text(encoding="utf-8")
 
     assert "$qros-paper-to-spec" in codex_guide
-    assert "./.qros/bin/qros-paper-to-spec" in codex_guide
-    assert "./.qros/bin/qros-paper-to-spec-baseline" in codex_guide
-    assert "docs/guides/qros-paper-to-spec-usage.md" in codex_guide
+    assert "旧 `strategy_spec` materializer 已移除" in codex_guide
+    assert "paper_data_spec.yaml" in codex_guide
+    assert "./.qros/bin/qros-paper-to-spec" not in codex_guide
+    assert "./.qros/bin/qros-paper-to-spec-baseline" not in codex_guide
 
 
-def test_root_readme_documents_paper_to_spec_usage() -> None:
+def test_root_readme_documents_paper_to_spec_reset() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
-    assert "$qros-paper-to-spec https://example.com/paper.pdf" in readme
-    assert "strategy_spec.yaml" in readme
-    assert "strategy_spec.md" in readme
-    assert "source_manifest.yaml" in readme
-    assert "outputs/paper_to_spec/<paper_slug>/" in readme
-    assert "./.qros/bin/qros-paper-to-spec" in readme
-    assert "./.qros/bin/qros-paper-to-spec-baseline" in readme
-    assert "docs/guides/qros-paper-to-spec-usage.md" in readme
+    assert "$qros-paper-to-spec" in readme
+    assert "旧 `strategy_spec` materializer 已移除" in readme
+    assert "paper_data_spec.yaml" in readme
+    assert "strategy_spec.yaml" not in readme
+    assert "strategy_spec.md" not in readme
+    assert "./.qros/bin/qros-paper-to-spec" not in readme
+    assert "./.qros/bin/qros-paper-to-spec-baseline" not in readme
 
 
 def test_install_docs_reference_stage_field_guide() -> None:
