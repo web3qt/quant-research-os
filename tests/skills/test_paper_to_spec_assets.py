@@ -35,6 +35,7 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "runtime/scripts/validate_paper_train_freeze_spec.py",
         "runtime/scripts/validate_paper_test_evidence_spec.py",
         "runtime/scripts/validate_paper_backtest_spec.py",
+        "runtime/scripts/validate_paper_backtest_implementation_spec.py",
         "deterministic validator",
         "Execution protocol",
         "reading_coverage",

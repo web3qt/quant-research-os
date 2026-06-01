@@ -1,0 +1,217 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+backtest_spec_reference:
+  paper_slug: example_crypto_perp_momentum
+  path: tests/fixtures/paper_to_spec/valid_paper_backtest_spec.yaml
+  validation_status: valid
+  inherited_backtest_fields:
+    - backtest_scope
+    - frozen_artifact_binding
+    - market_assumptions
+    - portfolio_construction
+    - position_sizing
+    - execution_assumptions
+    - fees_slippage_funding
+    - risk_controls
+    - required_metrics
+    - pass_fail_gate
+    - implementation_handoff_plan
+  inherited_backtest_identity:
+    paper_backtest_spec_digest: example_paper_backtest_spec_digest
+    frozen_config_digest: example_frozen_config_digest
+    evidence_bundle_digest: example_evidence_bundle_digest
+implementation_intent: Define the active research repo backtest implementation plan without generating code or changing frozen artifacts.
+core_implementation_requirements:
+  active_research_repo_boundary:
+    status: required
+    source: repo_policy_required
+    value:
+      repo_role: active_research_repo
+      target_root: outputs/example_crypto_perp_momentum/program/backtest
+      forbidden_root: qros_framework_repo
+    evidence:
+      - QROS framework repo must not store live lineage implementation code.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  target_stage_program:
+    status: required
+    source: agent_inferred
+    value:
+      files:
+        - stage_program.yaml
+        - README.md
+        - run_backtest.py
+    evidence:
+      - paper_backtest_spec.implementation_handoff_plan
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  backtest_entrypoint:
+    status: required
+    source: agent_inferred
+    value:
+      command: python program/backtest/run_backtest.py --config frozen_config.yaml
+      cwd: outputs/example_crypto_perp_momentum
+      environment: active_repo_python
+    evidence:
+      - paper_backtest_spec.implementation_handoff_plan
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  input_artifacts:
+    status: required
+    source: backtest_spec_inherited
+    value:
+      specs:
+        - paper_data_spec.yaml
+        - paper_signal_spec.yaml
+        - paper_train_freeze_spec.yaml
+        - paper_test_evidence_spec.yaml
+        - paper_backtest_spec.yaml
+      data:
+        - asset_time_index.parquet
+        - funding_rates.parquet
+      configs:
+        - frozen_signal_config.yaml
+    evidence:
+      - paper_backtest_spec.implementation_handoff.backtest_inputs
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  frozen_config_binding:
+    status: required
+    source: backtest_spec_inherited
+    value:
+      frozen_config_digest: example_frozen_config_digest
+      paper_backtest_spec_digest: example_paper_backtest_spec_digest
+      require_digest_match: true
+    evidence:
+      - paper_backtest_spec.frozen_artifact_binding
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  data_access_plan:
+    status: required
+    source: agent_inferred
+    value:
+      policy: read_existing_snapshot_only
+      fail_if_missing:
+        - asset_time_index.parquet
+        - funding_rates.parquet
+    evidence:
+      - paper_backtest_spec.backtest_scope
+      - paper_backtest_spec.fees_slippage_funding
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  output_artifacts:
+    status: required
+    source: backtest_spec_inherited
+    value:
+      files:
+        - portfolio_return_series.parquet
+        - equity_curve.parquet
+        - portfolio_pnl_ledger.parquet
+        - backtest_metrics.yaml
+    evidence:
+      - paper_backtest_spec.implementation_handoff.backtest_outputs
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  execution_manifest:
+    status: required
+    source: repo_policy_required
+    value:
+      required_fields:
+        - command
+        - code_commit
+        - config_digest
+        - data_snapshot_id
+        - generated_at
+    evidence:
+      - QROS active repo execution must be reproducible from disk artifacts.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  validation_checks:
+    status: required
+    source: repo_policy_required
+    value:
+      checks:
+        - frozen_digest_match
+        - output_artifacts_exist_and_nonempty
+        - no_unknown_strict_backtest_fields
+        - pass_fail_gate_disallows_retune
+    evidence:
+      - paper_backtest_spec.implementation_handoff.validation_checks
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  no_retune_controls:
+    status: required
+    source: repo_policy_required
+    value:
+      policy: frozen_artifacts_read_only
+      controls:
+        - fail_on_digest_mismatch
+        - no_backtest_metric_parameter_search
+        - no_frozen_signal_mutation
+      allowed_actions:
+        - generate_scaffold
+        - run_backtest_with_frozen_config
+        - document_failure
+    evidence:
+      - paper_backtest_spec.pass_fail_gate
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  reproducibility_controls:
+    status: required
+    source: repo_policy_required
+    value:
+      controls:
+        - random_seed
+        - dependency_lock_digest
+        - deterministic_sorting
+        - timezone_utc
+    evidence:
+      - paper_backtest_spec.reproducibility
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: custom_engine
+    reason: first implementation uses a simple active-repo ledger script.
+    requirements:
+      ledger_schema:
+        status: required
+        source: agent_inferred
+        value:
+          required_columns:
+            - timestamp
+            - symbol
+            - position
+            - pnl
+        evidence:
+          - paper_backtest_spec.required_metrics
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      fill_model:
+        status: required
+        source: backtest_spec_inherited
+        value:
+          trade_timing: next_bar_open
+        evidence:
+          - paper_backtest_spec.execution_assumptions
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  implementation_inputs:
+    - paper_backtest_spec.yaml
+    - frozen_signal_config.yaml
+    - asset_time_index.parquet
+  implementation_outputs:
+    - program/backtest/stage_program.yaml
+    - program/backtest/README.md
+    - program/backtest/run_backtest.py
+  validation_checks:
+    - active_repo_boundary_not_qros_framework
+    - frozen_config_digest_match
+    - no_unknown_strict_implementation_fields
+    - no_retune_controls_disallow_retune
+  next_stage_recommendation: generate_active_repo_backtest_scaffold

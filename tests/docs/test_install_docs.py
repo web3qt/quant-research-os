@@ -147,6 +147,7 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in codex_guide
     assert "runtime/scripts/validate_paper_test_evidence_spec.py" in codex_guide
     assert "runtime/scripts/validate_paper_backtest_spec.py" in codex_guide
+    assert "runtime/scripts/validate_paper_backtest_implementation_spec.py" in codex_guide
     assert "strict blocking" in codex_guide
     assert "train/test policy" in codex_guide
     assert "artifact identity" in codex_guide
@@ -180,6 +181,7 @@ def test_root_readme_documents_paper_to_spec_reset() -> None:
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in readme
     assert "runtime/scripts/validate_paper_test_evidence_spec.py" in readme
     assert "runtime/scripts/validate_paper_backtest_spec.py" in readme
+    assert "runtime/scripts/validate_paper_backtest_implementation_spec.py" in readme
     assert "strict blocking" in readme
     assert "train/test policy" in readme
     assert "artifact identity" in readme

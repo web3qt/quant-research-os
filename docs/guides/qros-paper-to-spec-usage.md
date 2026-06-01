@@ -231,8 +231,15 @@ python runtime/scripts/validate_paper_backtest_spec.py --spec-path outputs/paper
 6. `no_retune_controls` 必须说明实现不得修改 frozen signal、参数、模型状态或 selection policy。
 7. 任一 implementation strict blocking field 为 `unknown`，或无法说明 active repo 路径 / frozen binding / outputs / validation checks，必须停止并问研究员。
 8. 没有阻断项时，写入 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml`。
+9. 使用 deterministic validator 校验 `paper_backtest_implementation_spec.yaml`。
 
-当前 backtest implementation spec 第一版只有 contract，暂不提供 deterministic validator，也不生成 active repo scaffold。
+Backtest implementation validator 入口：
+
+```text
+python runtime/scripts/validate_paper_backtest_implementation_spec.py --spec-path outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml
+```
+
+该 validator 只检查 contract shape、枚举、required fields、backtest spec reference、strict blocking unknown、active research repo boundary、no-retune controls 和 handoff shape，不生成 active repo scaffold。
 
 ## Requirement entry shape
 

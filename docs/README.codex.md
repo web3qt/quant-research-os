@@ -57,7 +57,7 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 
 第五阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_backtest_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_backtest_spec.py` 做 deterministic validation，用于定义 backtest scope、portfolio construction、position sizing、execution assumptions、fees/slippage/funding、risk controls、required metrics、pass/fail gate 和 implementation handoff plan。当前不直接生成回测代码。
 
-第六阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml`，用于定义 active research repo boundary、stage program、entrypoint、input/output artifacts、execution manifest、validation checks 和 no-retune controls。当前不直接生成 active repo scaffold。
+第六阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_backtest_implementation_spec.py` 做 deterministic validation，用于定义 active research repo boundary、stage program、entrypoint、input/output artifacts、execution manifest、validation checks 和 no-retune controls。当前不直接生成 active repo scaffold。
 
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 
