@@ -1,13 +1,13 @@
 ---
 name: qros-paper-to-spec
-description: Read a paper source and produce staged crypto perpetual paper_data_spec.yaml, paper_signal_spec.yaml, paper_train_freeze_spec.yaml, paper_test_evidence_spec.yaml, and paper_backtest_spec.yaml artifacts with strict blocking questions.
+description: Read a paper source and produce staged crypto perpetual paper_data_spec.yaml, paper_signal_spec.yaml, paper_train_freeze_spec.yaml, paper_test_evidence_spec.yaml, paper_backtest_spec.yaml, and paper_backtest_implementation_spec.yaml artifacts with strict blocking questions.
 ---
 
 # qros-paper-to-spec
 
 ## Purpose
 
-`qros-paper-to-spec` 现在是 paper data-spec-first 入口。它先把论文、PDF、URL 或粘贴摘要整理成 crypto perpetual research fast-lane 的 `paper_data_spec.yaml`，再在 data spec valid 之后设计 `paper_signal_spec.yaml`，在 signal spec valid 之后设计 `paper_train_freeze_spec.yaml`，在 train-freeze spec valid 之后设计 `paper_test_evidence_spec.yaml`，最后在 test-evidence spec valid 之后设计 `paper_backtest_spec.yaml`。
+`qros-paper-to-spec` 现在是 paper data-spec-first 入口。它先把论文、PDF、URL 或粘贴摘要整理成 crypto perpetual research fast-lane 的 `paper_data_spec.yaml`，再在 data spec valid 之后设计 `paper_signal_spec.yaml`，在 signal spec valid 之后设计 `paper_train_freeze_spec.yaml`，在 train-freeze spec valid 之后设计 `paper_test_evidence_spec.yaml`，在 test-evidence spec valid 之后设计 `paper_backtest_spec.yaml`，最后在 backtest spec valid 之后设计 `paper_backtest_implementation_spec.yaml`。
 
 这个入口独立于 `qros-research-session`，不进入 mandate / freeze / review / failure handling 的 heavy governance flow。
 
@@ -43,7 +43,13 @@ outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml
 outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml
 ```
 
-当前不直接生成完整 strategy spec，不直接生成回测代码；`paper_backtest_spec.yaml` 只是把已冻结证据转换成回测实现 handoff。
+第六阶段产出 backtest implementation spec：
+
+```text
+outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml
+```
+
+当前不直接生成完整 strategy spec，不直接生成回测代码；`paper_backtest_spec.yaml` 只是把已冻结证据转换成回测需求，`paper_backtest_implementation_spec.yaml` 只定义 active research repo 的实现计划。
 
 旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
 
@@ -161,9 +167,33 @@ contracts/paper_to_spec/paper_backtest_spec_contract.yaml
 - implementation handoff plan
 - backtest blocking question groups
 
+## Backtest Implementation Contract
+
+生成 `paper_backtest_implementation_spec.yaml` 时必须遵守：
+
+```text
+contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml
+```
+
+该 contract 是第六阶段 machine-readable 真值层，依赖已校验的 `paper_backtest_spec.yaml`，包含：
+
+- backtest spec reference
+- active research repo boundary
+- target stage program
+- backtest entrypoint
+- input artifacts
+- frozen config binding
+- data access plan
+- output artifacts
+- execution manifest
+- validation checks
+- no-retune controls
+- reproducibility controls
+- implementation blocking question groups
+
 ## Execution protocol
 
-下面分为 data execution protocol、signal execution protocol、train-freeze execution protocol、test-evidence execution protocol 和 backtest execution protocol。
+下面分为 data execution protocol、signal execution protocol、train-freeze execution protocol、test-evidence execution protocol、backtest execution protocol 和 backtest implementation execution protocol。
 
 ## Data Execution Protocol
 
@@ -273,6 +303,21 @@ python runtime/scripts/validate_paper_backtest_spec.py --spec-path outputs/paper
 
 该 validator 只检查 contract shape、枚举、required fields、test-evidence spec reference、strict blocking unknown、pass/fail gate 是否禁止 retune，以及 handoff shape，不判断策略是否能赚钱。
 
+## Backtest Implementation Execution Protocol
+
+只有 `paper_backtest_spec.yaml` 通过 validator 后，才允许继续 backtest implementation spec：
+
+1. `backtest_spec_reference`：记录 paper_slug、backtest spec path、validation_status、继承的 backtest fields 和 inherited_backtest_identity。
+2. `implementation_intent`：用一句话说明本阶段要把回测需求转成 active research repo 的实现计划，不生成真实回测代码。
+3. `core_implementation_requirements`：逐项填写 `active_research_repo_boundary`、`target_stage_program`、`backtest_entrypoint`、`input_artifacts`、`frozen_config_binding`、`data_access_plan`、`output_artifacts`、`execution_manifest`、`validation_checks`、`no_retune_controls`、`reproducibility_controls`。
+4. `triggered_optional_blocks`：只在 backtest spec 或实现 reasoning 触发时展开 vectorbt engine、backtrader engine、custom engine、data materialization、performance report。
+5. `active_research_repo_boundary`：必须说明实现写入 active research repo，而不是 QROS framework repo。
+6. `no_retune_controls`：必须说明实现不得修改 frozen signal、参数、模型状态或 selection policy。
+7. `strict blocking`：任何 implementation strict blocking field 为 `unknown`，或无法说明 active repo 路径 / frozen binding / outputs / validation checks，必须停止并问研究员。
+8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml` 写入当前阶段产物。
+
+当前 backtest implementation spec 第一版只有 contract，暂不提供 deterministic validator，也不生成 active repo scaffold。
+
 ## Requirement entry shape
 
 每个 data requirement 使用同一结构：
@@ -319,6 +364,14 @@ source: test_evidence_spec_inherited | train_freeze_spec_inherited | paper_state
 ```
 
 `test_evidence_spec_inherited` 只能用于从 valid `paper_test_evidence_spec.yaml` 继承的字段。portfolio construction、execution assumptions、fees/slippage/funding、risk controls、pass/fail gate 和 implementation handoff plan 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
+
+Backtest implementation spec 使用同一 entry shape，但 source enum 是：
+
+```yaml
+source: backtest_spec_inherited | paper_stated | agent_inferred | researcher_required | repo_policy_required
+```
+
+`backtest_spec_inherited` 只能用于从 valid `paper_backtest_spec.yaml` 继承的字段。active repo boundary、stage program、entrypoint、execution manifest、validation checks、no-retune controls 和 reproducibility controls 必须来自 agent/researcher/repo policy 明确选择，不能伪装成论文原文。
 
 ## Strict blocking fields
 
@@ -386,6 +439,20 @@ Backtest strict blocking fields：
 - `provenance`
 - `implementation_handoff_plan`
 
+Backtest implementation strict blocking fields：
+
+- `active_research_repo_boundary`
+- `target_stage_program`
+- `backtest_entrypoint`
+- `input_artifacts`
+- `frozen_config_binding`
+- `data_access_plan`
+- `output_artifacts`
+- `execution_manifest`
+- `validation_checks`
+- `no_retune_controls`
+- `reproducibility_controls`
+
 阻断问题最多聚合成 3 个问题，并按 contract 中的 `blocking_question_groups` 归类：
 
 - `market_scope`
@@ -421,10 +488,18 @@ Backtest 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 - `accounting_and_risk`
 - `evidence_and_reproducibility`
 
+Backtest implementation 阻断问题按 contract 中的 `blocking_question_groups` 归类：
+
+- `repo_boundary`
+- `execution_inputs`
+- `outputs_and_validation`
+- `controls`
+
 ## Boundaries
 
 - 不直接生成完整 strategy spec。
 - 不直接生成回测代码。
+- 不把 backtest implementation plan 写成 QROS framework repo 内的 live lineage 程序；真实实现属于 active research repo。
 - 不把 validator failure 包装成 review verdict；这不是 `qros-research-session` review。
 - 不把 crypto perpetual 迁移假设伪装成论文原文。
 - 不把 train/test 是否需要留到 backtest 阶段才判断；必须在 `paper_signal_spec.yaml` 的 `train_test_policy` 里先分类。
@@ -432,4 +507,4 @@ Backtest 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 - 不把 test evidence 用作 holdout 前调参入口；test 结果只能用于诊断、失败处理或是否继续的判断。
 - 不把 backtest 结果用作调参入口；`paper_backtest_spec.yaml` 只能定义实现需求和 pass/fail gate。
 - 不为所有 optional blocks 机械展开字段；只展开被 PDF 或 data reasoning 触发的块。
-- 不保留与 `paper_data_spec_contract.yaml`、`paper_signal_spec_contract.yaml`、`paper_train_freeze_spec_contract.yaml`、`paper_test_evidence_spec_contract.yaml` 或 `paper_backtest_spec_contract.yaml` 冲突的字段名或枚举。
+- 不保留与 `paper_data_spec_contract.yaml`、`paper_signal_spec_contract.yaml`、`paper_train_freeze_spec_contract.yaml`、`paper_test_evidence_spec_contract.yaml`、`paper_backtest_spec_contract.yaml` 或 `paper_backtest_implementation_spec_contract.yaml` 冲突的字段名或枚举。

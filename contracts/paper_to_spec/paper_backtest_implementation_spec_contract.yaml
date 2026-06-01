@@ -1,0 +1,228 @@
+schema_id: qros-paper-backtest-implementation-spec-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_backtest_spec.yaml
+  schema_id: qros-paper-backtest-spec-contract-v1
+  validator: runtime/scripts/validate_paper_backtest_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - backtest_spec_reference
+  - implementation_intent
+  - core_implementation_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_backtest_spec_reference_fields:
+  - paper_slug
+  - path
+  - validation_status
+  - inherited_backtest_fields
+  - inherited_backtest_identity
+
+allowed_backtest_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+core_required_fields:
+  - active_research_repo_boundary
+  - target_stage_program
+  - backtest_entrypoint
+  - input_artifacts
+  - frozen_config_binding
+  - data_access_plan
+  - output_artifacts
+  - execution_manifest
+  - validation_checks
+  - no_retune_controls
+  - reproducibility_controls
+
+strict_blocking_fields:
+  - active_research_repo_boundary
+  - target_stage_program
+  - backtest_entrypoint
+  - input_artifacts
+  - frozen_config_binding
+  - data_access_plan
+  - output_artifacts
+  - execution_manifest
+  - validation_checks
+  - no_retune_controls
+  - reproducibility_controls
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - backtest_spec_inherited
+  - paper_stated
+  - agent_inferred
+  - researcher_required
+  - repo_policy_required
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - vectorbt_engine
+  - backtrader_engine
+  - custom_engine
+  - data_materialization
+  - performance_report
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - implementation_inputs
+  - implementation_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+allowed_next_stage_recommendations:
+  - generate_active_repo_backtest_scaffold
+  - ask_researcher
+
+field_library:
+  core:
+    active_research_repo_boundary:
+      question: Which active research repo owns the implementation, and what paths must remain outside the QROS framework repo?
+      examples:
+        - outputs/<lineage_id>/program/backtest
+        - outputs/paper_to_spec/<paper_slug>/implementation
+    target_stage_program:
+      question: Which lineage-local stage program files must be created before running the backtest?
+      examples:
+        - stage_program.yaml
+        - README.md
+        - run_backtest.py
+    backtest_entrypoint:
+      question: Which executable entrypoint, arguments, and environment should run the backtest?
+      examples:
+        - python program/backtest/run_backtest.py --config frozen_config.yaml
+        - uv run python run_backtest.py
+    input_artifacts:
+      question: Which validated specs, frozen configs, data snapshots, and signal artifacts are consumed?
+      examples:
+        - paper_backtest_spec.yaml
+        - frozen_signal_config.yaml
+        - asset_time_index.parquet
+        - funding_rates.parquet
+    frozen_config_binding:
+      question: Which digests prove the implementation consumes frozen artifacts without mutation?
+      examples:
+        - frozen_config_digest
+        - evidence_bundle_digest
+        - paper_backtest_spec_digest
+    data_access_plan:
+      question: How will the active repo locate bars, funding, fees, and market metadata without inventing new data?
+      examples:
+        - read_existing_qros_data_snapshot
+        - fail_if_required_dataset_missing
+    output_artifacts:
+      question: Which files must the backtest implementation write for later review or holdout?
+      examples:
+        - portfolio_return_series.parquet
+        - equity_curve.parquet
+        - portfolio_pnl_ledger.parquet
+        - backtest_metrics.yaml
+    execution_manifest:
+      question: Which runtime manifest fields must prove command, code, config, data, and timestamps?
+      examples:
+        - command
+        - code_commit
+        - config_digest
+        - data_snapshot_id
+        - generated_at
+    validation_checks:
+      question: Which deterministic checks must pass before implementation output can be trusted?
+      examples:
+        - frozen_digest_match
+        - output_artifacts_exist_and_nonempty
+        - no_unknown_strict_backtest_fields
+        - pass_fail_gate_disallows_retune
+    no_retune_controls:
+      question: Which implementation rules prevent changing parameters, model state, signal formula, or selection policy?
+      examples:
+        - read_only_frozen_config
+        - fail_on_digest_mismatch
+        - no_backtest_metric_parameter_search
+    reproducibility_controls:
+      question: Which seeds, dependency locks, and deterministic settings must be recorded?
+      examples:
+        - random_seed
+        - dependency_lock_digest
+        - deterministic_sorting
+        - timezone_utc
+  optional_blocks:
+    vectorbt_engine:
+      trigger_when:
+        - active repo uses vectorbt or vectorbt-pro for backtest implementation
+      fields:
+        - portfolio_constructor
+        - order_model
+        - metrics_export
+    backtrader_engine:
+      trigger_when:
+        - active repo uses backtrader for event-driven backtest implementation
+      fields:
+        - cerebro_config
+        - broker_model
+        - analyzer_exports
+    custom_engine:
+      trigger_when:
+        - active repo uses custom pandas, polars, or engine-specific ledger logic
+      fields:
+        - ledger_schema
+        - fill_model
+        - accounting_model
+    data_materialization:
+      trigger_when:
+        - required input datasets must be materialized from existing snapshots before running
+      fields:
+        - source_snapshot
+        - materialized_paths
+        - freshness_checks
+    performance_report:
+      trigger_when:
+        - implementation should emit a human-readable report alongside machine artifacts
+      fields:
+        - report_path
+        - included_metrics
+        - chart_outputs
+
+blocking_question_groups:
+  repo_boundary:
+    - active_research_repo_boundary
+    - target_stage_program
+  execution_inputs:
+    - backtest_entrypoint
+    - input_artifacts
+    - frozen_config_binding
+    - data_access_plan
+  outputs_and_validation:
+    - output_artifacts
+    - execution_manifest
+    - validation_checks
+  controls:
+    - no_retune_controls
+    - reproducibility_controls
