@@ -1,13 +1,13 @@
 ---
 name: qros-paper-to-spec
-description: Read a paper source and produce staged crypto perpetual paper_data_spec.yaml and paper_signal_spec.yaml artifacts with strict blocking questions.
+description: Read a paper source and produce staged crypto perpetual paper_data_spec.yaml, paper_signal_spec.yaml, and paper_train_freeze_spec.yaml artifacts with strict blocking questions.
 ---
 
 # qros-paper-to-spec
 
 ## Purpose
 
-`qros-paper-to-spec` 现在是 paper data-spec-first 入口。它先把论文、PDF、URL 或粘贴摘要整理成 crypto perpetual research fast-lane 的 `paper_data_spec.yaml`，再在 data spec valid 之后设计 `paper_signal_spec.yaml`。
+`qros-paper-to-spec` 现在是 paper data-spec-first 入口。它先把论文、PDF、URL 或粘贴摘要整理成 crypto perpetual research fast-lane 的 `paper_data_spec.yaml`，再在 data spec valid 之后设计 `paper_signal_spec.yaml`，最后在 signal spec valid 之后设计 `paper_train_freeze_spec.yaml`。
 
 这个入口独立于 `qros-research-session`，不进入 mandate / freeze / review / failure handling 的 heavy governance flow。
 
@@ -25,7 +25,13 @@ outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml
 outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml
 ```
 
-当前不直接生成完整 strategy spec，不直接生成回测代码，也不进入 train-freeze / test-evidence / backtest spec。
+第三阶段产出 train-freeze spec：
+
+```text
+outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml
+```
+
+当前不直接生成完整 strategy spec，不直接生成回测代码，也不进入 test-evidence / backtest spec。
 
 旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
 
@@ -69,9 +75,33 @@ contracts/paper_to_spec/paper_signal_spec_contract.yaml
 - diagnostics
 - signal-stage blocking question groups
 
+## Train-Freeze Contract
+
+生成 `paper_train_freeze_spec.yaml` 时必须遵守：
+
+```text
+contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml
+```
+
+该 contract 是第三阶段 machine-readable 真值层，依赖已校验的 `paper_signal_spec.yaml`，包含：
+
+- signal spec reference
+- train/test mode
+- frozen signal definition
+- parameter freeze
+- train window
+- test window
+- split policy
+- selection policy
+- model training
+- refit policy
+- leakage controls
+- artifact identity
+- train-freeze blocking question groups
+
 ## Execution protocol
 
-下面分为 data execution protocol 和 signal execution protocol。
+下面分为 data execution protocol、signal execution protocol 和 train-freeze execution protocol。
 
 ## Data Execution Protocol
 
@@ -116,6 +146,20 @@ python runtime/scripts/validate_paper_signal_spec.py --spec-path outputs/paper_t
 
 该 validator 只检查 contract shape、枚举、required fields、data spec reference、strict blocking unknown、train/test policy 和 handoff shape，不判断策略是否能赚钱。
 
+## Train-Freeze Execution Protocol
+
+只有 `paper_signal_spec.yaml` 通过 validator 后，才允许继续 train-freeze spec：
+
+1. `signal_spec_reference`：记录 paper_slug、signal spec path、validation_status、继承的 signal fields 和 inherited_train_test_policy。
+2. `train_freeze_intent`：用一句话说明本阶段要冻结哪些信号、参数、窗口或模型状态。
+3. `core_train_freeze_requirements`：逐项填写 `train_test_mode`、`frozen_signal_definition`、`parameter_freeze`、`train_window`、`test_window`、`split_policy`、`selection_policy`、`model_training`、`refit_policy`、`leakage_controls`、`artifact_identity`。
+4. `triggered_optional_blocks`：只在 signal spec 或 train/freeze reasoning 触发时展开 rule-based freeze、parameter search freeze、ML training freeze、walk-forward freeze、regime-specific freeze。
+5. `train_test_mode`：必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
+6. `strict blocking`：任何 train-freeze strict blocking field 为 `unknown`，或无法说明 train/test split 与 leakage controls，必须停止并问研究员。
+7. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml` 写入当前阶段产物。
+
+第一版 train-freeze 只定义 contract，不提供 deterministic validator。validator 稳定后再加入。
+
 ## Requirement entry shape
 
 每个 data requirement 使用同一结构：
@@ -138,6 +182,14 @@ source: paper_stated | data_spec_inherited | agent_inferred | researcher_require
 ```
 
 `data_spec_inherited` 只能用于从 valid `paper_data_spec.yaml` 继承的字段。train/test 相关结论如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`，不能标为 `paper_stated`。
+
+Train-freeze spec 使用同一 entry shape，但 source enum 是：
+
+```yaml
+source: signal_spec_inherited | paper_stated | agent_inferred | researcher_required
+```
+
+`signal_spec_inherited` 只能用于从 valid `paper_signal_spec.yaml` 继承的字段。参数冻结、训练窗口、选择指标、refit 规则和 artifact identity 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
 
 ## Strict blocking fields
 
@@ -164,6 +216,20 @@ Signal strict blocking fields：
 - `portfolio_mapping`
 - `diagnostics`
 
+Train-freeze strict blocking fields：
+
+- `train_test_mode`
+- `frozen_signal_definition`
+- `parameter_freeze`
+- `train_window`
+- `test_window`
+- `split_policy`
+- `selection_policy`
+- `model_training`
+- `refit_policy`
+- `leakage_controls`
+- `artifact_identity`
+
 阻断问题最多聚合成 3 个问题，并按 contract 中的 `blocking_question_groups` 归类：
 
 - `market_scope`
@@ -178,6 +244,13 @@ Signal 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 - `leakage_and_training`
 - `portfolio_and_diagnostics`
 
+Train-freeze 阻断问题按 contract 中的 `blocking_question_groups` 归类：
+
+- `freeze_identity`
+- `split_and_selection`
+- `fit_and_refit`
+- `leakage`
+
 ## Boundaries
 
 - 不直接生成完整 strategy spec。
@@ -185,5 +258,6 @@ Signal 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 - 不把 validator failure 包装成 review verdict；这不是 `qros-research-session` review。
 - 不把 crypto perpetual 迁移假设伪装成论文原文。
 - 不把 train/test 是否需要留到 backtest 阶段才判断；必须在 `paper_signal_spec.yaml` 的 `train_test_policy` 里先分类。
+- 不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义；必须在 `paper_train_freeze_spec.yaml` 里冻结。
 - 不为所有 optional blocks 机械展开字段；只展开被 PDF 或 data reasoning 触发的块。
-- 不保留与 `paper_data_spec_contract.yaml` 或 `paper_signal_spec_contract.yaml` 冲突的字段名或枚举。
+- 不保留与 `paper_data_spec_contract.yaml`、`paper_signal_spec_contract.yaml` 或 `paper_train_freeze_spec_contract.yaml` 冲突的字段名或枚举。

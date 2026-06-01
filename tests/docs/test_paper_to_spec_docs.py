@@ -21,8 +21,10 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "data-spec-first",
         "paper_data_spec.yaml",
         "paper_signal_spec.yaml",
+        "paper_train_freeze_spec.yaml",
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
+        "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "deterministic validator",
@@ -68,11 +70,28 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "prediction_and_inputs",
         "leakage_and_training",
         "portfolio_and_diagnostics",
+        "signal_spec_reference",
+        "core_train_freeze_requirements",
+        "train_test_mode",
+        "frozen_signal_definition",
+        "parameter_freeze",
+        "train_window",
+        "test_window",
+        "split_policy",
+        "selection_policy",
+        "model_training",
+        "refit_policy",
+        "artifact_identity",
+        "signal_spec_inherited",
+        "freeze_identity",
+        "split_and_selection",
+        "fit_and_refit",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
         "不直接生成回测代码",
         "不把 validator failure 包装成 review verdict",
         "不把 train/test 是否需要留到 backtest 阶段才判断",
+        "不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义",
         "不是 `qros-research-session` 的阶段入口",
     ]
 
@@ -100,12 +119,15 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "旧 `strategy_spec` materializer 已移除" in content
     assert "paper_data_spec.yaml" in content
     assert "paper_signal_spec.yaml" in content
+    assert "paper_train_freeze_spec.yaml" in content
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in content
+    assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in content
     assert "runtime/scripts/validate_paper_data_spec.py" in content
     assert "runtime/scripts/validate_paper_signal_spec.py" in content
     assert "strict blocking" in content
     assert "train/test policy" in content
+    assert "artifact identity" in content
     assert "下一版会采用 data-spec-first" not in content
     assert QROS_BIN + "qros-paper-to-spec" not in content
     assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in content

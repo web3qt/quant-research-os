@@ -70,6 +70,7 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("contracts/agent_eval/qros_agent_behavior_eval_cases.yaml").exists()
     assert Path("contracts/paper_to_spec/paper_data_spec_contract.yaml").exists()
     assert Path("contracts/paper_to_spec/paper_signal_spec_contract.yaml").exists()
+    assert Path("contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml").exists()
     assert Path("runtime/tools/paper_data_spec_runtime.py").exists()
     assert Path("runtime/scripts/validate_paper_data_spec.py").exists()
     assert Path("runtime/tools/paper_signal_spec_runtime.py").exists()

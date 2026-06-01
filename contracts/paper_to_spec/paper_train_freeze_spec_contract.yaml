@@ -1,0 +1,226 @@
+schema_id: qros-paper-train-freeze-spec-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_signal_spec.yaml
+  schema_id: qros-paper-signal-spec-contract-v1
+  validator: runtime/scripts/validate_paper_signal_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - signal_spec_reference
+  - train_freeze_intent
+  - core_train_freeze_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_signal_spec_reference_fields:
+  - paper_slug
+  - path
+  - validation_status
+  - inherited_signal_fields
+  - inherited_train_test_policy
+
+allowed_signal_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+allowed_train_test_modes:
+  - not_required_rule_based
+  - required_parameter_fit
+  - required_ml_model
+  - unknown
+
+core_required_fields:
+  - train_test_mode
+  - frozen_signal_definition
+  - parameter_freeze
+  - train_window
+  - test_window
+  - split_policy
+  - selection_policy
+  - model_training
+  - refit_policy
+  - leakage_controls
+  - artifact_identity
+
+strict_blocking_fields:
+  - train_test_mode
+  - frozen_signal_definition
+  - parameter_freeze
+  - train_window
+  - test_window
+  - split_policy
+  - selection_policy
+  - model_training
+  - refit_policy
+  - leakage_controls
+  - artifact_identity
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - signal_spec_inherited
+  - paper_stated
+  - agent_inferred
+  - researcher_required
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - rule_based_freeze
+  - parameter_search_freeze
+  - ml_training_freeze
+  - walk_forward_freeze
+  - regime_specific_freeze
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - frozen_inputs
+  - frozen_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+allowed_next_stage_recommendations:
+  - paper_test_evidence_spec
+  - ask_researcher
+
+field_library:
+  core:
+    train_test_mode:
+      question: Which train/test mode from signal spec is being frozen?
+      examples:
+        - not_required_rule_based
+        - required_parameter_fit
+        - required_ml_model
+    frozen_signal_definition:
+      question: Which exact signal formula, features, transforms, and timing are frozen before testing?
+      examples:
+        - fixed_rank_score_from_signal_spec
+        - fitted_linear_model_with_frozen_features
+    parameter_freeze:
+      question: Which windows, thresholds, weights, hyperparameters, and search spaces are frozen?
+      examples:
+        - no_search_fixed_parameters
+        - choose_best_window_from_train_only
+    train_window:
+      question: Which timestamps are available for parameter fitting or model training?
+      examples:
+        - not_applicable_rule_based
+        - 2023-01-01_to_2024-12-31
+    test_window:
+      question: Which timestamps are reserved for post-freeze testing before any holdout stage?
+      examples:
+        - 2025-01-01_to_2025-06-30
+        - rolling_forward_test_windows
+    split_policy:
+      question: How are train, validation, test, and later holdout separated?
+      examples:
+        - chronological_split
+        - expanding_walk_forward
+    selection_policy:
+      question: What metric chooses parameters or models, and where is that selection allowed?
+      examples:
+        - rank_ic_on_train_only
+        - no_selection_rule_based
+    model_training:
+      question: Is there an ML model, estimator, feature scaler, or fitted state?
+      examples:
+        - not_needed
+        - xgboost_regressor
+        - linear_model
+    refit_policy:
+      question: Are parameters or models fixed once, rolling, expanding, or never refit?
+      examples:
+        - no_refit
+        - rolling_monthly
+        - expanding_quarterly
+    leakage_controls:
+      question: What prevents test or holdout information from affecting frozen decisions?
+      examples:
+        - train_only_selection
+        - scaler_fit_on_train_only
+        - no_test_metric_selection
+    artifact_identity:
+      question: Which hashes, seeds, versions, and frozen config IDs identify the artifact?
+      examples:
+        - frozen_config_digest
+        - random_seed
+        - dependency_versions
+  optional_blocks:
+    rule_based_freeze:
+      trigger_when:
+        - train_test_mode is not_required_rule_based
+      fields:
+        - fixed_formula
+        - fixed_parameters
+        - no_fit_attestation
+    parameter_search_freeze:
+      trigger_when:
+        - train_test_mode is required_parameter_fit
+      fields:
+        - parameter_space
+        - selection_metric
+        - train_only_selection_rule
+    ml_training_freeze:
+      trigger_when:
+        - train_test_mode is required_ml_model
+      fields:
+        - model_family
+        - feature_set
+        - label_definition
+        - hyperparameter_space
+        - random_seed
+    walk_forward_freeze:
+      trigger_when:
+        - split_policy uses rolling, expanding, or walk-forward evaluation
+      fields:
+        - window_schedule
+        - refit_frequency
+        - embargo_policy
+    regime_specific_freeze:
+      trigger_when:
+        - signal spec includes a regime filter or regime-specific model/rule
+      fields:
+        - regime_definition
+        - regime_assignment_time
+        - per_regime_parameters
+
+blocking_question_groups:
+  freeze_identity:
+    - train_test_mode
+    - frozen_signal_definition
+    - artifact_identity
+  split_and_selection:
+    - train_window
+    - test_window
+    - split_policy
+    - selection_policy
+  fit_and_refit:
+    - parameter_freeze
+    - model_training
+    - refit_policy
+  leakage:
+    - leakage_controls
