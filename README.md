@@ -128,17 +128,17 @@ $qros-update
 
 <br>
 
-## 📄 paper-to-spec v2 方向
+## 📄 paper-to-spec data-spec-first
 
 `$qros-paper-to-spec` 这个 Codex skill 名称保留，但旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
 
-下一版会采用 data-spec-first，第一产物将是：
+第一版采用 data-spec-first，只产出：
 
 ```text
 outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml
 ```
 
-它会优先记录 PDF 读取覆盖、crypto perpetual 数据需求、严格阻断问题和 data implementation handoff。当前不要把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
+`paper_data_spec.yaml` 遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation，优先记录 PDF 读取覆盖、crypto perpetual 数据需求、strict blocking 问题和 data implementation handoff。当前不要把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
 
 完整说明见 [docs/guides/qros-paper-to-spec-usage.md](docs/guides/qros-paper-to-spec-usage.md)。
 

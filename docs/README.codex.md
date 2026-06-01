@@ -39,15 +39,15 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 | 查看当前研究进度 | `$qros-progress` |
 | 查看横截面因子阶段质量诊断 | `$qros-factor-diagnostics` |
 | 查看时序信号阶段质量诊断 | `$qros-signal-diagnostics` |
-| paper-to-spec v2 data-spec-first 方向 | `$qros-paper-to-spec` |
+| paper-to-spec data-spec-first | `$qros-paper-to-spec` |
 | 更新 QROS 到最新稳定版本，并刷新当前 repo 的 `./.qros/` | `$qros-update` |
 | 高级/debug 手动进入某阶段 review | `$qros-mandate-review` |
 
-### paper-to-spec v2 方向
+### paper-to-spec data-spec-first
 
 `$qros-paper-to-spec` 这个 Codex skill 名称保留，但旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。当前不要再把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
 
-下一版会采用 data-spec-first，第一产物将是 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、严格阻断问题和 data implementation handoff。
+第一版采用 data-spec-first，只产出 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、strict blocking 问题和 data implementation handoff。
 
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 

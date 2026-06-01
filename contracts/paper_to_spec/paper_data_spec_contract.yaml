@@ -1,0 +1,275 @@
+schema_id: qros-paper-data-spec-contract-v1
+spec_version: v1
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - reading_coverage
+  - target_market
+  - core_data_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_source_fields:
+  - title
+  - locator
+  - source_kind
+  - paper_slug
+
+allowed_source_kinds:
+  - pdf_url
+  - webpage
+  - local_pdf
+  - local_doc
+  - text_summary
+
+required_reading_coverage_fields:
+  - coverage_level
+  - total_pages
+  - extracted_pages
+  - covered_sections
+  - low_confidence_regions
+  - unread_or_unextracted_pages
+  - data_relevant_evidence
+
+allowed_coverage_levels:
+  - full
+  - partial
+  - low
+
+required_target_market_fields:
+  - market_type
+  - exchange_profile
+  - quote_currency
+  - contract_settlement
+  - timezone
+
+allowed_market_types:
+  - crypto_perpetual
+
+allowed_exchange_profiles:
+  - generic_crypto_perp
+  - binance_usdt_perp
+  - okx_perp
+  - bybit_perp
+
+core_required_fields:
+  - universe
+  - price_bars
+  - price_type
+  - funding
+  - fees_and_slippage
+  - label_or_return_target
+  - timestamp_alignment
+  - data_availability
+
+strict_blocking_fields:
+  - universe
+  - price_bars
+  - price_type
+  - funding
+  - fees_and_slippage
+  - label_or_return_target
+  - timestamp_alignment
+  - data_availability
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - paper_stated
+  - agent_inferred
+  - researcher_required
+  - exchange_profile_default
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - derivatives_positioning
+  - liquidity_microstructure
+  - cross_exchange
+  - external_or_onchain
+  - sentiment_or_news
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - raw_inputs
+  - derived_inputs
+  - validation_checks
+
+field_library:
+  core:
+    universe:
+      question: Which contracts are tradable?
+      examples:
+        - top_n_by_volume
+        - btc_eth_only
+        - all_usdt_perps
+    price_bars:
+      question: What OHLCV granularity is needed?
+      examples:
+        - 1m
+        - 5m
+        - 1h
+        - 1d
+    price_type:
+      question: Which price source defines features and returns?
+      examples:
+        - mark
+        - last
+        - index
+        - settlement
+    funding:
+      question: How should funding be included?
+      examples:
+        - include_in_pnl
+        - feature_only
+        - not_needed
+    fees_and_slippage:
+      question: Which fee and slippage model is required?
+      examples:
+        - taker_fee_plus_fixed_bps_slippage
+        - maker_taker_schedule
+        - gross_signal_test_only
+    label_or_return_target:
+      question: Which return horizon and formula are required for data preparation?
+      examples:
+        - next_1h_log_return
+        - close_to_close_1d_return
+        - funding_adjusted_forward_return
+    timestamp_alignment:
+      question: How are bars, funding, features, and labels aligned without lookahead?
+      examples:
+        - signal_at_bar_close_label_next_bar
+        - funding_applied_at_exchange_timestamp
+        - utc_bar_close_alignment
+    data_availability:
+      question: What minimum history, symbol coverage, and missing data policy are required?
+      examples:
+        - minimum_365_days
+        - require_continuous_bars
+        - allow_sparse_new_listings
+  optional_blocks:
+    derivatives_positioning:
+      trigger_when:
+        - paper mentions open interest, positioning, leverage, liquidations, basis, or premium
+      fields:
+        - open_interest
+        - long_short_ratio
+        - liquidations
+        - basis_or_premium
+    liquidity_microstructure:
+      trigger_when:
+        - paper depends on liquidity, spread, impact, order book, or capacity
+      fields:
+        - bid_ask_spread
+        - orderbook_depth
+        - turnover_capacity
+    cross_exchange:
+      trigger_when:
+        - paper uses lead-lag, cross-market spreads, arbitrage, or venue comparison
+      fields:
+        - venue_prices
+        - cross_exchange_spread
+        - lead_lag_alignment
+    external_or_onchain:
+      trigger_when:
+        - paper requires spot index, macro, onchain, ETF, equity, or other external data
+      fields:
+        - spot_price
+        - index_components
+        - onchain_metrics
+        - macro_or_equity_inputs
+    sentiment_or_news:
+      trigger_when:
+        - paper uses news, announcements, social media, text, or sentiment signals
+      fields:
+        - text_source
+        - event_timestamp
+        - sentiment_score
+        - entity_mapping
+
+blocking_question_groups:
+  market_scope:
+    - universe
+    - data_availability
+  bar_and_price:
+    - price_bars
+    - price_type
+    - timestamp_alignment
+  return_accounting:
+    - funding
+    - fees_and_slippage
+    - label_or_return_target
+  source_coverage:
+    - reading_coverage
+
+exchange_profiles:
+  generic_crypto_perp:
+    market_type: crypto_perpetual
+    quote_currency: unknown
+    contract_settlement: unknown
+    timezone: UTC
+    default_price_types:
+      - mark
+      - last
+      - index
+    funding_available: unknown
+    default_fee_model_required: true
+  binance_usdt_perp:
+    market_type: crypto_perpetual
+    quote_currency: USDT
+    contract_settlement: linear
+    timezone: UTC
+    default_price_types:
+      - mark
+      - last
+      - index
+    funding_available: true
+    common_bar_intervals:
+      - 1m
+      - 5m
+      - 15m
+      - 1h
+      - 4h
+      - 1d
+    default_fee_model_required: true
+  okx_perp:
+    market_type: crypto_perpetual
+    quote_currency: unknown
+    contract_settlement: linear_or_inverse
+    timezone: UTC
+    default_price_types:
+      - mark
+      - last
+      - index
+    funding_available: true
+  bybit_perp:
+    market_type: crypto_perpetual
+    quote_currency: unknown
+    contract_settlement: linear_or_inverse
+    timezone: UTC
+    default_price_types:
+      - mark
+      - last
+      - index
+    funding_available: true

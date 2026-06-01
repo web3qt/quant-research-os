@@ -10,7 +10,7 @@ def test_paper_to_spec_skill_exists() -> None:
     assert SKILL_PATH.exists(), f"missing skill: {SKILL_PATH}"
 
 
-def test_paper_to_spec_skill_documents_removed_legacy_path_and_v2_direction() -> None:
+def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
     content = SKILL_PATH.read_text(encoding="utf-8")
 
     required_strings = [
@@ -19,10 +19,37 @@ def test_paper_to_spec_skill_documents_removed_legacy_path_and_v2_direction() ->
         "旧 baseline scaffold 已移除",
         "data-spec-first",
         "paper_data_spec.yaml",
-        "PDF 读取覆盖",
+        "contracts/paper_to_spec/paper_data_spec_contract.yaml",
+        "runtime/scripts/validate_paper_data_spec.py",
+        "deterministic validator",
+        "Execution protocol",
+        "reading_coverage",
+        "target_market",
+        "core_data_requirements",
+        "triggered_optional_blocks",
+        "strict blocking",
+        "strict blocking field",
+        "Requirement entry shape",
+        "paper_stated",
+        "agent_inferred",
+        "researcher_required",
+        "exchange_profile_default",
+        "universe",
+        "price_bars",
+        "funding",
+        "fees_and_slippage",
+        "label_or_return_target",
+        "timestamp_alignment",
+        "data_availability",
+        "blocking_question_groups",
+        "market_scope",
+        "bar_and_price",
+        "return_accounting",
+        "source_coverage",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
         "不直接生成回测代码",
+        "不把 validator failure 包装成 review verdict",
         "独立于 `qros-research-session`",
         "heavy governance flow",
     ]

@@ -1,0 +1,134 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+reading_coverage:
+  coverage_level: full
+  total_pages: 1
+  extracted_pages:
+    - 1
+  covered_sections:
+    - summary
+    - data
+    - method
+  low_confidence_regions: []
+  unread_or_unextracted_pages: []
+  data_relevant_evidence:
+    - section: data
+      note: Uses hourly OHLCV and next-hour returns on liquid perpetual futures.
+target_market:
+  market_type: crypto_perpetual
+  exchange_profile: binance_usdt_perp
+  quote_currency: USDT
+  contract_settlement: linear
+  timezone: UTC
+core_data_requirements:
+  universe:
+    status: required
+    source: researcher_required
+    value:
+      rule: top_30_by_trailing_30d_notional_volume
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  price_bars:
+    status: required
+    source: paper_stated
+    value:
+      interval: 1h
+      fields:
+        - open
+        - high
+        - low
+        - close
+        - volume
+    evidence:
+      - summary:data: hourly OHLCV bars
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  price_type:
+    status: required
+    source: agent_inferred
+    value:
+      feature_price: mark
+      return_price: mark
+    evidence:
+      - crypto perpetual migration requires a stable return price source.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  funding:
+    status: required
+    source: exchange_profile_default
+    value:
+      usage: include_in_pnl
+      interval: exchange_native
+    evidence:
+      - binance_usdt_perp funding is available by exchange profile.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  fees_and_slippage:
+    status: required
+    source: researcher_required
+    value:
+      fee_model: taker_fee
+      slippage_bps: 2
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  label_or_return_target:
+    status: required
+    source: paper_stated
+    value:
+      formula: next_1h_log_return
+    evidence:
+      - summary:method: next-hour returns
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  timestamp_alignment:
+    status: required
+    source: agent_inferred
+    value:
+      feature_cutoff: bar_close
+      label_window: next_bar
+      timezone: UTC
+    evidence:
+      - Avoid lookahead by computing signals at bar close and labeling next bar.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  data_availability:
+    status: required
+    source: researcher_required
+    value:
+      minimum_history_days: 365
+      missing_data_policy: drop_symbol_window
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: derivatives_positioning
+    reason: Paper summary uses open interest as a conditioning feature.
+    requirements:
+      open_interest:
+        status: required
+        source: paper_stated
+        value:
+          interval: 1h
+        evidence:
+          - summary:data: open interest
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  raw_inputs:
+    - hourly_ohlcv
+    - funding_rates
+    - open_interest
+  derived_inputs:
+    - next_1h_log_return
+    - volume_ranked_universe
+  validation_checks:
+    - no_lookahead_timestamp_alignment
+    - funding_join_timestamp_not_after_signal
+    - minimum_history_days_365
