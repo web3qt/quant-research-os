@@ -1,0 +1,170 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+signal_spec_reference:
+  paper_slug: example_crypto_perp_momentum
+  path: tests/fixtures/paper_to_spec/valid_paper_signal_spec.yaml
+  validation_status: valid
+  inherited_signal_fields:
+    - signal_family
+    - prediction_target
+    - feature_inputs
+    - signal_definition
+    - signal_timing
+    - lookahead_controls
+    - train_test_policy
+    - portfolio_mapping
+    - diagnostics
+  inherited_train_test_policy: not_required_rule_based
+train_freeze_intent: Freeze the rule-based signal formula, non-fit parameters, split boundaries, leakage controls, and artifact identity before test evidence.
+core_train_freeze_requirements:
+  train_test_mode:
+    status: required
+    source: signal_spec_inherited
+    value:
+      mode: not_required_rule_based
+    evidence:
+      - paper_signal_spec.train_test_policy
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  frozen_signal_definition:
+    status: required
+    source: signal_spec_inherited
+    value:
+      formula: rank(momentum_return_24h) - rank(funding_rate) + rank(open_interest_change_24h)
+      normalization: cross_sectional_rank_each_timestamp
+      compute_at: 1h_bar_close
+    evidence:
+      - paper_signal_spec.signal_definition
+      - paper_signal_spec.signal_timing
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  parameter_freeze:
+    status: required
+    source: agent_inferred
+    value:
+      mode: no_search_fixed_parameters
+      lookback_hours: 24
+      bucket_count: 10
+    evidence:
+      - Rule-based signal has fixed lookback and ranking buckets.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  train_window:
+    status: not_needed
+    source: agent_inferred
+    value:
+      reason: not_applicable_rule_based
+    evidence:
+      - No parameter fitting or ML training is required.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  test_window:
+    status: required
+    source: researcher_required
+    value:
+      start: 2025-01-01T00:00:00Z
+      end: 2025-06-30T23:00:00Z
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  split_policy:
+    status: required
+    source: researcher_required
+    value:
+      policy: chronological_test_after_freeze
+      holdout_reserved: true
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  selection_policy:
+    status: not_needed
+    source: agent_inferred
+    value:
+      policy: no_metric_selection_rule_based
+    evidence:
+      - Fixed signal does not choose parameters from test metrics.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  model_training:
+    status: not_needed
+    source: signal_spec_inherited
+    value:
+      model_family: none
+      fitted_state: none
+    evidence:
+      - paper_signal_spec.train_test_policy
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  refit_policy:
+    status: not_needed
+    source: agent_inferred
+    value:
+      policy: no_refit
+    evidence:
+      - No fitted state exists for this rule-based signal.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  leakage_controls:
+    status: required
+    source: agent_inferred
+    value:
+      controls:
+        - no_test_metric_selection
+        - features_timestamp_lte_signal_timestamp
+        - frozen_formula_before_test_evidence
+    evidence:
+      - Derived from signal spec lookahead controls and freeze intent.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  artifact_identity:
+    status: required
+    source: researcher_required
+    value:
+      frozen_config_id: example_crypto_perp_momentum_v1
+      random_seed: 0
+      digest_inputs:
+        - paper_data_spec.yaml
+        - paper_signal_spec.yaml
+        - paper_train_freeze_spec.yaml
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: rule_based_freeze
+    reason: train_test_mode is not_required_rule_based.
+    requirements:
+      fixed_formula:
+        status: required
+        source: signal_spec_inherited
+        value:
+          formula: rank(momentum_return_24h) - rank(funding_rate) + rank(open_interest_change_24h)
+        evidence:
+          - paper_signal_spec.signal_definition
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      no_fit_attestation:
+        status: required
+        source: agent_inferred
+        value:
+          no_fit: true
+        evidence:
+          - Rule-based signal has no learned parameters.
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  frozen_inputs:
+    - paper_signal_spec.yaml
+    - paper_data_spec.yaml
+  frozen_outputs:
+    - frozen_signal_config
+    - freeze_identity_manifest
+  validation_checks:
+    - inherited_train_test_policy_matches_train_test_mode
+    - no_unknown_strict_train_freeze_fields
+    - no_test_metric_selection
+  next_stage_recommendation: paper_test_evidence_spec

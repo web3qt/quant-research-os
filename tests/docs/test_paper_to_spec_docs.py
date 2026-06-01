@@ -27,6 +27,7 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
+        "runtime/scripts/validate_paper_train_freeze_spec.py",
         "deterministic validator",
         "reading_coverage",
         "target_market",
@@ -71,6 +72,7 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "leakage_and_training",
         "portfolio_and_diagnostics",
         "signal_spec_reference",
+        "inherited train/test policy consistency",
         "core_train_freeze_requirements",
         "train_test_mode",
         "frozen_signal_definition",
@@ -125,6 +127,7 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in content
     assert "runtime/scripts/validate_paper_data_spec.py" in content
     assert "runtime/scripts/validate_paper_signal_spec.py" in content
+    assert "runtime/scripts/validate_paper_train_freeze_spec.py" in content
     assert "strict blocking" in content
     assert "train/test policy" in content
     assert "artifact identity" in content

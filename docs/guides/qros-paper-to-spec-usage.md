@@ -117,8 +117,15 @@ python runtime/scripts/validate_paper_signal_spec.py --spec-path outputs/paper_t
 5. `train_test_mode` 必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
 6. 任一 train-freeze strict blocking field 为 `unknown`，或无法说明 train/test split 与 leakage controls，必须停止并问研究员。
 7. 没有阻断项时，写入 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml`。
+8. 使用 deterministic validator 校验 `paper_train_freeze_spec.yaml`。
 
-第一版 train-freeze 只定义 contract，不提供 deterministic validator。validator 稳定后再加入。
+Train-freeze validator 入口：
+
+```text
+python runtime/scripts/validate_paper_train_freeze_spec.py --spec-path outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml
+```
+
+该 validator 只检查 contract shape、枚举、required fields、signal spec reference、inherited train/test policy consistency、strict blocking unknown、train/test mode 和 handoff shape，不判断策略是否能赚钱。
 
 ## Requirement entry shape
 
