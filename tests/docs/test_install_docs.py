@@ -135,6 +135,7 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in codex_guide
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in codex_guide
     assert "runtime/scripts/validate_paper_data_spec.py" in codex_guide
+    assert "runtime/scripts/validate_paper_signal_spec.py" in codex_guide
     assert "strict blocking" in codex_guide
     assert "train/test policy" in codex_guide
     assert "下一版会采用 data-spec-first" not in codex_guide
@@ -152,6 +153,7 @@ def test_root_readme_documents_paper_to_spec_reset() -> None:
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in readme
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in readme
     assert "runtime/scripts/validate_paper_data_spec.py" in readme
+    assert "runtime/scripts/validate_paper_signal_spec.py" in readme
     assert "strict blocking" in readme
     assert "train/test policy" in readme
     assert "下一版会采用 data-spec-first" not in readme

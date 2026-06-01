@@ -23,6 +23,7 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
         "runtime/scripts/validate_paper_data_spec.py",
+        "runtime/scripts/validate_paper_signal_spec.py",
         "deterministic validator",
         "Execution protocol",
         "reading_coverage",

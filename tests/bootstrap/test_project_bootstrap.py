@@ -72,6 +72,8 @@ def test_project_bootstrap_files_exist() -> None:
     assert Path("contracts/paper_to_spec/paper_signal_spec_contract.yaml").exists()
     assert Path("runtime/tools/paper_data_spec_runtime.py").exists()
     assert Path("runtime/scripts/validate_paper_data_spec.py").exists()
+    assert Path("runtime/tools/paper_signal_spec_runtime.py").exists()
+    assert Path("runtime/scripts/validate_paper_signal_spec.py").exists()
     assert not (Path("contracts") / "paper_to_spec" / ("strategy_" + "spec_contract.yaml")).exists()
     assert Path("contracts/review/review_checklist_master.yaml").exists()
     assert Path("contracts/stages/stage_evaluator.schema.json").exists()

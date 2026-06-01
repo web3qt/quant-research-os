@@ -80,6 +80,15 @@ python runtime/scripts/validate_paper_data_spec.py --spec-path outputs/paper_to_
 5. `train_test_policy` 必须明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
 6. 任一 signal strict blocking field 为 `unknown`，必须停止并问研究员。
 7. 没有阻断项时，写入 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml`。
+8. 使用 deterministic validator 校验 `paper_signal_spec.yaml`。
+
+Signal validator 入口：
+
+```text
+python runtime/scripts/validate_paper_signal_spec.py --spec-path outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml
+```
+
+该 validator 只检查 contract shape、枚举、required fields、data spec reference、strict blocking unknown、train/test policy 和 handoff shape，不判断策略是否能赚钱。
 
 ## Requirement entry shape
 

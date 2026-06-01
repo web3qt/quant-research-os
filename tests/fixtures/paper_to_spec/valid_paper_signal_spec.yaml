@@ -1,0 +1,151 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+data_spec_reference:
+  paper_slug: example_crypto_perp_momentum
+  path: tests/fixtures/paper_to_spec/valid_paper_data_spec.yaml
+  validation_status: valid
+  inherited_data_fields:
+    - universe
+    - price_bars
+    - price_type
+    - funding
+    - fees_and_slippage
+    - label_or_return_target
+    - timestamp_alignment
+    - data_availability
+signal_research_intent: Test whether hourly momentum adjusted by funding and open interest predicts next-hour crypto perpetual returns.
+core_signal_requirements:
+  signal_family:
+    status: required
+    source: agent_inferred
+    value:
+      family: cross_sectional_factor
+    evidence:
+      - The signal ranks liquid perpetual contracts at each hourly timestamp.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  prediction_target:
+    status: required
+    source: data_spec_inherited
+    value:
+      target: next_1h_log_return
+    evidence:
+      - paper_data_spec.label_or_return_target
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  feature_inputs:
+    status: required
+    source: paper_stated
+    value:
+      features:
+        - momentum_return_24h
+        - funding_rate
+        - open_interest_change_24h
+    evidence:
+      - summary:method: momentum with funding and open interest conditioning
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  signal_definition:
+    status: required
+    source: agent_inferred
+    value:
+      formula: rank(momentum_return_24h) - rank(funding_rate) + rank(open_interest_change_24h)
+      normalization: cross_sectional_rank_each_timestamp
+    evidence:
+      - Converts the paper idea into an explicit cross-sectional score.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  signal_timing:
+    status: required
+    source: data_spec_inherited
+    value:
+      compute_at: 1h_bar_close
+      eligible_trade_window: next_bar
+    evidence:
+      - paper_data_spec.timestamp_alignment
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  lookahead_controls:
+    status: required
+    source: agent_inferred
+    value:
+      controls:
+        - features_timestamp_lte_signal_timestamp
+        - universe_known_at_signal_time
+        - label_window_starts_after_signal_timestamp
+    evidence:
+      - Derived from data spec timestamp alignment and next-bar label.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  train_test_policy:
+    status: required
+    source: agent_inferred
+    value:
+      mode: not_required_rule_based
+      reason: Formula uses fixed ranks and no fitted parameters.
+    evidence:
+      - No model fitting or parameter search is required by the explicit rule.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  portfolio_mapping:
+    status: required
+    source: agent_inferred
+    value:
+      mapping: long_top_decile_short_bottom_decile
+      rebalance: hourly
+    evidence:
+      - Minimal pre-backtest mapping for cross-sectional signal diagnostics.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  diagnostics:
+    status: required
+    source: researcher_required
+    value:
+      checks:
+        - signal_coverage
+        - rank_ic
+        - turnover_proxy
+        - signal_autocorrelation
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: cross_sectional_ranking
+    reason: Signal compares contracts at each hourly timestamp.
+    requirements:
+      ranking_method:
+        status: required
+        source: agent_inferred
+        value:
+          method: percentile_rank
+        evidence:
+          - Cross-sectional score requires rank normalization.
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      bucket_count:
+        status: required
+        source: researcher_required
+        value:
+          buckets: 10
+        evidence: []
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  signal_inputs:
+    - momentum_return_24h
+    - funding_rate
+    - open_interest_change_24h
+  signal_outputs:
+    - signal_score
+    - signal_rank
+    - diagnostic_panel
+  validation_checks:
+    - no_lookahead_feature_timestamps
+    - signal_coverage_by_symbol_and_time
+    - train_test_policy_matches_rule_based_signal
+  next_stage_recommendation: paper_test_evidence_spec

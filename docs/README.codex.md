@@ -49,7 +49,7 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 
 第一阶段采用 data-spec-first，产出 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation，重点记录 PDF 读取覆盖、crypto perpetual 数据需求、strict blocking 问题和 data implementation handoff。
 
-第二阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_signal_spec_contract.yaml`，用于记录 signal family、feature inputs、signal definition、lookahead controls、train/test policy、portfolio mapping 和 diagnostics。
+第二阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_signal_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_signal_spec.py` 做 deterministic validation，用于记录 signal family、feature inputs、signal definition、lookahead controls、train/test policy、portfolio mapping 和 diagnostics。
 
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 
