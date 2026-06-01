@@ -130,45 +130,15 @@ $qros-update
 
 ## 📄 paper-to-spec data-spec-first
 
-`$qros-paper-to-spec` 这个 Codex skill 名称保留，但旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
+`$qros-paper-to-spec` 把论文/PDF 先整理成 crypto perpetual 研究所需的 staged specs，而不是直接生成策略代码或回测代码。旧 `strategy_spec` materializer 和 baseline scaffold 已移除。
 
-第一阶段采用 data-spec-first，产出：
-
-```text
-outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml
-```
-
-第二阶段产出：
+当前链路采用 data-spec-first：
 
 ```text
-outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml
+paper_data_spec -> paper_signal_spec -> paper_train_freeze_spec -> paper_test_evidence_spec -> paper_backtest_spec -> paper_backtest_implementation_spec
 ```
 
-第三阶段产出：
-
-```text
-outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml
-```
-
-第四阶段产出：
-
-```text
-outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml
-```
-
-第五阶段产出：
-
-```text
-outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml
-```
-
-第六阶段产出：
-
-```text
-outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml
-```
-
-`paper_data_spec.yaml` 遵守 `contracts/paper_to_spec/paper_data_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_data_spec.py` 做 deterministic validation。`paper_signal_spec.yaml` 遵守 `contracts/paper_to_spec/paper_signal_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_signal_spec.py` 做 deterministic validation，用于记录 signal family、feature inputs、signal definition、lookahead controls、train/test policy、portfolio mapping、diagnostics 和 strict blocking 问题。`paper_train_freeze_spec.yaml` 遵守 `contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_train_freeze_spec.py` 做 deterministic validation，用于冻结 train/test mode、parameters、train/test windows、split policy、selection policy、model training、refit policy、leakage controls 和 artifact identity。`paper_test_evidence_spec.yaml` 遵守 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_test_evidence_spec.py` 做 deterministic validation，用于定义 frozen artifact binding、signal diagnostics、performance diagnostics、no-retune attestation、test result usage policy、provenance 和 evidence identity。`paper_backtest_spec.yaml` 遵守 `contracts/paper_to_spec/paper_backtest_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_backtest_spec.py` 做 deterministic validation，用于定义 backtest scope、portfolio construction、position sizing、execution assumptions、fees/slippage/funding、risk controls、required metrics、pass/fail gate 和 implementation handoff plan。`paper_backtest_implementation_spec.yaml` 遵守 `contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_backtest_implementation_spec.py` 做 deterministic validation，用于定义 active research repo boundary、stage program、entrypoint、input/output artifacts、execution manifest、validation checks 和 no-retune controls。当前不要把它当作 PDF 直接生成完整 strategy spec 或回测代码的入口。
+每一段都有 machine-readable contract 和 deterministic validator；如果论文信息不足，agent 应停止并问研究员。真实回测实现仍然发生在 active research repo，不写回 QROS framework repo。
 
 完整说明见 [docs/guides/qros-paper-to-spec-usage.md](docs/guides/qros-paper-to-spec-usage.md)。
 

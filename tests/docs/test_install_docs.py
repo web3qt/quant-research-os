@@ -163,31 +163,13 @@ def test_root_readme_documents_paper_to_spec_reset() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
     assert "$qros-paper-to-spec" in readme
-    assert "旧 `strategy_spec` materializer 已移除" in readme
-    assert "paper_data_spec.yaml" in readme
-    assert "paper_signal_spec.yaml" in readme
-    assert "paper_train_freeze_spec.yaml" in readme
-    assert "paper_test_evidence_spec.yaml" in readme
-    assert "paper_backtest_spec.yaml" in readme
-    assert "paper_backtest_implementation_spec.yaml" in readme
-    assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in readme
-    assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in readme
-    assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in readme
-    assert "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml" in readme
-    assert "contracts/paper_to_spec/paper_backtest_spec_contract.yaml" in readme
-    assert "contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml" in readme
-    assert "runtime/scripts/validate_paper_data_spec.py" in readme
-    assert "runtime/scripts/validate_paper_signal_spec.py" in readme
-    assert "runtime/scripts/validate_paper_train_freeze_spec.py" in readme
-    assert "runtime/scripts/validate_paper_test_evidence_spec.py" in readme
-    assert "runtime/scripts/validate_paper_backtest_spec.py" in readme
-    assert "runtime/scripts/validate_paper_backtest_implementation_spec.py" in readme
-    assert "strict blocking" in readme
-    assert "train/test policy" in readme
-    assert "artifact identity" in readme
-    assert "evidence identity" in readme
-    assert "implementation handoff plan" in readme
-    assert "active research repo boundary" in readme
+    assert "data-spec-first" in readme
+    assert "paper_data_spec -> paper_signal_spec" in readme
+    assert "paper_backtest_implementation_spec" in readme
+    assert "machine-readable contract" in readme
+    assert "deterministic validator" in readme
+    assert "active research repo" in readme
+    assert "docs/guides/qros-paper-to-spec-usage.md" in readme
     assert "下一版会采用 data-spec-first" not in readme
     assert "strategy_" + "spec.yaml" not in readme
     assert "strategy_" + "spec.md" not in readme
