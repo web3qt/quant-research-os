@@ -133,15 +133,18 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "paper_data_spec.yaml" in codex_guide
     assert "paper_signal_spec.yaml" in codex_guide
     assert "paper_train_freeze_spec.yaml" in codex_guide
+    assert "paper_test_evidence_spec.yaml" in codex_guide
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in codex_guide
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in codex_guide
     assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in codex_guide
+    assert "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml" in codex_guide
     assert "runtime/scripts/validate_paper_data_spec.py" in codex_guide
     assert "runtime/scripts/validate_paper_signal_spec.py" in codex_guide
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in codex_guide
     assert "strict blocking" in codex_guide
     assert "train/test policy" in codex_guide
     assert "artifact identity" in codex_guide
+    assert "evidence identity" in codex_guide
     assert "下一版会采用 data-spec-first" not in codex_guide
     assert QROS_BIN + "qros-paper-to-spec" not in codex_guide
     assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in codex_guide
@@ -155,15 +158,18 @@ def test_root_readme_documents_paper_to_spec_reset() -> None:
     assert "paper_data_spec.yaml" in readme
     assert "paper_signal_spec.yaml" in readme
     assert "paper_train_freeze_spec.yaml" in readme
+    assert "paper_test_evidence_spec.yaml" in readme
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in readme
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in readme
     assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in readme
+    assert "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml" in readme
     assert "runtime/scripts/validate_paper_data_spec.py" in readme
     assert "runtime/scripts/validate_paper_signal_spec.py" in readme
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in readme
     assert "strict blocking" in readme
     assert "train/test policy" in readme
     assert "artifact identity" in readme
+    assert "evidence identity" in readme
     assert "下一版会采用 data-spec-first" not in readme
     assert "strategy_" + "spec.yaml" not in readme
     assert "strategy_" + "spec.md" not in readme

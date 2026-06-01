@@ -22,9 +22,11 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "paper_data_spec.yaml",
         "paper_signal_spec.yaml",
         "paper_train_freeze_spec.yaml",
+        "paper_test_evidence_spec.yaml",
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
         "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
+        "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
@@ -88,12 +90,30 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "freeze_identity",
         "split_and_selection",
         "fit_and_refit",
+        "train_freeze_spec_reference",
+        "core_test_evidence_requirements",
+        "test_window",
+        "frozen_artifact_binding",
+        "signal_diagnostics",
+        "performance_diagnostics",
+        "rule_based_evidence",
+        "parameter_fit_evidence",
+        "ml_model_evidence",
+        "no_retune_attestation",
+        "test_result_usage_policy",
+        "provenance",
+        "evidence_identity",
+        "train_freeze_spec_inherited",
+        "evidence_scope",
+        "no_retune",
+        "provenance_identity",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
         "不直接生成回测代码",
         "不把 validator failure 包装成 review verdict",
         "不把 train/test 是否需要留到 backtest 阶段才判断",
         "不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义",
+        "不把 test evidence 用作 holdout 前调参入口",
         "不是 `qros-research-session` 的阶段入口",
     ]
 
@@ -122,15 +142,18 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "paper_data_spec.yaml" in content
     assert "paper_signal_spec.yaml" in content
     assert "paper_train_freeze_spec.yaml" in content
+    assert "paper_test_evidence_spec.yaml" in content
     assert "contracts/paper_to_spec/paper_data_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_signal_spec_contract.yaml" in content
     assert "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml" in content
+    assert "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml" in content
     assert "runtime/scripts/validate_paper_data_spec.py" in content
     assert "runtime/scripts/validate_paper_signal_spec.py" in content
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in content
     assert "strict blocking" in content
     assert "train/test policy" in content
     assert "artifact identity" in content
+    assert "evidence identity" in content
     assert "下一版会采用 data-spec-first" not in content
     assert QROS_BIN + "qros-paper-to-spec" not in content
     assert QROS_BIN + "qros-paper-to-spec" + "-baseline" not in content

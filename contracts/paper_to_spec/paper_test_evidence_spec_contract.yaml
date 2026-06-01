@@ -1,0 +1,221 @@
+schema_id: qros-paper-test-evidence-spec-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_train_freeze_spec.yaml
+  schema_id: qros-paper-train-freeze-spec-contract-v1
+  validator: runtime/scripts/validate_paper_train_freeze_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - train_freeze_spec_reference
+  - test_evidence_intent
+  - core_test_evidence_requirements
+  - triggered_optional_blocks
+  - ambiguities
+  - implementation_handoff
+
+required_train_freeze_spec_reference_fields:
+  - paper_slug
+  - path
+  - validation_status
+  - inherited_freeze_fields
+  - inherited_artifact_identity
+
+allowed_train_freeze_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+core_required_fields:
+  - test_window
+  - frozen_artifact_binding
+  - signal_diagnostics
+  - performance_diagnostics
+  - rule_based_evidence
+  - parameter_fit_evidence
+  - ml_model_evidence
+  - no_retune_attestation
+  - test_result_usage_policy
+  - provenance
+  - evidence_identity
+
+strict_blocking_fields:
+  - test_window
+  - frozen_artifact_binding
+  - signal_diagnostics
+  - performance_diagnostics
+  - no_retune_attestation
+  - test_result_usage_policy
+  - provenance
+  - evidence_identity
+
+allowed_requirement_statuses:
+  - required
+  - optional
+  - not_needed
+  - unknown
+
+allowed_requirement_sources:
+  - train_freeze_spec_inherited
+  - paper_stated
+  - agent_inferred
+  - researcher_required
+
+required_requirement_fields:
+  - status
+  - source
+  - value
+  - evidence
+  - blocking_if_unknown
+  - question_if_unknown
+
+optional_blocks:
+  - rule_based_test_evidence
+  - parameter_fit_test_evidence
+  - ml_model_test_evidence
+  - cost_sensitivity_evidence
+  - robustness_evidence
+  - failure_case_evidence
+
+required_optional_block_fields:
+  - block_name
+  - reason
+  - requirements
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - evidence_inputs
+  - evidence_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+allowed_next_stage_recommendations:
+  - paper_backtest_ready_spec
+  - ask_researcher
+
+field_library:
+  core:
+    test_window:
+      question: Which frozen test window is used for evidence generation?
+      examples:
+        - 2025-01-01_to_2025-06-30
+        - rolling_forward_test_windows
+    frozen_artifact_binding:
+      question: Which frozen signal config and train-freeze identity generated the evidence?
+      examples:
+        - frozen_config_digest
+        - train_freeze_artifact_identity
+    signal_diagnostics:
+      question: Which signal quality diagnostics must be computed before full backtest?
+      examples:
+        - signal_coverage
+        - rank_ic
+        - turnover_proxy
+        - autocorrelation
+    performance_diagnostics:
+      question: Which preliminary performance diagnostics are required on the test window?
+      examples:
+        - gross_return
+        - net_return_after_cost_proxy
+        - drawdown_proxy
+        - hit_rate
+    rule_based_evidence:
+      question: What evidence is needed when no fitting or ML training exists?
+      examples:
+        - no_fit_attestation
+        - fixed_formula_used
+    parameter_fit_evidence:
+      question: What evidence proves parameter selection used only allowed training data?
+      examples:
+        - selected_params_manifest
+        - train_metric_table
+    ml_model_evidence:
+      question: What evidence proves model training state and predictions are frozen?
+      examples:
+        - model_digest
+        - feature_schema_digest
+        - prediction_timestamp_audit
+    no_retune_attestation:
+      question: What proves test evidence did not modify frozen parameters, model, or signal formula?
+      examples:
+        - frozen_digest_match
+        - no_test_metric_selection
+    test_result_usage_policy:
+      question: How may test evidence be used before holdout?
+      examples:
+        - diagnose_only_no_parameter_change
+        - fail_or_continue_decision_only
+    provenance:
+      question: Which code, data, configs, and timestamps produced the evidence?
+      examples:
+        - code_commit
+        - data_snapshot_id
+        - run_id
+    evidence_identity:
+      question: Which stable IDs and digests identify this evidence bundle?
+      examples:
+        - evidence_bundle_digest
+        - run_manifest_digest
+  optional_blocks:
+    rule_based_test_evidence:
+      trigger_when:
+        - inherited train_test_mode is not_required_rule_based
+      fields:
+        - fixed_formula_attestation
+        - no_fit_attestation
+        - signal_diagnostic_table
+    parameter_fit_test_evidence:
+      trigger_when:
+        - inherited train_test_mode is required_parameter_fit
+      fields:
+        - selected_parameter_manifest
+        - train_only_selection_audit
+        - frozen_parameter_digest
+    ml_model_test_evidence:
+      trigger_when:
+        - inherited train_test_mode is required_ml_model
+      fields:
+        - model_artifact_digest
+        - feature_schema
+        - prediction_audit
+    cost_sensitivity_evidence:
+      trigger_when:
+        - strategy viability depends on fees, funding, slippage, or turnover
+      fields:
+        - fee_scenarios
+        - slippage_scenarios
+        - turnover_breakdown
+    robustness_evidence:
+      trigger_when:
+        - researcher requires robustness checks before backtest-ready
+      fields:
+        - subperiod_breakdown
+        - symbol_bucket_breakdown
+        - parameter_neighbor_check
+    failure_case_evidence:
+      trigger_when:
+        - test evidence exposes weak coverage, negative returns, high turnover, or instability
+      fields:
+        - failure_modes
+        - affected_windows
+        - allowed_next_action
+
+blocking_question_groups:
+  evidence_scope:
+    - test_window
+    - frozen_artifact_binding
+  diagnostics:
+    - signal_diagnostics
+    - performance_diagnostics
+  no_retune:
+    - no_retune_attestation
+    - test_result_usage_policy
+  provenance_identity:
+    - provenance
+    - evidence_identity
