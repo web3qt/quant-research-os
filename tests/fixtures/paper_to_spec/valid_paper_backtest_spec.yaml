@@ -1,0 +1,235 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+test_evidence_spec_reference:
+  paper_slug: example_crypto_perp_momentum
+  path: tests/fixtures/paper_to_spec/valid_paper_test_evidence_spec.yaml
+  validation_status: valid
+  inherited_evidence_fields:
+    - test_window
+    - frozen_artifact_binding
+    - signal_diagnostics
+    - performance_diagnostics
+    - no_retune_attestation
+    - test_result_usage_policy
+    - evidence_identity
+  inherited_evidence_identity:
+    evidence_bundle_digest: example_evidence_bundle_digest
+    run_manifest_digest: example_run_manifest_digest
+    frozen_artifact_digest: example_frozen_artifact_digest
+backtest_intent: Define the frozen crypto perpetual backtest handoff without generating implementation code or allowing backtest-driven retuning.
+core_backtest_requirements:
+  backtest_scope:
+    status: required
+    source: test_evidence_spec_inherited
+    value:
+      route: time_series_signal
+      market: crypto_perpetual
+      bar_interval: 1h
+      start: 2025-01-01T00:00:00Z
+      end: 2025-06-30T23:00:00Z
+    evidence:
+      - paper_test_evidence_spec.test_window
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  frozen_artifact_binding:
+    status: required
+    source: test_evidence_spec_inherited
+    value:
+      frozen_config_id: example_crypto_perp_momentum_v1
+      evidence_bundle_digest: example_evidence_bundle_digest
+      required_digest_match: true
+    evidence:
+      - paper_test_evidence_spec.frozen_artifact_binding
+      - paper_test_evidence_spec.evidence_identity
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  market_assumptions:
+    status: required
+    source: agent_inferred
+    value:
+      instrument_type: linear_usdt_perpetual
+      timezone: UTC
+      price_source: mark_price
+      funding_source: exchange_funding_rate
+    evidence:
+      - Crypto perpetual backtest requires explicit market accounting assumptions.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  portfolio_construction:
+    status: required
+    source: train_freeze_spec_inherited
+    value:
+      mapping: long_only_or_flat
+      entry_rule: signal_above_zero
+      exit_rule: signal_not_above_zero
+    evidence:
+      - paper_train_freeze_spec.frozen_signal_definition
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  position_sizing:
+    status: required
+    source: researcher_required
+    value:
+      sizing: equal_notional
+      max_leverage: 1.0
+      max_symbol_weight: 0.1
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  execution_assumptions:
+    status: required
+    source: researcher_required
+    value:
+      trade_timing: next_bar_open
+      order_type: market
+      signal_lag_bars: 1
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  fees_slippage_funding:
+    status: required
+    source: researcher_required
+    value:
+      fee_model: taker_fee_bps
+      fee_bps: 5
+      slippage_bps: 2
+      include_funding_pnl: true
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  risk_controls:
+    status: required
+    source: researcher_required
+    value:
+      max_gross_exposure: 1.0
+      max_symbol_weight: 0.1
+      stop_policy: none
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  required_metrics:
+    status: required
+    source: researcher_required
+    value:
+      metrics:
+        - net_return
+        - max_drawdown
+        - sharpe_365d
+        - turnover
+        - hit_rate
+        - funding_adjusted_pnl
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  pass_fail_gate:
+    status: required
+    source: agent_inferred
+    value:
+      policy: fail_or_continue_without_parameter_change
+      decision_rule: continue only if net return is positive after costs and frozen digests match
+      allowed_actions:
+        - implement_backtest
+        - document_failure
+        - ask_researcher
+      prohibited_actions:
+        - retune_parameters
+        - alter_signal_formula
+        - refit_model_from_backtest_results
+    evidence:
+      - Backtest result may only decide fail-or-continue; it cannot modify frozen artifacts.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  reproducibility:
+    status: required
+    source: researcher_required
+    value:
+      required_fields:
+        - code_commit
+        - dependency_lock_digest
+        - random_seed
+        - config_digest
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  provenance:
+    status: required
+    source: researcher_required
+    value:
+      required_fields:
+        - data_snapshot_id
+        - run_manifest_digest
+        - generated_at
+        - artifact_digests
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  implementation_handoff_plan:
+    status: required
+    source: agent_inferred
+    value:
+      expected_files:
+        - program/backtest/stage_program.yaml
+        - program/backtest/README.md
+        - program/backtest/run_backtest.py
+      expected_outputs:
+        - portfolio_return_series.parquet
+        - equity_curve.parquet
+        - portfolio_pnl_ledger.parquet
+        - backtest_metrics.yaml
+    evidence:
+      - QROS framework repo only defines the handoff; active research repo owns implementation.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: long_only_or_flat_portfolio
+    reason: signal maps into long or flat state.
+    requirements:
+      entry_threshold:
+        status: required
+        source: train_freeze_spec_inherited
+        value:
+          threshold: 0
+        evidence:
+          - paper_train_freeze_spec.frozen_signal_definition
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      exit_threshold:
+        status: required
+        source: train_freeze_spec_inherited
+        value:
+          threshold: 0
+        evidence:
+          - paper_train_freeze_spec.frozen_signal_definition
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      flat_state_policy:
+        status: required
+        source: agent_inferred
+        value:
+          policy: no_position_when_signal_not_above_threshold
+        evidence:
+          - long-only crypto perpetual interpretation requires explicit flat state.
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  backtest_inputs:
+    - paper_data_spec.yaml
+    - paper_signal_spec.yaml
+    - paper_train_freeze_spec.yaml
+    - paper_test_evidence_spec.yaml
+    - frozen_signal_config
+  backtest_outputs:
+    - portfolio_return_series.parquet
+    - equity_curve.parquet
+    - portfolio_pnl_ledger.parquet
+    - backtest_metrics.yaml
+  validation_checks:
+    - frozen_artifact_digest_matches_test_evidence_spec
+    - no_unknown_strict_backtest_fields
+    - pass_fail_gate_disallows_retune
+  next_stage_recommendation: implement_backtest
