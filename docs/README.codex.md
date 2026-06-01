@@ -53,7 +53,7 @@ QROS 在克隆仓库的 `skills/` 下维护源码版 source bundles，`./setup` 
 
 第三阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_train_freeze_spec.py` 做 deterministic validation，用于冻结 train/test mode、parameters、train/test windows、split policy、selection policy、model training、refit policy、leakage controls 和 artifact identity。
 
-第四阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml`，用于定义 frozen artifact binding、signal diagnostics、performance diagnostics、no-retune attestation、test result usage policy、provenance 和 evidence identity。
+第四阶段产出 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml`。该产物遵守 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml`，可用 `runtime/scripts/validate_paper_test_evidence_spec.py` 做 deterministic validation，用于定义 frozen artifact binding、signal diagnostics、performance diagnostics、no-retune attestation、test result usage policy、provenance 和 evidence identity。
 
 完整说明见 `docs/guides/qros-paper-to-spec-usage.md`。
 

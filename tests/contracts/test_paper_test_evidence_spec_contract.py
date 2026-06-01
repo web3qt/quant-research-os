@@ -100,7 +100,7 @@ def test_paper_test_evidence_spec_contract_declares_optional_blocks_and_handoff(
         "next_stage_recommendation",
     ]
     assert contract["allowed_next_stage_recommendations"] == [
-        "paper_backtest_ready_spec",
+        "paper_backtest_spec",
         "ask_researcher",
     ]
 

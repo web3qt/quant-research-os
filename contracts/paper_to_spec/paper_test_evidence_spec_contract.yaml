@@ -96,7 +96,7 @@ required_implementation_handoff_fields:
   - next_stage_recommendation
 
 allowed_next_stage_recommendations:
-  - paper_backtest_ready_spec
+  - paper_backtest_spec
   - ask_researcher
 
 field_library:
@@ -193,7 +193,7 @@ field_library:
         - turnover_breakdown
     robustness_evidence:
       trigger_when:
-        - researcher requires robustness checks before backtest-ready
+        - researcher requires robustness checks before backtest spec
       fields:
         - subperiod_breakdown
         - symbol_bucket_breakdown

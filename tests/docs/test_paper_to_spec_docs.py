@@ -30,6 +30,7 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
+        "runtime/scripts/validate_paper_test_evidence_spec.py",
         "deterministic validator",
         "reading_coverage",
         "target_market",
@@ -150,6 +151,7 @@ def test_codex_readme_documents_paper_to_spec_reset() -> None:
     assert "runtime/scripts/validate_paper_data_spec.py" in content
     assert "runtime/scripts/validate_paper_signal_spec.py" in content
     assert "runtime/scripts/validate_paper_train_freeze_spec.py" in content
+    assert "runtime/scripts/validate_paper_test_evidence_spec.py" in content
     assert "strict blocking" in content
     assert "train/test policy" in content
     assert "artifact identity" in content

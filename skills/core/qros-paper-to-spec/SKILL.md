@@ -209,8 +209,15 @@ python runtime/scripts/validate_paper_train_freeze_spec.py --spec-path outputs/p
 6. `test_result_usage_policy`：必须说明 test 结果只能用于 diagnose / fail-or-continue，不允许变成 holdout 前再调参。
 7. `strict blocking`：任何 test-evidence strict blocking field 为 `unknown`，或无法绑定 frozen artifact，必须停止并问研究员。
 8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml` 写入当前阶段产物。
+9. `validate`：使用 deterministic validator 校验 `paper_test_evidence_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
-第一版 test-evidence 只定义 contract，不提供 deterministic validator。validator 稳定后再加入。
+Test-evidence validator 入口：
+
+```text
+python runtime/scripts/validate_paper_test_evidence_spec.py --spec-path outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml
+```
+
+该 validator 只检查 contract shape、枚举、required fields、train-freeze spec reference、strict blocking unknown、no-retune attestation、test result usage policy 和 handoff shape，不判断策略是否能赚钱。
 
 ## Requirement entry shape
 

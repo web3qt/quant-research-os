@@ -1,0 +1,189 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+train_freeze_spec_reference:
+  paper_slug: example_crypto_perp_momentum
+  path: tests/fixtures/paper_to_spec/valid_paper_train_freeze_spec.yaml
+  validation_status: valid
+  inherited_freeze_fields:
+    - train_test_mode
+    - frozen_signal_definition
+    - parameter_freeze
+    - test_window
+    - split_policy
+    - leakage_controls
+    - artifact_identity
+  inherited_artifact_identity:
+    frozen_config_id: example_crypto_perp_momentum_v1
+    random_seed: 0
+test_evidence_intent: Define frozen test evidence for the rule-based signal without allowing test results to retune parameters or alter artifact identity.
+core_test_evidence_requirements:
+  test_window:
+    status: required
+    source: train_freeze_spec_inherited
+    value:
+      start: 2025-01-01T00:00:00Z
+      end: 2025-06-30T23:00:00Z
+    evidence:
+      - paper_train_freeze_spec.test_window
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  frozen_artifact_binding:
+    status: required
+    source: train_freeze_spec_inherited
+    value:
+      frozen_config_id: example_crypto_perp_momentum_v1
+      expected_digest_inputs:
+        - paper_data_spec.yaml
+        - paper_signal_spec.yaml
+        - paper_train_freeze_spec.yaml
+    evidence:
+      - paper_train_freeze_spec.artifact_identity
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  signal_diagnostics:
+    status: required
+    source: researcher_required
+    value:
+      checks:
+        - signal_coverage
+        - rank_ic
+        - turnover_proxy
+        - signal_autocorrelation
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  performance_diagnostics:
+    status: required
+    source: researcher_required
+    value:
+      checks:
+        - gross_return
+        - net_return_after_cost_proxy
+        - drawdown_proxy
+        - hit_rate
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  rule_based_evidence:
+    status: required
+    source: train_freeze_spec_inherited
+    value:
+      fixed_formula_attestation: true
+      no_fit_attestation: true
+    evidence:
+      - paper_train_freeze_spec.rule_based_freeze
+    blocking_if_unknown: false
+    question_if_unknown: ""
+  parameter_fit_evidence:
+    status: not_needed
+    source: train_freeze_spec_inherited
+    value:
+      reason: train_test_mode_not_required_rule_based
+    evidence:
+      - paper_train_freeze_spec.train_test_mode
+    blocking_if_unknown: false
+    question_if_unknown: ""
+  ml_model_evidence:
+    status: not_needed
+    source: train_freeze_spec_inherited
+    value:
+      reason: no_model_training
+    evidence:
+      - paper_train_freeze_spec.model_training
+    blocking_if_unknown: false
+    question_if_unknown: ""
+  no_retune_attestation:
+    status: required
+    source: agent_inferred
+    value:
+      allows_parameter_change: false
+      allows_formula_change: false
+      allows_model_refit: false
+      required_digest_match: true
+    evidence:
+      - Test evidence may only diagnose or fail/continue; it cannot change frozen artifacts.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  test_result_usage_policy:
+    status: required
+    source: agent_inferred
+    value:
+      policy: diagnose_only_frozen_artifact
+      allowed_actions:
+        - continue_to_backtest_spec
+        - ask_researcher
+        - document_failure
+      prohibited_actions:
+        - retune_parameters
+        - alter_signal_formula
+        - refit_model_from_test_results
+    evidence:
+      - Test evidence is post-freeze and pre-holdout.
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  provenance:
+    status: required
+    source: researcher_required
+    value:
+      required_fields:
+        - code_commit
+        - data_snapshot_id
+        - run_id
+        - generated_at
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+  evidence_identity:
+    status: required
+    source: researcher_required
+    value:
+      required_digests:
+        - evidence_bundle_digest
+        - run_manifest_digest
+        - frozen_artifact_digest
+    evidence: []
+    blocking_if_unknown: true
+    question_if_unknown: ""
+triggered_optional_blocks:
+  - block_name: rule_based_test_evidence
+    reason: inherited train_test_mode is not_required_rule_based.
+    requirements:
+      fixed_formula_attestation:
+        status: required
+        source: train_freeze_spec_inherited
+        value:
+          required: true
+        evidence:
+          - paper_train_freeze_spec.frozen_signal_definition
+        blocking_if_unknown: false
+        question_if_unknown: ""
+      no_fit_attestation:
+        status: required
+        source: train_freeze_spec_inherited
+        value:
+          required: true
+        evidence:
+          - paper_train_freeze_spec.model_training
+        blocking_if_unknown: false
+        question_if_unknown: ""
+ambiguities: []
+implementation_handoff:
+  evidence_inputs:
+    - paper_data_spec.yaml
+    - paper_signal_spec.yaml
+    - paper_train_freeze_spec.yaml
+    - frozen_signal_config
+  evidence_outputs:
+    - signal_diagnostics_report
+    - performance_diagnostics_report
+    - no_retune_attestation
+    - evidence_identity_manifest
+  validation_checks:
+    - frozen_artifact_digest_matches_train_freeze_spec
+    - no_unknown_strict_test_evidence_fields
+    - test_result_usage_policy_disallows_retune
+  next_stage_recommendation: paper_backtest_spec
