@@ -126,8 +126,8 @@ contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml
 - test window
 - split policy
 - selection policy
-- model training
-- refit policy
+- calibration state
+- recalibration policy
 - leakage controls
 - artifact identity
 - train-freeze blocking question groups
@@ -148,8 +148,7 @@ contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml
 - signal diagnostics
 - performance diagnostics
 - rule-based evidence
-- parameter-fit evidence
-- ML model evidence
+- parameter-calibration evidence
 - no-retune attestation
 - test result usage policy
 - provenance
@@ -241,8 +240,8 @@ python runtime/scripts/validate_paper_data_spec.py --spec-path outputs/paper_to_
 2. `data_spec_reference`：记录 paper_slug、data spec path、validation_status、继承的 data fields。
 3. `signal_research_intent`：用一句话说明论文核心策略思想要检验什么，不写成完整 strategy spec。
 4. `core_signal_requirements`：逐项填写 `signal_family`、`prediction_target`、`feature_inputs`、`signal_definition`、`signal_timing`、`lookahead_controls`、`train_test_policy`、`portfolio_mapping`、`diagnostics`。
-5. `triggered_optional_blocks`：只在论文或 signal reasoning 触发时展开 cross-sectional ranking、time-series thresholds、parameter search、machine learning model、regime filter、risk filter。
-6. `train_test_policy`：必须明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
+5. `triggered_optional_blocks`：只在论文或 signal reasoning 触发时展开 cross-sectional ranking、time-series thresholds、parameter calibration、regime filter、risk filter。
+6. `train_test_policy`：必须明确是 `not_required_rule_based`、`required_parameter_calibration` 还是 `unknown`。
 7. `strict blocking`：任何 signal strict blocking field 为 `unknown`，或无法区分论文原文与 agent 推断，必须停止并问研究员。
 8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml` 写入当前阶段产物。
 9. `validate`：使用 deterministic validator 校验 `paper_signal_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
@@ -261,10 +260,10 @@ python runtime/scripts/validate_paper_signal_spec.py --spec-path outputs/paper_t
 
 1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml` 为准。
 2. `signal_spec_reference`：记录 paper_slug、signal spec path、validation_status、继承的 signal fields 和 inherited_train_test_policy。
-3. `train_freeze_intent`：用一句话说明本阶段要冻结哪些信号、参数、窗口或模型状态。
-4. `core_train_freeze_requirements`：逐项填写 `train_test_mode`、`frozen_signal_definition`、`parameter_freeze`、`train_window`、`test_window`、`split_policy`、`selection_policy`、`model_training`、`refit_policy`、`leakage_controls`、`artifact_identity`。
-5. `triggered_optional_blocks`：只在 signal spec 或 train/freeze reasoning 触发时展开 rule-based freeze、parameter search freeze、ML training freeze、walk-forward freeze、regime-specific freeze。
-6. `train_test_mode`：必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
+3. `train_freeze_intent`：用一句话说明本阶段要冻结哪些信号、参数、定尺窗口、选择规则或定尺状态。
+4. `core_train_freeze_requirements`：逐项填写 `train_test_mode`、`frozen_signal_definition`、`parameter_freeze`、`train_window`、`test_window`、`split_policy`、`selection_policy`、`calibration_state`、`recalibration_policy`、`leakage_controls`、`artifact_identity`。
+5. `triggered_optional_blocks`：只在 signal spec 或 train/freeze reasoning 触发时展开 rule-based freeze、parameter calibration freeze、walk-forward freeze、regime-specific freeze。
+6. `train_test_mode`：必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_calibration` 还是 `unknown`。
 7. `strict blocking`：任何 train-freeze strict blocking field 为 `unknown`，或无法说明 train/test split 与 leakage controls，必须停止并问研究员。
 8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml` 写入当前阶段产物。
 9. `validate`：使用 deterministic validator 校验 `paper_train_freeze_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
@@ -284,9 +283,9 @@ python runtime/scripts/validate_paper_train_freeze_spec.py --spec-path outputs/p
 1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml` 为准。
 2. `train_freeze_spec_reference`：记录 paper_slug、train-freeze spec path、validation_status、继承的 freeze fields 和 inherited_artifact_identity。
 3. `test_evidence_intent`：用一句话说明本阶段要生成哪些冻结后测试证据，以及这些证据不能用于反向调参。
-4. `core_test_evidence_requirements`：逐项填写 `test_window`、`frozen_artifact_binding`、`signal_diagnostics`、`performance_diagnostics`、`rule_based_evidence`、`parameter_fit_evidence`、`ml_model_evidence`、`no_retune_attestation`、`test_result_usage_policy`、`provenance`、`evidence_identity`。
-5. `triggered_optional_blocks`：只在 train-freeze spec 或 evidence reasoning 触发时展开 rule-based test evidence、parameter-fit test evidence、ML model test evidence、cost sensitivity evidence、robustness evidence、failure-case evidence。
-6. `no_retune_attestation`：必须说明 test evidence 不得修改 frozen parameters、model、signal formula 或 artifact identity。
+4. `core_test_evidence_requirements`：逐项填写 `test_window`、`frozen_artifact_binding`、`signal_diagnostics`、`performance_diagnostics`、`rule_based_evidence`、`parameter_calibration_evidence`、`no_retune_attestation`、`test_result_usage_policy`、`provenance`、`evidence_identity`。
+5. `triggered_optional_blocks`：只在 train-freeze spec 或 evidence reasoning 触发时展开 rule-based test evidence、parameter-calibration test evidence、cost sensitivity evidence、robustness evidence、failure-case evidence。
+6. `no_retune_attestation`：必须说明 test evidence 不得修改 frozen parameters、calibration state、signal formula 或 artifact identity。
 7. `test_result_usage_policy`：必须说明 test 结果只能用于 diagnose / fail-or-continue，不允许变成 holdout 前再调参。
 8. `strict blocking`：任何 test-evidence strict blocking field 为 `unknown`，或无法绑定 frozen artifact，必须停止并问研究员。
 9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml` 写入当前阶段产物。
@@ -333,7 +332,7 @@ python runtime/scripts/validate_paper_backtest_spec.py --spec-path outputs/paper
 4. `core_implementation_requirements`：逐项填写 `active_research_repo_boundary`、`target_stage_program`、`backtest_entrypoint`、`input_artifacts`、`frozen_config_binding`、`data_access_plan`、`output_artifacts`、`execution_manifest`、`validation_checks`、`no_retune_controls`、`reproducibility_controls`。
 5. `triggered_optional_blocks`：只在 backtest spec 或实现 reasoning 触发时展开 vectorbt engine、backtrader engine、custom engine、data materialization、performance report。
 6. `active_research_repo_boundary`：必须说明实现写入 active research repo，而不是 QROS framework repo。
-7. `no_retune_controls`：必须说明实现不得修改 frozen signal、参数、模型状态或 selection policy。
+7. `no_retune_controls`：必须说明实现不得修改 frozen signal、参数、定尺状态或 selection policy。
 8. `strict blocking`：任何 implementation strict blocking field 为 `unknown`，或无法说明 active repo 路径 / frozen binding / outputs / validation checks，必须停止并问研究员。
 9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml` 写入当前阶段产物。
 10. `validate`：使用 deterministic validator 校验 `paper_backtest_implementation_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
@@ -375,7 +374,7 @@ Train-freeze spec 使用同一 entry shape，但 source enum 是：
 source: signal_spec_inherited | paper_stated | agent_inferred | researcher_required
 ```
 
-`signal_spec_inherited` 只能用于从 valid `paper_signal_spec.yaml` 继承的字段。参数冻结、训练窗口、选择指标、refit 规则和 artifact identity 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
+`signal_spec_inherited` 只能用于从 valid `paper_signal_spec.yaml` 继承的字段。参数冻结、定尺窗口、选择指标、recalibration 规则和 artifact identity 如果论文没有明确说明，必须标为 `agent_inferred` 或 `researcher_required`。
 
 Test-evidence spec 使用同一 entry shape，但 source enum 是：
 
@@ -435,8 +434,8 @@ Train-freeze strict blocking fields：
 - `test_window`
 - `split_policy`
 - `selection_policy`
-- `model_training`
-- `refit_policy`
+- `calibration_state`
+- `recalibration_policy`
 - `leakage_controls`
 - `artifact_identity`
 
@@ -492,14 +491,14 @@ Signal 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 
 - `signal_identity`
 - `prediction_and_inputs`
-- `leakage_and_training`
+- `leakage_and_calibration`
 - `portfolio_and_diagnostics`
 
 Train-freeze 阻断问题按 contract 中的 `blocking_question_groups` 归类：
 
 - `freeze_identity`
 - `split_and_selection`
-- `fit_and_refit`
+- `calibration_and_recalibration`
 - `leakage`
 
 Test-evidence 阻断问题按 contract 中的 `blocking_question_groups` 归类：
@@ -531,7 +530,7 @@ Backtest implementation 阻断问题按 contract 中的 `blocking_question_group
 - 不把 validator failure 包装成 review verdict；这不是 `qros-research-session` review。
 - 不把 crypto perpetual 迁移假设伪装成论文原文。
 - 不把 train/test 是否需要留到 backtest 阶段才判断；必须在 `paper_signal_spec.yaml` 的 `train_test_policy` 里先分类。
-- 不把参数选择、模型训练、split policy 或 artifact identity 留到 backtest 阶段才定义；必须在 `paper_train_freeze_spec.yaml` 里冻结。
+- 不把参数选择、定尺状态、split policy 或 artifact identity 留到 backtest 阶段才定义；必须在 `paper_train_freeze_spec.yaml` 里冻结。
 - 不把 test evidence 用作 holdout 前调参入口；test 结果只能用于诊断、失败处理或是否继续的判断。
 - 不把 backtest 结果用作调参入口；`paper_backtest_spec.yaml` 只能定义实现需求和 pass/fail gate。
 - 不为所有 optional blocks 机械展开字段；只展开被 PDF 或 data reasoning 触发的块。

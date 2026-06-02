@@ -131,6 +131,21 @@ def test_validator_fails_when_no_retune_attestation_allows_parameter_change(tmp_
     ) in result.findings
 
 
+def test_validator_fails_when_no_retune_attestation_allows_recalibration(tmp_path: Path) -> None:
+    payload = _load_valid_spec()
+    payload["core_test_evidence_requirements"]["no_retune_attestation"]["value"]["allows_recalibration"] = True
+    spec_path = tmp_path / "paper_test_evidence_spec.yaml"
+    spec_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    result = validate_paper_test_evidence_spec(spec_path)
+
+    assert not result.valid
+    assert (
+        "PAPER_TEST_EVIDENCE_SPEC_RETUNE_ALLOWED",
+        "core_test_evidence_requirements.no_retune_attestation.value.allows_recalibration must be false",
+    ) in result.findings
+
+
 def test_validator_fails_when_test_result_usage_policy_allows_retune(tmp_path: Path) -> None:
     payload = _load_valid_spec()
     payload["core_test_evidence_requirements"]["test_result_usage_policy"]["value"]["allowed_actions"].append("retune_parameters")

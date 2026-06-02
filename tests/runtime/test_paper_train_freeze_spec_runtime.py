@@ -54,7 +54,7 @@ def test_validator_fails_when_signal_spec_reference_not_valid(tmp_path: Path) ->
 
 def test_validator_fails_when_inherited_policy_mismatches_train_test_mode(tmp_path: Path) -> None:
     payload = _load_valid_spec()
-    payload["signal_spec_reference"]["inherited_train_test_policy"] = "required_parameter_fit"
+    payload["signal_spec_reference"]["inherited_train_test_policy"] = "required_parameter_calibration"
     spec_path = tmp_path / "paper_train_freeze_spec.yaml"
     spec_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 

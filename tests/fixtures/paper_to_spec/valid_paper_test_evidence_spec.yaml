@@ -14,6 +14,8 @@ train_freeze_spec_reference:
     - parameter_freeze
     - test_window
     - split_policy
+    - calibration_state
+    - recalibration_policy
     - leakage_controls
     - artifact_identity
   inherited_artifact_identity:
@@ -73,12 +75,12 @@ core_test_evidence_requirements:
     source: train_freeze_spec_inherited
     value:
       fixed_formula_attestation: true
-      no_fit_attestation: true
+      no_calibration_attestation: true
     evidence:
       - paper_train_freeze_spec.rule_based_freeze
     blocking_if_unknown: false
     question_if_unknown: ""
-  parameter_fit_evidence:
+  parameter_calibration_evidence:
     status: not_needed
     source: train_freeze_spec_inherited
     value:
@@ -87,22 +89,13 @@ core_test_evidence_requirements:
       - paper_train_freeze_spec.train_test_mode
     blocking_if_unknown: false
     question_if_unknown: ""
-  ml_model_evidence:
-    status: not_needed
-    source: train_freeze_spec_inherited
-    value:
-      reason: no_model_training
-    evidence:
-      - paper_train_freeze_spec.model_training
-    blocking_if_unknown: false
-    question_if_unknown: ""
   no_retune_attestation:
     status: required
     source: agent_inferred
     value:
       allows_parameter_change: false
       allows_formula_change: false
-      allows_model_refit: false
+      allows_recalibration: false
       required_digest_match: true
     evidence:
       - Test evidence may only diagnose or fail/continue; it cannot change frozen artifacts.
@@ -120,7 +113,7 @@ core_test_evidence_requirements:
       prohibited_actions:
         - retune_parameters
         - alter_signal_formula
-        - refit_model_from_test_results
+        - recalibrate_from_test_results
     evidence:
       - Test evidence is post-freeze and pre-holdout.
     blocking_if_unknown: true
@@ -161,13 +154,13 @@ triggered_optional_blocks:
           - paper_train_freeze_spec.frozen_signal_definition
         blocking_if_unknown: false
         question_if_unknown: ""
-      no_fit_attestation:
+      no_calibration_attestation:
         status: required
         source: train_freeze_spec_inherited
         value:
           required: true
         evidence:
-          - paper_train_freeze_spec.model_training
+          - paper_train_freeze_spec.calibration_state
         blocking_if_unknown: false
         question_if_unknown: ""
 ambiguities: []

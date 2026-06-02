@@ -19,7 +19,7 @@ signal_spec_reference:
     - portfolio_mapping
     - diagnostics
   inherited_train_test_policy: not_required_rule_based
-train_freeze_intent: Freeze the rule-based signal formula, non-fit parameters, split boundaries, leakage controls, and artifact identity before test evidence.
+train_freeze_intent: Freeze the rule-based signal formula, fixed parameters, split boundaries, leakage controls, and artifact identity before test evidence.
 core_train_freeze_requirements:
   train_test_mode:
     status: required
@@ -59,7 +59,7 @@ core_train_freeze_requirements:
     value:
       reason: not_applicable_rule_based
     evidence:
-      - No parameter fitting or ML training is required.
+      - No parameter calibration is required.
     blocking_if_unknown: true
     question_if_unknown: ""
   test_window:
@@ -89,23 +89,23 @@ core_train_freeze_requirements:
       - Fixed signal does not choose parameters from test metrics.
     blocking_if_unknown: true
     question_if_unknown: ""
-  model_training:
+  calibration_state:
     status: not_needed
     source: signal_spec_inherited
     value:
-      model_family: none
-      fitted_state: none
+      calibrated_parameters: none
+      calibrated_state: none
     evidence:
       - paper_signal_spec.train_test_policy
     blocking_if_unknown: true
     question_if_unknown: ""
-  refit_policy:
+  recalibration_policy:
     status: not_needed
     source: agent_inferred
     value:
-      policy: no_refit
+      policy: no_recalibration
     evidence:
-      - No fitted state exists for this rule-based signal.
+      - No calibrated state exists for this rule-based signal.
     blocking_if_unknown: true
     question_if_unknown: ""
   leakage_controls:
@@ -146,13 +146,13 @@ triggered_optional_blocks:
           - paper_signal_spec.signal_definition
         blocking_if_unknown: false
         question_if_unknown: ""
-      no_fit_attestation:
+      no_calibration_attestation:
         status: required
         source: agent_inferred
         value:
-          no_fit: true
+          no_calibration: true
         evidence:
-          - Rule-based signal has no learned parameters.
+          - Rule-based signal has no calibrated parameters.
         blocking_if_unknown: false
         question_if_unknown: ""
 ambiguities: []

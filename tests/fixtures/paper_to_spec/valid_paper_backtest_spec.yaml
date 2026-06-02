@@ -138,7 +138,7 @@ core_backtest_requirements:
       prohibited_actions:
         - retune_parameters
         - alter_signal_formula
-        - refit_model_from_backtest_results
+        - recalibrate_from_backtest_results
     evidence:
       - Backtest result may only decide fail-or-continue; it cannot modify frozen artifacts.
     blocking_if_unknown: true

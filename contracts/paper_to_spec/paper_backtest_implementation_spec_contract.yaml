@@ -161,7 +161,7 @@ field_library:
         - no_unknown_strict_backtest_fields
         - pass_fail_gate_disallows_retune
     no_retune_controls:
-      question: Which implementation rules prevent changing parameters, model state, signal formula, or selection policy?
+      question: Which implementation rules prevent changing parameters, calibration state, signal formula, or selection policy?
       examples:
         - read_only_frozen_config
         - fail_on_digest_mismatch

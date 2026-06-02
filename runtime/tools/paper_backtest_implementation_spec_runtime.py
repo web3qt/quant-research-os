@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONTRACT_PATH = ROOT / "contracts" / "paper_to_spec" / "paper_backtest_implementation_spec_contract.yaml"
-RETUNE_TOKENS = ("retune", "alter_signal", "refit_model", "optimize_parameter")
+RETUNE_TOKENS = ("retune", "alter_signal", "recalibrate", "optimize_parameter")
 FRAMEWORK_REPO_TOKENS = ("qros_framework_repo", "quant-research-os/framework", "qros framework repo")
 
 
@@ -309,7 +309,7 @@ def _validate_no_retune_controls(entry: Any) -> list[tuple[str, str]]:
         return [
             (
                 "PAPER_BACKTEST_IMPLEMENTATION_SPEC_RETUNE_ALLOWED",
-                "core_implementation_requirements.no_retune_controls must not allow retune, refit, alter signal, or optimize parameters",
+                "core_implementation_requirements.no_retune_controls must not allow retune, recalibrate, alter signal, or optimize parameters",
             )
         ]
     return []

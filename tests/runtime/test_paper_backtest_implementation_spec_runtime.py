@@ -150,7 +150,7 @@ def test_validator_fails_when_no_retune_controls_allow_retune(tmp_path: Path) ->
     assert not result.valid
     assert (
         "PAPER_BACKTEST_IMPLEMENTATION_SPEC_RETUNE_ALLOWED",
-        "core_implementation_requirements.no_retune_controls must not allow retune, refit, alter signal, or optimize parameters",
+        "core_implementation_requirements.no_retune_controls must not allow retune, recalibrate, alter signal, or optimize parameters",
     ) in result.findings
 
 

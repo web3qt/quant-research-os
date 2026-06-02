@@ -58,8 +58,7 @@ allowed_signal_families:
 
 allowed_train_test_modes:
   - not_required_rule_based
-  - required_parameter_fit
-  - required_ml_model
+  - required_parameter_calibration
   - unknown
 
 allowed_requirement_statuses:
@@ -85,8 +84,7 @@ required_requirement_fields:
 optional_blocks:
   - cross_sectional_ranking
   - time_series_thresholds
-  - parameter_search
-  - machine_learning_model
+  - parameter_calibration
   - regime_filter
   - risk_filter
 
@@ -130,7 +128,7 @@ field_library:
         - funding_rate
         - open_interest_change
     signal_definition:
-      question: What exact formula, rule, or model transforms features into a signal?
+      question: What exact formula or rule transforms features into a signal?
       examples:
         - rank_24h_momentum_with_funding_filter
         - zscore_return_breakout
@@ -145,11 +143,10 @@ field_library:
         - feature_timestamp_lte_signal_timestamp
         - universe_known_at_signal_time
     train_test_policy:
-      question: Does the signal require parameter fitting or model training?
+      question: Does the signal require in-sample parameter calibration before testing?
       examples:
         - not_required_rule_based
-        - required_parameter_fit
-        - required_ml_model
+        - required_parameter_calibration
     portfolio_mapping:
       question: How does the signal map to positions before full backtest details?
       examples:
@@ -177,21 +174,13 @@ field_library:
         - threshold_rule
         - hysteresis
         - holding_rule
-    parameter_search:
+    parameter_calibration:
       trigger_when:
         - paper requires choosing windows, thresholds, weights, or transforms
       fields:
         - parameter_space
         - selection_metric
         - train_window
-    machine_learning_model:
-      trigger_when:
-        - paper uses supervised learning, classifiers, regressors, embeddings, or neural models
-      fields:
-        - model_family
-        - features
-        - labels
-        - retrain_schedule
     regime_filter:
       trigger_when:
         - signal changes behavior by volatility, trend, liquidity, macro, or market regime
@@ -213,7 +202,7 @@ blocking_question_groups:
     - prediction_target
     - feature_inputs
     - signal_timing
-  leakage_and_training:
+  leakage_and_calibration:
     - lookahead_controls
     - train_test_policy
   portfolio_and_diagnostics:

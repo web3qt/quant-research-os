@@ -43,8 +43,7 @@ def test_paper_test_evidence_spec_contract_locks_core_blocking_fields() -> None:
         "signal_diagnostics",
         "performance_diagnostics",
         "rule_based_evidence",
-        "parameter_fit_evidence",
-        "ml_model_evidence",
+        "parameter_calibration_evidence",
         "no_retune_attestation",
         "test_result_usage_policy",
         "provenance",
@@ -87,8 +86,7 @@ def test_paper_test_evidence_spec_contract_declares_optional_blocks_and_handoff(
     assert set(contract["field_library"]["core"]) == set(contract["core_required_fields"])
     assert set(contract["field_library"]["optional_blocks"]) == {
         "rule_based_test_evidence",
-        "parameter_fit_test_evidence",
-        "ml_model_test_evidence",
+        "parameter_calibration_test_evidence",
         "cost_sensitivity_evidence",
         "robustness_evidence",
         "failure_case_evidence",

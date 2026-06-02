@@ -34,8 +34,7 @@ core_required_fields:
   - signal_diagnostics
   - performance_diagnostics
   - rule_based_evidence
-  - parameter_fit_evidence
-  - ml_model_evidence
+  - parameter_calibration_evidence
   - no_retune_attestation
   - test_result_usage_policy
   - provenance
@@ -73,8 +72,7 @@ required_requirement_fields:
 
 optional_blocks:
   - rule_based_test_evidence
-  - parameter_fit_test_evidence
-  - ml_model_test_evidence
+  - parameter_calibration_test_evidence
   - cost_sensitivity_evidence
   - robustness_evidence
   - failure_case_evidence
@@ -126,23 +124,17 @@ field_library:
         - drawdown_proxy
         - hit_rate
     rule_based_evidence:
-      question: What evidence is needed when no fitting or ML training exists?
+      question: What evidence is needed when no parameter calibration exists?
       examples:
-        - no_fit_attestation
+        - no_calibration_attestation
         - fixed_formula_used
-    parameter_fit_evidence:
-      question: What evidence proves parameter selection used only allowed training data?
+    parameter_calibration_evidence:
+      question: What evidence proves parameter calibration used only allowed in-sample data?
       examples:
         - selected_params_manifest
         - train_metric_table
-    ml_model_evidence:
-      question: What evidence proves model training state and predictions are frozen?
-      examples:
-        - model_digest
-        - feature_schema_digest
-        - prediction_timestamp_audit
     no_retune_attestation:
-      question: What proves test evidence did not modify frozen parameters, model, or signal formula?
+      question: What proves test evidence did not modify frozen parameters, calibration state, or signal formula?
       examples:
         - frozen_digest_match
         - no_test_metric_selection
@@ -168,22 +160,15 @@ field_library:
         - inherited train_test_mode is not_required_rule_based
       fields:
         - fixed_formula_attestation
-        - no_fit_attestation
+        - no_calibration_attestation
         - signal_diagnostic_table
-    parameter_fit_test_evidence:
+    parameter_calibration_test_evidence:
       trigger_when:
-        - inherited train_test_mode is required_parameter_fit
+        - inherited train_test_mode is required_parameter_calibration
       fields:
         - selected_parameter_manifest
         - train_only_selection_audit
         - frozen_parameter_digest
-    ml_model_test_evidence:
-      trigger_when:
-        - inherited train_test_mode is required_ml_model
-      fields:
-        - model_artifact_digest
-        - feature_schema
-        - prediction_audit
     cost_sensitivity_evidence:
       trigger_when:
         - strategy viability depends on fees, funding, slippage, or turnover

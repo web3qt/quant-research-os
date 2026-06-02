@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONTRACT_PATH = ROOT / "contracts" / "paper_to_spec" / "paper_backtest_spec_contract.yaml"
-RETUNE_TOKENS = ("retune", "alter_signal", "refit_model", "optimize_parameter")
+RETUNE_TOKENS = ("retune", "alter_signal", "recalibrate", "optimize_parameter")
 
 
 @dataclass(frozen=True)

@@ -65,8 +65,7 @@ def test_paper_signal_spec_contract_declares_signal_and_train_test_enums() -> No
     ]
     assert contract["allowed_train_test_modes"] == [
         "not_required_rule_based",
-        "required_parameter_fit",
-        "required_ml_model",
+        "required_parameter_calibration",
         "unknown",
     ]
     assert contract["allowed_requirement_sources"] == [
@@ -84,8 +83,7 @@ def test_paper_signal_spec_contract_declares_optional_blocks_and_handoff() -> No
     assert set(contract["field_library"]["optional_blocks"]) == {
         "cross_sectional_ranking",
         "time_series_thresholds",
-        "parameter_search",
-        "machine_learning_model",
+        "parameter_calibration",
         "regime_filter",
         "risk_filter",
     }
@@ -108,6 +106,6 @@ def test_paper_signal_spec_contract_declares_blocking_question_groups() -> None:
     assert contract["blocking_question_groups"] == {
         "signal_identity": ["signal_family", "signal_definition"],
         "prediction_and_inputs": ["prediction_target", "feature_inputs", "signal_timing"],
-        "leakage_and_training": ["lookahead_controls", "train_test_policy"],
+        "leakage_and_calibration": ["lookahead_controls", "train_test_policy"],
         "portfolio_and_diagnostics": ["portfolio_mapping", "diagnostics"],
     }

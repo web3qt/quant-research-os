@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONTRACT_PATH = ROOT / "contracts" / "paper_to_spec" / "paper_test_evidence_spec_contract.yaml"
-RETUNE_TOKENS = ("retune", "parameter_change", "alter_signal", "refit_model")
+RETUNE_TOKENS = ("retune", "parameter_change", "alter_signal", "recalibrate")
 
 
 @dataclass(frozen=True)
@@ -265,7 +265,7 @@ def _validate_no_retune_attestation(entry: Any) -> list[tuple[str, str]]:
         return []
     value = entry["value"]
     findings: list[tuple[str, str]] = []
-    for field in ["allows_parameter_change", "allows_formula_change", "allows_model_refit"]:
+    for field in ["allows_parameter_change", "allows_formula_change", "allows_recalibration"]:
         if value.get(field) is not False:
             findings.append(
                 (

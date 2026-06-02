@@ -45,8 +45,8 @@ def test_paper_train_freeze_spec_contract_locks_core_blocking_fields() -> None:
         "test_window",
         "split_policy",
         "selection_policy",
-        "model_training",
-        "refit_policy",
+        "calibration_state",
+        "recalibration_policy",
         "leakage_controls",
         "artifact_identity",
     ]
@@ -60,8 +60,7 @@ def test_paper_train_freeze_spec_contract_declares_train_test_enums_and_sources(
 
     assert contract["allowed_train_test_modes"] == [
         "not_required_rule_based",
-        "required_parameter_fit",
-        "required_ml_model",
+        "required_parameter_calibration",
         "unknown",
     ]
     assert contract["allowed_requirement_sources"] == [
@@ -83,8 +82,7 @@ def test_paper_train_freeze_spec_contract_declares_optional_blocks_and_handoff()
     assert set(contract["field_library"]["core"]) == set(contract["core_required_fields"])
     assert set(contract["field_library"]["optional_blocks"]) == {
         "rule_based_freeze",
-        "parameter_search_freeze",
-        "ml_training_freeze",
+        "parameter_calibration_freeze",
         "walk_forward_freeze",
         "regime_specific_freeze",
     }
@@ -115,10 +113,10 @@ def test_paper_train_freeze_spec_contract_declares_blocking_question_groups() ->
             "split_policy",
             "selection_policy",
         ],
-        "fit_and_refit": [
+        "calibration_and_recalibration": [
             "parameter_freeze",
-            "model_training",
-            "refit_policy",
+            "calibration_state",
+            "recalibration_policy",
         ],
         "leakage": ["leakage_controls"],
     }

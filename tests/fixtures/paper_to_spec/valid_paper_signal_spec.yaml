@@ -86,9 +86,9 @@ core_signal_requirements:
     source: agent_inferred
     value:
       mode: not_required_rule_based
-      reason: Formula uses fixed ranks and no fitted parameters.
+      reason: Formula uses fixed ranks and no calibrated parameters.
     evidence:
-      - No model fitting or parameter search is required by the explicit rule.
+      - No parameter calibration is required by the explicit rule.
     blocking_if_unknown: true
     question_if_unknown: ""
   portfolio_mapping:

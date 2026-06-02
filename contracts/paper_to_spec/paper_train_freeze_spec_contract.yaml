@@ -30,8 +30,7 @@ allowed_signal_spec_validation_statuses:
 
 allowed_train_test_modes:
   - not_required_rule_based
-  - required_parameter_fit
-  - required_ml_model
+  - required_parameter_calibration
   - unknown
 
 core_required_fields:
@@ -42,8 +41,8 @@ core_required_fields:
   - test_window
   - split_policy
   - selection_policy
-  - model_training
-  - refit_policy
+  - calibration_state
+  - recalibration_policy
   - leakage_controls
   - artifact_identity
 
@@ -55,8 +54,8 @@ strict_blocking_fields:
   - test_window
   - split_policy
   - selection_policy
-  - model_training
-  - refit_policy
+  - calibration_state
+  - recalibration_policy
   - leakage_controls
   - artifact_identity
 
@@ -82,8 +81,7 @@ required_requirement_fields:
 
 optional_blocks:
   - rule_based_freeze
-  - parameter_search_freeze
-  - ml_training_freeze
+  - parameter_calibration_freeze
   - walk_forward_freeze
   - regime_specific_freeze
 
@@ -110,23 +108,22 @@ allowed_next_stage_recommendations:
 field_library:
   core:
     train_test_mode:
-      question: Which train/test mode from signal spec is being frozen?
+      question: Which train/test calibration mode from signal spec is being frozen?
       examples:
         - not_required_rule_based
-        - required_parameter_fit
-        - required_ml_model
+        - required_parameter_calibration
     frozen_signal_definition:
       question: Which exact signal formula, features, transforms, and timing are frozen before testing?
       examples:
         - fixed_rank_score_from_signal_spec
-        - fitted_linear_model_with_frozen_features
+        - calibrated_rank_score_with_frozen_features
     parameter_freeze:
-      question: Which windows, thresholds, weights, hyperparameters, and search spaces are frozen?
+      question: Which windows, thresholds, weights, and calibration spaces are frozen?
       examples:
         - no_search_fixed_parameters
         - choose_best_window_from_train_only
     train_window:
-      question: Which timestamps are available for parameter fitting or model training?
+      question: Which timestamps are available for in-sample parameter calibration?
       examples:
         - not_applicable_rule_based
         - 2023-01-01_to_2024-12-31
@@ -141,27 +138,27 @@ field_library:
         - chronological_split
         - expanding_walk_forward
     selection_policy:
-      question: What metric chooses parameters or models, and where is that selection allowed?
+      question: What metric chooses parameters or rules, and where is that selection allowed?
       examples:
         - rank_ic_on_train_only
         - no_selection_rule_based
-    model_training:
-      question: Is there an ML model, estimator, feature scaler, or fitted state?
+    calibration_state:
+      question: Which calibrated thresholds, windows, weights, or other in-sample decisions are frozen?
       examples:
         - not_needed
-        - xgboost_regressor
-        - linear_model
-    refit_policy:
-      question: Are parameters or models fixed once, rolling, expanding, or never refit?
+        - calibrated_momentum_window_24h
+        - frozen_threshold_grid_choice
+    recalibration_policy:
+      question: Are parameters fixed once, rolling, expanding, or never recalibrated?
       examples:
-        - no_refit
+        - no_recalibration
         - rolling_monthly
         - expanding_quarterly
     leakage_controls:
       question: What prevents test or holdout information from affecting frozen decisions?
       examples:
         - train_only_selection
-        - scaler_fit_on_train_only
+        - train_only_preprocessing
         - no_test_metric_selection
     artifact_identity:
       question: Which hashes, seeds, versions, and frozen config IDs identify the artifact?
@@ -176,33 +173,24 @@ field_library:
       fields:
         - fixed_formula
         - fixed_parameters
-        - no_fit_attestation
-    parameter_search_freeze:
+        - no_calibration_attestation
+    parameter_calibration_freeze:
       trigger_when:
-        - train_test_mode is required_parameter_fit
+        - train_test_mode is required_parameter_calibration
       fields:
         - parameter_space
         - selection_metric
         - train_only_selection_rule
-    ml_training_freeze:
-      trigger_when:
-        - train_test_mode is required_ml_model
-      fields:
-        - model_family
-        - feature_set
-        - label_definition
-        - hyperparameter_space
-        - random_seed
     walk_forward_freeze:
       trigger_when:
         - split_policy uses rolling, expanding, or walk-forward evaluation
       fields:
         - window_schedule
-        - refit_frequency
+        - recalibration_frequency
         - embargo_policy
     regime_specific_freeze:
       trigger_when:
-        - signal spec includes a regime filter or regime-specific model/rule
+        - signal spec includes a regime filter or regime-specific rule
       fields:
         - regime_definition
         - regime_assignment_time
@@ -218,9 +206,9 @@ blocking_question_groups:
     - test_window
     - split_policy
     - selection_policy
-  fit_and_refit:
+  calibration_and_recalibration:
     - parameter_freeze
-    - model_training
-    - refit_policy
+    - calibration_state
+    - recalibration_policy
   leakage:
     - leakage_controls
