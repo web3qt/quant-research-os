@@ -53,6 +53,21 @@ outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml
 
 旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
 
+## XML Field Guides
+
+生成某一阶段 spec 时，agent 必须 load only / 只读取当前阶段的 stage-specific XML field guide，不得预先加载其他阶段 field guide：
+
+```text
+contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml
+```
+
+XML field guides are semantic aids only。它们用中文解释字段含义、示例、常见错误和阻断提问方式；不是正式 artifact，也不是 validator。YAML contract remains canonical。正式 artifact 仍然是 `paper_*_spec.yaml`。
+
 ## Data Contract
 
 生成 `paper_data_spec.yaml` 时必须遵守：
@@ -199,15 +214,16 @@ contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml
 
 收到 `$qros-paper-to-spec <pdf|url|summary>` 后，按以下顺序执行：
 
-1. `source`：识别 `source_kind`、原始 locator、title、paper_slug。
-2. `read source itself`：Codex 必须自己读取 PDF / URL / pasted summary，不能把读取责任推给 runtime wrapper。
-3. `reading_coverage`：记录 PDF 总页数、成功提取页、覆盖章节、未提取页、低置信表格/公式和 data-relevant evidence。
-4. `target_market`：默认面向 `crypto_perpetual`，使用 `generic_crypto_perp` 或研究员明确指定的 exchange profile。
-5. `core_data_requirements`：逐项填写 `universe`、`price_bars`、`price_type`、`funding`、`fees_and_slippage`、`label_or_return_target`、`timestamp_alignment`、`data_availability`。
-6. `triggered_optional_blocks`：只在论文或 data reasoning 触发时展开 derivatives positioning、liquidity microstructure、cross-exchange、external/onchain、sentiment/news。
-7. `strict blocking`：任何 strict blocking field 为 `unknown`，或关键 evidence 不足，必须停止并问研究员。
-8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml` 写入当前阶段产物。
-9. `validate`：使用 deterministic validator 校验 `paper_data_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_data_spec_contract.yaml` 为准。
+2. `source`：识别 `source_kind`、原始 locator、title、paper_slug。
+3. `read source itself`：Codex 必须自己读取 PDF / URL / pasted summary，不能把读取责任推给 runtime wrapper。
+4. `reading_coverage`：记录 PDF 总页数、成功提取页、覆盖章节、未提取页、低置信表格/公式和 data-relevant evidence。
+5. `target_market`：默认面向 `crypto_perpetual`，使用 `generic_crypto_perp` 或研究员明确指定的 exchange profile。
+6. `core_data_requirements`：逐项填写 `universe`、`price_bars`、`price_type`、`funding`、`fees_and_slippage`、`label_or_return_target`、`timestamp_alignment`、`data_availability`。
+7. `triggered_optional_blocks`：只在论文或 data reasoning 触发时展开 derivatives positioning、liquidity microstructure、cross-exchange、external/onchain、sentiment/news。
+8. `strict blocking`：任何 strict blocking field 为 `unknown`，或关键 evidence 不足，必须停止并问研究员。
+9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_data_spec.yaml` 写入当前阶段产物。
+10. `validate`：使用 deterministic validator 校验 `paper_data_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Validator 入口：
 
@@ -221,14 +237,15 @@ python runtime/scripts/validate_paper_data_spec.py --spec-path outputs/paper_to_
 
 只有 `paper_data_spec.yaml` 通过 validator 后，才允许继续 signal spec：
 
-1. `data_spec_reference`：记录 paper_slug、data spec path、validation_status、继承的 data fields。
-2. `signal_research_intent`：用一句话说明论文核心策略思想要检验什么，不写成完整 strategy spec。
-3. `core_signal_requirements`：逐项填写 `signal_family`、`prediction_target`、`feature_inputs`、`signal_definition`、`signal_timing`、`lookahead_controls`、`train_test_policy`、`portfolio_mapping`、`diagnostics`。
-4. `triggered_optional_blocks`：只在论文或 signal reasoning 触发时展开 cross-sectional ranking、time-series thresholds、parameter search、machine learning model、regime filter、risk filter。
-5. `train_test_policy`：必须明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
-6. `strict blocking`：任何 signal strict blocking field 为 `unknown`，或无法区分论文原文与 agent 推断，必须停止并问研究员。
-7. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml` 写入当前阶段产物。
-8. `validate`：使用 deterministic validator 校验 `paper_signal_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_signal_spec_contract.yaml` 为准。
+2. `data_spec_reference`：记录 paper_slug、data spec path、validation_status、继承的 data fields。
+3. `signal_research_intent`：用一句话说明论文核心策略思想要检验什么，不写成完整 strategy spec。
+4. `core_signal_requirements`：逐项填写 `signal_family`、`prediction_target`、`feature_inputs`、`signal_definition`、`signal_timing`、`lookahead_controls`、`train_test_policy`、`portfolio_mapping`、`diagnostics`。
+5. `triggered_optional_blocks`：只在论文或 signal reasoning 触发时展开 cross-sectional ranking、time-series thresholds、parameter search、machine learning model、regime filter、risk filter。
+6. `train_test_policy`：必须明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
+7. `strict blocking`：任何 signal strict blocking field 为 `unknown`，或无法区分论文原文与 agent 推断，必须停止并问研究员。
+8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_signal_spec.yaml` 写入当前阶段产物。
+9. `validate`：使用 deterministic validator 校验 `paper_signal_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Signal validator 入口：
 
@@ -242,14 +259,15 @@ python runtime/scripts/validate_paper_signal_spec.py --spec-path outputs/paper_t
 
 只有 `paper_signal_spec.yaml` 通过 validator 后，才允许继续 train-freeze spec：
 
-1. `signal_spec_reference`：记录 paper_slug、signal spec path、validation_status、继承的 signal fields 和 inherited_train_test_policy。
-2. `train_freeze_intent`：用一句话说明本阶段要冻结哪些信号、参数、窗口或模型状态。
-3. `core_train_freeze_requirements`：逐项填写 `train_test_mode`、`frozen_signal_definition`、`parameter_freeze`、`train_window`、`test_window`、`split_policy`、`selection_policy`、`model_training`、`refit_policy`、`leakage_controls`、`artifact_identity`。
-4. `triggered_optional_blocks`：只在 signal spec 或 train/freeze reasoning 触发时展开 rule-based freeze、parameter search freeze、ML training freeze、walk-forward freeze、regime-specific freeze。
-5. `train_test_mode`：必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
-6. `strict blocking`：任何 train-freeze strict blocking field 为 `unknown`，或无法说明 train/test split 与 leakage controls，必须停止并问研究员。
-7. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml` 写入当前阶段产物。
-8. `validate`：使用 deterministic validator 校验 `paper_train_freeze_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml` 为准。
+2. `signal_spec_reference`：记录 paper_slug、signal spec path、validation_status、继承的 signal fields 和 inherited_train_test_policy。
+3. `train_freeze_intent`：用一句话说明本阶段要冻结哪些信号、参数、窗口或模型状态。
+4. `core_train_freeze_requirements`：逐项填写 `train_test_mode`、`frozen_signal_definition`、`parameter_freeze`、`train_window`、`test_window`、`split_policy`、`selection_policy`、`model_training`、`refit_policy`、`leakage_controls`、`artifact_identity`。
+5. `triggered_optional_blocks`：只在 signal spec 或 train/freeze reasoning 触发时展开 rule-based freeze、parameter search freeze、ML training freeze、walk-forward freeze、regime-specific freeze。
+6. `train_test_mode`：必须继承 signal spec 的 `train_test_policy`，并明确是 `not_required_rule_based`、`required_parameter_fit`、`required_ml_model` 还是 `unknown`。
+7. `strict blocking`：任何 train-freeze strict blocking field 为 `unknown`，或无法说明 train/test split 与 leakage controls，必须停止并问研究员。
+8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_train_freeze_spec.yaml` 写入当前阶段产物。
+9. `validate`：使用 deterministic validator 校验 `paper_train_freeze_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Train-freeze validator 入口：
 
@@ -263,15 +281,16 @@ python runtime/scripts/validate_paper_train_freeze_spec.py --spec-path outputs/p
 
 只有 `paper_train_freeze_spec.yaml` 通过 validator 后，才允许继续 test-evidence spec：
 
-1. `train_freeze_spec_reference`：记录 paper_slug、train-freeze spec path、validation_status、继承的 freeze fields 和 inherited_artifact_identity。
-2. `test_evidence_intent`：用一句话说明本阶段要生成哪些冻结后测试证据，以及这些证据不能用于反向调参。
-3. `core_test_evidence_requirements`：逐项填写 `test_window`、`frozen_artifact_binding`、`signal_diagnostics`、`performance_diagnostics`、`rule_based_evidence`、`parameter_fit_evidence`、`ml_model_evidence`、`no_retune_attestation`、`test_result_usage_policy`、`provenance`、`evidence_identity`。
-4. `triggered_optional_blocks`：只在 train-freeze spec 或 evidence reasoning 触发时展开 rule-based test evidence、parameter-fit test evidence、ML model test evidence、cost sensitivity evidence、robustness evidence、failure-case evidence。
-5. `no_retune_attestation`：必须说明 test evidence 不得修改 frozen parameters、model、signal formula 或 artifact identity。
-6. `test_result_usage_policy`：必须说明 test 结果只能用于 diagnose / fail-or-continue，不允许变成 holdout 前再调参。
-7. `strict blocking`：任何 test-evidence strict blocking field 为 `unknown`，或无法绑定 frozen artifact，必须停止并问研究员。
-8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml` 写入当前阶段产物。
-9. `validate`：使用 deterministic validator 校验 `paper_test_evidence_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml` 为准。
+2. `train_freeze_spec_reference`：记录 paper_slug、train-freeze spec path、validation_status、继承的 freeze fields 和 inherited_artifact_identity。
+3. `test_evidence_intent`：用一句话说明本阶段要生成哪些冻结后测试证据，以及这些证据不能用于反向调参。
+4. `core_test_evidence_requirements`：逐项填写 `test_window`、`frozen_artifact_binding`、`signal_diagnostics`、`performance_diagnostics`、`rule_based_evidence`、`parameter_fit_evidence`、`ml_model_evidence`、`no_retune_attestation`、`test_result_usage_policy`、`provenance`、`evidence_identity`。
+5. `triggered_optional_blocks`：只在 train-freeze spec 或 evidence reasoning 触发时展开 rule-based test evidence、parameter-fit test evidence、ML model test evidence、cost sensitivity evidence、robustness evidence、failure-case evidence。
+6. `no_retune_attestation`：必须说明 test evidence 不得修改 frozen parameters、model、signal formula 或 artifact identity。
+7. `test_result_usage_policy`：必须说明 test 结果只能用于 diagnose / fail-or-continue，不允许变成 holdout 前再调参。
+8. `strict blocking`：任何 test-evidence strict blocking field 为 `unknown`，或无法绑定 frozen artifact，必须停止并问研究员。
+9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_test_evidence_spec.yaml` 写入当前阶段产物。
+10. `validate`：使用 deterministic validator 校验 `paper_test_evidence_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Test-evidence validator 入口：
 
@@ -285,15 +304,16 @@ python runtime/scripts/validate_paper_test_evidence_spec.py --spec-path outputs/
 
 只有 `paper_test_evidence_spec.yaml` 通过 validator 后，才允许继续 backtest spec：
 
-1. `test_evidence_spec_reference`：记录 paper_slug、test-evidence spec path、validation_status、继承的 evidence fields 和 inherited_evidence_identity。
-2. `backtest_intent`：用一句话说明本阶段要把冻结后的信号、证据和市场假设整理成可实现的回测需求，不写回测代码。
-3. `core_backtest_requirements`：逐项填写 `backtest_scope`、`frozen_artifact_binding`、`market_assumptions`、`portfolio_construction`、`position_sizing`、`execution_assumptions`、`fees_slippage_funding`、`risk_controls`、`required_metrics`、`pass_fail_gate`、`reproducibility`、`provenance`、`implementation_handoff_plan`。
-4. `triggered_optional_blocks`：只在 test-evidence spec 或 backtest reasoning 触发时展开 long-short portfolio、long-only/flat portfolio、leverage and margin、capacity and turnover、funding accounting、cost sensitivity。
-5. `pass_fail_gate`：必须说明回测如何判定是否可继续实现，不能把 backtest 结果变成参数重调入口。
-6. `implementation_handoff_plan`：必须说明 active research repo 后续要实现的文件、模块、输出和验证检查，但本 skill 不直接生成回测代码。
-7. `strict blocking`：任何 backtest strict blocking field 为 `unknown`，或无法绑定 frozen artifact / evidence identity，必须停止并问研究员。
-8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml` 写入当前阶段产物。
-9. `validate`：使用 deterministic validator 校验 `paper_backtest_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_backtest_spec_contract.yaml` 为准。
+2. `test_evidence_spec_reference`：记录 paper_slug、test-evidence spec path、validation_status、继承的 evidence fields 和 inherited_evidence_identity。
+3. `backtest_intent`：用一句话说明本阶段要把冻结后的信号、证据和市场假设整理成可实现的回测需求，不写回测代码。
+4. `core_backtest_requirements`：逐项填写 `backtest_scope`、`frozen_artifact_binding`、`market_assumptions`、`portfolio_construction`、`position_sizing`、`execution_assumptions`、`fees_slippage_funding`、`risk_controls`、`required_metrics`、`pass_fail_gate`、`reproducibility`、`provenance`、`implementation_handoff_plan`。
+5. `triggered_optional_blocks`：只在 test-evidence spec 或 backtest reasoning 触发时展开 long-short portfolio、long-only/flat portfolio、leverage and margin、capacity and turnover、funding accounting、cost sensitivity。
+6. `pass_fail_gate`：必须说明回测如何判定是否可继续实现，不能把 backtest 结果变成参数重调入口。
+7. `implementation_handoff_plan`：必须说明 active research repo 后续要实现的文件、模块、输出和验证检查，但本 skill 不直接生成回测代码。
+8. `strict blocking`：任何 backtest strict blocking field 为 `unknown`，或无法绑定 frozen artifact / evidence identity，必须停止并问研究员。
+9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml` 写入当前阶段产物。
+10. `validate`：使用 deterministic validator 校验 `paper_backtest_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Backtest validator 入口：
 
@@ -307,15 +327,16 @@ python runtime/scripts/validate_paper_backtest_spec.py --spec-path outputs/paper
 
 只有 `paper_backtest_spec.yaml` 通过 validator 后，才允许继续 backtest implementation spec：
 
-1. `backtest_spec_reference`：记录 paper_slug、backtest spec path、validation_status、继承的 backtest fields 和 inherited_backtest_identity。
-2. `implementation_intent`：用一句话说明本阶段要把回测需求转成 active research repo 的实现计划，不生成真实回测代码。
-3. `core_implementation_requirements`：逐项填写 `active_research_repo_boundary`、`target_stage_program`、`backtest_entrypoint`、`input_artifacts`、`frozen_config_binding`、`data_access_plan`、`output_artifacts`、`execution_manifest`、`validation_checks`、`no_retune_controls`、`reproducibility_controls`。
-4. `triggered_optional_blocks`：只在 backtest spec 或实现 reasoning 触发时展开 vectorbt engine、backtrader engine、custom engine、data materialization、performance report。
-5. `active_research_repo_boundary`：必须说明实现写入 active research repo，而不是 QROS framework repo。
-6. `no_retune_controls`：必须说明实现不得修改 frozen signal、参数、模型状态或 selection policy。
-7. `strict blocking`：任何 implementation strict blocking field 为 `unknown`，或无法说明 active repo 路径 / frozen binding / outputs / validation checks，必须停止并问研究员。
-8. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml` 写入当前阶段产物。
-9. `validate`：使用 deterministic validator 校验 `paper_backtest_implementation_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
+1. `read XML field guide`：只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml`，只作为字段语义辅助；正式校验仍以 `contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml` 为准。
+2. `backtest_spec_reference`：记录 paper_slug、backtest spec path、validation_status、继承的 backtest fields 和 inherited_backtest_identity。
+3. `implementation_intent`：用一句话说明本阶段要把回测需求转成 active research repo 的实现计划，不生成真实回测代码。
+4. `core_implementation_requirements`：逐项填写 `active_research_repo_boundary`、`target_stage_program`、`backtest_entrypoint`、`input_artifacts`、`frozen_config_binding`、`data_access_plan`、`output_artifacts`、`execution_manifest`、`validation_checks`、`no_retune_controls`、`reproducibility_controls`。
+5. `triggered_optional_blocks`：只在 backtest spec 或实现 reasoning 触发时展开 vectorbt engine、backtrader engine、custom engine、data materialization、performance report。
+6. `active_research_repo_boundary`：必须说明实现写入 active research repo，而不是 QROS framework repo。
+7. `no_retune_controls`：必须说明实现不得修改 frozen signal、参数、模型状态或 selection policy。
+8. `strict blocking`：任何 implementation strict blocking field 为 `unknown`，或无法说明 active repo 路径 / frozen binding / outputs / validation checks，必须停止并问研究员。
+9. `materialize`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml` 写入当前阶段产物。
+10. `validate`：使用 deterministic validator 校验 `paper_backtest_implementation_spec.yaml`，若失败则修正 artifact 或把阻断问题返回研究员。
 
 Backtest implementation validator 入口：
 

@@ -1,9 +1,53 @@
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_PATH = ROOT / "skills/core/qros-paper-to-spec/SKILL.md"
 QROS_BIN = "./.qros/bin/"
+
+STAGE_GUIDES = [
+    (
+        "Data Execution Protocol",
+        "paper_data_spec.fields.xml",
+        "paper_data_spec_contract.yaml",
+    ),
+    (
+        "Signal Execution Protocol",
+        "paper_signal_spec.fields.xml",
+        "paper_signal_spec_contract.yaml",
+    ),
+    (
+        "Train-Freeze Execution Protocol",
+        "paper_train_freeze_spec.fields.xml",
+        "paper_train_freeze_spec_contract.yaml",
+    ),
+    (
+        "Test-Evidence Execution Protocol",
+        "paper_test_evidence_spec.fields.xml",
+        "paper_test_evidence_spec_contract.yaml",
+    ),
+    (
+        "Backtest Execution Protocol",
+        "paper_backtest_spec.fields.xml",
+        "paper_backtest_spec_contract.yaml",
+    ),
+    (
+        "Backtest Implementation Execution Protocol",
+        "paper_backtest_implementation_spec.fields.xml",
+        "paper_backtest_implementation_spec_contract.yaml",
+    ),
+]
+
+
+def _section(content: str, heading: str) -> str:
+    marker = f"## {heading}"
+    start = content.index(marker)
+    next_heading = content.find("\n## ", start + len(marker))
+    if next_heading == -1:
+        return content[start:]
+    return content[start:next_heading]
 
 
 def test_paper_to_spec_skill_exists() -> None:
@@ -30,6 +74,26 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml",
+        "contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml",
+        "XML field guide",
+        "只读取当前阶段",
+        "stage-specific XML field guide",
+        "XML field guides are semantic aids only",
+        "不是正式 artifact",
+        "不是 validator",
+        "YAML contract remains canonical",
+        "正式 artifact 仍然是 `paper_*_spec.yaml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml`",
+        "只读取当前阶段的 `contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml`",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
@@ -186,3 +250,24 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
     assert "source_inventory.md" not in content
     assert "ambiguities.md" not in content
     assert "implementation_notes.md" not in content
+
+
+@pytest.mark.parametrize(("heading", "guide", "contract"), STAGE_GUIDES)
+def test_paper_to_spec_skill_stage_protocol_uses_only_matching_xml_guide(
+    heading: str,
+    guide: str,
+    contract: str,
+) -> None:
+    content = SKILL_PATH.read_text(encoding="utf-8")
+    section = _section(content, heading)
+    expected_guide_path = f"contracts/paper_to_spec/field_guides/{guide}"
+    expected_contract_path = f"contracts/paper_to_spec/{contract}"
+
+    assert "只读取当前阶段" in section
+    assert expected_guide_path in section
+    assert expected_contract_path in section
+
+    for _, other_guide, _ in STAGE_GUIDES:
+        if other_guide == guide:
+            continue
+        assert f"contracts/paper_to_spec/field_guides/{other_guide}" not in section

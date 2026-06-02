@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE_PATH = ROOT / "docs/guides/qros-paper-to-spec-usage.md"
@@ -31,12 +33,24 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml",
+        "contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
         "runtime/scripts/validate_paper_test_evidence_spec.py",
         "runtime/scripts/validate_paper_backtest_spec.py",
         "runtime/scripts/validate_paper_backtest_implementation_spec.py",
+        "XML field guide",
+        "只读取当前阶段",
+        "不是正式 artifact",
+        "不是 validator",
+        "YAML contract remains canonical",
+        "正式 artifact 仍然是 `paper_*_spec.yaml`",
         "deterministic validator",
         "reading_coverage",
         "target_market",
@@ -177,6 +191,88 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
 
     for needle in forbidden_strings:
         assert needle not in content
+
+
+def _section(content: str, heading: str) -> str:
+    marker = f"## {heading}\n"
+    start = content.find(marker)
+    assert start != -1, f"missing section: {heading}"
+    body_start = start + len(marker)
+    next_section = content.find("\n## ", body_start)
+    if next_section == -1:
+        return content[body_start:]
+    return content[body_start:next_section]
+
+
+@pytest.mark.parametrize(
+    (
+        "heading",
+        "xml_guide",
+        "yaml_contract",
+        "output_artifact",
+        "validator",
+    ),
+    [
+        (
+            "Data 执行流程",
+            "paper_data_spec.fields.xml",
+            "paper_data_spec_contract.yaml",
+            "paper_data_spec.yaml",
+            "validate_paper_data_spec.py",
+        ),
+        (
+            "Signal 执行流程",
+            "paper_signal_spec.fields.xml",
+            "paper_signal_spec_contract.yaml",
+            "paper_signal_spec.yaml",
+            "validate_paper_signal_spec.py",
+        ),
+        (
+            "Train-Freeze 执行流程",
+            "paper_train_freeze_spec.fields.xml",
+            "paper_train_freeze_spec_contract.yaml",
+            "paper_train_freeze_spec.yaml",
+            "validate_paper_train_freeze_spec.py",
+        ),
+        (
+            "Test-Evidence 执行流程",
+            "paper_test_evidence_spec.fields.xml",
+            "paper_test_evidence_spec_contract.yaml",
+            "paper_test_evidence_spec.yaml",
+            "validate_paper_test_evidence_spec.py",
+        ),
+        (
+            "Backtest 执行流程",
+            "paper_backtest_spec.fields.xml",
+            "paper_backtest_spec_contract.yaml",
+            "paper_backtest_spec.yaml",
+            "validate_paper_backtest_spec.py",
+        ),
+        (
+            "Backtest Implementation 执行流程",
+            "paper_backtest_implementation_spec.fields.xml",
+            "paper_backtest_implementation_spec_contract.yaml",
+            "paper_backtest_implementation_spec.yaml",
+            "validate_paper_backtest_implementation_spec.py",
+        ),
+    ],
+)
+def test_paper_to_spec_usage_guide_pairs_stage_specific_assets(
+    heading: str,
+    xml_guide: str,
+    yaml_contract: str,
+    output_artifact: str,
+    validator: str,
+) -> None:
+    content = GUIDE_PATH.read_text(encoding="utf-8")
+    section = _section(content, heading)
+
+    assert f"contracts/paper_to_spec/field_guides/{xml_guide}" in section
+    assert f"contracts/paper_to_spec/{yaml_contract}" in section
+    assert f"outputs/paper_to_spec/<paper_slug>/{output_artifact}" in section
+    assert f"runtime/scripts/{validator}" in section
+    assert "只读取当前阶段" in section
+    assert "active research repo" in section
 
 
 def test_codex_readme_documents_paper_to_spec_reset() -> None:

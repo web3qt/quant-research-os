@@ -1,0 +1,17 @@
+schema: spec-driven
+
+context: |
+  本仓库是 Quant Research OS 的流程、工具和治理规则仓，不是某条策略研究线的实现仓。
+  变更应优先落在 contracts/、skills/、runtime/、docs/、tests/，并保持 QROS stage、artifact、freeze group、review、failure handling 术语一致。
+  不要在本仓库写入 live lineage 的正式研究产物；真实研究程序与正式产物属于消费 QROS 的 active research repo。
+  任何影响 workflow、artifact contract、stage 语义或 runtime 行为的变更，都必须同步更新测试和用户文档。
+
+rules:
+  proposal:
+    - 明确区分治理合同、机器可读产物、review closure 和 failure handling。
+    - 写清楚是否影响 stage flow、gate semantics、route split、review orchestration 或 artifact contract。
+  design:
+    - 优先复用现有 QROS runtime helper、skills 和 contract schema，不引入第二套 stage 或 artifact 命名。
+    - 如果修改正式 schema、枚举或 stage gate 含义，设计中必须列出同步清理 docs、skills、SOP、diagrams 的范围。
+  tasks:
+    - 每个实现任务必须包含实际验证命令；最低覆盖 focused tests 和 smoke，触及关键 workflow 语义时包含 full-smoke。

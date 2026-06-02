@@ -14,3 +14,6 @@ governance/*
 .pytest_cache/
 .qros/
 .codex/*
+!.codex/skills/
+!.codex/skills/openspec-*/
+!.codex/skills/openspec-*/SKILL.md
