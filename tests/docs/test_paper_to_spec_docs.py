@@ -27,24 +27,28 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "paper_test_evidence_spec.yaml",
         "paper_backtest_spec.yaml",
         "paper_backtest_implementation_spec.yaml",
+        "paper_auto_implementation_handoff.yaml",
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
         "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
         "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml",
+        "contracts/paper_to_spec/paper_auto_implementation_handoff_contract.yaml",
         "contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_auto_implementation_handoff.fields.xml",
         "runtime/scripts/validate_paper_data_spec.py",
         "runtime/scripts/validate_paper_signal_spec.py",
         "runtime/scripts/validate_paper_train_freeze_spec.py",
         "runtime/scripts/validate_paper_test_evidence_spec.py",
         "runtime/scripts/validate_paper_backtest_spec.py",
         "runtime/scripts/validate_paper_backtest_implementation_spec.py",
+        "runtime/scripts/validate_paper_auto_implementation_handoff.py",
         "XML field guide",
         "只读取当前阶段",
         "不是正式 artifact",
@@ -162,9 +166,23 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "execution_inputs",
         "outputs_and_validation",
         "controls",
+        "post-spec implementation handoff",
+        "implementation_decision",
+        "data_readiness_brief",
+        "researcher_data_response",
+        "agent_acquisition_plan",
+        "acquisition_provenance",
+        "allowed_next_action",
+        "implementation_consent",
+        "data_readiness",
+        "agent_acquisition",
+        "active repo boundary",
+        "agent acquisition plan",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
-        "不直接生成回测代码",
+        "不在缺少 post-spec implementation opt-in 时生成回测代码",
+        "不在列出 data readiness brief 和询问研究员能否供数之前执行 agent data acquisition",
+        "不在 agent acquisition plan 未获批准时下载",
         "不把 validator failure 包装成 review verdict",
         "不把 train/test 是否需要留到 backtest 阶段才判断",
         "不把参数选择、定尺状态、split policy 或 artifact identity 留到 backtest 阶段才定义",
@@ -182,13 +200,25 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         QROS_BIN + "qros-paper-to-spec" + "-baseline",
         "--spec" + "-file",
         "--auto" + "-implement",
-        "auto" + "_implement",
         "source -> spec -> materialize -> stop",
         "默认停在 `" + "strategy_" + "spec.yaml`",
     ]
 
     for needle in forbidden_strings:
         assert needle not in content
+
+
+def test_paper_to_spec_usage_guide_locks_post_spec_handoff_gates() -> None:
+    content = GUIDE_PATH.read_text(encoding="utf-8")
+    section = _section(content, "Post-Spec Implementation Handoff 执行流程")
+
+    assert "只有 requested PaperSpec chain 全部通过 deterministic validator 后" in section
+    assert "任一 validation_status 不是 `valid` 时不得继续实现" in section
+    assert "未回答或回答 declined 时，停止在 specs 之后" in section
+    assert "先产出 `data_readiness_brief`" in section
+    assert "询问 `researcher_data_response`：研究员能否提供 required datasets" in section
+    assert "只有研究员明确 `cannot_provide` required datasets 时" in section
+    assert "未获批准不得下载、物化或声称数据可用" in section
 
 
 def _section(content: str, heading: str) -> str:

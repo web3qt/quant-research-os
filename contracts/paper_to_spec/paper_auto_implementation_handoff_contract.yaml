@@ -1,0 +1,241 @@
+schema_id: qros-paper-auto-implementation-handoff-contract-v1
+spec_version: v1
+
+depends_on:
+  artifact: paper_backtest_implementation_spec.yaml
+  schema_id: qros-paper-backtest-implementation-spec-contract-v1
+  validator: runtime/scripts/validate_paper_backtest_implementation_spec.py
+
+required_top_level_fields:
+  - spec_version
+  - source
+  - paper_spec_chain
+  - implementation_decision
+  - data_readiness_brief
+  - researcher_data_response
+  - agent_acquisition_plan
+  - acquisition_provenance
+  - active_repo_boundary
+  - allowed_next_action
+  - ambiguities
+  - implementation_handoff
+
+required_source_fields:
+  - title
+  - locator
+  - source_kind
+  - paper_slug
+
+allowed_source_kinds:
+  - pdf_url
+  - webpage
+  - local_pdf
+  - local_doc
+  - text_summary
+
+required_paper_spec_chain_fields:
+  - paper_data_spec
+  - paper_signal_spec
+  - paper_train_freeze_spec
+  - paper_test_evidence_spec
+  - paper_backtest_spec
+  - paper_backtest_implementation_spec
+
+required_spec_reference_fields:
+  - path
+  - validation_status
+  - digest
+
+allowed_spec_validation_statuses:
+  - valid
+  - blocked
+  - unknown
+
+required_implementation_decision_fields:
+  - decision
+  - prompt
+  - answered_by
+  - answered_at
+  - evidence
+
+allowed_implementation_decisions:
+  - pending
+  - accepted
+  - declined
+
+required_data_readiness_brief_fields:
+  - required_datasets
+  - optional_datasets
+  - blocking_gaps
+  - summary
+
+required_data_item_fields:
+  - name
+  - requirement
+  - required
+  - market_scope
+  - symbol_universe
+  - fields
+  - cadence
+  - time_range
+  - source_constraints
+  - expected_format
+  - provenance_requirements
+  - missing_data_policy
+  - blocking
+
+required_researcher_data_response_fields:
+  - status
+  - provided_paths
+  - access_instructions
+  - missing_datasets
+  - evidence
+
+allowed_researcher_data_statuses:
+  - pending
+  - provided
+  - cannot_provide
+
+required_agent_acquisition_plan_fields:
+  - status
+  - sources
+  - approval
+  - limitations
+
+allowed_acquisition_plan_statuses:
+  - not_needed
+  - pending_approval
+  - approved
+  - rejected
+
+required_acquisition_source_fields:
+  - dataset
+  - source
+  - symbols
+  - time_range
+  - fields
+  - command
+  - storage_target
+  - expected_artifacts
+  - approval_required
+
+required_acquisition_provenance_fields:
+  - run_status
+  - source_records
+  - command
+  - timestamp
+  - snapshot_identity
+  - coverage
+  - validation_result
+  - failure_reason
+
+required_acquisition_source_record_fields:
+  - dataset
+  - source
+  - symbols
+  - time_range
+  - fields
+  - expected_artifacts
+  - coverage
+  - validation_result
+
+allowed_acquisition_run_statuses:
+  - not_run
+  - succeeded
+  - failed
+  - partial
+
+required_active_repo_boundary_fields:
+  - repo_role
+  - target_root
+  - forbidden_root
+
+allowed_active_repo_roles:
+  - active_research_repo
+
+allowed_next_actions:
+  - stop_after_specs
+  - ask_researcher
+  - validate_researcher_data
+  - run_agent_data_acquisition
+  - generate_active_repo_backtest_scaffold
+
+allowed_next_stage_recommendations:
+  - stop_after_specs
+  - ask_researcher
+  - validate_researcher_data
+  - run_agent_data_acquisition
+  - generate_active_repo_backtest_scaffold
+
+required_ambiguity_fields:
+  - field
+  - question
+  - blocking
+
+required_implementation_handoff_fields:
+  - implementation_inputs
+  - implementation_outputs
+  - validation_checks
+  - next_stage_recommendation
+
+handoff_rules:
+  spec_chain_valid_before_prompt:
+    field: paper_spec_chain
+    required_validation_status: valid
+    prompt_allowed_only_when_all_specs_valid: true
+    blocked_implementation_decisions_before_all_valid:
+      - accepted
+    blocked_next_actions_before_all_valid:
+      - validate_researcher_data
+      - run_agent_data_acquisition
+      - generate_active_repo_backtest_scaffold
+  implementation_opt_in:
+    field: implementation_decision.decision
+    accepted_value: accepted
+    blocked_next_actions_before_acceptance:
+      - validate_researcher_data
+      - run_agent_data_acquisition
+      - generate_active_repo_backtest_scaffold
+  data_readiness_before_implementation:
+    required_before_next_actions:
+      - validate_researcher_data
+      - run_agent_data_acquisition
+      - generate_active_repo_backtest_scaffold
+    required_field: data_readiness_brief
+    blocking_gaps_field: data_readiness_brief.blocking_gaps
+    blocked_next_actions_when_blocking_gaps_present:
+      - validate_researcher_data
+      - run_agent_data_acquisition
+      - generate_active_repo_backtest_scaffold
+  blocking_ambiguities_stop_implementation:
+    field: ambiguities
+    blocking_field: blocking
+    blocked_value: true
+    blocked_next_actions:
+      - validate_researcher_data
+      - run_agent_data_acquisition
+      - generate_active_repo_backtest_scaffold
+  researcher_data_preferred:
+    ask_field: researcher_data_response.status
+    agent_acquisition_allowed_only_when: cannot_provide
+  agent_acquisition_requires_approval:
+    plan_status_field: agent_acquisition_plan.status
+    approved_value: approved
+    executable_next_action: run_agent_data_acquisition
+  active_repo_only:
+    repo_role_field: active_repo_boundary.repo_role
+    required_role: active_research_repo
+
+blocking_question_groups:
+  implementation_consent:
+    - implementation_decision
+  data_readiness:
+    - data_readiness_brief
+    - researcher_data_response
+  agent_acquisition:
+    - agent_acquisition_plan
+    - acquisition_provenance
+  repo_boundary:
+    - active_repo_boundary
+  next_action:
+    - allowed_next_action

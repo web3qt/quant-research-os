@@ -42,6 +42,12 @@ outputs/paper_to_spec/<paper_slug>/paper_backtest_spec.yaml
 outputs/paper_to_spec/<paper_slug>/paper_backtest_implementation_spec.yaml
 ```
 
+post-spec implementation handoff 是显式 opt-in。只有 requested PaperSpec chain 全部 valid 后，agent 才能询问研究员是否要从 specs 自动进入 active research repo 实现；研究员回答后可产出：
+
+```text
+outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml
+```
+
 这个入口不是 `qros-research-session` 的阶段入口，不进入 mandate / freeze / review / failure handling 的 heavy governance flow。
 
 ## XML Field Guides
@@ -57,6 +63,7 @@ contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml
 contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml
 contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml
 contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml
+contracts/paper_to_spec/field_guides/paper_auto_implementation_handoff.fields.xml
 ```
 
 XML guides 只是语义辅助，不是正式 artifact，不是 validator。YAML contract remains canonical。正式 artifact 仍然是 `paper_*_spec.yaml`。
@@ -128,6 +135,16 @@ contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml
 ```
 
 第六阶段 contract 依赖已校验的 `paper_backtest_spec.yaml`，锁定 active research repo boundary、target stage program、backtest entrypoint、input artifacts、frozen config binding、data access plan、output artifacts、execution manifest、validation checks、no-retune controls 和 reproducibility controls。
+
+## Auto Implementation Handoff Contract
+
+`paper_auto_implementation_handoff.yaml` 必须遵守：
+
+```text
+contracts/paper_to_spec/paper_auto_implementation_handoff_contract.yaml
+```
+
+该 handoff 依赖已校验的 `paper_backtest_implementation_spec.yaml`，锁定 paper spec chain validation state、implementation decision、data readiness brief、researcher data response、agent acquisition plan、acquisition provenance、active repo boundary 和 allowed next action。
 
 ## Data 执行流程
 
@@ -264,6 +281,29 @@ python runtime/scripts/validate_paper_backtest_implementation_spec.py --spec-pat
 
 该 validator 只检查 contract shape、枚举、required fields、backtest spec reference、strict blocking unknown、active research repo boundary、no-retune controls 和 handoff shape，不生成 active repo scaffold。
 
+## Post-Spec Implementation Handoff 执行流程
+
+只有 requested PaperSpec chain 全部通过 deterministic validator 后，才允许进入 post-spec implementation handoff：
+
+1. 明确询问研究员是否要 QROS 根据已验证 specs 在 active research repo 中自动实现。未回答或回答 declined 时，停止在 specs 之后，不生成代码、不下载数据、不写 live lineage artifact。
+2. 读取 `contracts/paper_to_spec/field_guides/paper_auto_implementation_handoff.fields.xml`，只作为字段语义辅助；validation 仍使用 `contracts/paper_to_spec/paper_auto_implementation_handoff_contract.yaml`。
+3. 写入 `paper_spec_chain`：六个上游 specs 的 path、validation_status、digest；任一 validation_status 不是 `valid` 时不得继续实现。
+4. 先产出 `data_readiness_brief`：required data、optional data、market scope、symbol universe、time range、cadence、fields、expected format、source constraints、provenance requirements 和 missing-data policy。
+5. 询问 `researcher_data_response`：研究员能否提供 required datasets。能提供时，收集 paths、snapshots、credentials 或 access instructions，并先验证用户提供的数据。
+6. 只有研究员明确 `cannot_provide` required datasets 时，才允许提出 `agent_acquisition_plan`。
+7. agent acquisition plan 必须包含 source、symbols、time_range、fields、command、storage_target、expected_artifacts、limitations 和 approval；未获批准不得下载、物化或声称数据可用。
+8. `active_repo_boundary` 必须确认 handoff、数据、scaffold 或实现输出写入 active research repo；目标若是 QROS framework repo，必须阻塞并询问 active repo target。
+9. 在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml` 写入 handoff artifact。
+10. 使用 deterministic validator 校验 `paper_auto_implementation_handoff.yaml`。
+
+Handoff validator 入口：
+
+```text
+python runtime/scripts/validate_paper_auto_implementation_handoff.py --spec-path outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml
+```
+
+该 validator 只检查 handoff contract shape、上游 spec chain valid、implementation opt-in、data readiness blocking gaps、researcher data response、agent acquisition approval、active repo boundary 和 allowed next action，不判断策略是否有效，不宣称 QROS governance stage 完成。
+
 ## Requirement entry shape
 
 每个 data requirement 使用同一结构：
@@ -318,6 +358,8 @@ source: backtest_spec_inherited | paper_stated | agent_inferred | researcher_req
 ```
 
 `backtest_spec_inherited` 只能用于从 valid `paper_backtest_spec.yaml` 继承的字段。active repo boundary、stage program、entrypoint、execution manifest、validation checks、no-retune controls 和 reproducibility controls 必须来自 agent/researcher/repo policy 明确选择，不能伪装成论文原文。
+
+Auto implementation handoff 不使用 requirement entry shape。它是 post-spec 决策和数据就绪 artifact，核心字段是 `implementation_decision`、`data_readiness_brief`、`researcher_data_response`、`agent_acquisition_plan`、`acquisition_provenance`、`active_repo_boundary` 和 `allowed_next_action`。
 
 ## Strict blocking
 
@@ -441,11 +483,22 @@ Backtest implementation 阶段阻断问题按 `paper_backtest_implementation_spe
 - `outputs_and_validation`
 - `controls`
 
+Auto implementation handoff 阻断问题按 `paper_auto_implementation_handoff_contract.yaml` 中的 `blocking_question_groups` 归类：
+
+- `implementation_consent`
+- `data_readiness`
+- `agent_acquisition`
+- `repo_boundary`
+- `next_action`
+
 ## 边界
 
 - 不直接生成完整 strategy spec。
-- 不直接生成回测代码。
+- 不在缺少 post-spec implementation opt-in 时生成回测代码、下载数据或创建 active repo scaffold。
 - 不把 backtest implementation plan 写成 QROS framework repo 内的 live lineage 程序；真实实现属于 active research repo。
+- 不把 `paper_auto_implementation_handoff.yaml` 写成 review closure、stage advancement 或 live research artifact 完成证明。
+- 不在列出 data readiness brief 和询问研究员能否供数之前执行 agent data acquisition。
+- 不在 agent acquisition plan 未获批准时下载、物化或声称数据可用。
 - 不把 validator failure 包装成 review verdict；这不是 `qros-research-session` review。
 - 不把 crypto perpetual 迁移假设伪装成论文原文。
 - 不把 train/test 是否需要留到 backtest 阶段才判断；必须在 `paper_signal_spec.yaml` 的 `train_test_policy` 里先分类。
@@ -457,4 +510,4 @@ Backtest implementation 阶段阻断问题按 `paper_backtest_implementation_spe
 
 ## 后续
 
-`paper_backtest_implementation_spec.yaml` 稳定后，再继续设计 active repo scaffold 生成入口与验证。
+`paper_auto_implementation_handoff.yaml` 稳定后，再继续设计 active repo scaffold 生成入口与验证。

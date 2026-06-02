@@ -1,0 +1,151 @@
+spec_version: v1
+source:
+  title: Example Crypto Perpetual Momentum Paper
+  locator: tests/fixtures/paper_to_spec/example_summary.md
+  source_kind: text_summary
+  paper_slug: example_crypto_perp_momentum
+paper_spec_chain:
+  paper_data_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_data_spec.yaml
+    validation_status: valid
+    digest: example_paper_data_spec_digest
+  paper_signal_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_signal_spec.yaml
+    validation_status: valid
+    digest: example_paper_signal_spec_digest
+  paper_train_freeze_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_train_freeze_spec.yaml
+    validation_status: valid
+    digest: example_paper_train_freeze_spec_digest
+  paper_test_evidence_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_test_evidence_spec.yaml
+    validation_status: valid
+    digest: example_paper_test_evidence_spec_digest
+  paper_backtest_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_backtest_spec.yaml
+    validation_status: valid
+    digest: example_paper_backtest_spec_digest
+  paper_backtest_implementation_spec:
+    path: tests/fixtures/paper_to_spec/valid_paper_backtest_implementation_spec.yaml
+    validation_status: valid
+    digest: example_paper_backtest_implementation_spec_digest
+implementation_decision:
+  decision: accepted
+  prompt: Do you want QROS to automatically implement from these specs in the active research repo?
+  answered_by: researcher
+  answered_at: "2026-06-02T00:00:00Z"
+  evidence:
+    - researcher answered yes after all requested PaperSpec artifacts validated
+data_readiness_brief:
+  required_datasets:
+    - name: price_bars
+      requirement: OHLCV bars for crypto perpetual contracts
+      required: true
+      market_scope:
+        market_type: crypto_perpetual
+        exchange_profile: binance_usdt_perp
+      symbol_universe:
+        selection: top_n_by_volume
+        symbols:
+          - BTCUSDT
+          - ETHUSDT
+      fields:
+        - timestamp
+        - symbol
+        - open
+        - high
+        - low
+        - close
+        - volume
+      cadence: 1h
+      time_range:
+        start: "2023-01-01T00:00:00Z"
+        end: "2025-12-31T23:00:00Z"
+      source_constraints:
+        venue: Binance USDT perpetual
+        price_type: mark
+      expected_format: parquet
+      provenance_requirements:
+        - source
+        - command
+        - snapshot_identity
+        - coverage
+      missing_data_policy: fail_if_required_bars_missing
+      blocking: false
+    - name: funding_rates
+      requirement: Funding rates for perpetual return accounting
+      required: true
+      market_scope:
+        market_type: crypto_perpetual
+        exchange_profile: binance_usdt_perp
+      symbol_universe:
+        selection: match_price_bars
+        symbols:
+          - BTCUSDT
+          - ETHUSDT
+      fields:
+        - timestamp
+        - symbol
+        - funding_rate
+      cadence: 8h
+      time_range:
+        start: "2023-01-01T00:00:00Z"
+        end: "2025-12-31T23:00:00Z"
+      source_constraints:
+        venue: Binance USDT perpetual
+      expected_format: parquet
+      provenance_requirements:
+        - source
+        - command
+        - snapshot_identity
+        - coverage
+      missing_data_policy: fail_if_required_funding_missing
+      blocking: false
+  optional_datasets: []
+  blocking_gaps: []
+  summary: Required price bars and funding data are identified before implementation.
+researcher_data_response:
+  status: provided
+  provided_paths:
+    price_bars: /active-repo/data/price_bars.parquet
+    funding_rates: /active-repo/data/funding_rates.parquet
+  access_instructions:
+    note: local active repo parquet snapshots
+  missing_datasets: []
+  evidence:
+    - researcher provided local active repo paths
+agent_acquisition_plan:
+  status: not_needed
+  sources: []
+  approval:
+    approved: false
+    approved_by: ""
+    approved_at: ""
+    evidence: []
+  limitations: []
+acquisition_provenance:
+  run_status: not_run
+  source_records: []
+  command: ""
+  timestamp: ""
+  snapshot_identity: ""
+  coverage: {}
+  validation_result: not_run
+  failure_reason: ""
+active_repo_boundary:
+  repo_role: active_research_repo
+  target_root: /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum
+  forbidden_root: /Users/mac08/workspace/web3qt/quant-research-os
+ambiguities: []
+allowed_next_action: validate_researcher_data
+implementation_handoff:
+  implementation_inputs:
+    - paper_backtest_implementation_spec.yaml
+    - /active-repo/data/price_bars.parquet
+    - /active-repo/data/funding_rates.parquet
+  implementation_outputs:
+    - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/backtest
+  validation_checks:
+    - validate_researcher_data_against_data_readiness_brief
+    - active_repo_boundary_not_qros_framework
+  next_stage_recommendation: validate_researcher_data

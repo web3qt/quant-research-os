@@ -68,18 +68,21 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "paper_test_evidence_spec.yaml",
         "paper_backtest_spec.yaml",
         "paper_backtest_implementation_spec.yaml",
+        "paper_auto_implementation_handoff.yaml",
         "contracts/paper_to_spec/paper_data_spec_contract.yaml",
         "contracts/paper_to_spec/paper_signal_spec_contract.yaml",
         "contracts/paper_to_spec/paper_train_freeze_spec_contract.yaml",
         "contracts/paper_to_spec/paper_test_evidence_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_spec_contract.yaml",
         "contracts/paper_to_spec/paper_backtest_implementation_spec_contract.yaml",
+        "contracts/paper_to_spec/paper_auto_implementation_handoff_contract.yaml",
         "contracts/paper_to_spec/field_guides/paper_data_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_signal_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_train_freeze_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_test_evidence_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_backtest_spec.fields.xml",
         "contracts/paper_to_spec/field_guides/paper_backtest_implementation_spec.fields.xml",
+        "contracts/paper_to_spec/field_guides/paper_auto_implementation_handoff.fields.xml",
         "XML field guide",
         "只读取当前阶段",
         "stage-specific XML field guide",
@@ -100,6 +103,7 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "runtime/scripts/validate_paper_test_evidence_spec.py",
         "runtime/scripts/validate_paper_backtest_spec.py",
         "runtime/scripts/validate_paper_backtest_implementation_spec.py",
+        "runtime/scripts/validate_paper_auto_implementation_handoff.py",
         "deterministic validator",
         "Execution protocol",
         "reading_coverage",
@@ -212,9 +216,23 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         "execution_inputs",
         "outputs_and_validation",
         "controls",
+        "post-spec implementation handoff",
+        "implementation_decision",
+        "data_readiness_brief",
+        "researcher_data_response",
+        "agent_acquisition_plan",
+        "acquisition_provenance",
+        "allowed_next_action",
+        "implementation_consent",
+        "data_readiness",
+        "agent_acquisition",
+        "active repo boundary",
+        "agent acquisition plan",
         "crypto perpetual",
         "不直接生成完整 strategy spec",
-        "不直接生成回测代码",
+        "不在缺少 post-spec implementation opt-in 时生成回测代码",
+        "不在列出 data readiness brief 和询问研究员能否供数之前执行 agent data acquisition",
+        "不在 agent acquisition plan 未获批准时下载",
         "不把 validator failure 包装成 review verdict",
         "不把 train/test 是否需要留到 backtest 阶段才判断",
         "不把参数选择、定尺状态、split policy 或 artifact identity 留到 backtest 阶段才定义",
@@ -233,7 +251,6 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
         QROS_BIN + "qros-paper-to-spec" + "-baseline",
         "--spec" + "-file",
         "--auto" + "-implement",
-        "auto" + "_implement",
         "source -> spec -> materialize -> stop",
         "默认只产出 `" + "strategy_" + "spec.yaml`",
         "report where the baseline files were written",
@@ -248,6 +265,19 @@ def test_paper_to_spec_skill_documents_first_paper_data_spec_version() -> None:
     assert "source_inventory.md" not in content
     assert "ambiguities.md" not in content
     assert "implementation_notes.md" not in content
+
+
+def test_paper_to_spec_skill_locks_post_spec_handoff_gates() -> None:
+    content = SKILL_PATH.read_text(encoding="utf-8")
+    section = _section(content, "Post-Spec Implementation Handoff Protocol")
+
+    assert "只有 requested PaperSpec chain 全部通过对应 deterministic validator 后" in section
+    assert "任一 validation_status 不是 `valid`，不得询问或执行实现" in section
+    assert "未回答或回答 declined 时，必须停止在 specs 之后" in section
+    assert "先列 required data、optional data、market scope、symbol universe" in section
+    assert "询问研究员能否提供 required datasets" in section
+    assert "只有研究员明确 `cannot_provide` required datasets 时" in section
+    assert "未获批准不得下载、物化或声称数据可用" in section
 
 
 @pytest.mark.parametrize(("heading", "guide", "contract"), STAGE_GUIDES)

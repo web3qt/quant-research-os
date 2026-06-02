@@ -42,6 +42,11 @@ GUIDE_MAP = {
         "artifact": "paper_backtest_implementation_spec.yaml",
         "core_container": "core_implementation_requirements",
     },
+    "paper_auto_implementation_handoff_contract.yaml": {
+        "guide": "paper_auto_implementation_handoff.fields.xml",
+        "artifact": "paper_auto_implementation_handoff.yaml",
+        "core_container": "",
+    },
 }
 
 REQUIRED_EXPLANATION_TAGS = [
