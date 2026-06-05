@@ -24,14 +24,14 @@ backtest_spec_reference:
     paper_backtest_spec_digest: example_paper_backtest_spec_digest
     frozen_config_digest: example_frozen_config_digest
     evidence_bundle_digest: example_evidence_bundle_digest
-implementation_intent: Define the active research repo backtest implementation plan without generating code or changing frozen artifacts.
+implementation_intent: Define the active research repo PaperSpec implementation chain plan without generating code or changing frozen artifacts.
 core_implementation_requirements:
   active_research_repo_boundary:
     status: required
     source: repo_policy_required
     value:
       repo_role: active_research_repo
-      target_root: outputs/example_crypto_perp_momentum/program/backtest
+      target_root: outputs/example_crypto_perp_momentum/program
       forbidden_root: qros_framework_repo
     evidence:
       - QROS framework repo must not store live lineage implementation code.
@@ -42,9 +42,13 @@ core_implementation_requirements:
     source: agent_inferred
     value:
       files:
-        - stage_program.yaml
-        - README.md
-        - run_backtest.py
+        - data/build_data_panel.py
+        - data/validate_data_panel.py
+        - signal/build_signals.py
+        - signal/validate_signal_ledger.py
+        - train_freeze/run_train_freeze_diagnostics.py
+        - test_evidence/run_test_evidence.py
+        - backtest/run_backtest.py
     evidence:
       - paper_backtest_spec.implementation_handoff_plan
     blocking_if_unknown: true
@@ -206,6 +210,12 @@ implementation_handoff:
     - frozen_signal_config.yaml
     - asset_time_index.parquet
   implementation_outputs:
+    - program/data/build_data_panel.py
+    - program/data/validate_data_panel.py
+    - program/signal/build_signals.py
+    - program/signal/validate_signal_ledger.py
+    - program/train_freeze/run_train_freeze_diagnostics.py
+    - program/test_evidence/run_test_evidence.py
     - program/backtest/stage_program.yaml
     - program/backtest/README.md
     - program/backtest/run_backtest.py
@@ -214,4 +224,4 @@ implementation_handoff:
     - frozen_config_digest_match
     - no_unknown_strict_implementation_fields
     - no_retune_controls_disallow_retune
-  next_stage_recommendation: generate_active_repo_backtest_scaffold
+  next_stage_recommendation: generate_active_repo_paperspec_chain_scaffold

@@ -99,7 +99,7 @@ required_implementation_handoff_fields:
   - next_stage_recommendation
 
 allowed_next_stage_recommendations:
-  - generate_active_repo_backtest_scaffold
+  - generate_active_repo_paperspec_chain_scaffold
   - ask_researcher
 
 field_library:
@@ -107,14 +107,16 @@ field_library:
     active_research_repo_boundary:
       question: Which active research repo owns the implementation, and what paths must remain outside the QROS framework repo?
       examples:
-        - outputs/<lineage_id>/program/backtest
-        - outputs/paper_to_spec/<paper_slug>/implementation
+        - outputs/<lineage_id>/program
+        - outputs/paper_to_spec/<paper_slug>/program
     target_stage_program:
-      question: Which lineage-local stage program files must be created before running the backtest?
+      question: Which lineage-local PaperSpec implementation chain files must be created before running the backtest?
       examples:
-        - stage_program.yaml
-        - README.md
-        - run_backtest.py
+        - data/build_data_panel.py
+        - signal/build_signals.py
+        - train_freeze/run_train_freeze_diagnostics.py
+        - test_evidence/run_test_evidence.py
+        - backtest/run_backtest.py
     backtest_entrypoint:
       question: Which executable entrypoint, arguments, and environment should run the backtest?
       examples:

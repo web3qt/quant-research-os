@@ -158,14 +158,14 @@ allowed_next_actions:
   - ask_researcher
   - validate_researcher_data
   - run_agent_data_acquisition
-  - generate_active_repo_backtest_scaffold
+  - generate_active_repo_paperspec_chain_scaffold
 
 allowed_next_stage_recommendations:
   - stop_after_specs
   - ask_researcher
   - validate_researcher_data
   - run_agent_data_acquisition
-  - generate_active_repo_backtest_scaffold
+  - generate_active_repo_paperspec_chain_scaffold
 
 required_ambiguity_fields:
   - field
@@ -188,25 +188,25 @@ handoff_rules:
     blocked_next_actions_before_all_valid:
       - validate_researcher_data
       - run_agent_data_acquisition
-      - generate_active_repo_backtest_scaffold
+      - generate_active_repo_paperspec_chain_scaffold
   implementation_opt_in:
     field: implementation_decision.decision
     accepted_value: accepted
     blocked_next_actions_before_acceptance:
       - validate_researcher_data
       - run_agent_data_acquisition
-      - generate_active_repo_backtest_scaffold
+      - generate_active_repo_paperspec_chain_scaffold
   data_readiness_before_implementation:
     required_before_next_actions:
       - validate_researcher_data
       - run_agent_data_acquisition
-      - generate_active_repo_backtest_scaffold
+      - generate_active_repo_paperspec_chain_scaffold
     required_field: data_readiness_brief
     blocking_gaps_field: data_readiness_brief.blocking_gaps
     blocked_next_actions_when_blocking_gaps_present:
       - validate_researcher_data
       - run_agent_data_acquisition
-      - generate_active_repo_backtest_scaffold
+      - generate_active_repo_paperspec_chain_scaffold
   blocking_ambiguities_stop_implementation:
     field: ambiguities
     blocking_field: blocking
@@ -214,7 +214,7 @@ handoff_rules:
     blocked_next_actions:
       - validate_researcher_data
       - run_agent_data_acquisition
-      - generate_active_repo_backtest_scaffold
+      - generate_active_repo_paperspec_chain_scaffold
   researcher_data_preferred:
     ask_field: researcher_data_response.status
     agent_acquisition_allowed_only_when: cannot_provide

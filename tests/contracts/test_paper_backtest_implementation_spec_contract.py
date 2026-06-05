@@ -103,7 +103,7 @@ def test_paper_backtest_implementation_spec_contract_declares_optional_blocks_an
         "next_stage_recommendation",
     ]
     assert contract["allowed_next_stage_recommendations"] == [
-        "generate_active_repo_backtest_scaffold",
+        "generate_active_repo_paperspec_chain_scaffold",
         "ask_researcher",
     ]
 

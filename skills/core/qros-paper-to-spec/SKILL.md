@@ -57,6 +57,18 @@ outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml
 
 当前不直接生成完整 strategy spec，不静默生成回测代码、不静默下载数据；`paper_backtest_spec.yaml` 只是把已冻结证据转换成回测需求，`paper_backtest_implementation_spec.yaml` 只定义 active research repo 的实现计划，`paper_auto_implementation_handoff.yaml` 只记录 post-spec 实现同意、数据就绪、供数回应、agent 取数审批和允许下一步。
 
+当 post-spec implementation opt-in 已记录、required data 已由研究员提供并验证，或 agent acquisition 已获批且成功完成后，允许的实现动作是生成 active repo 内完整 PaperSpec 轻量实现链：
+
+```text
+program/data
+program/signal
+program/train_freeze
+program/test_evidence
+program/backtest
+```
+
+该动作使用 `allowed_next_action=generate_active_repo_paperspec_chain_scaffold`。不要只生成 backtest scaffold，也不要把这些轻量程序写成 `qros-research-session` formal stage closure。
+
 旧 `strategy_spec` materializer 已移除，旧 baseline scaffold 已移除。
 
 ## XML Field Guides
@@ -383,9 +395,10 @@ python runtime/scripts/validate_paper_backtest_implementation_spec.py --spec-pat
 5. `ask researcher data response`：询问研究员能否提供 required datasets。能提供时，收集 paths、snapshots、credentials 或 access instructions，并把下一步设为 `validate_researcher_data`。
 6. `agent acquisition only after cannot_provide`：只有研究员明确 `cannot_provide` required datasets 时，才允许提出 agent acquisition plan。
 7. `approval before acquisition`：agent acquisition plan 必须包含 source、symbols、time_range、fields、command、storage_target、expected_artifacts、limitations 和 approval；未获批准不得下载、物化或声称数据可用。
-8. `active repo boundary`：handoff、数据、scaffold 或实现输出必须写入 active research repo；目标若是 QROS framework repo，必须阻塞并询问 active repo target。
-9. `materialize handoff`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml` 写入 handoff artifact。
-10. `validate`：使用 deterministic validator 校验 `paper_auto_implementation_handoff.yaml`；若失败则修正 artifact 或把阻断问题返回研究员。
+8. `paperspec chain scaffold after data ready`：required data 通过研究员供数验证或 agent acquisition 成功后，若继续实现，`allowed_next_action` 必须设为 `generate_active_repo_paperspec_chain_scaffold`，并生成 `program/data`、`program/signal`、`program/train_freeze`、`program/test_evidence`、`program/backtest` 五段轻量程序；不得只生成 backtest scaffold。
+9. `active repo boundary`：handoff、数据、scaffold 或实现输出必须写入 active research repo；目标若是 QROS framework repo，必须阻塞并询问 active repo target。
+10. `materialize handoff`：在 active research repo 的 `outputs/paper_to_spec/<paper_slug>/paper_auto_implementation_handoff.yaml` 写入 handoff artifact。
+11. `validate`：使用 deterministic validator 校验 `paper_auto_implementation_handoff.yaml`；若失败则修正 artifact 或把阻断问题返回研究员。
 
 Handoff validator 入口：
 
@@ -586,6 +599,7 @@ Auto implementation handoff 阻断问题按 contract 中的 `blocking_question_g
 
 - 不直接生成完整 strategy spec。
 - 不在缺少 post-spec implementation opt-in 时生成回测代码、下载数据或创建 active repo scaffold。
+- 不把 PaperSpec 实现简化成 backtest-only scaffold；实现链必须覆盖 data、signal、train_freeze、test_evidence 和 backtest。
 - 不把 backtest implementation plan 写成 QROS framework repo 内的 live lineage 程序；真实实现属于 active research repo。
 - 不把 `paper_auto_implementation_handoff.yaml` 写成 review closure、stage advancement 或 live research artifact 完成证明。
 - 不在列出 data readiness brief 和询问研究员能否供数之前执行 agent data acquisition。

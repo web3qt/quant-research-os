@@ -199,13 +199,13 @@ def test_validator_blocks_agent_acquisition_with_empty_sources(tmp_path: Path) -
 def test_validator_blocks_scaffold_when_data_not_ready(tmp_path: Path) -> None:
     payload = _load_valid_spec()
     payload["researcher_data_response"]["status"] = "cannot_provide"
-    payload["allowed_next_action"] = "generate_active_repo_backtest_scaffold"
+    payload["allowed_next_action"] = "generate_active_repo_paperspec_chain_scaffold"
     result = validate_paper_auto_implementation_handoff(_write_spec(tmp_path, payload))
 
     assert not result.valid
     assert (
         "PAPER_AUTO_IMPLEMENTATION_HANDOFF_DATA_NOT_READY",
-        "generate_active_repo_backtest_scaffold requires researcher-provided data or successful agent acquisition",
+        "generate_active_repo_paperspec_chain_scaffold requires researcher-provided data or successful agent acquisition",
     ) in result.findings
 
 
@@ -213,13 +213,13 @@ def test_validator_blocks_scaffold_when_provided_paths_are_empty(tmp_path: Path)
     payload = _load_valid_spec()
     payload["researcher_data_response"]["provided_paths"] = {}
     payload["researcher_data_response"]["missing_datasets"] = ["price_bars"]
-    payload["allowed_next_action"] = "generate_active_repo_backtest_scaffold"
+    payload["allowed_next_action"] = "generate_active_repo_paperspec_chain_scaffold"
     result = validate_paper_auto_implementation_handoff(_write_spec(tmp_path, payload))
 
     assert not result.valid
     assert (
         "PAPER_AUTO_IMPLEMENTATION_HANDOFF_DATA_NOT_READY",
-        "generate_active_repo_backtest_scaffold requires researcher-provided data or successful agent acquisition",
+        "generate_active_repo_paperspec_chain_scaffold requires researcher-provided data or successful agent acquisition",
     ) in result.findings
 
 
@@ -311,7 +311,7 @@ def test_validator_fails_invalid_next_stage_recommendation(tmp_path: Path) -> No
         "PAPER_AUTO_IMPLEMENTATION_HANDOFF_INVALID_ENUM",
         "implementation_handoff.next_stage_recommendation must be one of "
         "['stop_after_specs', 'ask_researcher', 'validate_researcher_data', "
-        "'run_agent_data_acquisition', 'generate_active_repo_backtest_scaffold']",
+        "'run_agent_data_acquisition', 'generate_active_repo_paperspec_chain_scaffold']",
     ) in result.findings
 
 

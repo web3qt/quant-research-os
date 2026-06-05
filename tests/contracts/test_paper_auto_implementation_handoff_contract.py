@@ -72,14 +72,14 @@ def test_paper_auto_implementation_handoff_contract_locks_enums() -> None:
         "ask_researcher",
         "validate_researcher_data",
         "run_agent_data_acquisition",
-        "generate_active_repo_backtest_scaffold",
+        "generate_active_repo_paperspec_chain_scaffold",
     ]
     assert contract["allowed_next_stage_recommendations"] == [
         "stop_after_specs",
         "ask_researcher",
         "validate_researcher_data",
         "run_agent_data_acquisition",
-        "generate_active_repo_backtest_scaffold",
+        "generate_active_repo_paperspec_chain_scaffold",
     ]
 
 
@@ -158,7 +158,7 @@ def test_paper_auto_implementation_handoff_contract_locks_prompt_and_acquisition
         "blocked_next_actions_before_all_valid": [
             "validate_researcher_data",
             "run_agent_data_acquisition",
-            "generate_active_repo_backtest_scaffold",
+            "generate_active_repo_paperspec_chain_scaffold",
         ],
     }
     assert rules["researcher_data_preferred"] == {
@@ -169,14 +169,14 @@ def test_paper_auto_implementation_handoff_contract_locks_prompt_and_acquisition
         "required_before_next_actions": [
             "validate_researcher_data",
             "run_agent_data_acquisition",
-            "generate_active_repo_backtest_scaffold",
+            "generate_active_repo_paperspec_chain_scaffold",
         ],
         "required_field": "data_readiness_brief",
         "blocking_gaps_field": "data_readiness_brief.blocking_gaps",
         "blocked_next_actions_when_blocking_gaps_present": [
             "validate_researcher_data",
             "run_agent_data_acquisition",
-            "generate_active_repo_backtest_scaffold",
+            "generate_active_repo_paperspec_chain_scaffold",
         ],
     }
     assert rules["blocking_ambiguities_stop_implementation"] == {
@@ -186,7 +186,7 @@ def test_paper_auto_implementation_handoff_contract_locks_prompt_and_acquisition
         "blocked_next_actions": [
             "validate_researcher_data",
             "run_agent_data_acquisition",
-            "generate_active_repo_backtest_scaffold",
+            "generate_active_repo_paperspec_chain_scaffold",
         ],
     }
     assert rules["agent_acquisition_requires_approval"] == {

@@ -118,7 +118,7 @@ def test_validator_fails_invalid_next_stage_recommendation(tmp_path: Path) -> No
     assert (
         "PAPER_BACKTEST_IMPLEMENTATION_SPEC_INVALID_ENUM",
         "implementation_handoff.next_stage_recommendation must be one of "
-        "['generate_active_repo_backtest_scaffold', 'ask_researcher']",
+        "['generate_active_repo_paperspec_chain_scaffold', 'ask_researcher']",
     ) in result.findings
 
 

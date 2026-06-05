@@ -21,7 +21,7 @@ DEFAULT_CONTRACT_PATH = ROOT / "contracts" / "paper_to_spec" / "paper_auto_imple
 IMPLEMENTATION_ACTIONS = {
     "validate_researcher_data",
     "run_agent_data_acquisition",
-    "generate_active_repo_backtest_scaffold",
+    "generate_active_repo_paperspec_chain_scaffold",
 }
 UPSTREAM_VALIDATORS = {
     "paper_data_spec": validate_paper_data_spec,
@@ -425,7 +425,7 @@ def _validate_allowed_next_action(payload: dict[str, Any], contract: dict[str, A
         )
     if action == "run_agent_data_acquisition":
         findings.extend(_validate_agent_acquisition_allowed(payload))
-    if action == "generate_active_repo_backtest_scaffold":
+    if action == "generate_active_repo_paperspec_chain_scaffold":
         findings.extend(_validate_scaffold_allowed(payload))
     return findings
 
@@ -476,7 +476,7 @@ def _validate_scaffold_allowed(payload: dict[str, Any]) -> list[tuple[str, str]]
     return [
         (
             "PAPER_AUTO_IMPLEMENTATION_HANDOFF_DATA_NOT_READY",
-            "generate_active_repo_backtest_scaffold requires researcher-provided data or successful agent acquisition",
+            "generate_active_repo_paperspec_chain_scaffold requires researcher-provided data or successful agent acquisition",
         )
     ]
 

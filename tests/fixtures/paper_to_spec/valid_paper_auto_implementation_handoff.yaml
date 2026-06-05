@@ -144,6 +144,10 @@ implementation_handoff:
     - /active-repo/data/price_bars.parquet
     - /active-repo/data/funding_rates.parquet
   implementation_outputs:
+    - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/data
+    - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/signal
+    - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/train_freeze
+    - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/test_evidence
     - /active-repo/outputs/paper_to_spec/example_crypto_perp_momentum/program/backtest
   validation_checks:
     - validate_researcher_data_against_data_readiness_brief

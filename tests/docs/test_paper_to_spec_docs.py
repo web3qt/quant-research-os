@@ -173,6 +173,12 @@ def test_paper_to_spec_usage_guide_documents_first_paper_data_spec_version() -> 
         "agent_acquisition_plan",
         "acquisition_provenance",
         "allowed_next_action",
+        "generate_active_repo_paperspec_chain_scaffold",
+        "program/data",
+        "program/signal",
+        "program/train_freeze",
+        "program/test_evidence",
+        "program/backtest",
         "implementation_consent",
         "data_readiness",
         "agent_acquisition",
@@ -219,6 +225,8 @@ def test_paper_to_spec_usage_guide_locks_post_spec_handoff_gates() -> None:
     assert "询问 `researcher_data_response`：研究员能否提供 required datasets" in section
     assert "只有研究员明确 `cannot_provide` required datasets 时" in section
     assert "未获批准不得下载、物化或声称数据可用" in section
+    assert "`allowed_next_action` 必须使用 `generate_active_repo_paperspec_chain_scaffold`" in section
+    assert "data、signal、train_freeze、test_evidence、backtest 五段轻量实现程序" in section
 
 
 def _section(content: str, heading: str) -> str:
